@@ -76,7 +76,7 @@ curl -fsSL https://raw.githubusercontent.com/TomThermo/guartrix/main/scripts/ins
 ```
 
 `install.sh` downloads the full installer to `/tmp/guartrix-install.sh` and runs it
-inside a real terminal (`script`). Banner should show **v1.0.18+**.
+inside a real terminal (`script`). Banner should show **v1.0.19+**.
 
 If a pipe still misbehaves on your host, use the equivalent two-step form:
 

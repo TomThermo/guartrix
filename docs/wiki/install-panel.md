@@ -27,7 +27,7 @@ No flags. The installer asks for:
 
 Daemon-only asks for token + node id from **System → Add node** instead of panel DB/HTTPS details.
 
-(`scripts/install.sh` downloads `install-panel.sh` to `/tmp/guartrix-install.sh` and runs it under `script(1)` for a real TTY. Banner should show **v1.0.18+**.)
+(`scripts/install.sh` downloads `install-panel.sh` to `/tmp/guartrix-install.sh` and runs it under `script(1)` for a real TTY. Banner should show **v1.0.19+**.)
 
 ### HTTP only (flags / automation)
 
