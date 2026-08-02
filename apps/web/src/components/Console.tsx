@@ -1,0 +1,260 @@
+import { useEffect, useRef, useState, type FormEvent, type UIEvent } from "react";
+import type { ConsoleMessage, ServerStats, ServerStatus } from "@msm/shared";
+import { Button, Form, InputGroup } from "react-bootstrap";
+
+interface Props {
+  serverId: string;
+  onStatus?: (status: ServerStatus) => void;
+  /** Live resource samples pushed over the console WebSocket (Wings-style). */
+  onStats?: (stats: ServerStats) => void;
+  /** When false, output is shown but the command form is hidden. */
+  canSend?: boolean;
+  /** Extra panel messages (e.g. license blocked start) shown as console error lines. */
+  panelNotices?: string[];
+}
+
+const BOTTOM_THRESHOLD_PX = 48;
+const RECONNECT_MIN_MS = 800;
+const RECONNECT_MAX_MS = 15_000;
+
+/** Panel polls `/list` for online players — hide that spam from the console. */
+function isPlayersListLine(line: string): boolean {
+  return /There are \d+ of a max of \d+ players online:/i.test(line);
+}
+
+type DaemonTone = "info" | "progress" | "ok" | "error";
+
+function daemonConsoleTone(line: string): DaemonTone | null {
+  if (/^\[error\]/i.test(line)) return "error";
+  if (
+    /^container@guartrix~/i.test(line) ||
+    /^openjdk version/i.test(line) ||
+    /^OpenJDK /i.test(line)
+  ) {
+    return "info";
+  }
+  if (!/^\[Guartrix Daemon\]/i.test(line)) return null;
+
+  const msg = line.replace(/^\[Guartrix Daemon\]\s*/i, "");
+  if (/^ERROR:/i.test(msg)) return "error";
+  if (
+    /^Completed rebuild process/i.test(msg) ||
+    /^Running server preflight/i.test(msg) ||
+    /^Starting server container/i.test(msg)
+  ) {
+    return "ok";
+  }
+  if (
+    /^Rebuilding server container/i.test(msg) ||
+    /^New container built/i.test(msg) ||
+    /^Container is being initialized/i.test(msg) ||
+    /^Checking size of server data directory/i.test(msg) ||
+    /^Disk Usage:/i.test(msg) ||
+    /^Ensuring correct ownership of files/i.test(msg) ||
+    /^Force-killing Docker container/i.test(msg)
+  ) {
+    return "progress";
+  }
+  return "info";
+}
+
+function isNearBottom(el: HTMLElement, threshold = BOTTOM_THRESHOLD_PX): boolean {
+  return el.scrollHeight - el.scrollTop - el.clientHeight <= threshold;
+}
+
+export function Console({
+  serverId,
+  onStatus,
+  onStats,
+  canSend = true,
+  panelNotices = [],
+}: Props) {
+  const [lines, setLines] = useState<string[]>([]);
+  const [command, setCommand] = useState("");
+  const [connected, setConnected] = useState(false);
+  const [reconnecting, setReconnecting] = useState(false);
+  const outputRef = useRef<HTMLDivElement>(null);
+  const stickToBottomRef = useRef(true);
+  const forceBottomRef = useRef(false);
+  const wsRef = useRef<WebSocket | null>(null);
+  const onStatusRef = useRef(onStatus);
+  const onStatsRef = useRef(onStats);
+  onStatusRef.current = onStatus;
+  onStatsRef.current = onStats;
+
+  useEffect(() => {
+    stickToBottomRef.current = true;
+    forceBottomRef.current = true;
+    setLines([]);
+    setConnected(false);
+    setReconnecting(false);
+
+    let cancelled = false;
+    let attempt = 0;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+    let ws: WebSocket | null = null;
+
+    const clearReconnect = () => {
+      if (reconnectTimer) {
+        clearTimeout(reconnectTimer);
+        reconnectTimer = null;
+      }
+    };
+
+    const connect = () => {
+      if (cancelled) return;
+      clearReconnect();
+      const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
+      ws = new WebSocket(
+        `${proto}//${window.location.host}/ws/servers/${serverId}/console`,
+      );
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        if (cancelled) return;
+        attempt = 0;
+        setConnected(true);
+        setReconnecting(false);
+      };
+
+      ws.onclose = () => {
+        if (cancelled) return;
+        setConnected(false);
+        wsRef.current = null;
+        setReconnecting(true);
+        const delay = Math.min(
+          RECONNECT_MAX_MS,
+          RECONNECT_MIN_MS * 2 ** Math.min(attempt, 4),
+        );
+        attempt += 1;
+        reconnectTimer = setTimeout(connect, delay);
+      };
+
+      ws.onmessage = (ev) => {
+        const msg = JSON.parse(String(ev.data)) as ConsoleMessage;
+        if (msg.type === "history") {
+          forceBottomRef.current = true;
+          stickToBottomRef.current = true;
+          setLines(msg.lines.filter((line) => !isPlayersListLine(line)));
+        } else if (msg.type === "output") {
+          if (isPlayersListLine(msg.line)) return;
+          setLines((prev) => [...prev.slice(-499), msg.line]);
+        } else if (msg.type === "status") {
+          onStatusRef.current?.(msg.status);
+        } else if (msg.type === "stats") {
+          onStatsRef.current?.(msg.stats);
+        } else if (msg.type === "error") {
+          setLines((prev) => [...prev, `[error] ${msg.message}`]);
+        }
+      };
+    };
+
+    connect();
+
+    return () => {
+      cancelled = true;
+      clearReconnect();
+      if (ws) {
+        ws.onclose = null;
+        ws.close();
+      }
+      wsRef.current = null;
+    };
+  }, [serverId]);
+
+  useEffect(() => {
+    const el = outputRef.current;
+    if (!el) return;
+    if (forceBottomRef.current || stickToBottomRef.current) {
+      el.scrollTop = el.scrollHeight;
+      forceBottomRef.current = false;
+      stickToBottomRef.current = true;
+    }
+  }, [lines, panelNotices]);
+
+  useEffect(() => {
+    if (panelNotices.length === 0) return;
+    forceBottomRef.current = true;
+    stickToBottomRef.current = true;
+    const el = outputRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [panelNotices]);
+
+  function onOutputScroll(e: UIEvent<HTMLDivElement>) {
+    stickToBottomRef.current = isNearBottom(e.currentTarget);
+  }
+
+  function send(e: FormEvent) {
+    e.preventDefault();
+    const trimmed = command.trim();
+    if (!trimmed || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+      return;
+    }
+    wsRef.current.send(JSON.stringify({ type: "command", command: trimmed }));
+    setCommand("");
+    stickToBottomRef.current = true;
+    forceBottomRef.current = true;
+  }
+
+  return (
+    <div className="console-panel">
+      <div
+        ref={outputRef}
+        className="console-output font-monospace small"
+        onScroll={onOutputScroll}
+      >
+        {!connected && !reconnecting && (
+          <div className="text-warning">Connecting…</div>
+        )}
+        {!connected && reconnecting && (
+          <div className="text-warning">Reconnecting…</div>
+        )}
+        {connected && lines.length === 0 && panelNotices.length === 0 && (
+          <div className="text-secondary">No console output yet.</div>
+        )}
+        {lines.map((line, i) => {
+          const tone = daemonConsoleTone(line);
+          const className =
+            tone === "ok"
+              ? "console-line-daemon-ok"
+              : tone === "progress"
+                ? "console-line-daemon-progress"
+                : tone === "error"
+                  ? "console-line-error"
+                  : tone === "info"
+                    ? "console-line-daemon"
+                    : undefined;
+          return (
+            <div key={`${i}-${line.slice(0, 24)}`} className={className}>
+              {line}
+            </div>
+          );
+        })}
+        {panelNotices.map((notice, i) => (
+          <div key={`panel-notice-${i}`} className="console-line-error">
+            [Guartrix] {notice}
+          </div>
+        ))}
+      </div>
+      {canSend && (
+        <Form onSubmit={send} className="console-input-bar">
+          <InputGroup>
+            <InputGroup.Text className="font-monospace">&gt;</InputGroup.Text>
+            <Form.Control
+              value={command}
+              onChange={(e) => setCommand(e.target.value)}
+              placeholder="Console command…"
+              disabled={!connected}
+              autoComplete="off"
+              spellCheck={false}
+              className="font-monospace"
+            />
+            <Button type="submit" variant="primary" disabled={!connected}>
+              Send
+            </Button>
+          </InputGroup>
+        </Form>
+      )}
+    </div>
+  );
+}

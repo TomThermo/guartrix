@@ -1,0 +1,29 @@
+node_modules/
+dist/
+dist-release/
+dist-download/
+build/
+.vite/
+.DS_Store
+*.log
+
+# Local Cursor agent rules / skills (operator machine only — not for GitHub)
+.cursor/
+
+# Secrets & local env
+.env
+.env.local
+license.env
+# Live license config is data/license.env (under data/, already ignored)
+*.pem
+
+# Runtime / generated data (never commit)
+data/
+cert/
+
+# Legacy / local DB files
+*.db
+*.db-journal
+apps/api/prisma/*.db
+apps/api/prisma/*.db-journal
+dev.db.sqlite-backup

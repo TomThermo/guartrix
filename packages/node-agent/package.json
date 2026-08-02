@@ -1,0 +1,28 @@
+{
+  "name": "@msm/node-agent",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@msm/shared": "*",
+    "dotenv": "^16.4.7",
+    "ssh2": "^1.16.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "@types/ssh2": "^1.15.5",
+    "typescript": "^5.8.2"
+  }
+}

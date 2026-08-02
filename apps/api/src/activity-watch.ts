@@ -1,0 +1,41 @@
+import type { ServerStatus } from "@msm/shared";
+import { recordActivity } from "./activity-log.js";
+import { processManager } from "./process-manager.js";
+
+/**
+ * Turns daemon status transitions into activity events. A panel-issued stop
+ * always passes through STOPPING first, so RUNNING → STOPPED means the process
+ * died on its own.
+ */
+const lastStatus = new Map<string, ServerStatus>();
+
+export function startActivityWatch(): void {
+  processManager.on(
+    "status",
+    (serverId: string, status: ServerStatus, errorMessage: string | null) => {
+      const before = lastStatus.get(serverId);
+      lastStatus.set(serverId, status);
+      if (!before || before === status) return;
+
+      const action =
+        status === "ERROR"
+          ? "server.crashed"
+          : status === "STOPPED" && before === "RUNNING"
+            ? "server.offline"
+            : null;
+      if (!action) return;
+
+      void recordActivity({
+        action,
+        actor: "system",
+        serverId,
+        success: false,
+        metadata: {
+          previousStatus: before,
+          status,
+          ...(errorMessage ? { reason: errorMessage } : {}),
+        },
+      });
+    },
+  );
+}

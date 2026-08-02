@@ -1,0 +1,32 @@
+{
+  "name": "minecraft-server-manager",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev:api & npm run dev:web; wait",
+    "dev:api": "npm run dev -w @msm/api",
+    "dev:web": "npm run dev -w @msm/web",
+    "dev:daemon": "npm run dev -w @msm/daemon",
+    "build": "npm run build -w @msm/shared && npm run build -w @msm/node-agent && npm run build -w @msm/daemon && npm run build -w @msm/api && npm run build -w @msm/web",
+    "build:release": "node scripts/esbuild-release.mjs all && npm run build -w @msm/web",
+    "build:out": "bash scripts/build-out.sh",
+    "start:build": "bash build/start.sh",
+    "package:release": "bash scripts/package-release.sh",
+    "package:download": "bash scripts/package-download-bundle.sh",
+    "db:generate": "npm run db:generate -w @msm/api",
+    "db:push": "npm run db:push -w @msm/api",
+    "start": "npm run start -w @msm/api",
+    "start:prod": "node scripts/start-prod.mjs",
+    "start:sh": "bash scripts/start.sh",
+    "prod": "npm run build && npm run start:prod",
+    "prod:release": "npm run build:release && npm run start:prod"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0",
+    "typescript": "^5.8.2"
+  },
+  "version": "1.0.1"
+}

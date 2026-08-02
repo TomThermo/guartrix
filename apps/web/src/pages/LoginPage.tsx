@@ -1,0 +1,204 @@
+import { useEffect, useState, type FormEvent } from "react";
+import { Link, Navigate } from "react-router-dom";
+import { Alert, Button, Form, Spinner } from "react-bootstrap";
+import { api } from "../api";
+import { useAuth } from "../auth";
+import { AuthShell } from "../components/AuthShell";
+
+const REMEMBER_KEY = "guartrix.rememberMe";
+const USERNAME_KEY = "guartrix.lastUsername";
+const LEGACY_REMEMBER_KEY = "blockhost.rememberMe";
+const LEGACY_USERNAME_KEY = "blockhost.lastUsername";
+
+function readMigrated(key: string, legacyKey: string): string | null {
+  const current = localStorage.getItem(key);
+  if (current != null) return current;
+  const legacy = localStorage.getItem(legacyKey);
+  if (legacy != null) {
+    localStorage.setItem(key, legacy);
+    localStorage.removeItem(legacyKey);
+    return legacy;
+  }
+  return null;
+}
+
+export function LoginPage() {
+  const { login, loginTwoFactor, authenticated, pendingTwoFactor } = useAuth();
+  const [username, setUsername] = useState(
+    () => readMigrated(USERNAME_KEY, LEGACY_USERNAME_KEY) || "",
+  );
+  const [password, setPassword] = useState("");
+  const [code, setCode] = useState("");
+  const [rememberMe, setRememberMe] = useState(
+    () => readMigrated(REMEMBER_KEY, LEGACY_REMEMBER_KEY) === "1",
+  );
+  const [needsTwoFactor, setNeedsTwoFactor] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [registrationEnabled, setRegistrationEnabled] = useState(true);
+
+  useEffect(() => {
+    void api
+      .authConfig()
+      .then((c) => setRegistrationEnabled(c.registrationEnabled))
+      .catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    if (pendingTwoFactor) setNeedsTwoFactor(true);
+  }, [pendingTwoFactor]);
+
+  if (authenticated) return <Navigate to="/" replace />;
+
+  async function onSubmitPassword(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      const result = await login(username, password, rememberMe);
+      if (rememberMe) {
+        localStorage.setItem(REMEMBER_KEY, "1");
+        localStorage.setItem(USERNAME_KEY, username.trim());
+      } else {
+        localStorage.removeItem(REMEMBER_KEY);
+        localStorage.removeItem(USERNAME_KEY);
+      }
+      if (result.requiresTwoFactor) {
+        setNeedsTwoFactor(true);
+        setPassword("");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Login failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onSubmitCode(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      await loginTwoFactor(code.trim());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Invalid code");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (needsTwoFactor) {
+    return (
+      <AuthShell
+        title="Two-factor"
+        subtitle="Enter the code from your authenticator app"
+      >
+        {error && (
+          <Alert variant="danger" className="py-2">
+            {error}
+          </Alert>
+        )}
+        <Form onSubmit={onSubmitCode}>
+          <Form.Group className="mb-3" controlId="totp-code">
+            <Form.Label>Authentication code</Form.Label>
+            <Form.Control
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              placeholder="123456"
+              required
+              autoFocus
+            />
+            <Form.Text className="text-secondary">
+              Or use a one-time recovery code if you lost your device.
+            </Form.Text>
+          </Form.Group>
+          <Button type="submit" variant="primary" className="w-100" disabled={busy}>
+            {busy ? (
+              <>
+                <Spinner size="sm" className="me-2" /> Verifying…
+              </>
+            ) : (
+              <>
+                <i className="fa-solid fa-shield-halved me-2" />
+                Verify
+              </>
+            )}
+          </Button>
+        </Form>
+        <div className="mt-3 small">
+          <button
+            type="button"
+            className="btn btn-link btn-sm p-0"
+            onClick={() => {
+              setNeedsTwoFactor(false);
+              setCode("");
+              setError(null);
+            }}
+          >
+            ← Back to sign in
+          </button>
+        </div>
+      </AuthShell>
+    );
+  }
+
+  return (
+    <AuthShell title="Guartrix" subtitle="Sign in to manage servers">
+      {error && (
+        <Alert variant="danger" className="py-2">
+          {error}
+        </Alert>
+      )}
+      <Form onSubmit={onSubmitPassword}>
+        <Form.Group className="mb-3" controlId="username">
+          <Form.Label>Username</Form.Label>
+          <Form.Control
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            autoComplete="username"
+            required
+            autoFocus
+          />
+        </Form.Group>
+        <Form.Group className="mb-3" controlId="password">
+          <Form.Label>Password</Form.Label>
+          <Form.Control
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="current-password"
+            required
+          />
+        </Form.Group>
+        <Form.Check
+          className="mb-3"
+          type="checkbox"
+          id="remember-me"
+          label="Remember me (stay signed in for 30 days)"
+          checked={rememberMe}
+          onChange={(e) => setRememberMe(e.target.checked)}
+        />
+        <Button type="submit" variant="primary" className="w-100" disabled={busy}>
+          {busy ? (
+            <>
+              <Spinner size="sm" className="me-2" /> Signing in…
+            </>
+          ) : (
+            <>
+              <i className="fa-solid fa-right-to-bracket me-2" />
+              Sign in
+            </>
+          )}
+        </Button>
+      </Form>
+      <div className="d-flex justify-content-between flex-wrap gap-2 mt-3 small">
+        <Link to="/forgot-password">Forgot password?</Link>
+        {registrationEnabled && <Link to="/register">Create an account</Link>}
+      </div>
+    </AuthShell>
+  );
+}

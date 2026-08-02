@@ -1,0 +1,29 @@
+{
+  "name": "@msm/shared",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./daemon-jwt": {
+      "types": "./dist/daemon-jwt.d.ts",
+      "import": "./dist/daemon-jwt.js"
+    },
+    "./license-signing": {
+      "types": "./dist/license-signing.d.ts",
+      "import": "./dist/license-signing.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.2"
+  }
+}

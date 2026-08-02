@@ -1,0 +1,392 @@
+import type { FastifyInstance } from "fastify";
+import { nanoid } from "nanoid";
+import { z } from "zod";
+import {
+  APPLICATION_API_KEY_MAX,
+  normalizeApplicationScopes,
+  type AuthUser,
+  type UserRole,
+} from "@msm/shared";
+import {
+  generateApplicationToken,
+  toApplicationKeyRecord,
+} from "../application-keys.js";
+import { requireApplication } from "../application-auth.js";
+import { logActivity } from "../activity-log.js";
+import {
+  findUserByUsernameInsensitive,
+  hashPassword,
+  requireAdmin,
+} from "../auth.js";
+import { assertSameOrigin } from "../csrf.js";
+import { prisma } from "../db.js";
+import { serverListInclude, toMcServer } from "../serialize.js";
+
+function toAppUser(user: {
+  id: string;
+  username: string;
+  role: UserRole;
+  createdAt: Date;
+  maxServers: number | null;
+  maxMemoryMb: number | null;
+  maxDatabases: number | null;
+  email: string | null;
+  emailVerified: boolean;
+}): AuthUser & { email: string | null; emailVerified: boolean } {
+  return {
+    id: user.id,
+    username: user.username,
+    role: user.role,
+    createdAt: user.createdAt.toISOString(),
+    twoFactorEnabled: false,
+    twoFactorRequired: false,
+    maxServers: user.role === "ADMIN" ? null : user.maxServers,
+    maxMemoryMb: user.role === "ADMIN" ? null : user.maxMemoryMb,
+    maxDatabases: user.role === "ADMIN" ? null : user.maxDatabases,
+    serverCount: 0,
+    memoryUsedMb: 0,
+    databaseCount: 0,
+    email: user.email,
+    emailVerified: user.emailVerified,
+  };
+}
+
+const quotaLimit = z.number().int().min(0).max(100_000).nullable();
+
+const createUserSchema = z.object({
+  username: z.string().trim().min(3).max(32),
+  password: z.string().min(8).max(128),
+  email: z.string().email().max(200).nullable().optional(),
+  role: z.enum(["ADMIN", "OPERATOR", "VIEWER"]).default("OPERATOR"),
+  maxServers: quotaLimit.optional(),
+  maxMemoryMb: quotaLimit.optional(),
+  maxDatabases: quotaLimit.optional(),
+});
+
+const updateUserSchema = z.object({
+  password: z.string().min(8).max(128).optional(),
+  role: z.enum(["ADMIN", "OPERATOR", "VIEWER"]).optional(),
+  maxServers: quotaLimit.optional(),
+  maxMemoryMb: quotaLimit.optional(),
+  maxDatabases: quotaLimit.optional(),
+  email: z.string().email().max(200).nullable().optional(),
+});
+
+const createServerSchema = z.object({
+  ownerId: z.string().min(1),
+  name: z.string().trim().min(1).max(64),
+  type: z.enum([
+    "VANILLA",
+    "PAPER",
+    "FABRIC",
+    "FORGE",
+    "PURPUR",
+    "NEOFORGE",
+    "QUILT",
+  ]),
+  mcVersion: z.string().min(1).max(32),
+  port: z.number().int().min(1024).max(65535),
+  memoryMb: z.number().int().min(512).max(65536),
+  diskMb: z.number().int().min(1024).max(10_485_760).optional(),
+  cpuLimit: z.number().int().min(0).max(6400).optional(),
+  nodeId: z.string().min(1).optional(),
+});
+
+/** Admin session routes for managing Application API keys. */
+export function registerApplicationKeyAdminRoutes(app: FastifyInstance): void {
+  app.get("/api/admin/application-keys", async (request, reply) => {
+    const user = await requireAdmin(request, reply);
+    if (!user) return;
+    const rows = await prisma.applicationApiKey.findMany({
+      orderBy: { createdAt: "desc" },
+    });
+    return {
+      keys: rows.map(toApplicationKeyRecord),
+      maxKeys: APPLICATION_API_KEY_MAX,
+    };
+  });
+
+  app.post("/api/admin/application-keys", async (request, reply) => {
+    const originErr = assertSameOrigin(request);
+    if (originErr) return reply.status(403).send({ error: originErr });
+    const user = await requireAdmin(request, reply);
+    if (!user) return;
+
+    const parsed = z
+      .object({
+        name: z.string().trim().min(1).max(64),
+        scopes: z.array(z.string()).min(1).max(32),
+        note: z.string().max(200).nullable().optional(),
+      })
+      .safeParse(request.body);
+    if (!parsed.success) {
+      return reply.status(400).send({ error: parsed.error.flatten() });
+    }
+    const scopes = normalizeApplicationScopes(parsed.data.scopes);
+    if (!scopes) {
+      return reply.status(400).send({
+        error: 'scopes must be known Application API scopes, or ["*"]',
+      });
+    }
+
+    const active = await prisma.applicationApiKey.count({
+      where: { revokedAt: null },
+    });
+    if (active >= APPLICATION_API_KEY_MAX) {
+      return reply.status(400).send({
+        error: `At most ${APPLICATION_API_KEY_MAX} active Application API keys`,
+      });
+    }
+
+    const { token, prefix, tokenHash } = generateApplicationToken();
+    const row = await prisma.applicationApiKey.create({
+      data: {
+        id: nanoid(12),
+        name: parsed.data.name,
+        prefix,
+        tokenHash,
+        scopes: JSON.stringify(scopes),
+        note: parsed.data.note?.trim() || null,
+      },
+    });
+
+    logActivity({
+      action: "application-key.create",
+      request,
+      user,
+      metadata: { keyId: row.id, name: row.name, prefix, scopes },
+    });
+
+    return reply.status(201).send({
+      key: toApplicationKeyRecord(row),
+      token,
+    });
+  });
+
+  app.delete<{ Params: { id: string } }>(
+    "/api/admin/application-keys/:id",
+    async (request, reply) => {
+      const originErr = assertSameOrigin(request);
+      if (originErr) return reply.status(403).send({ error: originErr });
+      const user = await requireAdmin(request, reply);
+      if (!user) return;
+
+      const row = await prisma.applicationApiKey.findUnique({
+        where: { id: request.params.id },
+      });
+      if (!row) return reply.status(404).send({ error: "Key not found" });
+      if (row.revokedAt) {
+        return reply.status(400).send({ error: "Already revoked" });
+      }
+      const updated = await prisma.applicationApiKey.update({
+        where: { id: row.id },
+        data: { revokedAt: new Date() },
+      });
+      logActivity({
+        action: "application-key.revoke",
+        request,
+        user,
+        metadata: { keyId: row.id, name: row.name, prefix: row.prefix },
+      });
+      return { key: toApplicationKeyRecord(updated) };
+    },
+  );
+}
+
+/** Machine Application API under /api/application/* */
+export function registerApplicationRoutes(app: FastifyInstance): void {
+  app.get("/api/application/users", async (request, reply) => {
+    if (!(await requireApplication(request, reply, "users.read"))) return;
+    const rows = await prisma.user.findMany({ orderBy: { createdAt: "desc" } });
+    return { users: rows.map(toAppUser) };
+  });
+
+  app.get<{ Params: { id: string } }>(
+    "/api/application/users/:id",
+    async (request, reply) => {
+      if (!(await requireApplication(request, reply, "users.read"))) return;
+      const user = await prisma.user.findUnique({
+        where: { id: request.params.id },
+      });
+      if (!user) return reply.status(404).send({ error: "User not found" });
+      return { user: toAppUser(user) };
+    },
+  );
+
+  app.post("/api/application/users", async (request, reply) => {
+    const ctx = await requireApplication(request, reply, "users.write");
+    if (!ctx) return;
+    const parsed = createUserSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.status(400).send({ error: parsed.error.flatten() });
+    }
+
+    if (await findUserByUsernameInsensitive(parsed.data.username)) {
+      return reply.status(409).send({ error: "Username already taken" });
+    }
+
+    const isAdminRole = parsed.data.role === "ADMIN";
+    const user = await prisma.user.create({
+      data: {
+        id: nanoid(12),
+        username: parsed.data.username,
+        passwordHash: hashPassword(parsed.data.password),
+        role: parsed.data.role,
+        email: parsed.data.email ?? null,
+        emailVerified: true,
+        maxServers: isAdminRole ? null : (parsed.data.maxServers ?? 0),
+        maxMemoryMb: isAdminRole ? null : (parsed.data.maxMemoryMb ?? 0),
+        maxDatabases: isAdminRole ? null : (parsed.data.maxDatabases ?? 0),
+      },
+    });
+
+    logActivity({
+      action: "user.create",
+      actor: `app:${ctx.prefix}`,
+      metadata: {
+        targetUser: user.username,
+        role: user.role,
+        via: "application-api",
+        keyId: ctx.keyId,
+      },
+    });
+
+    return reply.status(201).send({ user: toAppUser(user) });
+  });
+
+  app.patch<{ Params: { id: string } }>(
+    "/api/application/users/:id",
+    async (request, reply) => {
+      const ctx = await requireApplication(request, reply, "users.write");
+      if (!ctx) return;
+      const parsed = updateUserSchema.safeParse(request.body);
+      if (!parsed.success) {
+        return reply.status(400).send({ error: parsed.error.flatten() });
+      }
+      const existing = await prisma.user.findUnique({
+        where: { id: request.params.id },
+      });
+      if (!existing) return reply.status(404).send({ error: "User not found" });
+
+      const data: {
+        passwordHash?: string;
+        role?: UserRole;
+        maxServers?: number | null;
+        maxMemoryMb?: number | null;
+        maxDatabases?: number | null;
+        email?: string | null;
+      } = {};
+      if (parsed.data.password) data.passwordHash = hashPassword(parsed.data.password);
+      if (parsed.data.role) data.role = parsed.data.role;
+      if (parsed.data.maxServers !== undefined) data.maxServers = parsed.data.maxServers;
+      if (parsed.data.maxMemoryMb !== undefined) data.maxMemoryMb = parsed.data.maxMemoryMb;
+      if (parsed.data.maxDatabases !== undefined) data.maxDatabases = parsed.data.maxDatabases;
+      if (parsed.data.email !== undefined) data.email = parsed.data.email;
+
+      if (parsed.data.role === "ADMIN") {
+        data.maxServers = null;
+        data.maxMemoryMb = null;
+        data.maxDatabases = null;
+      }
+
+      const user = await prisma.user.update({
+        where: { id: existing.id },
+        data,
+      });
+      logActivity({
+        action: "user.update",
+        actor: `app:${ctx.prefix}`,
+        metadata: {
+          targetUser: user.username,
+          fields: Object.keys(parsed.data),
+          via: "application-api",
+          keyId: ctx.keyId,
+        },
+      });
+      return { user: toAppUser(user) };
+    },
+  );
+
+  app.get("/api/application/servers", async (request, reply) => {
+    if (!(await requireApplication(request, reply, "servers.read"))) return;
+    const rows = await prisma.server.findMany({
+      include: serverListInclude,
+      orderBy: { createdAt: "desc" },
+    });
+    return { servers: rows.map(toMcServer) };
+  });
+
+  app.post("/api/application/servers", async (request, reply) => {
+    const ctx = await requireApplication(request, reply, "servers.write");
+    if (!ctx) return;
+    const parsed = createServerSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.status(400).send({ error: parsed.error.flatten() });
+    }
+    const data = parsed.data;
+    const owner = await prisma.user.findUnique({ where: { id: data.ownerId } });
+    if (!owner) return reply.status(404).send({ error: "Owner not found" });
+
+    try {
+      const { assertCanCreateServer } = await import("../quotas.js");
+      await assertCanCreateServer(
+        {
+          id: owner.id,
+          role: owner.role,
+          maxServers: owner.maxServers,
+          maxMemoryMb: owner.maxMemoryMb,
+          maxDatabases: owner.maxDatabases,
+        },
+        data.memoryMb,
+      );
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return reply.status(403).send({ error: message });
+    }
+
+    let nodeId: string;
+    try {
+      const { assertNodeCapacity, resolveCreateNodeId } = await import("../nodes.js");
+      nodeId = await resolveCreateNodeId(data.nodeId);
+      await assertNodeCapacity(nodeId, data.memoryMb);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return reply.status(400).send({ error: message });
+    }
+
+    try {
+      const { provisionPreparedServer } = await import("../server-provision.js");
+      const { id, server: updated } = await provisionPreparedServer({
+        name: data.name,
+        type: data.type,
+        mcVersion: data.mcVersion,
+        port: data.port,
+        memoryMb: data.memoryMb,
+        diskMb: data.diskMb,
+        cpuLimit: data.cpuLimit,
+        ownerId: owner.id,
+        nodeId,
+        cleanupOnFailure: false,
+      });
+
+      logActivity({
+        action: "server.create",
+        actor: `app:${ctx.prefix}`,
+        serverId: id,
+        serverName: updated.name,
+        metadata: {
+          ownerId: owner.id,
+          owner: owner.username,
+          via: "application-api",
+          keyId: ctx.keyId,
+        },
+      });
+
+      return reply.status(201).send({ server: toMcServer(updated) });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      const status = message.includes("already in use") ? 409 : 500;
+      return reply.status(status).send({ error: message });
+    }
+  });
+}
