@@ -68,10 +68,21 @@ else
 fi
 
 if [[ "$LINK_RUNTIME" -eq 1 ]]; then
-  # Share live config/data/certs with the source checkout on this host
-  [[ -e "$ROOT/.env" ]] && ln -sfn ../.env "$BUILD_DIR/.env" && echo "[build-out] Linked .env"
-  [[ -d "$ROOT/data" ]] && ln -sfn ../data "$BUILD_DIR/data" && echo "[build-out] Linked data/"
-  [[ -d "$ROOT/cert" ]] && ln -sfn ../cert "$BUILD_DIR/cert" && echo "[build-out] Linked cert/"
+  # Share live config/data/certs with the source checkout on this host.
+  # Staging creates a real build/data/ (templates only). `ln -sfn TARGET DIR`
+  # would nest DIR/data → TARGET if DIR already exists — remove first.
+  link_runtime() {
+    local name="$1" target="$2"
+    local dest="$BUILD_DIR/$name"
+    if [[ -L "$dest" || -e "$dest" ]]; then
+      rm -rf "$dest"
+    fi
+    ln -sfn "$target" "$dest"
+    echo "[build-out] Linked $name/ → $target"
+  }
+  [[ -e "$ROOT/.env" ]] && { rm -f "$BUILD_DIR/.env"; ln -sfn ../.env "$BUILD_DIR/.env"; echo "[build-out] Linked .env"; }
+  [[ -d "$ROOT/data" ]] && link_runtime data ../data
+  [[ -d "$ROOT/cert" ]] && link_runtime cert ../cert
 else
   echo "[build-out] Skipped runtime links — copy .env.example → build/.env yourself"
 fi
