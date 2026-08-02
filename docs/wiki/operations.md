@@ -114,8 +114,15 @@ bash scripts/install-host-hardening.sh   # sudo — UFW cleanup + logrotate
 
 ## Public install scripts
 
-When the panel is up:
+When the panel is up, download then run (do not pipe into bash as the primary method):
 
-- `https://YOUR_PANEL/install.sh` (same as `install-panel.sh`)
+```bash
+curl -Lo /tmp/guartrix-install.sh https://YOUR_PANEL/install-panel.sh
+sudo bash /tmp/guartrix-install.sh
+```
+
+Also served:
+
+- `https://YOUR_PANEL/install.sh` (thin wrapper → downloads `install-panel.sh`)
 - `https://YOUR_PANEL/install-panel.sh`
 - `https://YOUR_PANEL/install-daemon.sh`

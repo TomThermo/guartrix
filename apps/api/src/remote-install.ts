@@ -211,7 +211,7 @@ export function panelPublicBase(): string {
   ).replace(/\/$/, "");
 }
 
-/** Shell one-liner run as root on the remote VPS. */
+/** Download-then-run install command for the remote VPS (root / sudo). */
 export function buildDaemonInstallScript(opts: {
   token: string;
   nodeId: string;
@@ -231,7 +231,10 @@ export function buildDaemonInstallScript(opts: {
     `--repo ${shellQuote(opts.repoUrl)}`,
     `--sftp-port ${opts.sftpPort}`,
   ].join(" ");
-  return `curl -fsSL ${shellQuote(scriptUrl)} | bash -s -- ${args}`;
+  return [
+    `curl -Lo /tmp/guartrix-daemon.sh ${shellQuote(scriptUrl)}`,
+    `bash /tmp/guartrix-daemon.sh ${args}`,
+  ].join(" && ");
 }
 
 function shellQuote(s: string): string {

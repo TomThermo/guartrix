@@ -69,20 +69,33 @@ Use a clean VPS with a public IPv4 address (x86_64).
 
 ## Installation
 
-### One-command install
+Pick Ubuntu, install basics, **download** the installer, then run it.
+
+### 1. OS
+
+**Ubuntu 24.04 LTS** (recommended) or **22.04 LTS**, fresh VPS, public IPv4.
+
+### 2. Download the installer
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/TomThermo/guartrix/main/scripts/install.sh | sudo bash
+curl -Lo /tmp/guartrix-install.sh \
+  https://raw.githubusercontent.com/TomThermo/guartrix/main/scripts/install-panel.sh
 ```
 
-That is the supported install path (interactive wizard). Requires an SSH/terminal session and Ubuntu 22.04/24.04.
-
-**Automation** (no wizard prompts for set flags):
+### 3. Run it
 
 ```bash
-curl -fsSL …/install.sh | sudo bash -s -- --full --http --ip YOUR.PUBLIC.IP
-curl -fsSL …/install.sh | sudo bash -s -- --panel-only --http --ip YOUR.PUBLIC.IP
-curl -fsSL …/install.sh | sudo bash -s -- --daemon-only \
+sudo bash /tmp/guartrix-install.sh
+```
+
+The wizard configures role (full panel / panel-only / daemon-only), HTTP or HTTPS, MySQL, admin password, and license key.
+
+**Automation** (flags, no full wizard):
+
+```bash
+sudo bash /tmp/guartrix-install.sh --full --http --ip YOUR.PUBLIC.IP
+sudo bash /tmp/guartrix-install.sh --panel-only --http --ip YOUR.PUBLIC.IP
+sudo bash /tmp/guartrix-install.sh --daemon-only \
   --token … --node-id … --ip NODE_IP --panel https://YOUR_PANEL
 ```
 

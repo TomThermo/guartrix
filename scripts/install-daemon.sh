@@ -2,8 +2,9 @@
 # Guartrix remote daemon installer (node).
 # Run on the game node / VPS that should host Minecraft containers.
 #
-# From the panel (recommended):
-#   curl -fsSL https://YOUR_PANEL/install-daemon.sh | sudo bash -s -- \
+# Recommended (download, then run):
+#   curl -Lo /tmp/guartrix-daemon.sh https://YOUR_PANEL/install-daemon.sh
+#   sudo bash /tmp/guartrix-daemon.sh \
 #     --token TOKEN --node-id NODE_ID --panel https://panel.example.com --fqdn NODE_IP --port 8081 \
 #     --repo https://github.com/TomThermo/guartrix.git
 #

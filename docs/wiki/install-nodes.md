@@ -25,12 +25,13 @@ For an existing remote node, use **Install daemon** on the node card to reopen t
 
 See also the [Panel guide](panel-guide.md) for the rest of the admin UI.
 
-## Manual curl install
+## Manual install
 
-On the remote Ubuntu VPS (as root or via sudo):
+On the remote Ubuntu VPS (as root or via sudo) — download, then run:
 
 ```bash
-curl -fsSL https://YOUR_PANEL/install-daemon.sh | sudo bash -s -- \
+curl -Lo /tmp/guartrix-daemon.sh https://YOUR_PANEL/install-daemon.sh
+sudo bash /tmp/guartrix-daemon.sh \
   --token NODE_TOKEN \
   --node-id NODE_ID \
   --fqdn NODE_PUBLIC_IP \

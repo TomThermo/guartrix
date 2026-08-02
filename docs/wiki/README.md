@@ -11,7 +11,7 @@ Operator and developer documentation for the Guartrix Minecraft hosting panel.
 | Page | Description |
 |------|-------------|
 | **[Panel guide (screenshots)](panel-guide.md)** | Full UI tour — login, dashboard, console, SFTP, mods, admin, … |
-| [Install the panel](install-panel.md) | One-shot Ubuntu install + existing checkout |
+| [Install the panel](install-panel.md) | Ubuntu install (download → run) + existing checkout |
 | [Install nodes](install-nodes.md) | Add remote daemons (SSH wizard / curl) |
 
 ## Contents

@@ -1,40 +1,83 @@
 # Install the panel
 
-Target: fresh **Ubuntu 24.04 LTS** (best) or **22.04 LTS** with a public IP. Optional domain + HTTPS (Cloudflare recommended). Debian 12 may work; other distros are not covered by the apt-based installer.
+Guartrix Panel runs on your own VPS. You need root (or passwordless `sudo`).
 
-Installs **panel + local daemon + web** (+ MySQL via Docker). Does **not** install the
-Guartrix license server — the panel uses `https://license.guartrix.com` by default.
+This guide follows the same style as [Pterodactyl’s getting started](https://pterodactyl.io/panel/1.0/getting_started.html): pick an OS, install dependencies, download the installer, run it.
 
-## One-command install (GitHub)
+## Picking a Server OS
 
-### Interactive (recommended)
+| Operating System | Version | Supported | Notes |
+|------------------|---------|-----------|--------|
+| **Ubuntu** | **24.04 LTS** | Yes | **Recommended** |
+| Ubuntu | 22.04 LTS | Yes | Supported |
+| Debian | 12 | Yes* | Same `apt` flow; not primary QA |
+| Other (RHEL, Fedora, Arch, OpenVZ, …) | — | No | Not supported by the installer / Docker path |
+
+Use a **fresh VPS** with a public IPv4. x86_64. Avoid OpenVZ if Docker is restricted.
+
+## Dependencies
+
+The installer installs these for you when missing. To prepare the host yourself:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/TomThermo/guartrix/main/scripts/install.sh | sudo bash
+sudo apt update
+sudo apt -y install ca-certificates curl gnupg git openssl ufw python3
+# Docker + Node 22 are installed automatically by the installer if absent.
 ```
 
-No flags. The installer asks for:
+You also need:
 
-1. **Role** — full panel / panel only (no daemon) / daemon only (game node)
-2. Install directory (default `/opt/guartrix`)
-3. Public IPv4 (auto-detected, editable)
-4. HTTPS yes/no (default: HTTP via IP) — panel roles
-5. Domain (if HTTPS) or optional hostname (if HTTP)
-6. Admin password (blank = generate)
-7. License key (blank = set later in Admin → License)
-8. Panel MySQL: Docker (default) or existing server
-9. Confirm summary → install
+- Docker (Engine) with permission to run containers  
+- Node.js **22+**  
+- A public IP (and optionally a domain + TLS cert for HTTPS)
+
+## Download files
+
+**Do not** pipe the script into bash as your primary method. Download it first (like Pterodactyl’s `curl -Lo panel.tar.gz`), then run it:
+
+```bash
+curl -Lo /tmp/guartrix-install.sh \
+  https://raw.githubusercontent.com/TomThermo/guartrix/main/scripts/install-panel.sh
+```
+
+## Installation
+
+```bash
+sudo bash /tmp/guartrix-install.sh
+```
+
+The interactive wizard asks for:
+
+1. **Role** — full panel / panel only (no daemon) / daemon only (game node)  
+2. Install directory (default `/opt/guartrix`)  
+3. Public IPv4 (auto-detected, editable)  
+4. HTTPS yes/no (default: HTTP via IP) — panel roles  
+5. Domain (if HTTPS) or optional hostname (if HTTP)  
+6. Admin password (blank = generate)  
+7. License key (blank = set later in Admin → License)  
+8. Panel MySQL: Docker (default) or existing server  
+9. Confirm summary → install  
 
 Daemon-only asks for token + node id from **System → Add node** instead of panel DB/HTTPS details.
 
-One line. Interactive wizard. Requires a real SSH/terminal session.
+The script installs Docker/Node if needed, clones to `/opt/guartrix`, writes `.env`
+(`LICENSE_SERVER_URL=https://license.guartrix.com`), sets up MySQL, builds, and enables
+systemd units (`guartrix-daemon`, `guartrix-api`, `guartrix-web`).
+
+### Shortcut entrypoint (optional)
+
+Same installer, via a tiny wrapper (still **download then run**):
+
+```bash
+curl -Lo /tmp/install.sh \
+  https://raw.githubusercontent.com/TomThermo/guartrix/main/scripts/install.sh
+sudo bash /tmp/install.sh
+```
 
 ### HTTP only (flags / automation)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/TomThermo/guartrix/main/scripts/install.sh | sudo bash -s -- \
-  --http \
-  --ip YOUR.PUBLIC.IP
+sudo bash /tmp/guartrix-install.sh --http --ip YOUR.PUBLIC.IP
 ```
 
 Opens the panel at `http://YOUR.PUBLIC.IP`. No certificate needed.
@@ -43,7 +86,7 @@ Opens the panel at `http://YOUR.PUBLIC.IP`. No certificate needed.
 ### HTTPS (domain + TLS)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/TomThermo/guartrix/main/scripts/install.sh | sudo bash -s -- \
+sudo bash /tmp/guartrix-install.sh \
   --https \
   --domain your.domain.com \
   --ip YOUR.PUBLIC.IP
@@ -55,46 +98,34 @@ Set `GUARTRIX_NONINTERACTIVE=1` to never prompt.
 ### Panel MySQL
 
 **Docker (default)** — installer starts `guartrix-mysql` on `127.0.0.1:3306` and writes `DATABASE_URL`.
-On re-install it reuses the password from the existing container (MySQL only applies `MYSQL_PASSWORD` on first volume init).
+On re-install it reuses the password from the existing container (MySQL only applies `MYSQL_PASSWORD` on first volume init). If credentials no longer match, it recreates the container + data volume.
 
 ```bash
-curl -fsSL … | sudo bash -s -- --http --ip YOUR.PUBLIC.IP --mysql-docker
+sudo bash /tmp/guartrix-install.sh --http --ip YOUR.PUBLIC.IP --mysql-docker
 ```
 
 **Existing MySQL/MariaDB** — create an empty database + user first, then:
 
 ```bash
-curl -fsSL … | sudo bash -s -- --http --ip YOUR.PUBLIC.IP \
+sudo bash /tmp/guartrix-install.sh --http --ip YOUR.PUBLIC.IP \
   --mysql-external \
   --mysql-host 127.0.0.1 \
   --mysql-port 3306 \
   --mysql-database guartrix_panel \
   --mysql-user guartrix \
   --mysql-password 'YourDbPass'
-# or: --database-url 'mysql://guartrix:YourDbPass@127.0.0.1:3306/guartrix_panel'
 ```
 
-Env: `GUARTRIX_MYSQL_MODE=docker|external`, `GUARTRIX_DATABASE_URL`, `GUARTRIX_MYSQL_HOST`, …
-
-If the panel DB already uses `127.0.0.1:3306`, the daemon’s **game-server** MySQL Docker is placed on **3307** so ports do not clash.
-
-Non-interactive without `--https`/`--http`: HTTPS if `--domain` is a hostname; otherwise HTTP via IP.
-
-Non-interactive env:
+### Non-interactive env example
 
 ```bash
-export GUARTRIX_HTTPS=0          # or 1 for HTTPS
+export GUARTRIX_NONINTERACTIVE=1
+export GUARTRIX_HTTPS=0
 export GUARTRIX_PUBLIC_IP=1.2.3.4
-# export GUARTRIX_DOMAIN=your.domain.com   # required when GUARTRIX_HTTPS=1
 export GUARTRIX_ADMIN_PASSWORD='YourStrongPass1!'
-export GUARTRIX_LICENSE_KEY='GTRX-…'   # optional; can set later in Admin → License
-curl -fsSL https://raw.githubusercontent.com/TomThermo/guartrix/main/scripts/install.sh | sudo bash
+export GUARTRIX_LICENSE_KEY='GTRX-…'   # optional
+sudo bash /tmp/guartrix-install.sh
 ```
-
-The script installs Docker, Node 22, clones to `/opt/guartrix`, writes `.env`
-(`LICENSE_SERVER_URL=https://license.guartrix.com`),
-sets up MySQL, builds, and enables systemd units (`guartrix-daemon`, `guartrix-api`,
-`guartrix-web`).
 
 ### TLS (HTTPS mode only)
 
@@ -111,16 +142,12 @@ Or set `TLS_CERT_FILE` / `TLS_KEY_FILE` in `.env`. Without a trusted cert, the i
 cp .env.example .env
 # Edit: ADMIN_PASSWORD, SESSION_SECRET, PUBLIC_HOST, PUBLIC_IP,
 # PUBLIC_BASE_URL, DATABASE_URL / MYSQL_*, SESSION_SECURE, TRUST_PROXY
-# For HTTP/IP: HTTPS_ENABLED=false, SESSION_SECURE=false, TRUST_PROXY=false,
-#   PUBLIC_BASE_URL=http://YOUR.IP
-# For HTTPS: HTTPS_ENABLED=true, SESSION_SECURE=true, TRUST_PROXY=true,
-#   PUBLIC_BASE_URL=https://your.domain
 # LICENSE_SERVER_URL=https://license.guartrix.com
 # LICENSE_KEY=GTRX-…
 
 npm install
 npm run db:generate
-# Prisma CLI reads apps/api/.env — symlink to the panel root .env if needed:
+# Prisma CLI reads apps/api/.env — symlink if needed:
 #   ln -sfn ../../.env apps/api/.env
 npm run db:push
 npm run build
@@ -131,14 +158,14 @@ Requirements: Node **22+**, Docker with passwordless `sudo docker`, image `eclip
 
 ## After install
 
-1. Open the URL printed by the installer (`http://IP` or `https://domain`) and sign in as `admin`.
-2. Activate your license under **Admin → License** (if `LICENSE_KEY` was not passed to the installer).
-3. Confirm Status / System shows the local node **ONLINE**.
-4. Optionally harden the host: `bash scripts/install-host-hardening.sh`
+1. Open the URL printed by the installer (`http://IP` or `https://domain`) and sign in as `admin`.  
+2. Activate your license under **Admin → License** (if `LICENSE_KEY` was not passed).  
+3. Confirm Status / System shows the local node **ONLINE**.  
+4. Optionally harden the host: `bash scripts/install-host-hardening.sh`  
 5. Add remote capacity: [Install nodes](install-nodes.md)
 
 ## Related
 
-- [Environment variables](env-reference.md)
-- [Operations](operations.md)
-- [Licensing](licensing.md) (customer key only — license server is operator-side)
+- [Environment variables](env-reference.md)  
+- [Operations](operations.md)  
+- [Licensing](licensing.md)

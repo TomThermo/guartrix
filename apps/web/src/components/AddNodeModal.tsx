@@ -464,7 +464,7 @@ export function AddNodeModal({ existingNode, onClose, onChanged }: Props) {
 
                 <details>
                   <summary className="small text-secondary">
-                    Manual: curl install command
+                    Manual: download-then-run install
                   </summary>
                   <pre className="bg-dark text-light p-2 rounded small mt-2 user-select-all">
                     {install.installCommand}

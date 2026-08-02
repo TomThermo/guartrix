@@ -3,19 +3,17 @@
 # Installs panel + local daemon + web. License validation uses LICENSE_SERVER_URL.
 # (customers use LICENSE_SERVER_URL=https://license.guartrix.com).
 #
-# Canonical curl entrypoint (auto-downloads this file to disk + binds a TTY):
-#   curl -fsSL https://raw.githubusercontent.com/TomThermo/guartrix/main/scripts/install.sh | sudo bash
-#
-# Direct (also fine — script file already on disk):
-#   curl -fsSL …/install-panel.sh -o /tmp/gp.sh && sudo bash /tmp/gp.sh
+# Recommended (download, then run — same idea as Pterodactyl):
+#   curl -Lo /tmp/guartrix-install.sh https://raw.githubusercontent.com/TomThermo/guartrix/main/scripts/install-panel.sh
+#   sudo bash /tmp/guartrix-install.sh
 #
 # Optional flags (automation / skip wizard):
 #   # HTTP via public IP only (no TLS):
-#   curl -fsSL … | sudo bash -s -- --http --ip 1.2.3.4
+#   sudo bash /tmp/guartrix-install.sh --http --ip 1.2.3.4
 #   # HTTPS with domain + cert:
-#   curl -fsSL … | sudo bash -s -- --https --domain guartrix.com --ip 1.2.3.4
+#   sudo bash /tmp/guartrix-install.sh --https --domain guartrix.com --ip 1.2.3.4
 #   # External panel MySQL:
-#   curl -fsSL … | sudo bash -s -- --mysql-external --mysql-host 10.0.0.5 \
+#   sudo bash /tmp/guartrix-install.sh --mysql-external --mysql-host 10.0.0.5 \
 #     --mysql-user guartrix --mysql-password '…' --mysql-database guartrix_panel
 #
 # Env overrides (non-interactive — set GUARTRIX_NONINTERACTIVE=1 to skip wizard):
@@ -127,7 +125,7 @@ normalize_https_flag() {
 
 # Interactive prompts. Prefer the real stdin/stdout TTY (when started via
 # `script` or `bash /tmp/gp.sh`). Fall back to /dev/tty for odd redirects.
-INSTALLER_VERSION="1.0.20"
+INSTALLER_VERSION="1.0.22"
 
 can_prompt() {
   [[ -t 0 && -t 1 ]] || [[ -r /dev/tty && -w /dev/tty ]]
