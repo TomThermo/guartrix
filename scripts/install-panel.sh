@@ -121,50 +121,42 @@ normalize_https_flag() {
   esac
 }
 
-# Read answers from the controlling TTY (curl|bash has stdin = script pipe).
-# Always print prompts on stdout so the user sees them in the SSH session.
+# Interactive I/O for curl|bash (stdin is the script pipe — not a TTY).
 can_prompt() {
-  [[ -r /dev/tty ]] || [[ -t 0 ]]
+  [[ -r /dev/tty && -w /dev/tty ]] || [[ -t 0 && -t 1 ]]
+}
+
+# Point stdin/stdout/stderr at the real terminal so echo/read -p work.
+attach_tty() {
+  if [[ -r /dev/tty && -w /dev/tty ]]; then
+    exec </dev/tty >/dev/tty 2>/dev/tty
+  fi
 }
 
 say() {
   printf '%s\n' "$*"
 }
 
-prompt_tty() {
-  local prompt="$1"
-  local reply=""
-  # Visible on the terminal even when stdin is a pipe
-  printf '%s' "$prompt" >&2
-  if [[ -r /dev/tty ]]; then
-    IFS= read -r reply < /dev/tty || true
-  elif [[ -t 0 ]]; then
-    IFS= read -r reply || true
-  else
-    printf '\n' >&2
-    return 0
-  fi
-  # Strip CR from Windows / some SSH clients
-  reply="${reply%$'\r'}"
-  printf '%s' "$reply"
+# ask VAR "prompt"  — never use $(ask …); that would hide the prompt.
+ask() {
+  local __var="$1"
+  local __prompt="$2"
+  local __reply=""
+  printf '%s' "$__prompt"
+  IFS= read -r __reply || true
+  __reply="${__reply%$'\r'}"
+  printf -v "$__var" '%s' "$__reply"
 }
 
-prompt_tty_secret() {
-  local prompt="$1"
-  local reply=""
-  printf '%s' "$prompt" >&2
-  if [[ -r /dev/tty ]]; then
-    IFS= read -rs reply < /dev/tty || true
-    printf '\n' >&2
-  elif [[ -t 0 ]]; then
-    IFS= read -rs reply || true
-    printf '\n' >&2
-  else
-    printf '\n' >&2
-    return 0
-  fi
-  reply="${reply%$'\r'}"
-  printf '%s' "$reply"
+ask_secret() {
+  local __var="$1"
+  local __prompt="$2"
+  local __reply=""
+  printf '%s' "$__prompt"
+  IFS= read -rs __reply || true
+  printf '\n'
+  __reply="${__reply%$'\r'}"
+  printf -v "$__var" '%s' "$__reply"
 }
 
 normalize_mysql_mode() {
@@ -253,6 +245,7 @@ fi
 # Interactive wizard (no CLI flags): ask everything before long installs
 # ---------------------------------------------------------------------------
 if [[ "$WIZARD" -eq 1 ]]; then
+  attach_tty
   say ""
   say "=============================================="
   say " Guartrix installer"
@@ -263,20 +256,21 @@ if [[ "$WIZARD" -eq 1 ]]; then
   say "  1) Full panel — API + web + local daemon (recommended for one VPS)"
   say "  2) Panel only — API + web, no local daemon (use remote game nodes)"
   say "  3) Daemon only — game node for an existing panel"
-  role_in="$(prompt_tty "Choice [1/2/3] (default 1): ")"
+  ask role_in "Choice [1/2/3] (default 1): "
   case "${role_in}" in
     2) INSTALL_ROLE=panel ;;
     3) INSTALL_ROLE=daemon ;;
     *) INSTALL_ROLE=full ;;
   esac
-  say "Selected: ${INSTALL_ROLE}"
+  say ""
+  say "→ Selected: ${INSTALL_ROLE}"
   say ""
 
-  dir_in="$(prompt_tty "Install directory [${INSTALL_DIR}]: ")"
+  ask dir_in "Install directory [${INSTALL_DIR}]: "
   INSTALL_DIR="${dir_in:-$INSTALL_DIR}"
 
   ip_default="${PUBLIC_IP:-$DETECTED_IP}"
-  ip_in="$(prompt_tty "Public IPv4 [${ip_default:-?}]: ")"
+  ask ip_in "Public IPv4 [${ip_default:-?}]: "
   PUBLIC_IP="${ip_in:-$ip_default}"
   if [[ -z "$PUBLIC_IP" ]]; then
     echo "ERROR: public IP is required." >&2
@@ -287,17 +281,17 @@ if [[ "$WIZARD" -eq 1 ]]; then
     say ""
     say "Daemon node — values from the panel (System → Add node)."
     while [[ -z "$DAEMON_TOKEN_IN" ]]; do
-      DAEMON_TOKEN_IN="$(prompt_tty_secret "Daemon token: ")"
+      ask_secret DAEMON_TOKEN_IN "Daemon token: "
       [[ -n "$DAEMON_TOKEN_IN" ]] || say "Token is required."
     done
     while [[ -z "$DAEMON_NODE_ID_IN" ]]; do
-      DAEMON_NODE_ID_IN="$(prompt_tty "Node id: ")"
+      ask DAEMON_NODE_ID_IN "Node id: "
       [[ -n "$DAEMON_NODE_ID_IN" ]] || say "Node id is required."
     done
     panel_def="${DAEMON_PANEL_URL_IN:-}"
-    DAEMON_PANEL_URL_IN="$(prompt_tty "Panel URL (e.g. https://panel.example.com) [${panel_def}]: ")"
+    ask DAEMON_PANEL_URL_IN "Panel URL (e.g. https://panel.example.com) [${panel_def}]: "
     DAEMON_PANEL_URL_IN="${DAEMON_PANEL_URL_IN:-$panel_def}"
-    port_in="$(prompt_tty "Daemon port [${DAEMON_PORT_IN}]: ")"
+    ask port_in "Daemon port [${DAEMON_PORT_IN}]: "
     DAEMON_PORT_IN="${port_in:-$DAEMON_PORT_IN}"
     say ""
     say "----------------------------------------------"
@@ -308,7 +302,7 @@ if [[ "$WIZARD" -eq 1 ]]; then
     say "  Panel:   ${DAEMON_PANEL_URL_IN:-(none)}"
     say "  Node:    ${DAEMON_NODE_ID_IN}"
     say "----------------------------------------------"
-    conf="$(prompt_tty "Continue with install? [Y/n]: ")"
+    ask conf "Continue with install? [Y/n]: "
     case "${conf,,}" in
       n|no) say "Aborted."; exit 0 ;;
     esac
@@ -318,7 +312,7 @@ if [[ "$WIZARD" -eq 1 ]]; then
     say "Access mode"
     say "  n = HTTP only — open http://${PUBLIC_IP} (no TLS cert)"
     say "  y = HTTPS — domain + TLS on :443"
-    ans="$(prompt_tty "Use HTTPS with a domain? [y/N]: ")"
+    ask ans "Use HTTPS with a domain? [y/N]: "
     case "${ans,,}" in
       y|yes) HTTPS_MODE=1 ;;
       *) HTTPS_MODE=0 ;;
@@ -326,48 +320,48 @@ if [[ "$WIZARD" -eq 1 ]]; then
 
     if [[ "$HTTPS_MODE" -eq 1 ]]; then
       while true; do
-        DOMAIN="$(prompt_tty "Public domain (e.g. panel.example.com): ")"
+        ask DOMAIN "Public domain (e.g. panel.example.com): "
         if [[ -n "$DOMAIN" ]] && ! is_ipv4 "$DOMAIN"; then
           break
         fi
         say "Please enter a hostname (not an IP)."
       done
     else
-      host_in="$(prompt_tty "Panel hostname for HTTP (blank = use IP ${PUBLIC_IP}): ")"
+      ask host_in "Panel hostname for HTTP (blank = use IP ${PUBLIC_IP}): "
       DOMAIN="${host_in:-$PUBLIC_IP}"
     fi
 
     say ""
-    pw_in="$(prompt_tty_secret "Admin password (blank = generate a strong one): ")"
+    ask_secret pw_in "Admin password (blank = generate a strong one): "
     if [[ -n "$pw_in" ]]; then
       ADMIN_PASSWORD="$pw_in"
     fi
 
     say ""
-    lic_in="$(prompt_tty "License key GTRX-… (blank = set later in Admin → License): ")"
+    ask lic_in "License key GTRX-… (blank = set later in Admin → License): "
     LICENSE_KEY="${lic_in:-}"
 
     say ""
     say "Panel database (Prisma)"
     say "  Y = Docker MySQL on this server (recommended)"
     say "  n = Existing MySQL/MariaDB (create DB + user first)"
-    ans="$(prompt_tty "Use Docker MySQL for the panel? [Y/n]: ")"
+    ask ans "Use Docker MySQL for the panel? [Y/n]: "
     case "${ans,,}" in
       n|no) MYSQL_MODE=external ;;
       *) MYSQL_MODE=docker ;;
     esac
 
     if [[ "$MYSQL_MODE" == "external" ]]; then
-      MYSQL_HOST="$(prompt_tty "MySQL host [127.0.0.1]: ")"
+      ask MYSQL_HOST "MySQL host [127.0.0.1]: "
       MYSQL_HOST="${MYSQL_HOST:-127.0.0.1}"
-      port_in="$(prompt_tty "MySQL port [3306]: ")"
+      ask port_in "MySQL port [3306]: "
       MYSQL_PORT="${port_in:-3306}"
-      db_in="$(prompt_tty "Database name [guartrix_panel]: ")"
+      ask db_in "Database name [guartrix_panel]: "
       MYSQL_DATABASE="${db_in:-guartrix_panel}"
-      user_in="$(prompt_tty "MySQL user [guartrix]: ")"
+      ask user_in "MySQL user [guartrix]: "
       MYSQL_USER="${user_in:-guartrix}"
       while [[ -z "$MYSQL_PASSWORD" ]]; do
-        MYSQL_PASSWORD="$(prompt_tty_secret "MySQL password: ")"
+        ask_secret MYSQL_PASSWORD "MySQL password: "
         if [[ -z "$MYSQL_PASSWORD" ]]; then
           say "Password is required for external MySQL."
         fi
@@ -397,7 +391,7 @@ if [[ "$WIZARD" -eq 1 ]]; then
       say "  Daemon:   local on this host"
     fi
     say "----------------------------------------------"
-    conf="$(prompt_tty "Continue with install? [Y/n]: ")"
+    ask conf "Continue with install? [Y/n]: "
     case "${conf,,}" in
       n|no)
         say "Aborted."
@@ -446,13 +440,13 @@ if [[ "$INSTALL_ROLE" == "daemon" ]]; then
     if can_prompt; then
       [[ -z "$PUBLIC_IP" ]] && PUBLIC_IP="$DETECTED_IP"
       while [[ -z "$DAEMON_TOKEN_IN" ]]; do
-        DAEMON_TOKEN_IN="$(prompt_tty_secret "Daemon token: ")"
+        ask_secret DAEMON_TOKEN_IN "Daemon token: "
       done
       while [[ -z "$DAEMON_NODE_ID_IN" ]]; do
-        DAEMON_NODE_ID_IN="$(prompt_tty "Node id: ")"
+        ask DAEMON_NODE_ID_IN "Node id: "
       done
-      [[ -z "$DAEMON_PANEL_URL_IN" ]] && DAEMON_PANEL_URL_IN="$(prompt_tty "Panel URL: ")"
-      [[ -z "$PUBLIC_IP" ]] && PUBLIC_IP="$(prompt_tty "Node public IP/FQDN: ")"
+      [[ -z "$DAEMON_PANEL_URL_IN" ]] && ask DAEMON_PANEL_URL_IN "Panel URL: "
+      [[ -z "$PUBLIC_IP" ]] && ask PUBLIC_IP "Node public IP/FQDN: "
     else
       echo "ERROR: daemon role needs --token and --node-id (or interactive TTY)." >&2
       exit 1
@@ -497,7 +491,7 @@ if [[ -z "$HTTPS_MODE" ]]; then
     echo "[guartrix] Access mode"
     echo "  1) HTTP only — open the panel at http://SERVER_IP (no TLS cert needed)"
     echo "  2) HTTPS     — domain + TLS on :443 (Cloudflare Origin / Let's Encrypt cert)"
-    ans="$(prompt_tty "Use HTTPS with a domain? [y/N]: ")"
+    ask ans "Use HTTPS with a domain? [y/N]: "
     case "${ans,,}" in
       y|yes) HTTPS_MODE=1 ;;
       *) HTTPS_MODE=0 ;;
@@ -512,7 +506,7 @@ fi
 if [[ "$HTTPS_MODE" -eq 1 ]]; then
   if [[ -z "$DOMAIN" ]] || is_ipv4 "$DOMAIN"; then
     if can_prompt; then
-      DOMAIN="$(prompt_tty "Public domain for HTTPS (e.g. panel.example.com): ")"
+      ask DOMAIN "Public domain for HTTPS (e.g. panel.example.com): "
     fi
   fi
   if [[ -z "$DOMAIN" ]]; then
@@ -549,7 +543,7 @@ fi
 
 if [[ -z "$ADMIN_PASSWORD" ]]; then
   if can_prompt && [[ "$WIZARD" -eq 0 ]]; then
-    pw_in="$(prompt_tty_secret "Admin password (blank = generate): ")"
+    ask_secret pw_in "Admin password (blank = generate): "
     ADMIN_PASSWORD="${pw_in:-}"
   fi
 fi
@@ -559,7 +553,7 @@ if [[ -z "$ADMIN_PASSWORD" ]]; then
 fi
 
 if [[ -z "$LICENSE_KEY" ]] && can_prompt && [[ "$WIZARD" -eq 0 ]]; then
-  lic_in="$(prompt_tty "License key GTRX-… (blank = set later): ")"
+  ask lic_in "License key GTRX-… (blank = set later): "
   LICENSE_KEY="${lic_in:-}"
 fi
 
@@ -576,7 +570,7 @@ if [[ -z "$MYSQL_MODE" ]]; then
     echo "  1) Docker MySQL — install starts container guartrix-mysql on 127.0.0.1:3306 (recommended)"
     echo "  2) Existing MySQL/MariaDB — you provide host, database, user, password"
     echo "     (create the empty database + user beforehand; installer runs db:push)"
-    ans="$(prompt_tty "Use Docker MySQL for the panel? [Y/n]: ")"
+    ask ans "Use Docker MySQL for the panel? [Y/n]: "
     case "${ans,,}" in
       n|no) MYSQL_MODE=external ;;
       *) MYSQL_MODE=docker ;;
@@ -589,16 +583,16 @@ fi
 if [[ "$MYSQL_MODE" == "external" ]]; then
   if [[ -z "$DATABASE_URL_OVERRIDE" ]]; then
     if [[ -z "$MYSQL_HOST" ]] && can_prompt; then
-      MYSQL_HOST="$(prompt_tty "MySQL host [127.0.0.1]: ")"
+      ask MYSQL_HOST "MySQL host [127.0.0.1]: "
       MYSQL_HOST="${MYSQL_HOST:-127.0.0.1}"
-      port_in="$(prompt_tty "MySQL port [${MYSQL_PORT}]: ")"
+      ask port_in "MySQL port [${MYSQL_PORT}]: "
       MYSQL_PORT="${port_in:-$MYSQL_PORT}"
-      db_in="$(prompt_tty "Database name [${MYSQL_DATABASE}]: ")"
+      ask db_in "Database name [${MYSQL_DATABASE}]: "
       MYSQL_DATABASE="${db_in:-$MYSQL_DATABASE}"
-      user_in="$(prompt_tty "MySQL user [${MYSQL_USER}]: ")"
+      ask user_in "MySQL user [${MYSQL_USER}]: "
       MYSQL_USER="${user_in:-$MYSQL_USER}"
       if [[ -z "$MYSQL_PASSWORD" ]]; then
-        MYSQL_PASSWORD="$(prompt_tty_secret "MySQL password: ")"
+        ask_secret MYSQL_PASSWORD "MySQL password: "
       fi
     fi
     if [[ -z "$MYSQL_HOST" || -z "$MYSQL_PASSWORD" ]]; then
