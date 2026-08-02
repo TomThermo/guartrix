@@ -15,14 +15,17 @@ curl -fsSL https://raw.githubusercontent.com/TomThermo/guartrix/main/scripts/ins
 
 No flags. The installer asks for:
 
-1. Install directory (default `/opt/guartrix`)
-2. Public IPv4 (auto-detected, editable)
-3. HTTPS yes/no (default: HTTP via IP)
-4. Domain (if HTTPS) or optional hostname (if HTTP)
-5. Admin password (blank = generate)
-6. License key (blank = set later in Admin → License)
-7. Panel MySQL: Docker (default) or existing server
-8. Confirm summary → install
+1. **Role** — full panel / panel only (no daemon) / daemon only (game node)
+2. Install directory (default `/opt/guartrix`)
+3. Public IPv4 (auto-detected, editable)
+4. HTTPS yes/no (default: HTTP via IP) — panel roles
+5. Domain (if HTTPS) or optional hostname (if HTTP)
+6. Admin password (blank = generate)
+7. License key (blank = set later in Admin → License)
+8. Panel MySQL: Docker (default) or existing server
+9. Confirm summary → install
+
+Daemon-only asks for token + node id from **System → Add node** instead of panel DB/HTTPS details.
 
 (`scripts/install-panel.sh` is the same installer; `install.sh` fetches it when piped via curl.)
 

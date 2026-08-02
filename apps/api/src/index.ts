@@ -80,8 +80,19 @@ async function main() {
   if (restored > 0) {
     console.info(`[guartrix] Restored ${restored} daemon token(s) from vault`);
   }
-  const { nodeId, token } = await ensureLocalNode();
-  setNodeToken(nodeId, token);
+  const skipLocalDaemon =
+    process.env.SKIP_LOCAL_DAEMON === "1" ||
+    process.env.SKIP_LOCAL_DAEMON === "true";
+  let localNodeId: string | null = null;
+  if (skipLocalDaemon) {
+    console.info(
+      "[guartrix] SKIP_LOCAL_DAEMON=1 — not creating/starting a local daemon node (use remote nodes)",
+    );
+  } else {
+    const { nodeId, token } = await ensureLocalNode();
+    localNodeId = nodeId;
+    setNodeToken(nodeId, token);
+  }
 
   try {
     const { migratePrimaryAllocations } = await import("./allocations.js");
@@ -307,7 +318,11 @@ async function main() {
 
   await app.listen({ host: config.host, port: config.port });
   app.log.info(`API listening on http://${config.host}:${config.port}`);
-  app.log.info(`Local daemon node ${nodeId} token loaded`);
+  if (localNodeId) {
+    app.log.info(`Local daemon node ${localNodeId} token loaded`);
+  } else {
+    app.log.info("Local daemon skipped (SKIP_LOCAL_DAEMON=1)");
+  }
 
   startActivityWatch();
   void startDaemonEventBridge();

@@ -48,6 +48,7 @@ Installer: `--mysql-docker` (default) or `--mysql-external` / `--database-url`. 
 | `CURSEFORGE_API_KEY` | Optional CurseForge API key for Modpacks tab search/install |
 | `LICENSE_SERVER_URL` | Panel: license API URL (default `https://license.$PUBLIC_HOST` / `https://license.guartrix.com`) |
 | `SKIP_LOCAL_LICENSE_SERVER` | Panel: `1` = do not start a local license process (customer default). Operator hosts with a sibling checkout may set `0` |
+| `SKIP_LOCAL_DAEMON` | Panel: `1` = no local daemon / local node (panel-only install; use remote nodes) |
 | `LICENSE_SERVER_HOME` | Optional absolute path to the sibling `guartrix-license-server` checkout (default `$ROOT/../guartrix-license-server`) |
 | `LICENSE_KEY` | Panel license key |
 | `LICENSE_INSTALL_ID` | Optional stable install id (else auto-file in `data/`) |

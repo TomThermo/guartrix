@@ -20,7 +20,8 @@
 #   GUARTRIX_REPO_URL, GUARTRIX_INSTALL_DIR, GUARTRIX_LICENSE_KEY,
 #   GUARTRIX_HTTPS=0|1 (0 = HTTP via IP/host, 1 = HTTPS),
 #   GUARTRIX_MYSQL_MODE=docker|external,
-#   GUARTRIX_DATABASE_URL / GUARTRIX_MYSQL_HOST|PORT|DATABASE|USER|PASSWORD
+#   GUARTRIX_DATABASE_URL / GUARTRIX_MYSQL_HOST|PORT|DATABASE|USER|PASSWORD,
+#   GUARTRIX_INSTALL_ROLE=full|panel|daemon
 
 set -euo pipefail
 
@@ -41,16 +42,31 @@ MYSQL_DATABASE="${GUARTRIX_MYSQL_DATABASE:-guartrix_panel}"
 MYSQL_USER="${GUARTRIX_MYSQL_USER:-guartrix}"
 MYSQL_PASSWORD="${GUARTRIX_MYSQL_PASSWORD:-}"
 DATABASE_URL_OVERRIDE="${GUARTRIX_DATABASE_URL:-}"
+# full | panel | daemon (empty until resolved)
+INSTALL_ROLE="${GUARTRIX_INSTALL_ROLE:-}"
+# daemon-only extras (passed through / prompted)
+DAEMON_TOKEN_IN="${GUARTRIX_DAEMON_TOKEN:-}"
+DAEMON_NODE_ID_IN="${GUARTRIX_DAEMON_NODE_ID:-}"
+DAEMON_PANEL_URL_IN="${GUARTRIX_PANEL_URL:-}"
+DAEMON_PORT_IN="${GUARTRIX_DAEMON_PORT:-8081}"
 SKIP_START=0
 
 usage() {
   cat <<'EOF'
-Guartrix panel installer (Ubuntu 22.04/24.04)
+Guartrix installer (Ubuntu 22.04/24.04)
 
-Installs: panel API + web + local daemon.
+Roles:
+  full    Panel API + web + local daemon (default)
+  panel   Panel API + web only (no local daemon — use remote nodes)
+  daemon  Game node only (remote daemon for an existing panel)
+
 Does not install the Guartrix license server (uses license.guartrix.com).
 
 Options:
+  --role full|panel|daemon
+  --full                 Same as --role full
+  --panel-only           Same as --role panel (API + web, no local daemon)
+  --daemon-only          Same as --role daemon
   --domain HOST          Public hostname (e.g. guartrix.com)
   --ip ADDR              Public IPv4
   --https                Enable HTTPS (domain + TLS on :443)
@@ -65,6 +81,10 @@ Options:
   --database-url URL     Full mysql://… URL (implies --mysql-external)
   --admin-password PASS  Initial admin password (min 12 chars, mixed)
   --license-key KEY      Panel LICENSE_KEY (GTRX-…); can set later in Admin → License
+  --token TOKEN          Daemon shared secret (daemon role)
+  --node-id ID           Panel node id (daemon role)
+  --panel URL            Panel base URL for daemon SFTP callbacks (daemon role)
+  --daemon-port PORT     Daemon listen port (daemon role, default 8081)
   --dir PATH             Install directory (default: /opt/guartrix)
   --repo URL             Git clone URL
   --branch NAME          Git branch (default: main)
@@ -72,15 +92,20 @@ Options:
   -h, --help             Show help
 
 Interactive (no flags, with a TTY — e.g. curl|bash):
-  Asks install dir, public IP, HTTPS yes/no, admin password, license key,
-  and panel MySQL (Docker vs existing). Confirm summary, then installs.
+  Asks role (full / panel-only / daemon-only), then the matching questions.
 
-Optional flags skip the full wizard for automation. Set GUARTRIX_NONINTERACTIVE=1
-to never prompt. Game-server MySQL (daemon) still uses Docker; if the panel DB
-already uses 127.0.0.1:3306, game MySQL is placed on 3307.
-
-Env: GUARTRIX_HTTPS, GUARTRIX_MYSQL_MODE, GUARTRIX_DATABASE_URL, …
+Env: GUARTRIX_INSTALL_ROLE, GUARTRIX_HTTPS, GUARTRIX_MYSQL_MODE, …
 EOF
+}
+
+normalize_role() {
+  local raw="${1:-}"
+  case "${raw,,}" in
+    full|all|complete) echo full ;;
+    panel|panel-only|web|api|no-daemon) echo panel ;;
+    daemon|daemon-only|node|worker) echo daemon ;;
+    *) echo "" ;;
+  esac
 }
 
 is_ipv4() {
@@ -157,6 +182,10 @@ fi
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    --role) INSTALL_ROLE="$(normalize_role "${2:-}")"; shift 2 ;;
+    --full) INSTALL_ROLE=full; shift ;;
+    --panel-only|--no-daemon) INSTALL_ROLE=panel; shift ;;
+    --daemon-only) INSTALL_ROLE=daemon; shift ;;
     --domain) DOMAIN="${2:-}"; shift 2 ;;
     --ip) PUBLIC_IP="${2:-}"; shift 2 ;;
     --https) HTTPS_MODE=1; shift ;;
@@ -171,6 +200,10 @@ while [[ $# -gt 0 ]]; do
     --database-url) DATABASE_URL_OVERRIDE="${2:-}"; MYSQL_MODE=external; shift 2 ;;
     --admin-password) ADMIN_PASSWORD="${2:-}"; shift 2 ;;
     --license-key) LICENSE_KEY="${2:-}"; shift 2 ;;
+    --token) DAEMON_TOKEN_IN="${2:-}"; shift 2 ;;
+    --node-id) DAEMON_NODE_ID_IN="${2:-}"; shift 2 ;;
+    --panel) DAEMON_PANEL_URL_IN="${2:-}"; shift 2 ;;
+    --daemon-port) DAEMON_PORT_IN="${2:-}"; shift 2 ;;
     --dir) INSTALL_DIR="${2:-}"; shift 2 ;;
     --repo) REPO_URL="${2:-}"; shift 2 ;;
     --branch) BRANCH="${2:-}"; shift 2 ;;
@@ -194,6 +227,11 @@ if [[ -n "$DATABASE_URL_OVERRIDE" ]]; then
 fi
 MYSQL_MODE="$(normalize_mysql_mode "$MYSQL_MODE")"
 
+if [[ -z "$INSTALL_ROLE" && -n "${GUARTRIX_INSTALL_ROLE:-}" ]]; then
+  INSTALL_ROLE="$(normalize_role "${GUARTRIX_INSTALL_ROLE}")"
+fi
+INSTALL_ROLE="$(normalize_role "$INSTALL_ROLE")"
+
 if [[ "$(id -u)" -ne 0 ]]; then
   echo "ERROR: run as root (sudo)." >&2
   exit 1
@@ -211,10 +249,21 @@ fi
 if [[ "$WIZARD" -eq 1 ]]; then
   say ""
   say "=============================================="
-  say " Guartrix panel installer"
+  say " Guartrix installer"
   say "=============================================="
   say " Answer the questions below. Press Enter for the default in [brackets]."
-  say " Flags are optional — this wizard covers a full install."
+  say ""
+  say "What do you want to install?"
+  say "  1) Full panel — API + web + local daemon (recommended for one VPS)"
+  say "  2) Panel only — API + web, no local daemon (use remote game nodes)"
+  say "  3) Daemon only — game node for an existing panel"
+  role_in="$(prompt_tty "Choice [1/2/3] (default 1): ")"
+  case "${role_in}" in
+    2) INSTALL_ROLE=panel ;;
+    3) INSTALL_ROLE=daemon ;;
+    *) INSTALL_ROLE=full ;;
+  esac
+  say "Selected: ${INSTALL_ROLE}"
   say ""
 
   dir_in="$(prompt_tty "Install directory [${INSTALL_DIR}]: ")"
@@ -228,91 +277,189 @@ if [[ "$WIZARD" -eq 1 ]]; then
     exit 1
   fi
 
-  say ""
-  say "Access mode"
-  say "  n = HTTP only — open http://${PUBLIC_IP} (no TLS cert)"
-  say "  y = HTTPS — domain + TLS on :443"
-  ans="$(prompt_tty "Use HTTPS with a domain? [y/N]: ")"
-  case "${ans,,}" in
-    y|yes) HTTPS_MODE=1 ;;
-    *) HTTPS_MODE=0 ;;
-  esac
-
-  if [[ "$HTTPS_MODE" -eq 1 ]]; then
-    while true; do
-      DOMAIN="$(prompt_tty "Public domain (e.g. panel.example.com): ")"
-      if [[ -n "$DOMAIN" ]] && ! is_ipv4 "$DOMAIN"; then
-        break
-      fi
-      say "Please enter a hostname (not an IP)."
+  if [[ "$INSTALL_ROLE" == "daemon" ]]; then
+    say ""
+    say "Daemon node — values from the panel (System → Add node)."
+    while [[ -z "$DAEMON_TOKEN_IN" ]]; do
+      DAEMON_TOKEN_IN="$(prompt_tty_secret "Daemon token: ")"
+      [[ -n "$DAEMON_TOKEN_IN" ]] || say "Token is required."
     done
-  else
-    host_in="$(prompt_tty "Panel hostname for HTTP (blank = use IP ${PUBLIC_IP}): ")"
-    DOMAIN="${host_in:-$PUBLIC_IP}"
-  fi
-
-  say ""
-  pw_in="$(prompt_tty_secret "Admin password (blank = generate a strong one): ")"
-  if [[ -n "$pw_in" ]]; then
-    ADMIN_PASSWORD="$pw_in"
-  fi
-
-  say ""
-  lic_in="$(prompt_tty "License key GTRX-… (blank = set later in Admin → License): ")"
-  LICENSE_KEY="${lic_in:-}"
-
-  say ""
-  say "Panel database (Prisma)"
-  say "  Y = Docker MySQL on this server (recommended)"
-  say "  n = Existing MySQL/MariaDB (create DB + user first)"
-  ans="$(prompt_tty "Use Docker MySQL for the panel? [Y/n]: ")"
-  case "${ans,,}" in
-    n|no) MYSQL_MODE=external ;;
-    *) MYSQL_MODE=docker ;;
-  esac
-
-  if [[ "$MYSQL_MODE" == "external" ]]; then
-    MYSQL_HOST="$(prompt_tty "MySQL host [127.0.0.1]: ")"
-    MYSQL_HOST="${MYSQL_HOST:-127.0.0.1}"
-    port_in="$(prompt_tty "MySQL port [3306]: ")"
-    MYSQL_PORT="${port_in:-3306}"
-    db_in="$(prompt_tty "Database name [guartrix_panel]: ")"
-    MYSQL_DATABASE="${db_in:-guartrix_panel}"
-    user_in="$(prompt_tty "MySQL user [guartrix]: ")"
-    MYSQL_USER="${user_in:-guartrix}"
-    while [[ -z "$MYSQL_PASSWORD" ]]; do
-      MYSQL_PASSWORD="$(prompt_tty_secret "MySQL password: ")"
-      if [[ -z "$MYSQL_PASSWORD" ]]; then
-        say "Password is required for external MySQL."
-      fi
+    while [[ -z "$DAEMON_NODE_ID_IN" ]]; do
+      DAEMON_NODE_ID_IN="$(prompt_tty "Node id: ")"
+      [[ -n "$DAEMON_NODE_ID_IN" ]] || say "Node id is required."
     done
-  fi
-
-  say ""
-  say "----------------------------------------------"
-  say " Summary"
-  say "  Dir:      ${INSTALL_DIR}"
-  say "  IP:       ${PUBLIC_IP}"
-  if [[ "$HTTPS_MODE" -eq 1 ]]; then
-    say "  URL:      https://${DOMAIN}"
+    panel_def="${DAEMON_PANEL_URL_IN:-}"
+    DAEMON_PANEL_URL_IN="$(prompt_tty "Panel URL (e.g. https://panel.example.com) [${panel_def}]: ")"
+    DAEMON_PANEL_URL_IN="${DAEMON_PANEL_URL_IN:-$panel_def}"
+    port_in="$(prompt_tty "Daemon port [${DAEMON_PORT_IN}]: ")"
+    DAEMON_PORT_IN="${port_in:-$DAEMON_PORT_IN}"
+    say ""
+    say "----------------------------------------------"
+    say " Summary (daemon only)"
+    say "  Dir:     ${INSTALL_DIR}"
+    say "  IP/FQDN: ${PUBLIC_IP}"
+    say "  Port:    ${DAEMON_PORT_IN}"
+    say "  Panel:   ${DAEMON_PANEL_URL_IN:-(none)}"
+    say "  Node:    ${DAEMON_NODE_ID_IN}"
+    say "----------------------------------------------"
+    conf="$(prompt_tty "Continue with install? [Y/n]: ")"
+    case "${conf,,}" in
+      n|no) say "Aborted."; exit 0 ;;
+    esac
+    say ""
   else
-    say "  URL:      http://${DOMAIN}"
+    say ""
+    say "Access mode"
+    say "  n = HTTP only — open http://${PUBLIC_IP} (no TLS cert)"
+    say "  y = HTTPS — domain + TLS on :443"
+    ans="$(prompt_tty "Use HTTPS with a domain? [y/N]: ")"
+    case "${ans,,}" in
+      y|yes) HTTPS_MODE=1 ;;
+      *) HTTPS_MODE=0 ;;
+    esac
+
+    if [[ "$HTTPS_MODE" -eq 1 ]]; then
+      while true; do
+        DOMAIN="$(prompt_tty "Public domain (e.g. panel.example.com): ")"
+        if [[ -n "$DOMAIN" ]] && ! is_ipv4 "$DOMAIN"; then
+          break
+        fi
+        say "Please enter a hostname (not an IP)."
+      done
+    else
+      host_in="$(prompt_tty "Panel hostname for HTTP (blank = use IP ${PUBLIC_IP}): ")"
+      DOMAIN="${host_in:-$PUBLIC_IP}"
+    fi
+
+    say ""
+    pw_in="$(prompt_tty_secret "Admin password (blank = generate a strong one): ")"
+    if [[ -n "$pw_in" ]]; then
+      ADMIN_PASSWORD="$pw_in"
+    fi
+
+    say ""
+    lic_in="$(prompt_tty "License key GTRX-… (blank = set later in Admin → License): ")"
+    LICENSE_KEY="${lic_in:-}"
+
+    say ""
+    say "Panel database (Prisma)"
+    say "  Y = Docker MySQL on this server (recommended)"
+    say "  n = Existing MySQL/MariaDB (create DB + user first)"
+    ans="$(prompt_tty "Use Docker MySQL for the panel? [Y/n]: ")"
+    case "${ans,,}" in
+      n|no) MYSQL_MODE=external ;;
+      *) MYSQL_MODE=docker ;;
+    esac
+
+    if [[ "$MYSQL_MODE" == "external" ]]; then
+      MYSQL_HOST="$(prompt_tty "MySQL host [127.0.0.1]: ")"
+      MYSQL_HOST="${MYSQL_HOST:-127.0.0.1}"
+      port_in="$(prompt_tty "MySQL port [3306]: ")"
+      MYSQL_PORT="${port_in:-3306}"
+      db_in="$(prompt_tty "Database name [guartrix_panel]: ")"
+      MYSQL_DATABASE="${db_in:-guartrix_panel}"
+      user_in="$(prompt_tty "MySQL user [guartrix]: ")"
+      MYSQL_USER="${user_in:-guartrix}"
+      while [[ -z "$MYSQL_PASSWORD" ]]; do
+        MYSQL_PASSWORD="$(prompt_tty_secret "MySQL password: ")"
+        if [[ -z "$MYSQL_PASSWORD" ]]; then
+          say "Password is required for external MySQL."
+        fi
+      done
+    fi
+
+    say ""
+    say "----------------------------------------------"
+    say " Summary"
+    say "  Role:     ${INSTALL_ROLE}"
+    say "  Dir:      ${INSTALL_DIR}"
+    say "  IP:       ${PUBLIC_IP}"
+    if [[ "$HTTPS_MODE" -eq 1 ]]; then
+      say "  URL:      https://${DOMAIN}"
+    else
+      say "  URL:      http://${DOMAIN}"
+    fi
+    say "  Admin:    admin / (password set or generated)"
+    say "  License:  ${LICENSE_KEY:-"(set later)"}"
+    say "  Panel DB: ${MYSQL_MODE}"
+    if [[ "$MYSQL_MODE" == "external" ]]; then
+      say "            ${MYSQL_USER}@${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DATABASE}"
+    fi
+    if [[ "$INSTALL_ROLE" == "panel" ]]; then
+      say "  Daemon:   none locally — add remote nodes after login"
+    else
+      say "  Daemon:   local on this host"
+    fi
+    say "----------------------------------------------"
+    conf="$(prompt_tty "Continue with install? [Y/n]: ")"
+    case "${conf,,}" in
+      n|no)
+        say "Aborted."
+        exit 0
+        ;;
+    esac
+    say ""
   fi
-  say "  Admin:    admin / (password set or generated)"
-  say "  License:  ${LICENSE_KEY:-"(set later)"}"
-  say "  Panel DB: ${MYSQL_MODE}"
-  if [[ "$MYSQL_MODE" == "external" ]]; then
-    say "            ${MYSQL_USER}@${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DATABASE}"
+fi
+
+# Default role when non-interactive / no choice
+INSTALL_ROLE="$(normalize_role "${INSTALL_ROLE:-full}")"
+[[ -n "$INSTALL_ROLE" ]] || INSTALL_ROLE=full
+
+# --- Daemon-only: hand off to install-daemon.sh ---
+run_daemon_only_install() {
+  local script="" raw_base tmp
+  raw_base="${GUARTRIX_INSTALL_RAW_BASE:-https://raw.githubusercontent.com/TomThermo/guartrix/main/scripts}"
+  if [[ -f "$(dirname "${BASH_SOURCE[0]}")/install-daemon.sh" ]]; then
+    script="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/install-daemon.sh"
+  elif [[ -f "$INSTALL_DIR/scripts/install-daemon.sh" ]]; then
+    script="$INSTALL_DIR/scripts/install-daemon.sh"
+  else
+    tmp="$(mktemp)"
+    echo "[guartrix] Fetching install-daemon.sh …"
+    curl -fsSL "${raw_base}/install-daemon.sh" -o "$tmp"
+    script="$tmp"
   fi
-  say "----------------------------------------------"
-  conf="$(prompt_tty "Continue with install? [Y/n]: ")"
-  case "${conf,,}" in
-    n|no)
-      say "Aborted."
-      exit 0
-      ;;
-  esac
-  say ""
+  local args=(
+    --token "$DAEMON_TOKEN_IN"
+    --node-id "$DAEMON_NODE_ID_IN"
+    --fqdn "$PUBLIC_IP"
+    --port "$DAEMON_PORT_IN"
+    --dir "$INSTALL_DIR"
+    --repo "$REPO_URL"
+    --branch "$BRANCH"
+  )
+  [[ -n "$DAEMON_PANEL_URL_IN" ]] && args+=(--panel "$DAEMON_PANEL_URL_IN")
+  echo "[guartrix] Installing daemon only…"
+  bash "$script" "${args[@]}"
+  [[ "$script" == /tmp/* || "$script" == /var/tmp/* ]] && rm -f "$script" || true
+}
+
+if [[ "$INSTALL_ROLE" == "daemon" ]]; then
+  if [[ -z "$DAEMON_TOKEN_IN" || -z "$DAEMON_NODE_ID_IN" ]]; then
+    if can_prompt; then
+      [[ -z "$PUBLIC_IP" ]] && PUBLIC_IP="$DETECTED_IP"
+      while [[ -z "$DAEMON_TOKEN_IN" ]]; do
+        DAEMON_TOKEN_IN="$(prompt_tty_secret "Daemon token: ")"
+      done
+      while [[ -z "$DAEMON_NODE_ID_IN" ]]; do
+        DAEMON_NODE_ID_IN="$(prompt_tty "Node id: ")"
+      done
+      [[ -z "$DAEMON_PANEL_URL_IN" ]] && DAEMON_PANEL_URL_IN="$(prompt_tty "Panel URL: ")"
+      [[ -z "$PUBLIC_IP" ]] && PUBLIC_IP="$(prompt_tty "Node public IP/FQDN: ")"
+    else
+      echo "ERROR: daemon role needs --token and --node-id (or interactive TTY)." >&2
+      exit 1
+    fi
+  fi
+  [[ -n "$PUBLIC_IP" ]] || PUBLIC_IP="${DETECTED_IP:-}"
+  run_daemon_only_install
+  exit 0
+fi
+
+SKIP_LOCAL_DAEMON=0
+if [[ "$INSTALL_ROLE" == "panel" ]]; then
+  SKIP_LOCAL_DAEMON=1
 fi
 
 export DEBIAN_FRONTEND=noninteractive
@@ -563,6 +710,7 @@ BOOT_START_STAGGER_MS=20000
 # Customer installs talk to Guartrix's public license API — no local license-server
 SKIP_LOCAL_LICENSE_SERVER=1
 LICENSE_SERVER_URL=https://license.guartrix.com
+SKIP_LOCAL_DAEMON=${SKIP_LOCAL_DAEMON}
 EOF
 if [[ -n "$LICENSE_KEY" ]]; then
   printf 'LICENSE_KEY=%s\n' "$LICENSE_KEY" >> .env
@@ -570,7 +718,8 @@ fi
 chmod 600 .env
 
 # Local daemon env (token filled on first API start / ensureLocalNode)
-cat > data/daemon.env <<EOF
+if [[ "$SKIP_LOCAL_DAEMON" -eq 0 ]]; then
+  cat > data/daemon.env <<EOF
 DAEMON_HOST=127.0.0.1
 DAEMON_PORT=8081
 DATA_DIR=${INSTALL_DIR}/data
@@ -585,7 +734,10 @@ MYSQL_PORT=${DAEMON_MYSQL_PORT}
 MYSQL_IMAGE=mysql:8.4
 MANAGE_FIREWALL=true
 EOF
-chmod 600 data/daemon.env
+  chmod 600 data/daemon.env
+else
+  echo "[guartrix] Panel-only: not writing data/daemon.env (no local daemon)"
+fi
 
 echo "[guartrix] npm install + build…"
 npm install
@@ -631,7 +783,8 @@ fi
 npm run db:push -w @msm/api
 
 # systemd units
-cat > /etc/systemd/system/guartrix-daemon.service <<EOF
+if [[ "$SKIP_LOCAL_DAEMON" -eq 0 ]]; then
+  cat > /etc/systemd/system/guartrix-daemon.service <<EOF
 [Unit]
 Description=Guartrix local daemon
 After=network-online.target docker.service
@@ -652,11 +805,16 @@ KillMode=process
 [Install]
 WantedBy=multi-user.target
 EOF
+  API_AFTER="After=network-online.target guartrix-daemon.service docker.service"
+else
+  rm -f /etc/systemd/system/guartrix-daemon.service
+  API_AFTER="After=network-online.target docker.service"
+fi
 
 cat > /etc/systemd/system/guartrix-api.service <<EOF
 [Unit]
 Description=Guartrix panel API
-After=network-online.target guartrix-daemon.service docker.service
+${API_AFTER}
 Wants=network-online.target
 
 [Service]
@@ -705,20 +863,27 @@ if command -v ufw >/dev/null 2>&1; then
   if [[ "$HTTPS_MODE" -eq 1 ]]; then
     ufw allow 443/tcp >/dev/null 2>&1 || true
   fi
-  ufw allow 2022/tcp >/dev/null 2>&1 || true
-  ufw allow 25565:25600/tcp >/dev/null 2>&1 || true
+  if [[ "$SKIP_LOCAL_DAEMON" -eq 0 ]]; then
+    ufw allow 2022/tcp >/dev/null 2>&1 || true
+    ufw allow 25565:25600/tcp >/dev/null 2>&1 || true
+  fi
 fi
 
 if [[ "$SKIP_START" -eq 0 ]]; then
-  systemctl enable --now guartrix-daemon.service guartrix-api.service guartrix-web.service
-  # Prefer start.sh for first boot (writes daemon token via API)
+  if [[ "$SKIP_LOCAL_DAEMON" -eq 0 ]]; then
+    systemctl enable --now guartrix-daemon.service guartrix-api.service guartrix-web.service
+  else
+    systemctl enable --now guartrix-api.service guartrix-web.service
+    systemctl disable --now guartrix-daemon.service 2>/dev/null || true
+  fi
+  # Prefer start.sh for first boot (writes daemon token via API when local daemon is on)
   sleep 2
   bash "${INSTALL_DIR}/scripts/start.sh" || true
 fi
 
 echo
 echo "=============================================="
-echo " Guartrix panel installed"
+echo " Guartrix installed (role: ${INSTALL_ROLE})"
 echo "=============================================="
 echo "  Dir:     ${INSTALL_DIR}"
 echo "  URL:     ${PUBLIC_BASE_URL}"
@@ -745,9 +910,13 @@ if [[ "$MYSQL_MODE" == "docker" ]]; then
   echo " Panel DB: Docker guartrix-mysql @ 127.0.0.1:3306 / ${MYSQL_DATABASE}"
 else
   echo " Panel DB: external ${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DATABASE} (user ${MYSQL_USER})"
-  if [[ "$DAEMON_MYSQL_PORT" != "3306" ]]; then
+  if [[ "$SKIP_LOCAL_DAEMON" -eq 0 && "$DAEMON_MYSQL_PORT" != "3306" ]]; then
     echo " Game MySQL (daemon Docker): 127.0.0.1:${DAEMON_MYSQL_PORT}"
   fi
 fi
-echo " Add extra nodes: System → Add node → Install via SSH"
+if [[ "$SKIP_LOCAL_DAEMON" -eq 1 ]]; then
+  echo " Local daemon: skipped — add game nodes via System → Add node"
+else
+  echo " Add extra nodes: System → Add node → Install via SSH"
+fi
 echo "=============================================="

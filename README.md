@@ -54,16 +54,19 @@ Interactive wizard (recommended — no flags):
 curl -fsSL https://raw.githubusercontent.com/TomThermo/guartrix/main/scripts/install.sh | sudo bash
 ```
 
-Asks: install dir, public IP, HTTPS yes/no, admin password, license key, MySQL Docker vs existing — then installs.
+Asks role (full panel / panel-only / daemon-only), then IP, HTTPS, MySQL, admin, license.
 
 Optional flags (automation):
 
 ```bash
-# HTTP via server IP
-curl -fsSL … | sudo bash -s -- --http --ip YOUR.PUBLIC.IP
+# Full panel via HTTP IP
+curl -fsSL … | sudo bash -s -- --full --http --ip YOUR.PUBLIC.IP
 
-# HTTPS with a domain
-curl -fsSL … | sudo bash -s -- --https --domain your.domain.com --ip YOUR.PUBLIC.IP
+# Panel only (no local daemon)
+curl -fsSL … | sudo bash -s -- --panel-only --http --ip YOUR.PUBLIC.IP
+
+# Daemon only (game node)
+curl -fsSL … | sudo bash -s -- --daemon-only --token … --node-id … --ip NODE_IP --panel https://YOUR_PANEL
 ```
 
 (`scripts/install-panel.sh` is the same installer.)
