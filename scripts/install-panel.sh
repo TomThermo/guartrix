@@ -7,11 +7,15 @@
 #   # same as scripts/install-panel.sh
 #
 # Or with options:
-#   curl -fsSL … | sudo bash -s -- --domain guartrix.com --ip 1.2.3.4
+#   # HTTP via public IP only (no TLS):
+#   curl -fsSL … | sudo bash -s -- --http --ip 1.2.3.4
+#   # HTTPS with domain + cert:
+#   curl -fsSL … | sudo bash -s -- --https --domain guartrix.com --ip 1.2.3.4
 #
 # Env overrides (non-interactive):
 #   GUARTRIX_DOMAIN, GUARTRIX_PUBLIC_IP, GUARTRIX_ADMIN_PASSWORD,
-#   GUARTRIX_REPO_URL, GUARTRIX_INSTALL_DIR, GUARTRIX_LICENSE_KEY
+#   GUARTRIX_REPO_URL, GUARTRIX_INSTALL_DIR, GUARTRIX_LICENSE_KEY,
+#   GUARTRIX_HTTPS=0|1 (0 = HTTP via IP/host, 1 = HTTPS)
 
 set -euo pipefail
 
@@ -22,6 +26,8 @@ PUBLIC_IP="${GUARTRIX_PUBLIC_IP:-}"
 ADMIN_PASSWORD="${GUARTRIX_ADMIN_PASSWORD:-}"
 BRANCH="${GUARTRIX_BRANCH:-main}"
 LICENSE_KEY="${GUARTRIX_LICENSE_KEY:-}"
+# empty = decide later (prompt / heuristics); 0|1 after resolve
+HTTPS_MODE="${GUARTRIX_HTTPS:-}"
 SKIP_START=0
 
 usage() {
@@ -34,6 +40,8 @@ Does not install the Guartrix license server (uses license.guartrix.com).
 Options:
   --domain HOST          Public hostname (e.g. guartrix.com)
   --ip ADDR              Public IPv4
+  --https                Enable HTTPS (domain + TLS on :443)
+  --http, --no-https     HTTP only (open panel at http://SERVER_IP — no TLS)
   --admin-password PASS  Initial admin password (min 12 chars, mixed)
   --license-key KEY      Panel LICENSE_KEY (GTRX-…); can set later in Admin → License
   --dir PATH             Install directory (default: /opt/guartrix)
@@ -41,13 +49,46 @@ Options:
   --branch NAME          Git branch (default: main)
   --skip-start           Install only; do not start services
   -h, --help             Show help
+
+Interactive installs ask whether to use HTTPS. Non-interactive without
+--https/--http: HTTPS if --domain is a hostname; otherwise HTTP via IP.
+
+Env: GUARTRIX_HTTPS=0|1, GUARTRIX_DOMAIN, GUARTRIX_PUBLIC_IP, …
 EOF
+}
+
+is_ipv4() {
+  [[ "${1:-}" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]
+}
+
+normalize_https_flag() {
+  local raw="${1:-}"
+  case "${raw,,}" in
+    1|true|yes|y|on|https) echo 1 ;;
+    0|false|no|n|off|http) echo 0 ;;
+    *) echo "" ;;
+  esac
+}
+
+# Read a line from the controlling terminal when possible (works with curl|bash -s).
+prompt_tty() {
+  local prompt="$1"
+  local reply=""
+  if [[ -r /dev/tty ]]; then
+    printf '%s' "$prompt" > /dev/tty
+    IFS= read -r reply < /dev/tty || true
+  elif [[ -t 0 ]]; then
+    read -r -p "$prompt" reply || true
+  fi
+  printf '%s' "$reply"
 }
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --domain) DOMAIN="${2:-}"; shift 2 ;;
     --ip) PUBLIC_IP="${2:-}"; shift 2 ;;
+    --https) HTTPS_MODE=1; shift ;;
+    --http|--no-https) HTTPS_MODE=0; shift ;;
     --admin-password) ADMIN_PASSWORD="${2:-}"; shift 2 ;;
     --license-key) LICENSE_KEY="${2:-}"; shift 2 ;;
     --dir) INSTALL_DIR="${2:-}"; shift 2 ;;
@@ -58,6 +99,12 @@ while [[ $# -gt 0 ]]; do
     *) echo "Unknown option: $1" >&2; usage; exit 1 ;;
   esac
 done
+
+# Normalize env override if still unset from flags
+if [[ -z "$HTTPS_MODE" && -n "${GUARTRIX_HTTPS:-}" ]]; then
+  HTTPS_MODE="$(normalize_https_flag "${GUARTRIX_HTTPS}")"
+fi
+HTTPS_MODE="$(normalize_https_flag "$HTTPS_MODE")"
 
 if [[ "$(id -u)" -ne 0 ]]; then
   echo "ERROR: run as root (sudo)." >&2
@@ -85,9 +132,65 @@ fi
 if [[ -z "$PUBLIC_IP" ]]; then
   PUBLIC_IP="$(curl -4 -fsSL https://ifconfig.me 2>/dev/null || curl -4 -fsSL https://api.ipify.org 2>/dev/null || true)"
 fi
-if [[ -z "$DOMAIN" ]]; then
-  DOMAIN="${PUBLIC_IP:-127.0.0.1}"
+
+# Decide HTTPS vs HTTP (IP) before writing .env
+if [[ -z "$HTTPS_MODE" ]]; then
+  if [[ -r /dev/tty || -t 0 ]]; then
+    echo
+    echo "[guartrix] Access mode"
+    echo "  1) HTTP only — open the panel at http://SERVER_IP (no TLS cert needed)"
+    echo "  2) HTTPS     — domain + TLS on :443 (Cloudflare Origin / Let's Encrypt cert)"
+    ans="$(prompt_tty "Use HTTPS with a domain? [y/N]: ")"
+    case "${ans,,}" in
+      y|yes) HTTPS_MODE=1 ;;
+      *) HTTPS_MODE=0 ;;
+    esac
+  elif [[ -n "$DOMAIN" ]] && ! is_ipv4 "$DOMAIN"; then
+    HTTPS_MODE=1
+  else
+    HTTPS_MODE=0
+  fi
 fi
+
+if [[ "$HTTPS_MODE" -eq 1 ]]; then
+  if [[ -z "$DOMAIN" ]] || is_ipv4 "$DOMAIN"; then
+    if [[ -r /dev/tty || -t 0 ]]; then
+      DOMAIN="$(prompt_tty "Public domain for HTTPS (e.g. panel.example.com): ")"
+    fi
+  fi
+  if [[ -z "$DOMAIN" ]]; then
+    echo "ERROR: --https requires --domain HOST (not an IP)." >&2
+    exit 1
+  fi
+  if is_ipv4 "$DOMAIN"; then
+    echo "ERROR: --https needs a hostname, not an IP ($DOMAIN)." >&2
+    exit 1
+  fi
+  PUBLIC_HOST="$DOMAIN"
+  PUBLIC_BASE_URL="https://${DOMAIN}"
+  HTTPS_ENABLED=true
+  SESSION_SECURE=true
+  TRUST_PROXY=true
+  echo "[guartrix] Mode: HTTPS → ${PUBLIC_BASE_URL}"
+else
+  # HTTP / IP mode — panel reachable at http://PUBLIC_IP
+  if [[ -z "$DOMAIN" ]] || is_ipv4 "$DOMAIN"; then
+    PUBLIC_HOST="${PUBLIC_IP:-127.0.0.1}"
+  else
+    # Optional: hostname over plain HTTP
+    PUBLIC_HOST="$DOMAIN"
+  fi
+  if [[ -z "$PUBLIC_IP" ]]; then
+    PUBLIC_IP="$PUBLIC_HOST"
+  fi
+  DOMAIN="$PUBLIC_HOST"
+  PUBLIC_BASE_URL="http://${PUBLIC_HOST}"
+  HTTPS_ENABLED=false
+  SESSION_SECURE=false
+  TRUST_PROXY=false
+  echo "[guartrix] Mode: HTTP only → ${PUBLIC_BASE_URL}"
+fi
+
 if [[ -z "$ADMIN_PASSWORD" ]]; then
   ADMIN_PASSWORD="$(openssl rand -base64 18 | tr -d '/+=' | head -c 20)Aa1!"
   echo "[guartrix] Generated ADMIN_PASSWORD (save this): ${ADMIN_PASSWORD}"
@@ -118,17 +221,17 @@ HOST=127.0.0.1
 API_PORT=3001
 WEB_PORT=80
 HTTPS_PORT=443
-HTTPS_ENABLED=true
+HTTPS_ENABLED=${HTTPS_ENABLED}
 WEB_HOST=0.0.0.0
 SESSION_SECRET=${SESSION_SECRET}
 DATA_DIR=./data
 DOCKER_IMAGE=eclipse-temurin:25-jre-jammy
 MANAGE_FIREWALL=true
-PUBLIC_HOST=${DOMAIN}
+PUBLIC_HOST=${PUBLIC_HOST}
 PUBLIC_IP=${PUBLIC_IP}
-PUBLIC_BASE_URL=https://${DOMAIN}
-SESSION_SECURE=true
-TRUST_PROXY=true
+PUBLIC_BASE_URL=${PUBLIC_BASE_URL}
+SESSION_SECURE=${SESSION_SECURE}
+TRUST_PROXY=${TRUST_PROXY}
 DAEMON_HOST=127.0.0.1
 DAEMON_PORT=8081
 SFTP_PORT=2022
@@ -160,7 +263,7 @@ cat > data/daemon.env <<EOF
 DAEMON_HOST=127.0.0.1
 DAEMON_PORT=8081
 DATA_DIR=${INSTALL_DIR}/data
-PUBLIC_HOST=${DOMAIN}
+PUBLIC_HOST=${PUBLIC_HOST}
 PUBLIC_IP=${PUBLIC_IP}
 PANEL_URL=http://127.0.0.1:3001
 SFTP_PORT=2022
@@ -252,9 +355,13 @@ RestartSec=3
 WantedBy=multi-user.target
 EOF
 
+WEB_DESC="Guartrix panel web (HTTP)"
+if [[ "$HTTPS_MODE" -eq 1 ]]; then
+  WEB_DESC="Guartrix panel web (HTTPS proxy)"
+fi
 cat > /etc/systemd/system/guartrix-web.service <<EOF
 [Unit]
-Description=Guartrix panel web (HTTPS proxy)
+Description=${WEB_DESC}
 After=network-online.target guartrix-api.service
 Wants=network-online.target
 
@@ -277,7 +384,9 @@ systemctl daemon-reload
 if command -v ufw >/dev/null 2>&1; then
   ufw allow OpenSSH >/dev/null 2>&1 || ufw allow 22/tcp >/dev/null 2>&1 || true
   ufw allow 80/tcp >/dev/null 2>&1 || true
-  ufw allow 443/tcp >/dev/null 2>&1 || true
+  if [[ "$HTTPS_MODE" -eq 1 ]]; then
+    ufw allow 443/tcp >/dev/null 2>&1 || true
+  fi
   ufw allow 2022/tcp >/dev/null 2>&1 || true
   ufw allow 25565:25600/tcp >/dev/null 2>&1 || true
 fi
@@ -294,13 +403,22 @@ echo "=============================================="
 echo " Guartrix panel installed"
 echo "=============================================="
 echo "  Dir:     ${INSTALL_DIR}"
-echo "  Domain:  https://${DOMAIN}"
+echo "  URL:     ${PUBLIC_BASE_URL}"
 echo "  Admin:   admin"
 echo "  Password:${ADMIN_PASSWORD}"
 echo
-echo " Put a Cloudflare Origin cert in ${INSTALL_DIR}/cert/ as"
-echo "   guartrix.com.crt + guartrix.com.key  (or set TLS_* in .env)"
-echo
+if [[ "$HTTPS_MODE" -eq 1 ]]; then
+  echo " Put a Cloudflare Origin cert in ${INSTALL_DIR}/cert/ as"
+  echo "   ${PUBLIC_HOST}.crt + ${PUBLIC_HOST}.key  (or set TLS_* in .env)"
+  echo
+else
+  echo " HTTP-only mode: open ${PUBLIC_BASE_URL} in your browser."
+  echo " No TLS cert needed. Cookies are not Secure (SESSION_SECURE=false)."
+  echo " For production with a domain later: set HTTPS_ENABLED=true,"
+  echo " SESSION_SECURE=true, TRUST_PROXY=true, PUBLIC_BASE_URL=https://…"
+  echo " and place certs under cert/, then restart."
+  echo
+fi
 echo " License: LICENSE_SERVER_URL=https://license.guartrix.com"
 if [[ -z "$LICENSE_KEY" ]]; then
   echo " Set LICENSE_KEY in .env (or Admin → License) with your GTRX-… key."

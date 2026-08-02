@@ -48,11 +48,21 @@ Full gallery (login, create server, users, backups, players, …): **[Panel guid
 
 ### New Ubuntu VPS (one command)
 
+HTTP via server IP (no TLS):
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/TomThermo/guartrix/main/scripts/install.sh | sudo bash -s -- \
-  --domain your.domain.com \
-  --ip YOUR.PUBLIC.IP
+  --http --ip YOUR.PUBLIC.IP
 ```
+
+HTTPS with a domain:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/TomThermo/guartrix/main/scripts/install.sh | sudo bash -s -- \
+  --https --domain your.domain.com --ip YOUR.PUBLIC.IP
+```
+
+Interactive installs ask whether to use HTTPS (default: HTTP/IP).
 
 (`scripts/install-panel.sh` is the same installer.)
 

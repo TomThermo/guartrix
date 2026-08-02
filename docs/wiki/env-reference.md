@@ -10,14 +10,14 @@ Copy `.env.example` → `.env` (repo root). Secrets must stay gitignored. The lo
 | `HOST` | API bind (use `127.0.0.1` in production) |
 | `API_PORT` | Default `3001` |
 | `WEB_PORT` / `HTTPS_PORT` | Default `80` / `443` |
-| `HTTPS_ENABLED` | Set `false` to disable TLS listener |
+| `HTTPS_ENABLED` | `false` = HTTP-only / IP install (installer `--http`); `true` = TLS on `:443` |
 | `SESSION_SECRET` | Long random string |
-| `SESSION_SECURE` | `true` when serving over HTTPS |
-| `TRUST_PROXY` | `true` behind Cloudflare / prod-web HTTPS |
+| `SESSION_SECURE` | `true` when serving over HTTPS; `false` for plain HTTP/IP |
+| `TRUST_PROXY` | `true` behind Cloudflare / prod-web HTTPS; usually `false` for direct IP HTTP |
 | `TRUSTED_PROXIES` | Peer IPs allowed to set `X-Forwarded-For` (default `127.0.0.1,::1`). Use `*` only if every hop is trusted |
-| `PUBLIC_HOST` | Canonical hostname (also HTTPS redirect target) |
+| `PUBLIC_HOST` | Canonical hostname or IP (also HTTPS redirect target when TLS on) |
 | `PUBLIC_IP` | Public IP when useful for players/DNS |
-| `PUBLIC_BASE_URL` | Full origin, e.g. `https://guartrix.com` |
+| `PUBLIC_BASE_URL` | Full origin, e.g. `https://guartrix.com` or `http://203.0.113.10` |
 | `DATA_DIR` | Default `./data` |
 | `DOCKER_IMAGE` | Default `eclipse-temurin:25-jre-jammy` |
 | `MANAGE_FIREWALL` | Open/close game ports via ufw when true |
