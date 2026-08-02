@@ -124,7 +124,7 @@ normalize_https_flag() {
 # Interactive I/O for curl|bash (stdin is the script pipe — not a TTY).
 # Always talk to /dev/tty directly: non-interactive bash may line-buffer stdout, so
 # prompts without a trailing newline never appear and the wizard looks "hung".
-INSTALLER_VERSION="1.0.12"
+INSTALLER_VERSION="1.0.13"
 
 can_prompt() {
   [[ -r /dev/tty && -w /dev/tty ]] || [[ -t 0 && -t 1 ]]
@@ -672,9 +672,9 @@ fi
 echo "[guartrix] Cloning ${REPO_URL} (${BRANCH}) → ${INSTALL_DIR}"
 mkdir -p "$(dirname "$INSTALL_DIR")"
 if [[ -d "$INSTALL_DIR/.git" ]]; then
+  # Installer-managed tree: always match origin (local diverged commits break --ff-only).
   git -C "$INSTALL_DIR" fetch --depth 1 origin "$BRANCH"
-  git -C "$INSTALL_DIR" checkout "$BRANCH"
-  git -C "$INSTALL_DIR" pull --ff-only origin "$BRANCH" || true
+  git -C "$INSTALL_DIR" checkout -B "$BRANCH" "origin/${BRANCH}"
 else
   rm -rf "$INSTALL_DIR"
   git clone --depth 1 --branch "$BRANCH" "$REPO_URL" "$INSTALL_DIR"
@@ -793,6 +793,21 @@ else
   echo "[guartrix] Ensure database '${MYSQL_DATABASE}' and user '${MYSQL_USER}' already exist with rights."
 fi
 
+# Prisma CLI loads apps/api/.env (next to prisma/), not the panel root .env.
+# Also export DATABASE_URL so db:push works even without a dotenv file.
+if [[ ! -e apps/api/.env ]]; then
+  ln -sfn ../../.env apps/api/.env
+fi
+if [[ -z "${DATABASE_URL:-}" && -f .env ]]; then
+  # Resume / partial re-run: recover from the file we wrote earlier
+  DATABASE_URL="$(grep -E '^DATABASE_URL=' .env | head -1 | cut -d= -f2- || true)"
+fi
+if [[ -z "${DATABASE_URL:-}" ]]; then
+  echo "ERROR: DATABASE_URL is not set (check ${INSTALL_DIR}/.env)." >&2
+  exit 1
+fi
+export DATABASE_URL
+echo "[guartrix] Applying database schema (prisma db push)…"
 npm run db:push -w @msm/api
 
 # systemd units

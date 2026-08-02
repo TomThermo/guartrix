@@ -126,6 +126,8 @@ cp .env.example .env
 
 npm install
 npm run db:generate
+# Prisma CLI reads apps/api/.env — symlink to the panel root .env if needed:
+#   ln -sfn ../../.env apps/api/.env
 npm run db:push
 npm run build
 bash scripts/start.sh
