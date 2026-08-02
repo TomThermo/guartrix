@@ -11,11 +11,16 @@
 #   curl -fsSL … | sudo bash -s -- --http --ip 1.2.3.4
 #   # HTTPS with domain + cert:
 #   curl -fsSL … | sudo bash -s -- --https --domain guartrix.com --ip 1.2.3.4
+#   # External panel MySQL:
+#   curl -fsSL … | sudo bash -s -- --mysql-external --mysql-host 10.0.0.5 \
+#     --mysql-user guartrix --mysql-password '…' --mysql-database guartrix_panel
 #
 # Env overrides (non-interactive):
 #   GUARTRIX_DOMAIN, GUARTRIX_PUBLIC_IP, GUARTRIX_ADMIN_PASSWORD,
 #   GUARTRIX_REPO_URL, GUARTRIX_INSTALL_DIR, GUARTRIX_LICENSE_KEY,
-#   GUARTRIX_HTTPS=0|1 (0 = HTTP via IP/host, 1 = HTTPS)
+#   GUARTRIX_HTTPS=0|1 (0 = HTTP via IP/host, 1 = HTTPS),
+#   GUARTRIX_MYSQL_MODE=docker|external,
+#   GUARTRIX_DATABASE_URL / GUARTRIX_MYSQL_HOST|PORT|DATABASE|USER|PASSWORD
 
 set -euo pipefail
 
@@ -28,13 +33,21 @@ BRANCH="${GUARTRIX_BRANCH:-main}"
 LICENSE_KEY="${GUARTRIX_LICENSE_KEY:-}"
 # empty = decide later (prompt / heuristics); 0|1 after resolve
 HTTPS_MODE="${GUARTRIX_HTTPS:-}"
+# empty | docker | external
+MYSQL_MODE="${GUARTRIX_MYSQL_MODE:-}"
+MYSQL_HOST="${GUARTRIX_MYSQL_HOST:-}"
+MYSQL_PORT="${GUARTRIX_MYSQL_PORT:-3306}"
+MYSQL_DATABASE="${GUARTRIX_MYSQL_DATABASE:-guartrix_panel}"
+MYSQL_USER="${GUARTRIX_MYSQL_USER:-guartrix}"
+MYSQL_PASSWORD="${GUARTRIX_MYSQL_PASSWORD:-}"
+DATABASE_URL_OVERRIDE="${GUARTRIX_DATABASE_URL:-}"
 SKIP_START=0
 
 usage() {
   cat <<'EOF'
 Guartrix panel installer (Ubuntu 22.04/24.04)
 
-Installs: panel API + web + local daemon (+ MySQL via Docker).
+Installs: panel API + web + local daemon.
 Does not install the Guartrix license server (uses license.guartrix.com).
 
 Options:
@@ -42,6 +55,14 @@ Options:
   --ip ADDR              Public IPv4
   --https                Enable HTTPS (domain + TLS on :443)
   --http, --no-https     HTTP only (open panel at http://SERVER_IP — no TLS)
+  --mysql-docker         Panel DB in Docker container guartrix-mysql (default)
+  --mysql-external       Use an existing MySQL/MariaDB for the panel DB
+  --mysql-host HOST      External MySQL host (with --mysql-external)
+  --mysql-port PORT      External MySQL port (default 3306)
+  --mysql-database NAME  Panel database name (default guartrix_panel)
+  --mysql-user USER      Panel DB user (default guartrix)
+  --mysql-password PASS  Panel DB password
+  --database-url URL     Full mysql://… URL (implies --mysql-external)
   --admin-password PASS  Initial admin password (min 12 chars, mixed)
   --license-key KEY      Panel LICENSE_KEY (GTRX-…); can set later in Admin → License
   --dir PATH             Install directory (default: /opt/guartrix)
@@ -50,10 +71,11 @@ Options:
   --skip-start           Install only; do not start services
   -h, --help             Show help
 
-Interactive installs ask whether to use HTTPS. Non-interactive without
---https/--http: HTTPS if --domain is a hostname; otherwise HTTP via IP.
+Interactive installs ask about HTTPS and panel MySQL (Docker vs existing).
+Game-server MySQL (daemon) still uses Docker; if the panel DB already uses
+127.0.0.1:3306, game MySQL is placed on 3307 to avoid a port clash.
 
-Env: GUARTRIX_HTTPS=0|1, GUARTRIX_DOMAIN, GUARTRIX_PUBLIC_IP, …
+Env: GUARTRIX_HTTPS, GUARTRIX_MYSQL_MODE, GUARTRIX_DATABASE_URL, …
 EOF
 }
 
@@ -83,12 +105,33 @@ prompt_tty() {
   printf '%s' "$reply"
 }
 
+normalize_mysql_mode() {
+  local raw="${1:-}"
+  case "${raw,,}" in
+    docker|local|bundled|1) echo docker ;;
+    external|existing|remote|0) echo external ;;
+    *) echo "" ;;
+  esac
+}
+
+uri_encode() {
+  python3 -c 'import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1], safe=""))' "$1"
+}
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --domain) DOMAIN="${2:-}"; shift 2 ;;
     --ip) PUBLIC_IP="${2:-}"; shift 2 ;;
     --https) HTTPS_MODE=1; shift ;;
     --http|--no-https) HTTPS_MODE=0; shift ;;
+    --mysql-docker) MYSQL_MODE=docker; shift ;;
+    --mysql-external) MYSQL_MODE=external; shift ;;
+    --mysql-host) MYSQL_HOST="${2:-}"; MYSQL_MODE="${MYSQL_MODE:-external}"; shift 2 ;;
+    --mysql-port) MYSQL_PORT="${2:-}"; shift 2 ;;
+    --mysql-database) MYSQL_DATABASE="${2:-}"; shift 2 ;;
+    --mysql-user) MYSQL_USER="${2:-}"; shift 2 ;;
+    --mysql-password) MYSQL_PASSWORD="${2:-}"; shift 2 ;;
+    --database-url) DATABASE_URL_OVERRIDE="${2:-}"; MYSQL_MODE=external; shift 2 ;;
     --admin-password) ADMIN_PASSWORD="${2:-}"; shift 2 ;;
     --license-key) LICENSE_KEY="${2:-}"; shift 2 ;;
     --dir) INSTALL_DIR="${2:-}"; shift 2 ;;
@@ -106,6 +149,14 @@ if [[ -z "$HTTPS_MODE" && -n "${GUARTRIX_HTTPS:-}" ]]; then
 fi
 HTTPS_MODE="$(normalize_https_flag "$HTTPS_MODE")"
 
+if [[ -z "$MYSQL_MODE" && -n "${GUARTRIX_MYSQL_MODE:-}" ]]; then
+  MYSQL_MODE="$(normalize_mysql_mode "${GUARTRIX_MYSQL_MODE}")"
+fi
+if [[ -n "$DATABASE_URL_OVERRIDE" ]]; then
+  MYSQL_MODE=external
+fi
+MYSQL_MODE="$(normalize_mysql_mode "$MYSQL_MODE")"
+
 if [[ "$(id -u)" -ne 0 ]]; then
   echo "ERROR: run as root (sudo)." >&2
   exit 1
@@ -115,7 +166,7 @@ export DEBIAN_FRONTEND=noninteractive
 
 echo "[guartrix] Installing panel prerequisites…"
 apt-get update -y
-apt-get install -y ca-certificates curl gnupg git openssl ufw
+apt-get install -y ca-certificates curl gnupg git openssl ufw python3
 
 if ! command -v docker >/dev/null 2>&1; then
   echo "[guartrix] Installing Docker…"
@@ -197,8 +248,105 @@ if [[ -z "$ADMIN_PASSWORD" ]]; then
 fi
 
 SESSION_SECRET="$(openssl rand -hex 32)"
-MYSQL_PASSWORD="$(openssl rand -hex 24)"
+# Daemon game-DB MySQL root (Docker) — separate from panel Prisma DB
 MYSQL_ROOT_PASSWORD="$(openssl rand -hex 24)"
+DAEMON_MYSQL_PORT=3306
+
+# --- Panel MySQL: Docker vs existing server ---
+if [[ -z "$MYSQL_MODE" ]]; then
+  if [[ -r /dev/tty || -t 0 ]]; then
+    echo
+    echo "[guartrix] Panel database (Prisma)"
+    echo "  1) Docker MySQL — install starts container guartrix-mysql on 127.0.0.1:3306 (recommended)"
+    echo "  2) Existing MySQL/MariaDB — you provide host, database, user, password"
+    echo "     (create the empty database + user beforehand; installer runs db:push)"
+    ans="$(prompt_tty "Use Docker MySQL for the panel? [Y/n]: ")"
+    case "${ans,,}" in
+      n|no) MYSQL_MODE=external ;;
+      *) MYSQL_MODE=docker ;;
+    esac
+  else
+    MYSQL_MODE=docker
+  fi
+fi
+
+if [[ "$MYSQL_MODE" == "external" ]]; then
+  if [[ -z "$DATABASE_URL_OVERRIDE" ]]; then
+    if [[ -z "$MYSQL_HOST" ]] && [[ -r /dev/tty || -t 0 ]]; then
+      MYSQL_HOST="$(prompt_tty "MySQL host [127.0.0.1]: ")"
+      MYSQL_HOST="${MYSQL_HOST:-127.0.0.1}"
+      port_in="$(prompt_tty "MySQL port [${MYSQL_PORT}]: ")"
+      MYSQL_PORT="${port_in:-$MYSQL_PORT}"
+      db_in="$(prompt_tty "Database name [${MYSQL_DATABASE}]: ")"
+      MYSQL_DATABASE="${db_in:-$MYSQL_DATABASE}"
+      user_in="$(prompt_tty "MySQL user [${MYSQL_USER}]: ")"
+      MYSQL_USER="${user_in:-$MYSQL_USER}"
+      if [[ -z "$MYSQL_PASSWORD" ]]; then
+        MYSQL_PASSWORD="$(prompt_tty "MySQL password: ")"
+      fi
+    fi
+    if [[ -z "$MYSQL_HOST" || -z "$MYSQL_PASSWORD" ]]; then
+      echo "ERROR: --mysql-external needs --mysql-host and --mysql-password (or --database-url)." >&2
+      exit 1
+    fi
+    MYSQL_PORT="${MYSQL_PORT:-3306}"
+    MYSQL_DATABASE="${MYSQL_DATABASE:-guartrix_panel}"
+    MYSQL_USER="${MYSQL_USER:-guartrix}"
+    enc_user="$(uri_encode "$MYSQL_USER")"
+    enc_pass="$(uri_encode "$MYSQL_PASSWORD")"
+    DATABASE_URL="mysql://${enc_user}:${enc_pass}@${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DATABASE}"
+  else
+    DATABASE_URL="$DATABASE_URL_OVERRIDE"
+    # Best-effort parse for .env MYSQL_* display fields
+    if [[ -z "$MYSQL_HOST" ]]; then
+      parse="$(
+        node -e '
+          try {
+            const u = new URL(process.argv[1]);
+            if (u.protocol !== "mysql:") process.exit(2);
+            console.log([
+              u.hostname || "127.0.0.1",
+              u.port || "3306",
+              (u.pathname || "/guartrix_panel").replace(/^\//, "") || "guartrix_panel",
+              decodeURIComponent(u.username || "guartrix"),
+              decodeURIComponent(u.password || ""),
+            ].join("\n"));
+          } catch { process.exit(2); }
+        ' "$DATABASE_URL" 2>/dev/null || true
+      )"
+      if [[ -n "$parse" ]]; then
+        MYSQL_HOST="$(echo "$parse" | sed -n '1p')"
+        MYSQL_PORT="$(echo "$parse" | sed -n '2p')"
+        MYSQL_DATABASE="$(echo "$parse" | sed -n '3p')"
+        MYSQL_USER="$(echo "$parse" | sed -n '4p')"
+        MYSQL_PASSWORD="$(echo "$parse" | sed -n '5p')"
+      else
+        MYSQL_HOST="${MYSQL_HOST:-external}"
+        MYSQL_PORT="${MYSQL_PORT:-3306}"
+        MYSQL_DATABASE="${MYSQL_DATABASE:-guartrix_panel}"
+        MYSQL_USER="${MYSQL_USER:-guartrix}"
+        MYSQL_PASSWORD="${MYSQL_PASSWORD:-(see DATABASE_URL)}"
+      fi
+    fi
+  fi
+  # Avoid clashing with daemon game-MySQL Docker on the same loopback port
+  if [[ "$MYSQL_HOST" == "127.0.0.1" || "$MYSQL_HOST" == "localhost" ]] && [[ "$MYSQL_PORT" == "3306" ]]; then
+    DAEMON_MYSQL_PORT=3307
+    echo "[guartrix] Panel MySQL uses ${MYSQL_HOST}:3306 — game MySQL Docker will use port ${DAEMON_MYSQL_PORT}"
+  fi
+  echo "[guartrix] Panel DB: external MySQL at ${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DATABASE} (user ${MYSQL_USER})"
+else
+  MYSQL_MODE=docker
+  MYSQL_HOST=127.0.0.1
+  MYSQL_PORT=3306
+  MYSQL_DATABASE=guartrix_panel
+  MYSQL_USER=guartrix
+  MYSQL_PASSWORD="$(openssl rand -hex 24)"
+  enc_user="$(uri_encode "$MYSQL_USER")"
+  enc_pass="$(uri_encode "$MYSQL_PASSWORD")"
+  DATABASE_URL="mysql://${enc_user}:${enc_pass}@127.0.0.1:3306/${MYSQL_DATABASE}"
+  echo "[guartrix] Panel DB: Docker MySQL (guartrix-mysql on 127.0.0.1:3306)"
+fi
 
 echo "[guartrix] Cloning ${REPO_URL} (${BRANCH}) → ${INSTALL_DIR}"
 mkdir -p "$(dirname "$INSTALL_DIR")"
@@ -237,12 +385,12 @@ DAEMON_PORT=8081
 SFTP_PORT=2022
 SFTP_ENABLED=true
 PANEL_URL=http://127.0.0.1:3001
-MYSQL_HOST=127.0.0.1
-MYSQL_PORT=3306
-MYSQL_DATABASE=guartrix_panel
-MYSQL_USER=guartrix
+MYSQL_HOST=${MYSQL_HOST}
+MYSQL_PORT=${MYSQL_PORT}
+MYSQL_DATABASE=${MYSQL_DATABASE}
+MYSQL_USER=${MYSQL_USER}
 MYSQL_PASSWORD=${MYSQL_PASSWORD}
-DATABASE_URL=mysql://guartrix:${MYSQL_PASSWORD}@127.0.0.1:3306/guartrix_panel
+DATABASE_URL=${DATABASE_URL}
 REGISTRATION_ENABLED=true
 DEFAULT_MAX_SERVERS=0
 DEFAULT_MAX_MEMORY_MB=0
@@ -270,7 +418,7 @@ SFTP_PORT=2022
 SFTP_ENABLED=true
 DOCKER_IMAGE=eclipse-temurin:25-jre-jammy
 MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
-MYSQL_PORT=3306
+MYSQL_PORT=${DAEMON_MYSQL_PORT}
 MYSQL_IMAGE=mysql:8.4
 MANAGE_FIREWALL=true
 EOF
@@ -288,26 +436,33 @@ else
 fi
 npm run db:generate -w @msm/api
 
-# Start MySQL via docker if not reachable (daemon will also ensure it)
-if ! docker ps --format '{{.Names}}' | grep -qx guartrix-mysql; then
-  echo "[guartrix] Starting MySQL container…"
-  docker network create guartrix 2>/dev/null || true
-  docker run -d --name guartrix-mysql --restart unless-stopped \
-    --network guartrix \
-    -e MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD}" \
-    -e MYSQL_DATABASE=guartrix_panel \
-    -e MYSQL_USER=guartrix \
-    -e MYSQL_PASSWORD="${MYSQL_PASSWORD}" \
-    -p 127.0.0.1:3306:3306 \
-    -v "${INSTALL_DIR}/data/mysql:/var/lib/mysql" \
-    mysql:8.4
-  echo "[guartrix] Waiting for MySQL…"
-  for i in $(seq 1 60); do
-    if docker exec guartrix-mysql mysqladmin ping -h 127.0.0.1 -uroot -p"${MYSQL_ROOT_PASSWORD}" --silent 2>/dev/null; then
-      break
-    fi
-    sleep 2
-  done
+# Panel MySQL: Docker only when requested (daemon still manages game-DB MySQL separately)
+if [[ "$MYSQL_MODE" == "docker" ]]; then
+  if ! docker ps --format '{{.Names}}' | grep -qx guartrix-mysql; then
+    echo "[guartrix] Starting panel MySQL container (guartrix-mysql)…"
+    docker network create guartrix 2>/dev/null || true
+    docker run -d --name guartrix-mysql --restart unless-stopped \
+      --network guartrix \
+      -e MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD}" \
+      -e MYSQL_DATABASE="${MYSQL_DATABASE}" \
+      -e MYSQL_USER="${MYSQL_USER}" \
+      -e MYSQL_PASSWORD="${MYSQL_PASSWORD}" \
+      -p 127.0.0.1:3306:3306 \
+      -v "${INSTALL_DIR}/data/mysql:/var/lib/mysql" \
+      mysql:8.4
+    echo "[guartrix] Waiting for MySQL…"
+    for i in $(seq 1 60); do
+      if docker exec guartrix-mysql mysqladmin ping -h 127.0.0.1 -uroot -p"${MYSQL_ROOT_PASSWORD}" --silent 2>/dev/null; then
+        break
+      fi
+      sleep 2
+    done
+  else
+    echo "[guartrix] MySQL container guartrix-mysql already running — reusing"
+  fi
+else
+  echo "[guartrix] Skipping Docker MySQL — using external panel database"
+  echo "[guartrix] Ensure database '${MYSQL_DATABASE}' and user '${MYSQL_USER}' already exist with rights."
 fi
 
 npm run db:push -w @msm/api
@@ -422,6 +577,14 @@ fi
 echo " License: LICENSE_SERVER_URL=https://license.guartrix.com"
 if [[ -z "$LICENSE_KEY" ]]; then
   echo " Set LICENSE_KEY in .env (or Admin → License) with your GTRX-… key."
+fi
+if [[ "$MYSQL_MODE" == "docker" ]]; then
+  echo " Panel DB: Docker guartrix-mysql @ 127.0.0.1:3306 / ${MYSQL_DATABASE}"
+else
+  echo " Panel DB: external ${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DATABASE} (user ${MYSQL_USER})"
+  if [[ "$DAEMON_MYSQL_PORT" != "3306" ]]; then
+    echo " Game MySQL (daemon Docker): 127.0.0.1:${DAEMON_MYSQL_PORT}"
+  fi
 fi
 echo " Add extra nodes: System → Add node → Install via SSH"
 echo "=============================================="

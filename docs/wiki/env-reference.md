@@ -27,7 +27,9 @@ Copy `.env.example` → `.env` (repo root). Secrets must stay gitignored. The lo
 | Variable | Purpose |
 |----------|---------|
 | `DATABASE_URL` | Prisma MySQL URL |
-| `MYSQL_HOST` / `MYSQL_DATABASE` / `MYSQL_USER` / `MYSQL_PASSWORD` | Convenience for local MySQL |
+| `MYSQL_HOST` / `MYSQL_PORT` / `MYSQL_DATABASE` / `MYSQL_USER` / `MYSQL_PASSWORD` | Same connection, split fields (installer / docs) |
+
+Installer: `--mysql-docker` (default) or `--mysql-external` / `--database-url`. Game-server MySQL is separate (`data/daemon.env`, Docker `guartrix-mysql`).
 
 ## Registration & mail
 

@@ -31,6 +31,33 @@ curl -fsSL https://raw.githubusercontent.com/TomThermo/guartrix/main/scripts/ins
 
 Interactive installs (TTY) ask: **Use HTTPS with a domain? [y/N]** — default is HTTP/IP.
 
+They also ask: **Use Docker MySQL for the panel? [Y/n]** — default is Docker.
+
+### Panel MySQL
+
+**Docker (default)** — installer starts `guartrix-mysql` on `127.0.0.1:3306` and writes `DATABASE_URL`.
+
+```bash
+curl -fsSL … | sudo bash -s -- --http --ip YOUR.PUBLIC.IP --mysql-docker
+```
+
+**Existing MySQL/MariaDB** — create an empty database + user first, then:
+
+```bash
+curl -fsSL … | sudo bash -s -- --http --ip YOUR.PUBLIC.IP \
+  --mysql-external \
+  --mysql-host 127.0.0.1 \
+  --mysql-port 3306 \
+  --mysql-database guartrix_panel \
+  --mysql-user guartrix \
+  --mysql-password 'YourDbPass'
+# or: --database-url 'mysql://guartrix:YourDbPass@127.0.0.1:3306/guartrix_panel'
+```
+
+Env: `GUARTRIX_MYSQL_MODE=docker|external`, `GUARTRIX_DATABASE_URL`, `GUARTRIX_MYSQL_HOST`, …
+
+If the panel DB already uses `127.0.0.1:3306`, the daemon’s **game-server** MySQL Docker is placed on **3307** so ports do not clash.
+
 Non-interactive without `--https`/`--http`: HTTPS if `--domain` is a hostname; otherwise HTTP via IP.
 
 Non-interactive env:

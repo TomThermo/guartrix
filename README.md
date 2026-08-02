@@ -62,7 +62,8 @@ curl -fsSL https://raw.githubusercontent.com/TomThermo/guartrix/main/scripts/ins
   --https --domain your.domain.com --ip YOUR.PUBLIC.IP
 ```
 
-Interactive installs ask whether to use HTTPS (default: HTTP/IP).
+Interactive installs ask whether to use HTTPS (default: HTTP/IP) and whether
+panel MySQL should be Docker or an existing server (default: Docker).
 
 (`scripts/install-panel.sh` is the same installer.)
 
