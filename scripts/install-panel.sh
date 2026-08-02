@@ -124,7 +124,7 @@ normalize_https_flag() {
 # Interactive I/O for curl|bash (stdin is the script pipe — not a TTY).
 # Always talk to /dev/tty directly: non-interactive bash may line-buffer stdout, so
 # prompts without a trailing newline never appear and the wizard looks "hung".
-INSTALLER_VERSION="1.0.14"
+INSTALLER_VERSION="1.0.15"
 
 can_prompt() {
   [[ -r /dev/tty && -w /dev/tty ]] || [[ -t 0 && -t 1 ]]
@@ -817,6 +817,30 @@ if [[ "$MYSQL_MODE" == "docker" ]]; then
     done
   else
     echo "[guartrix] MySQL container guartrix-mysql already running — reusing"
+    # Verify credentials work; if not, wipe container + data and recreate with current .env password.
+    if ! docker exec guartrix-mysql mysqladmin ping -h 127.0.0.1 -u"${MYSQL_USER}" -p"${MYSQL_PASSWORD}" --silent 2>/dev/null; then
+      echo "[guartrix] Existing MySQL rejects current password — recreating container + data volume…"
+      docker rm -f guartrix-mysql 2>/dev/null || true
+      rm -rf "${INSTALL_DIR}/data/mysql"
+      mkdir -p "${INSTALL_DIR}/data/mysql"
+      docker network create guartrix 2>/dev/null || true
+      docker run -d --name guartrix-mysql --restart unless-stopped \
+        --network guartrix \
+        -e MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD}" \
+        -e MYSQL_DATABASE="${MYSQL_DATABASE}" \
+        -e MYSQL_USER="${MYSQL_USER}" \
+        -e MYSQL_PASSWORD="${MYSQL_PASSWORD}" \
+        -p 127.0.0.1:3306:3306 \
+        -v "${INSTALL_DIR}/data/mysql:/var/lib/mysql" \
+        mysql:8.4
+      echo "[guartrix] Waiting for MySQL…"
+      for i in $(seq 1 60); do
+        if docker exec guartrix-mysql mysqladmin ping -h 127.0.0.1 -uroot -p"${MYSQL_ROOT_PASSWORD}" --silent 2>/dev/null; then
+          break
+        fi
+        sleep 2
+      done
+    fi
   fi
 else
   echo "[guartrix] Skipping Docker MySQL — using external panel database"
