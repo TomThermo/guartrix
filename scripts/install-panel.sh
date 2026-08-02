@@ -124,7 +124,7 @@ normalize_https_flag() {
 # Interactive I/O for curl|bash (stdin is the script pipe — not a TTY).
 # Always talk to /dev/tty directly: non-interactive bash may line-buffer stdout, so
 # prompts without a trailing newline never appear and the wizard looks "hung".
-INSTALLER_VERSION="1.0.11"
+INSTALLER_VERSION="1.0.12"
 
 can_prompt() {
   [[ -r /dev/tty && -w /dev/tty ]] || [[ -t 0 && -t 1 ]]
@@ -752,6 +752,9 @@ fi
 
 echo "[guartrix] npm install + build…"
 npm install
+# Prisma client must exist before `tsc` — otherwise @prisma/client exports are empty
+# and the API build fails with dozens of TS7006 / TS2305 errors.
+npm run db:generate -w @msm/api
 if [[ -f apps/api/src/index.ts ]]; then
   npm run build
 elif [[ -f apps/api/dist/index.js && -f apps/web/dist/index.html ]]; then
@@ -760,7 +763,6 @@ else
   echo "[guartrix] ERROR: no sources and no prebuilt dist — cannot continue" >&2
   exit 1
 fi
-npm run db:generate -w @msm/api
 
 # Panel MySQL: Docker only when requested (daemon still manages game-DB MySQL separately)
 if [[ "$MYSQL_MODE" == "docker" ]]; then

@@ -29,7 +29,7 @@ Daemon-only asks for token + node id from **System → Add node** instead of pan
 
 (`scripts/install-panel.sh` is the same installer; `install.sh` fetches it when piped via curl.)
 
-After you pick a role, the next prompt is **Install directory** (default `/opt/guartrix`). The banner must show a version (**v1.0.11+**). If you still see plain `Guartrix installer` without `v…`, GitHub raw CDN served a stale file — bypass it:
+After you pick a role, the next prompt is **Install directory** (default `/opt/guartrix`). The banner must show a version (**v1.0.12+**). If you still see plain `Guartrix installer` without `v…`, GitHub raw CDN served a stale file — bypass it:
 
 ```bash
 curl -fsSL "https://raw.githubusercontent.com/TomThermo/guartrix/main/scripts/install-panel.sh?t=$(date +%s)" -o /tmp/gp.sh && sudo bash /tmp/gp.sh
