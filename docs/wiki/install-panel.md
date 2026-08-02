@@ -29,6 +29,8 @@ Daemon-only asks for token + node id from **System → Add node** instead of pan
 
 (`scripts/install-panel.sh` is the same installer; `install.sh` fetches it when piped via curl.)
 
+After you pick a role, the next prompt is **Install directory** (default `/opt/guartrix`). If that prompt never appears, you are on an older installer — pull `main` again or wait a minute for GitHub raw CDN, then re-run the curl command (needs **1.0.10+**).
+
 ### HTTP only (flags / automation)
 
 ```bash

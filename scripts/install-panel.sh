@@ -122,28 +122,38 @@ normalize_https_flag() {
 }
 
 # Interactive I/O for curl|bash (stdin is the script pipe — not a TTY).
+# Always talk to /dev/tty directly: non-interactive bash may line-buffer stdout, so
+# prompts without a trailing newline never appear and the wizard looks "hung".
+INSTALLER_VERSION="1.0.10"
+
 can_prompt() {
   [[ -r /dev/tty && -w /dev/tty ]] || [[ -t 0 && -t 1 ]]
 }
 
-# Point stdin/stdout/stderr at the real terminal so echo/read -p work.
-attach_tty() {
-  if [[ -r /dev/tty && -w /dev/tty ]]; then
-    exec </dev/tty >/dev/tty 2>/dev/tty
-  fi
+tty_out() {
+  # Fresh open of /dev/tty flushes on close — visible even without a newline.
+  # Never abort the installer if /dev/tty is unavailable (set -e).
+  { printf '%s' "$*" >/dev/tty; } 2>/dev/null || printf '%s' "$*"
+}
+
+tty_out_nl() {
+  { printf '%s\n' "$*" >/dev/tty; } 2>/dev/null || printf '%s\n' "$*"
 }
 
 say() {
-  printf '%s\n' "$*"
+  tty_out_nl "$*"
 }
 
 # ask VAR "prompt"  — never use $(ask …); that would hide the prompt.
+# Prompt is always printed with a trailing newline so it cannot stay buffered.
 ask() {
   local __var="$1"
   local __prompt="$2"
   local __reply=""
-  printf '%s' "$__prompt"
-  IFS= read -r __reply || true
+  tty_out_nl "$__prompt"
+  if ! { IFS= read -r __reply </dev/tty; } 2>/dev/null; then
+    IFS= read -r __reply || true
+  fi
   __reply="${__reply%$'\r'}"
   printf -v "$__var" '%s' "$__reply"
 }
@@ -152,9 +162,11 @@ ask_secret() {
   local __var="$1"
   local __prompt="$2"
   local __reply=""
-  printf '%s' "$__prompt"
-  IFS= read -rs __reply || true
-  printf '\n'
+  tty_out_nl "$__prompt"
+  if ! { IFS= read -rs __reply </dev/tty; } 2>/dev/null; then
+    IFS= read -rs __reply || true
+  fi
+  tty_out_nl ""
   __reply="${__reply%$'\r'}"
   printf -v "$__var" '%s' "$__reply"
 }
@@ -245,10 +257,9 @@ fi
 # Interactive wizard (no CLI flags): ask everything before long installs
 # ---------------------------------------------------------------------------
 if [[ "$WIZARD" -eq 1 ]]; then
-  attach_tty
   say ""
   say "=============================================="
-  say " Guartrix installer"
+  say " Guartrix installer v${INSTALLER_VERSION}"
   say "=============================================="
   say " Answer the questions below. Press Enter for the default in [brackets]."
   say ""
@@ -263,7 +274,7 @@ if [[ "$WIZARD" -eq 1 ]]; then
     *) INSTALL_ROLE=full ;;
   esac
   say ""
-  say "→ Selected: ${INSTALL_ROLE}"
+  say "-> Selected: ${INSTALL_ROLE}"
   say ""
 
   ask dir_in "Install directory [${INSTALL_DIR}]: "

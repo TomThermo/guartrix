@@ -4,7 +4,8 @@
 # Interactive (recommended — no flags):
 #   curl -fsSL https://raw.githubusercontent.com/TomThermo/guartrix/main/scripts/install.sh | sudo bash
 #
-# When piped via curl, this downloads install-panel.sh from the same branch.
+# When piped via curl, this downloads install-panel.sh from the same branch and
+# re-runs it with /dev/tty attached (required for prompts under curl|bash).
 # Local checkouts use the sibling scripts/install-panel.sh.
 #
 # Optional flags / env: see install-panel.sh --help
@@ -38,8 +39,19 @@ else
   PANEL="$CLEANUP"
 fi
 
+# Prove the downloaded/local script is new enough (wizard tty fix).
+if ! grep -q 'INSTALLER_VERSION="1\.0\.10"' "$PANEL" 2>/dev/null && ! grep -q 'tty_out_nl' "$PANEL" 2>/dev/null; then
+  echo "[guartrix] WARNING: install-panel.sh looks older than 1.0.10 (wizard may hang after role choice)." >&2
+  echo "[guartrix] If you just pushed, wait ~60s for GitHub raw CDN, or set GUARTRIX_INSTALL_PANEL to a local file." >&2
+fi
+
 set +e
-bash "$PANEL" "$@"
+# Re-attach the controlling TTY so the panel wizard can prompt under curl|bash.
+if [[ -r /dev/tty && -w /dev/tty ]]; then
+  bash "$PANEL" "$@" </dev/tty >/dev/tty 2>/dev/tty
+else
+  bash "$PANEL" "$@"
+fi
 rc=$?
 set -e
 [[ -n "$CLEANUP" ]] && rm -f "$CLEANUP"
