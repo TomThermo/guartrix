@@ -1,6 +1,6 @@
 # Environment variables
 
-Copy `.env.example` → `.env`. Secrets must stay gitignored. The local daemon also reads `data/daemon.env` (generated/updated by start scripts; template: [`daemon.env.example`](../../daemon.env.example)).
+Copy `.env.example` → `.env` (repo root). Secrets must stay gitignored. The local daemon also reads `data/daemon.env` (generated/updated by start scripts; template: [`data/daemon.env.example`](../../data/daemon.env.example)).
 
 ## Core panel
 
@@ -59,8 +59,8 @@ Copy `.env.example` → `.env`. Secrets must stay gitignored. The local daemon a
 | `DAEMON_PUBLIC_HOST` | Hostname prod-web routes to the local daemon (e.g. `node1.guartrix.com`) |
 
 License **server** bind/secret live in **`data/license.env`** on the license host.
-The template (`license.env.example`) ships with the **guartrix-license-server** package
-(and `/download` for operators) — it is **not** in this panel GitHub repo:
+The template (`data/license.env.example`) ships with the **guartrix-license-server** package
+(next to the live `data/license.env`; also on `/download` for operators) — it is **not** in this panel GitHub repo:
 
 | Variable | Purpose |
 |----------|---------|

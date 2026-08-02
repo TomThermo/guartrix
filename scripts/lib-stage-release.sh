@@ -38,7 +38,8 @@ guartrix_stage_release_tree() {
   cp "$ROOT/package.json" "$STAGE/"
   cp "$ROOT/package-lock.json" "$STAGE/"
   cp "$ROOT/.env.example" "$STAGE/"
-  [[ -f "$ROOT/daemon.env.example" ]] && cp "$ROOT/daemon.env.example" "$STAGE/"
+  mkdir -p "$STAGE/data"
+  [[ -f "$ROOT/data/daemon.env.example" ]] && cp "$ROOT/data/daemon.env.example" "$STAGE/data/"
   [[ -f "$ROOT/VERSION" ]] && cp "$ROOT/VERSION" "$STAGE/"
   cp "$ROOT/README.md" "$STAGE/"
   [[ -f "$ROOT/LICENSE" ]] && cp "$ROOT/LICENSE" "$STAGE/" || true

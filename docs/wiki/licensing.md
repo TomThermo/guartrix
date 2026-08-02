@@ -57,7 +57,7 @@ The **website/panel UI stays online** when a license expires; only game servers 
 ## Quick start (operator host with sibling checkout)
 
 1. Checkout **`guartrix-license-server`** next to the panel (or set `LICENSE_SERVER_HOME`).
-2. Build that package (`dist/index.js`) and copy **`license.env.example` → `data/license.env`** (on the license host / shared `data/`) with `LICENSE_ADMIN_SECRET` (+ ports/URL).
+2. Build that package (`dist/index.js`) and copy **`data/license.env.example` → `data/license.env`** (on the license host) with `LICENSE_ADMIN_SECRET` (+ ports/URL).
 3. Panel `.env`: **`LICENSE_SERVER_URL`**, **`LICENSE_KEY`**, and for a co-located license process set `SKIP_LOCAL_LICENSE_SERVER=0` (customers default to `1`).
 4. `bash scripts/start.sh` starts `$LICENSE_SERVER_HOME/dist/index.js` with `GUARTRIX_PANEL_ROOT` when local mode is on.
 5. Admin console: **http://127.0.0.1:4041/** — sign in with `LICENSE_ADMIN_SECRET`. Not linked from the panel UI.
@@ -187,7 +187,7 @@ The license admin console is a small dark Bootstrap UI on `LICENSE_UI_PORT`
 ## Env
 
 - **Panel:** `LICENSE_SERVER_URL`, `LICENSE_KEY`, `LICENSE_INSTALL_ID`, `SKIP_LOCAL_LICENSE_SERVER`, optional `LICENSE_SERVER_HOME` — [env-reference](env-reference.md).
-- **License server:** `data/license.env` from `license.env.example` in the **guartrix-license-server** package (also published on `/download` for operators).
+- **License server:** `data/license.env` from `data/license.env.example` in the **guartrix-license-server** package (also published on `/download` for operators).
 
 ## Operator notes
 

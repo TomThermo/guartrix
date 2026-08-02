@@ -171,12 +171,11 @@ EOF
 # --- daemon ---
 DAEMON_STAGE="${OUT_DIR}/stage-daemon"
 rm -rf "$DAEMON_STAGE"
-mkdir -p "$DAEMON_STAGE/apps/daemon/dist" "$DAEMON_STAGE/scripts"
+mkdir -p "$DAEMON_STAGE/apps/daemon/dist" "$DAEMON_STAGE/scripts" "$DAEMON_STAGE/data"
 cp "$ROOT/apps/daemon/package.json" "$DAEMON_STAGE/apps/daemon/"
 cp -a "$ROOT/apps/daemon/dist/." "$DAEMON_STAGE/apps/daemon/dist/"
 [[ -f "$ROOT/scripts/install-daemon.sh" ]] && cp "$ROOT/scripts/install-daemon.sh" "$DAEMON_STAGE/scripts/"
-cp "$ROOT/daemon.env.example" "$DAEMON_STAGE/daemon.env.example"
-# Panel .env snippet relevant to remote nodes (token/ports) — full template helps operators
+cp "$ROOT/data/daemon.env.example" "$DAEMON_STAGE/data/daemon.env.example"
 cp "$ROOT/.env.example" "$DAEMON_STAGE/panel.env.example"
 cat >"$DAEMON_STAGE/README.txt" <<EOF
 Guartrix Daemon ${VERSION}
@@ -188,7 +187,7 @@ Prefer the panel “Add node” wizard, or guartrix-panel-*.zip on the same host
 Env
 ---
   mkdir -p data
-  cp daemon.env.example data/daemon.env
+  cp data/daemon.env.example data/daemon.env
   Fill DAEMON_TOKEN and DAEMON_NODE_ID from Admin → System (node details).
   panel.env.example is the panel template (for reference / same-host installs).
 
@@ -222,13 +221,13 @@ if [[ -n "${LICENSE_SERVER_HOME:-}" && -d "$LICENSE_SERVER_HOME" ]]; then
   else
     LIC_STAGE="${OUT_DIR}/stage-license"
     rm -rf "$LIC_STAGE"
-    mkdir -p "$LIC_STAGE/dist"
+    mkdir -p "$LIC_STAGE/dist" "$LIC_STAGE/data"
     cp "$LICENSE_SERVER_HOME/package.json" "$LIC_STAGE/"
     cp -a "$LICENSE_SERVER_HOME/dist/." "$LIC_STAGE/dist/"
     [[ -d "$LICENSE_SERVER_HOME/public" ]] && mkdir -p "$LIC_STAGE/public" && cp -a "$LICENSE_SERVER_HOME/public/." "$LIC_STAGE/public/"
-    if [[ -f "$LICENSE_SERVER_HOME/license.env.example" ]]; then
-      cp "$LICENSE_SERVER_HOME/license.env.example" "$LIC_STAGE/license.env.example"
-      LIC_ENV_SRC="$LICENSE_SERVER_HOME/license.env.example"
+    if [[ -f "$LICENSE_SERVER_HOME/data/license.env.example" ]]; then
+      cp "$LICENSE_SERVER_HOME/data/license.env.example" "$LIC_STAGE/data/license.env.example"
+      LIC_ENV_SRC="$LICENSE_SERVER_HOME/data/license.env.example"
     fi
     [[ -f "$LICENSE_SERVER_HOME/VERSION" ]] && cp "$LICENSE_SERVER_HOME/VERSION" "$LIC_STAGE/VERSION" || true
     cat >"$LIC_STAGE/README.txt" <<EOF
@@ -242,7 +241,7 @@ License API (:4040) + admin UI (:4041).
 Env
 ---
   mkdir -p data
-  cp license.env.example data/license.env
+  cp data/license.env.example data/license.env
   Set LICENSE_ADMIN_SECRET (required, long random).
   Set LICENSE_SERVER_URL to the public URL panels will call
   (e.g. https://license.guartrix.com).
@@ -322,7 +321,7 @@ echo "[download]   guartrix-panel-${VERSION}.zip"
 echo "[download] Assembling master zip…"
 cp -a "$PARTS/." "$BUNDLE_DIR/"
 cp -f "$ROOT/.env.example" "$BUNDLE_DIR/guartrix.env.example"
-cp -f "$ROOT/daemon.env.example" "$BUNDLE_DIR/daemon.env.example"
+cp -f "$ROOT/data/daemon.env.example" "$BUNDLE_DIR/daemon.env.example"
 if [[ -n "${LIC_ENV_SRC:-}" && -f "$LIC_ENV_SRC" ]]; then
   cp -f "$LIC_ENV_SRC" "$BUNDLE_DIR/license.env.example"
 fi
@@ -334,13 +333,13 @@ Zips (each has its own README.txt + env template):
   guartrix-panel-${VERSION}.zip           Full customer panel — start here
   guartrix-api-${VERSION}.zip             API dist only (+ .env.example)
   guartrix-web-${VERSION}.zip             Web UI dist only (+ .env.example)
-  guartrix-daemon-${VERSION}.zip          Daemon (+ daemon.env.example)
+  guartrix-daemon-${VERSION}.zip          Daemon (+ data/daemon.env.example)
   guartrix-license-server-${VERSION}.zip  License server (OPERATORS ONLY; from sibling checkout)
 
 Env templates (also listed on https://guartrix.com/download):
-  guartrix.env.example    → panel .env
-  daemon.env.example      → data/daemon.env on a node
-  license.env.example     → data/license.env on the license host (ships with license-server package)
+  guartrix.env.example    → copy to panel .env (repo root; next to .env.example in zip)
+  daemon.env.example      → same content as zip data/daemon.env.example (next to live data/daemon.env)
+  license.env.example     → same content as zip data/license.env.example (next to live data/license.env)
 
 Recommended install (panel):
   unzip guartrix-panel-${VERSION}.zip
@@ -383,7 +382,7 @@ const parts = files.map((name) => {
 const masterStat = fs.statSync(process.env.MASTER_PATH);
 const extras = [];
 const panelEnv = path.join(root, ".env.example");
-const daemonEnv = path.join(root, "daemon.env.example");
+const daemonEnv = path.join(root, "data/daemon.env.example");
 const licEnv = process.env.LIC_ENV_SRC || "";
 if (fs.existsSync(panelEnv)) {
   extras.push({
@@ -403,7 +402,7 @@ if (licEnv && fs.existsSync(licEnv)) {
   extras.push({
     name: "license.env.example",
     bytes: fs.statSync(licEnv).size,
-    label: "License server license.env.example",
+    label: "License server data/license.env.example",
   });
 }
 console.log(
@@ -432,7 +431,7 @@ if [[ "$PUBLISH" -eq 1 ]]; then
   # Env templates (also inside zips — listed separately on /download)
   cp -f "$ROOT/.env.example" "$PUBLISH_DIR/guartrix.env.example"
   [[ -n "${LIC_ENV_SRC:-}" && -f "$LIC_ENV_SRC" ]] && cp -f "$LIC_ENV_SRC" "$PUBLISH_DIR/license.env.example"
-  [[ -f "$ROOT/daemon.env.example" ]] && cp -f "$ROOT/daemon.env.example" "$PUBLISH_DIR/daemon.env.example"
+  [[ -f "$ROOT/data/daemon.env.example" ]] && cp -f "$ROOT/data/daemon.env.example" "$PUBLISH_DIR/daemon.env.example"
   printf '%s\n' "$MANIFEST_JSON" >"$PUBLISH_DIR/manifest.json"
   ln -sfn "$(basename "$MASTER_ZIP")" "$PUBLISH_DIR/guartrix-bundle-latest.zip"
   chmod 640 "$PUBLISH_DIR"/*.zip "$PUBLISH_DIR"/*.example "$PUBLISH_DIR/manifest.json" 2>/dev/null || true

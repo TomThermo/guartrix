@@ -63,8 +63,8 @@ After `npm run package:download`, open **https://guartrix.com/download** and unl
 | `guartrix-bundle-latest.zip` | Master zip of all parts |
 | `guartrix-panel-*.zip` | Customer panel (**no** git, src, download gate, or license-server) |
 | `guartrix.env.example` | Panel `.env` template (also inside every panel/api/web zip) |
-| `daemon.env.example` | Node `data/daemon.env` template (also in daemon zip) |
-| `license.env.example` | License server `data/license.env` template (from sibling package; operators) |
+| `daemon.env.example` | Same content as `data/daemon.env.example` in the daemon zip (next to live `data/daemon.env`) |
+| `license.env.example` | Same content as `data/license.env.example` in the license-server package (next to live `data/license.env`) |
 
 Each component zip includes a **`README.txt`** (panel also has **`INSTALL.txt`**) with install steps for that piece.
 | `guartrix-api/web/daemon-*.zip` | Individual build outputs |

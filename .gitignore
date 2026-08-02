@@ -19,6 +19,11 @@ license.env
 
 # Runtime / generated data (never commit)
 data/
+# Keep env templates next to live files (data/*.env.example is tracked)
+!data/
+data/**
+!data/*.example
+!data/**/*.example
 cert/
 
 # Legacy / local DB files

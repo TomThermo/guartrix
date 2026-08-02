@@ -131,7 +131,7 @@ function listDownloadFiles(dir) {
     for (const [name, label] of [
       ["guartrix.env.example", "Panel .env.example"],
       ["daemon.env.example", "Daemon data/daemon.env.example"],
-      ["license.env.example", "License server license.env.example"],
+      ["license.env.example", "License server data/license.env.example"],
     ]) {
       const p = path.join(dir, name);
       if (!fs.existsSync(p)) continue;
