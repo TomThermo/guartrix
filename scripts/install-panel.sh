@@ -121,44 +121,50 @@ normalize_https_flag() {
   esac
 }
 
-# Read a line from the controlling terminal when possible (works with curl|bash).
+# Read answers from the controlling TTY (curl|bash has stdin = script pipe).
+# Always print prompts on stdout so the user sees them in the SSH session.
 can_prompt() {
   [[ -r /dev/tty ]] || [[ -t 0 ]]
+}
+
+say() {
+  printf '%s\n' "$*"
 }
 
 prompt_tty() {
   local prompt="$1"
   local reply=""
+  # Visible on the terminal even when stdin is a pipe
+  printf '%s' "$prompt" >&2
   if [[ -r /dev/tty ]]; then
-    printf '%s' "$prompt" > /dev/tty
     IFS= read -r reply < /dev/tty || true
   elif [[ -t 0 ]]; then
-    read -r -p "$prompt" reply || true
+    IFS= read -r reply || true
+  else
+    printf '\n' >&2
+    return 0
   fi
+  # Strip CR from Windows / some SSH clients
+  reply="${reply%$'\r'}"
   printf '%s' "$reply"
 }
 
 prompt_tty_secret() {
   local prompt="$1"
   local reply=""
+  printf '%s' "$prompt" >&2
   if [[ -r /dev/tty ]]; then
-    printf '%s' "$prompt" > /dev/tty
     IFS= read -rs reply < /dev/tty || true
-    printf '\n' > /dev/tty
+    printf '\n' >&2
   elif [[ -t 0 ]]; then
-    read -rs -p "$prompt" reply || true
-    printf '\n'
-  fi
-  printf '%s' "$reply"
-}
-
-say() {
-  # Prefer the controlling TTY so banners show during curl|bash
-  if [[ -w /dev/tty ]]; then
-    printf '%s\n' "$*" > /dev/tty
+    IFS= read -rs reply || true
+    printf '\n' >&2
   else
-    printf '%s\n' "$*"
+    printf '\n' >&2
+    return 0
   fi
+  reply="${reply%$'\r'}"
+  printf '%s' "$reply"
 }
 
 normalize_mysql_mode() {
