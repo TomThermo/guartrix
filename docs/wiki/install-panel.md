@@ -27,9 +27,7 @@ No flags. The installer asks for:
 
 Daemon-only asks for token + node id from **System → Add node** instead of panel DB/HTTPS details.
 
-(`scripts/install.sh` downloads `install-panel.sh` to a temp file and runs it with a real TTY — same as the manual `/tmp/gp.sh` flow. That is required because `curl | sudo bash` leaves stdin as a pipe, which hangs the wizard.)
-
-After you pick a role, the next prompt is **Install directory**. Banner should show **v1.0.17+**.
+(`scripts/install.sh` downloads `install-panel.sh` to `/tmp/guartrix-install.sh` and runs it under `script(1)` for a real TTY. Banner should show **v1.0.18+**.)
 
 ### HTTP only (flags / automation)
 

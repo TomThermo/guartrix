@@ -28,27 +28,6 @@
 
 set -euo pipefail
 
-# If this script was started via `curl | bash` (stdin = pipe), re-exec from a
-# temp file with /dev/tty as stdin — same as the known-good /tmp/gp.sh flow.
-if [[ -z "${GUARTRIX_INSTALL_BOOTED:-}" && ! -t 0 ]]; then
-  export GUARTRIX_INSTALL_BOOTED=1
-  _boot="$(mktemp -t guartrix-install.XXXXXX)"
-  if [[ -n "${BASH_SOURCE[0]:-}" && -f "${BASH_SOURCE[0]}" ]]; then
-    cp -f "${BASH_SOURCE[0]}" "$_boot"
-  else
-    curl -fsSL -H 'Cache-Control: no-cache' \
-      "https://raw.githubusercontent.com/TomThermo/guartrix/main/scripts/install-panel.sh?t=$(date +%s)" \
-      -o "$_boot"
-  fi
-  chmod 700 "$_boot"
-  if [[ ! -r /dev/tty ]]; then
-    echo "ERROR: no /dev/tty — run: curl …/install-panel.sh -o /tmp/gp.sh && sudo bash /tmp/gp.sh" >&2
-    rm -f "$_boot"
-    exit 1
-  fi
-  exec bash "$_boot" "$@" </dev/tty
-fi
-
 REPO_URL="${GUARTRIX_REPO_URL:-https://github.com/TomThermo/guartrix.git}"
 INSTALL_DIR="${GUARTRIX_INSTALL_DIR:-/opt/guartrix}"
 DOMAIN="${GUARTRIX_DOMAIN:-}"
@@ -146,38 +125,35 @@ normalize_https_flag() {
   esac
 }
 
-# Interactive I/O for curl|bash (stdin is the script pipe — not a TTY).
-# Always talk to /dev/tty directly: non-interactive bash may line-buffer stdout, so
-# prompts without a trailing newline never appear and the wizard looks "hung".
-INSTALLER_VERSION="1.0.17"
+# Interactive prompts. Prefer the real stdin/stdout TTY (when started via
+# `script` or `bash /tmp/gp.sh`). Fall back to /dev/tty for odd redirects.
+INSTALLER_VERSION="1.0.18"
 
 can_prompt() {
-  [[ -r /dev/tty && -w /dev/tty ]] || [[ -t 0 && -t 1 ]]
-}
-
-tty_out() {
-  # Fresh open of /dev/tty flushes on close — visible even without a newline.
-  # Never abort the installer if /dev/tty is unavailable (set -e).
-  { printf '%s' "$*" >/dev/tty; } 2>/dev/null || printf '%s' "$*"
-}
-
-tty_out_nl() {
-  { printf '%s\n' "$*" >/dev/tty; } 2>/dev/null || printf '%s\n' "$*"
+  [[ -t 0 && -t 1 ]] || [[ -r /dev/tty && -w /dev/tty ]]
 }
 
 say() {
-  tty_out_nl "$*"
+  if [[ -t 1 ]]; then
+    printf '%s\n' "$*"
+  else
+    { printf '%s\n' "$*" >/dev/tty; } 2>/dev/null || printf '%s\n' "$*"
+  fi
 }
 
 # ask VAR "prompt"  — never use $(ask …); that would hide the prompt.
-# Prompt is always printed with a trailing newline so it cannot stay buffered.
 ask() {
   local __var="$1"
   local __prompt="$2"
   local __reply=""
-  tty_out_nl "$__prompt"
-  if ! { IFS= read -r __reply </dev/tty; } 2>/dev/null; then
+  if [[ -t 0 && -t 1 ]]; then
+    printf '%s' "$__prompt"
     IFS= read -r __reply || true
+  else
+    { printf '%s' "$__prompt" >/dev/tty; } 2>/dev/null || printf '%s' "$__prompt"
+    if ! { IFS= read -r __reply </dev/tty; } 2>/dev/null; then
+      IFS= read -r __reply || true
+    fi
   fi
   __reply="${__reply%$'\r'}"
   printf -v "$__var" '%s' "$__reply"
@@ -187,11 +163,17 @@ ask_secret() {
   local __var="$1"
   local __prompt="$2"
   local __reply=""
-  tty_out_nl "$__prompt"
-  if ! { IFS= read -rs __reply </dev/tty; } 2>/dev/null; then
+  if [[ -t 0 && -t 1 ]]; then
+    printf '%s' "$__prompt"
     IFS= read -rs __reply || true
+    printf '\n'
+  else
+    { printf '%s' "$__prompt" >/dev/tty; } 2>/dev/null || printf '%s' "$__prompt"
+    if ! { IFS= read -rs __reply </dev/tty; } 2>/dev/null; then
+      IFS= read -rs __reply || true
+    fi
+    { printf '\n' >/dev/tty; } 2>/dev/null || printf '\n'
   fi
-  tty_out_nl ""
   __reply="${__reply%$'\r'}"
   printf -v "$__var" '%s' "$__reply"
 }

@@ -75,6 +75,16 @@ Use a clean VPS with a public IPv4 address (x86_64).
 curl -fsSL https://raw.githubusercontent.com/TomThermo/guartrix/main/scripts/install.sh | sudo bash
 ```
 
+`install.sh` downloads the full installer to `/tmp/guartrix-install.sh` and runs it
+inside a real terminal (`script`). Banner should show **v1.0.18+**.
+
+If a pipe still misbehaves on your host, use the equivalent two-step form:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/TomThermo/guartrix/main/scripts/install-panel.sh \
+  -o /tmp/guartrix-install.sh && sudo bash /tmp/guartrix-install.sh
+```
+
 The wizard configures install role (full panel, panel-only, or daemon-only), network access (HTTP or HTTPS), MySQL, admin password, and license key.
 
 **Automation examples:**
