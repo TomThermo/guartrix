@@ -34,10 +34,8 @@ Daemon :8081          @msm/node-agent
 | `packages/shared` | Types, permissions, activity, **daemon JWT** + **license verify** helpers, password policy |
 | `scripts/` | `start.sh`, `prod-web.mjs`, installers, backups, monitor |
 
-**License server** is **not** in this monorepo. Operators keep a sibling checkout
-`../guartrix-license-server` (or set `LICENSE_SERVER_HOME`). Customer panels only
-need `LICENSE_SERVER_URL` (default `https://license.guartrix.com`) + `LICENSE_KEY`.
-See [Licensing](licensing.md).
+**License validation** uses the public API at `LICENSE_SERVER_URL` (default
+`https://license.guartrix.com`) plus `LICENSE_KEY`. See [Licensing](licensing.md).
 
 ## Resource limits
 

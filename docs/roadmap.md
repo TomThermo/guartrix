@@ -136,7 +136,7 @@ Hardening-checklist blijft leidend: [security.md](wiki/security.md).
 - [x] World reset / zip import + create-flow seed/presets
 - [x] Paper/Purpur Engine settings tab
 - [x] Modrinth/CurseForge modpacks + Geyser one-click (UDP)
-- [x] License server (:4040) + panel enforcement (stop MC on expiry)
+- [x] Panel license enforcement (validate API + stop MC on expiry)
 
 ### Post-roadmap (2026-07-28)
 

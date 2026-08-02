@@ -102,7 +102,6 @@ are symlinked to the repo root.
 
 Config that belongs here:
 - \`.env\` / \`.env.example\` — panel
-- \`data/license.env\` — live license server config when this host also runs the sibling \`guartrix-license-server\` checkout (\`LICENSE_SERVER_HOME\`); template ships with that package / \`/download\`
 
 For a portable copy: \`npm run package:release\` or
 \`bash scripts/build-out.sh --npm-install --no-link-runtime\`.

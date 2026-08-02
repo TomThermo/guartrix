@@ -27,7 +27,7 @@ Operator and developer documentation for the Guartrix Minecraft hosting panel.
 | [Client API](client-api.md) | Personal API keys, Bearer auth, servers / power / files |
 | [OpenAPI](../openapi.yaml) | Machine-readable Client + Application paths |
 | [Application API & Mollie](application-api.md) | Admin machine keys, plan templates, Mollie checkout |
-| [Licensing](licensing.md) | License server (:4040/:4041), keys, quotas, feature toggles, rate limits, version channel |
+| [Licensing](licensing.md) | License key, Admin → License, remote validate API |
 | [Release builds (sell / ship)](release-builds.md) | Minified bundles, tarball, password `/download` zips |
 | [Schedules](schedules.md) | Schedule chains: backup → wait → restart → command |
 | [Move between nodes](node-transfer.md) | Admin transfer: stop → sync → rebind ports/DNS → start |

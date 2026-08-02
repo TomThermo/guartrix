@@ -6,8 +6,6 @@
  * - Inlines workspace packages (@msm/shared, @msm/node-agent) from TypeScript source
  * - Leaves npm deps external (Prisma, ssh2, Fastify, …)
  *
- * License server lives in a sibling checkout (guartrix-license-server), not this repo.
- *
  * Usage:
  *   node scripts/esbuild-release.mjs api
  *   node scripts/esbuild-release.mjs daemon

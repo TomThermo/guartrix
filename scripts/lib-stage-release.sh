@@ -228,6 +228,10 @@ text = text
     if (/^#?\s*LICENSE_TLS_/i.test(t)) return false;
     if (/^#?\s*LETSENCRYPT_/i.test(t)) return false;
     if (/^#?\s*LICENSE_SERVER_HOME/i.test(t)) return false;
+    if (/^#?\s*SKIP_LOCAL_LICENSE_SERVER/i.test(t)) return false;
+    if (/^#?\s*LICENSE_PUBLIC_HOST/i.test(t)) return false;
+    if (/^#?\s*LICENSE_PROXY_/i.test(t)) return false;
+    if (/sibling guartrix-license-server/i.test(t)) return false;
     if (/SNI cert for DNS-only license/i.test(t)) return false;
     if (/sudo bash scripts\/install-license/i.test(t)) return false;
     return true;
@@ -236,9 +240,6 @@ text = text
   .replace(/\n{3,}/g, "\n\n");
 if (!/^LICENSE_SERVER_URL=/m.test(text)) {
   text += "\nLICENSE_SERVER_URL=https://license.guartrix.com\n";
-}
-if (!/^#?\s*SKIP_LOCAL_LICENSE_SERVER=/m.test(text)) {
-  text += "SKIP_LOCAL_LICENSE_SERVER=1\n";
 }
 fs.writeFileSync(file, text.endsWith("\n") ? text : text + "\n");
 NODE

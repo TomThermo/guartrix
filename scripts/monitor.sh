@@ -4,13 +4,13 @@
 # Runs forever in the background (started automatically by scripts/start.sh).
 # Every MONITOR_INTERVAL seconds it checks:
 #   - the Docker engine is reachable (alerts if not — never restarts docker.service)
-#   - the license / daemon / API / web processes are alive AND answering health checks
-# If the panel stack is unhealthy it restarts daemon+API+web (and local license
-# when SKIP_LOCAL_LICENSE_SERVER is off) via the same stop_old/preflight/start_services
+#   - the daemon / API / web processes are alive AND answering health checks
+# If the panel stack is unhealthy it restarts daemon+API+web via the same
+# stop_old/preflight/start_services
 # functions scripts/start.sh uses.
 #
 # Never touches Minecraft server containers directly — only the panel
-# processes (license, daemon, API, web) and the Docker engine itself.
+# processes (daemon, API, web) and the Docker engine itself.
 #
 # Deliberately does NOT use `set -e`: a single failed command (e.g. a curl
 # timeout) must never kill the watchdog.
@@ -55,11 +55,6 @@ http_ok() {
 }
 
 stack_healthy() {
-  if [[ "${SKIP_LOCAL_LICENSE_SERVER:-0}" != "1" && "${SKIP_LOCAL_LICENSE_SERVER:-}" != "true" ]]; then
-    pid_alive "$PID_DIR/license.pid" || { mlog "license process is not running"; return 1; }
-    http_ok "http://127.0.0.1:${LICENSE_SERVER_PORT}/health" || { mlog "license API health check failed"; return 1; }
-    http_ok "http://127.0.0.1:${LICENSE_UI_PORT}/health" || { mlog "license UI health check failed"; return 1; }
-  fi
   if [[ "${SKIP_LOCAL_DAEMON:-0}" != "1" && "${SKIP_LOCAL_DAEMON:-}" != "true" ]]; then
     pid_alive "$PID_DIR/daemon.pid" || { mlog "daemon process is not running"; return 1; }
     http_ok "http://${DAEMON_HOST}:${DAEMON_PORT}/health" || { mlog "daemon health check failed"; return 1; }
@@ -103,7 +98,7 @@ restart_stack() {
   prune_restart_times "$now"
   restart_times+=("$now")
 
-  notify_panel_alert "$reason — restarting license/daemon/API/web"
+  notify_panel_alert "$reason — restarting daemon/API/web"
 
   if (( ${#restart_times[@]} > MAX_RESTARTS_PER_HOUR )); then
     mlog "CRITICAL: ${#restart_times[@]} restarts in the last hour — backing off ${BACKOFF_SECONDS}s before trying again"
@@ -112,7 +107,7 @@ restart_stack() {
     return
   fi
 
-  mlog "Unhealthy stack detected — restarting license/daemon/API/web…"
+  mlog "Unhealthy stack detected — restarting daemon/API/web…"
   # Subshell isolation: fail() inside lib.sh calls `exit`, which must only
   # end this subshell, never the watchdog's own long-running process.
   if ( stop_old && preflight && start_services ); then

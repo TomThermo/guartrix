@@ -1,202 +1,199 @@
 # Guartrix
 
-Minecraft hosting panel — manage Paper/Fabric/Forge (and more) servers as **Docker containers** on one or more nodes. Web UI, API, and multi-node daemon with SFTP, MySQL, backups, Modrinth addons, and live console.
+**Self-hosted Minecraft hosting panel** — provision and operate game servers as Docker containers across one or more nodes.
 
-**Live:** [guartrix.com](https://guartrix.com) · **Repo:** [github.com/TomThermo/guartrix](https://github.com/TomThermo/guartrix) · **Docs:** [Wiki](docs/wiki/README.md) · **UI tour:** [Panel guide](docs/wiki/panel-guide.md) · **Roadmap:** [docs/roadmap.md](docs/roadmap.md)
+| | |
+|---|---|
+| **Product** | [guartrix.com](https://guartrix.com) |
+| **Source** | [github.com/TomThermo/guartrix](https://github.com/TomThermo/guartrix) |
+| **Documentation** | [Wiki](docs/wiki/README.md) · [Panel guide](docs/wiki/panel-guide.md) · [Roadmap](docs/roadmap.md) |
+
+---
+
+## Overview
+
+Guartrix is a panel / daemon stack for commercial or private Minecraft hosting:
+
+- **Panel** — web UI and API for users, servers, billing hooks, and administration  
+- **Daemon** — per-machine agent that runs Docker game containers, SFTP, and node MySQL  
+- **Multi-node** — local and remote nodes; move servers between hosts from the admin UI  
+
+Supported server types include Vanilla, Paper, Purpur, Fabric, Quilt, Forge, and NeoForge.
 
 ---
 
 ## Screenshots
 
-| Dashboard | Console | Plugin Management |
-|-----------|---------|-------------------|
-| ![Dashboard](docs/wiki/assets/02-dashboard.png) | ![Console](docs/wiki/assets/08-server-console.png) | ![Plugin Management](docs/wiki/assets/12-server-addons.png) |
+| Dashboard | Console | Plugins |
+|-----------|---------|---------|
+| ![Dashboard](docs/wiki/assets/02-dashboard.png) | ![Console](docs/wiki/assets/08-server-console.png) | ![Addons](docs/wiki/assets/12-server-addons.png) |
 
-| SFTP | File Manager | System / nodes |
-|------|--------------|----------------|
+| SFTP | Files | Nodes |
+|------|-------|-------|
 | ![SFTP](docs/wiki/assets/10-server-sftp.png) | ![Files](docs/wiki/assets/09-server-files.png) | ![System](docs/wiki/assets/05-system-nodes.png) |
 
-Full gallery (login, create server, users, backups, players, …): **[Panel guide](docs/wiki/panel-guide.md)**
+Full UI tour: [Panel guide](docs/wiki/panel-guide.md).
 
 ---
 
-## Features
+## Capabilities
 
-| Area | Highlights |
-|------|------------|
-| Servers | Vanilla, Paper, Purpur, Fabric, Quilt, Forge, NeoForge — create, import, clone, **reinstall**, version/type change, world reset/upload |
-| Console | Live WebSocket console + power controls |
-| Metrics | Wings-style Docker Engine stats stream → WS push + cached disk |
-| Limits | RAM, CPU (`--cpus`), disk quota (enforce writes / stop when over) |
-| Files | In-panel file manager + **SFTP** per node (FileZilla / WinSCP, port 2022) |
-| Players | Online list, whitelist, ops, bans |
-| Addons | Modrinth plugins/mods, **modpacks** (Modrinth + optional CurseForge), **Geyser** one-click |
-| Backups | Manual + scheduled archives, upload/download, restore |
-| Databases | Per-server MySQL on the node (`guartrix-mysql`) |
-| Accounts | Register (email verify), forgot/reset password, Terms & Privacy, subusers, optional TOTP 2FA |
-| Quotas | New accounts start at **0** servers — raise limits when a plan is sold |
-| Nodes | Local + remote daemons; Admin → System wizard (SSH install + live log); **Move** server between nodes |
-| Activity | Audit trail per server + global admin view; optional Discord/email alerts on crashes & security events |
-| Client API | Personal API keys (Bearer) with scoped permissions for scripts / CI |
-| Billing | Mollie checkout + plans (optional auto-create server / subscriptions); Application API (`gta_`) |
-| Licensing | License server (:4040 validate / :4041 console) + Admin → License; per-key quotas & feature toggles; expiry stops game servers |
-| Ops | HTTPS, watchdog, panel DB dump, install scripts |
+**Game servers** — create, import, clone, reinstall; change type/version; world reset and upload; live console and power controls.
+
+**Resources** — RAM, CPU, and disk limits; live Docker stats; optional schedules (backup → restart → commands).
+
+**Files & access** — in-panel file manager; SFTP on port 2022 (`{username}.{serverId}`); subusers with scoped permissions.
+
+**Content** — Modrinth plugins/mods and modpacks; optional CurseForge; one-click Geyser.
+
+**Data** — backups (manual and scheduled); per-server MySQL on the node.
+
+**Platform** — registration with email verification; quotas (new accounts start at zero); optional TOTP; activity log and alerts; Client API keys; Mollie billing and Application API; license validation via `license.guartrix.com`.
 
 ---
 
-## Quick start
+## Requirements
 
-### Supported Linux
+The installer targets **apt-based** Linux (Docker, Node.js 22).
 
-The one-command installer uses **apt** (Docker, Node 22, packages).
+| Distribution | Status |
+|--------------|--------|
+| **Ubuntu 24.04 LTS** | Recommended |
+| Ubuntu 22.04 LTS | Supported |
+| Debian 12 | Compatible in practice; not the primary test target |
+| Other (RHEL, Fedora, Arch, …) | Not supported by the installer |
 
-| Distro | Support |
-|--------|---------|
-| **Ubuntu 24.04 LTS** | **Best choice** — recommended for new installs |
-| **Ubuntu 22.04 LTS** | Supported |
-| Debian 12 (Bookworm) | Usually works (same apt-based flow); not primary QA target |
-| Other (RHEL, Fedora, Arch, …) | Not supported by `install.sh` — use a manual checkout |
+Use a clean VPS with a public IPv4 address (x86_64).
 
-Use a **fresh VPS** with a public IPv4. x86_64 is the normal path.
+---
 
-### New VPS (one command)
+## Installation
 
-Interactive wizard (recommended — no flags):
+### One-command install (recommended)
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/TomThermo/guartrix/main/scripts/install.sh | sudo bash
 ```
 
-(`install.sh` downloads the full installer to a temp file and runs it with a TTY — required for `curl | sudo bash`.)
+The wizard configures install role (full panel, panel-only, or daemon-only), network access (HTTP or HTTPS), MySQL, admin password, and license key.
 
-Asks role (full panel / panel-only / daemon-only), then IP, HTTPS, MySQL, admin, license.
-
-Optional flags (automation):
+**Automation examples:**
 
 ```bash
-# Full panel via HTTP IP
-curl -fsSL … | sudo bash -s -- --full --http --ip YOUR.PUBLIC.IP
+# Full panel over HTTP
+curl -fsSL …/install.sh | sudo bash -s -- --full --http --ip YOUR.PUBLIC.IP
 
-# Panel only (no local daemon)
-curl -fsSL … | sudo bash -s -- --panel-only --http --ip YOUR.PUBLIC.IP
+# Panel only (remote game nodes)
+curl -fsSL …/install.sh | sudo bash -s -- --panel-only --http --ip YOUR.PUBLIC.IP
 
-# Daemon only (game node)
-curl -fsSL … | sudo bash -s -- --daemon-only --token … --node-id … --ip NODE_IP --panel https://YOUR_PANEL
+# Daemon only (existing panel)
+curl -fsSL …/install.sh | sudo bash -s -- --daemon-only \
+  --token … --node-id … --ip NODE_IP --panel https://YOUR_PANEL
 ```
 
-(`scripts/install-panel.sh` is the same installer.)
+Guides: [Install the panel](docs/wiki/install-panel.md) · [Install nodes](docs/wiki/install-nodes.md)
 
-Details: [Install the panel](docs/wiki/install-panel.md) · [Add nodes](docs/wiki/install-nodes.md)
-
-### Existing checkout
+### From a source checkout
 
 ```bash
-cp .env.example .env   # set ADMIN_PASSWORD, SESSION_SECRET, PUBLIC_*, DATABASE_URL, …
+cp .env.example .env   # configure secrets, PUBLIC_*, DATABASE_URL, LICENSE_*
 npm install
 npm run db:generate && npm run db:push
 npm run build && bash scripts/start.sh
 ```
 
-Env reference: [Environment variables](docs/wiki/env-reference.md)
+Environment reference: [env-reference.md](docs/wiki/env-reference.md)
+
+---
 
 ## Architecture
 
 ```
-Browser ──HTTPS──► prod-web (:80/:443) ──/api /ws──► API (:3001, localhost)
-                         │
-                         └── static UI (apps/web/dist)
-API ──HTTP + 1 WS/node──► Daemon(s) (:8081) ──► Docker MC + SFTP (:2022) + MySQL
+Client ──HTTPS──► Web (:80 / :443) ──/api · /ws──► API (:3001, localhost)
+                     │
+                     └── static UI
+API ──HTTP + WebSocket──► Daemon(s) (:8081) ──► Docker · SFTP (:2022) · MySQL
 ```
 
-| Package | Role |
-|---------|------|
-| `apps/web` | React panel UI |
+| Component | Responsibility |
+|-----------|----------------|
+| `apps/web` | React control panel |
 | `apps/api` | Fastify API, sessions, Prisma (MySQL) |
 | `apps/daemon` | Node agent HTTP API |
-| `packages/node-agent` | Docker, files, SFTP, stats, MySQL helper |
-| `packages/shared` | Shared types, permissions, license verify helpers |
+| `packages/node-agent` | Docker, files, SFTP, metrics, MySQL helper |
+| `packages/shared` | Shared types, permissions, license verification |
 
-License validate API lives in a **separate** operator checkout
-(`../guartrix-license-server`), not this GitHub panel repo. Panels use
-`LICENSE_SERVER_URL=https://license.guartrix.com`.
+Further reading: [Architecture](docs/wiki/architecture.md) · [Scaling](docs/wiki/scaling.md) · [Licensing](docs/wiki/licensing.md)
 
-More: [Architecture](docs/wiki/architecture.md) · [Scaling](docs/wiki/scaling.md)
+---
 
-## Production
+## Operations
 
 ```bash
-npm run build              # or: npm run build:release (minified Node apps)
-bash scripts/start.sh      # preferred: stop old procs, health-check, watchdog
+npm run build          # compile (use build:release for minified shipping builds)
+bash scripts/start.sh  # stop previous processes, health-check, start watchdog
 ```
 
-Sellable output: `npm run build:out` (folder `build/` + `bash build/start.sh`) or
-`npm run package:release` — see [Release builds](docs/wiki/release-builds.md).
+| Port | Binding | Purpose |
+|------|---------|---------|
+| 80 / 443 | Public | Web UI (HTTP→HTTPS when TLS is enabled) |
+| 3001 | Localhost | API (proxied by the web process) |
+| 8081 | Localhost / node | Daemon |
+| 2022 | Public (per node) | SFTP |
+| 25565+ | Public | Game traffic |
 
-| Port | Bind | Notes |
-|------|------|--------|
-| 80 / 443 | public | Web; HTTP→HTTPS when TLS on |
-| 3001 | localhost | API (proxied only) |
-| 8081 | localhost / node | Daemon (short-lived JWT; shared secret in `daemon.env`) |
-| 4040 | public (API) | License validate `/v1/validate` + `/health` |
-| 4041 | localhost (default) | License admin console |
-| 2022 | public (per node) | SFTP |
-| 25565+ | public | Game ports |
+Commercial packages: [Release builds](docs/wiki/release-builds.md) · day-to-day ops: [Operations](docs/wiki/operations.md) · [Security](docs/wiki/security.md)
 
-Ops: [Operations](docs/wiki/operations.md) · [Security](docs/wiki/security.md)
+### Accounts
 
-## Accounts & quotas
-
-- First boot creates `admin` from `ADMIN_PASSWORD` if no users exist.
-- Register → **email verification** before subuser invites link.
-- New accounts: `OPERATOR` with **0** server / RAM / DB quota until an admin raises limits (Users).
-- Without SMTP, mail goes to `data/mail-outbox/`.
+- Bootstrap admin from `ADMIN_PASSWORD` when no users exist  
+- Self-registration requires email verification  
+- New operators receive **zero** server / RAM / database quota until an admin assigns limits  
+- Without SMTP, outbound mail is written to `data/mail-outbox/`  
 
 Details: [Accounts & quotas](docs/wiki/accounts-and-quotas.md)
 
-## SFTP
+### SFTP
 
-- Username: `{panelUsername}.{serverId}`
-- Password: panel account password
-- Host: node hostname or IP · Port: **2022** · Protocol: **SFTP** (not FTP)
-
-![SFTP](docs/wiki/assets/10-server-sftp.png)
+| Field | Value |
+|-------|--------|
+| Username | `{panelUsername}.{serverId}` |
+| Password | Panel account password |
+| Port | **2022** |
+| Protocol | SFTP (not FTP) |
 
 See [SFTP](docs/wiki/sftp.md).
+
+---
 
 ## Development
 
 ```bash
-npm run dev:api      # :3001
-npm run dev:web      # :5173 (proxies /api)
-npm run dev:daemon   # optional Docker work
+npm run dev:api      # API on :3001
+npm run dev:web      # UI on :5173 (proxies /api)
+npm run dev:daemon   # optional local daemon
 ```
 
 Guide: [Development](docs/wiki/development.md)
 
-## Wiki
+---
 
-| Topic | Link |
-|-------|------|
-| Wiki home | [docs/wiki/README.md](docs/wiki/README.md) |
-| **Panel guide (all screenshots)** | [panel-guide.md](docs/wiki/panel-guide.md) |
-| Architecture | [architecture.md](docs/wiki/architecture.md) |
-| Install panel | [install-panel.md](docs/wiki/install-panel.md) |
-| Install nodes | [install-nodes.md](docs/wiki/install-nodes.md) |
-| Env reference | [env-reference.md](docs/wiki/env-reference.md) |
-| Accounts & quotas | [accounts-and-quotas.md](docs/wiki/accounts-and-quotas.md) |
-| SFTP | [sftp.md](docs/wiki/sftp.md) |
-| Operations | [operations.md](docs/wiki/operations.md) |
-| Activity log & alerts | [activity-log.md](docs/wiki/activity-log.md) |
-| Client API (API keys) | [client-api.md](docs/wiki/client-api.md) |
-| Application API & Mollie | [application-api.md](docs/wiki/application-api.md) |
-| Licensing | [licensing.md](docs/wiki/licensing.md) |
-| Release builds (sell) | [release-builds.md](docs/wiki/release-builds.md) |
-| Schedules (chains) | [schedules.md](docs/wiki/schedules.md) |
-| Move between nodes | [node-transfer.md](docs/wiki/node-transfer.md) |
-| Security | [security.md](docs/wiki/security.md) |
-| Scaling | [scaling.md](docs/wiki/scaling.md) |
-| Development | [development.md](docs/wiki/development.md) |
+## Documentation
+
+| Topic | Document |
+|-------|----------|
+| Wiki index | [docs/wiki/README.md](docs/wiki/README.md) |
+| UI tour | [panel-guide.md](docs/wiki/panel-guide.md) |
+| Install panel / nodes | [install-panel.md](docs/wiki/install-panel.md) · [install-nodes.md](docs/wiki/install-nodes.md) |
+| Architecture & scaling | [architecture.md](docs/wiki/architecture.md) · [scaling.md](docs/wiki/scaling.md) |
+| Environment | [env-reference.md](docs/wiki/env-reference.md) |
+| APIs | [client-api.md](docs/wiki/client-api.md) · [application-api.md](docs/wiki/application-api.md) · [OpenAPI](docs/openapi.yaml) |
+| Licensing & releases | [licensing.md](docs/wiki/licensing.md) · [release-builds.md](docs/wiki/release-builds.md) |
+| Security & ops | [security.md](docs/wiki/security.md) · [operations.md](docs/wiki/operations.md) |
+| Roadmap | [docs/roadmap.md](docs/roadmap.md) |
+
+---
 
 ## License
 
-Copyright © 2026 · Powered by **Guartrix**.
+Copyright © 2026 Guartrix. All rights reserved.

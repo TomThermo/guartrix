@@ -94,7 +94,7 @@ curl -fsSL https://raw.githubusercontent.com/TomThermo/guartrix/main/scripts/ins
 ```
 
 The script installs Docker, Node 22, clones to `/opt/guartrix`, writes `.env`
-(`SKIP_LOCAL_LICENSE_SERVER=1`, `LICENSE_SERVER_URL=https://license.guartrix.com`),
+(`LICENSE_SERVER_URL=https://license.guartrix.com`),
 sets up MySQL, builds, and enables systemd units (`guartrix-daemon`, `guartrix-api`,
 `guartrix-web`).
 
@@ -119,7 +119,6 @@ cp .env.example .env
 #   PUBLIC_BASE_URL=https://your.domain
 # LICENSE_SERVER_URL=https://license.guartrix.com
 # LICENSE_KEY=GTRX-…
-# SKIP_LOCAL_LICENSE_SERVER=1
 
 npm install
 npm run db:generate

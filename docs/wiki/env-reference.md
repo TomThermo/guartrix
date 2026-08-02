@@ -47,39 +47,17 @@ Installer: `--mysql-docker` (default) or `--mysql-external` / `--database-url`. 
 | `BILLING_WEBHOOK_URL` | Optional outbound JSON webhook on payment paid / provisioned / subscription events |
 | `CURSEFORGE_API_KEY` | Optional CurseForge API key for Modpacks tab search/install |
 | `LICENSE_SERVER_URL` | Panel: license API URL (default `https://license.$PUBLIC_HOST` / `https://license.guartrix.com`) |
-| `SKIP_LOCAL_LICENSE_SERVER` | Panel: `1` = do not start a local license process (customer default). Operator hosts with a sibling checkout may set `0` |
 | `SKIP_LOCAL_DAEMON` | Panel: `1` = no local daemon / local node (panel-only install; use remote nodes) |
-| `LICENSE_SERVER_HOME` | Optional absolute path to the sibling `guartrix-license-server` checkout (default `$ROOT/../guartrix-license-server`) |
 | `LICENSE_KEY` | Panel license key |
 | `LICENSE_INSTALL_ID` | Optional stable install id (else auto-file in `data/`) |
 | `LICENSE_VERIFY_PUBLIC_KEY` | Ed25519 public key (PEM) to verify signed validate responses; else `data/licenses/signing-public.pem` |
 | `LICENSE_ALLOW_UNSIGNED` | `1` = accept unsigned validate JSON (insecure; migration only) |
 | `LICENSE_UNREACHABLE_GRACE_MS` | Soft-valid window if license host unreachable (default `86400000` = 24h) |
 | `LICENSE_VALIDATE_INTERVAL_MS` | How often the panel calls `/v1/validate` in the background (default `600000` = 10m) |
-| `LICENSE_PUBLIC_HOST` | Hostname prod-web routes to the license API (default `license.$PUBLIC_HOST`) |
-| `LICENSE_PROXY_HOST` / `LICENSE_PROXY_PORT` | Upstream for that host (default `127.0.0.1:4040`) |
-| `LICENSE_TLS_CERT_FILE` / `LICENSE_TLS_KEY_FILE` | Optional SNI cert for the license host (default Let’s Encrypt `license.$PUBLIC_HOST`) |
 | `DAEMON_PUBLIC_HOST` | Hostname prod-web routes to the local daemon (e.g. `node1.guartrix.com`) |
 
-License **server** bind/secret live in **`data/license.env`** on the license host.
-The template (`data/license.env.example`) ships with the **guartrix-license-server** package
-(next to the live `data/license.env`; also on `/download` for operators) — it is **not** in this panel GitHub repo:
 
-| Variable | Purpose |
-|----------|---------|
-| `LICENSE_SERVER_HOST` / `LICENSE_SERVER_PORT` | License API bind (default `0.0.0.0:4040`) |
-| `LICENSE_SERVER_URL` | Public URL in `/health` / console context |
-| `LICENSE_UI_HOST` / `LICENSE_UI_PORT` | Admin console bind (default **`127.0.0.1:4041`**) |
-| `LICENSE_ADMIN_SECRET` | Required strong secret (no defaults; refuses `change-me`) |
-| `LICENSE_TRUST_PROXY` | `1` = trust `X-Forwarded-For` (only behind your reverse proxy). Loopback UI→API proxy always trusts forwarded IP |
-| `LICENSE_RATE_VALIDATE_PER_MIN` | Max `/v1/validate` per IP / min (default `30`) |
-| `LICENSE_RATE_ADMIN_LOGIN_PER_MIN` | Max admin logins per IP / min (default `5`) |
-| `LICENSE_RATE_PUBLIC_PER_MIN` | Max `/v1/latest` + `/v1/public-key` per IP / min (default `60`) |
-| `LICENSE_RATE_ADMIN_PROBE_PER_MIN` | Max failed admin Bearer probes per IP / min (default `20`) |
-| `LICENSE_RATE_ADMIN_API_PER_MIN` | Max authenticated admin API calls per IP / min (default `120`) |
-| `LICENSE_SEED_DEV` | `1` = seed a tight-quota local key when store is empty |
-| `PUBLIC_IP` | Optional CORS helper for the console |
-| `DATA_DIR` | Optional store root (default `./data` → `data/licenses/`) |
+The license **server** is hosted separately by Guartrix (default `https://license.guartrix.com`). Panel installs only need `LICENSE_SERVER_URL` and `LICENSE_KEY`.
 
 ## Nodes & SFTP
 
@@ -105,9 +83,8 @@ The template (`data/license.env.example`) ships with the **guartrix-license-serv
 |----------|---------|
 | `CLOUDFLARE_API_TOKEN` / `ZONE_ID` / `DOMAIN` | Auto A records for servers |
 | `TLS_CERT_FILE` / `TLS_KEY_FILE` | Override Origin cert paths (panel behind Cloudflare) |
-| `LICENSE_TLS_CERT_FILE` / `LICENSE_TLS_KEY_FILE` | SNI cert for DNS-only `license.*` (LE by default) |
 | `DAEMON_TLS_CERT_FILE` / `DAEMON_TLS_KEY_FILE` | SNI cert for DNS-only `node1.*` / `DAEMON_PUBLIC_HOST` (LE by default) |
-| `LETSENCRYPT_EMAIL` | Email for `scripts/install-license-le-cert.sh` / `install-daemon-le-cert.sh` |
+| `LETSENCRYPT_EMAIL` | Email for `scripts/install-daemon-le-cert.sh` |
 | `DOWNLOAD_PASSWORD` | Enables `https://$PUBLIC_HOST/download` (release zip gate) |
 | `DOWNLOAD_ENABLED` | Set `0` to disable even if password is set |
 | `DOWNLOAD_DIR` | Zip publish dir (default `data/downloads`) |

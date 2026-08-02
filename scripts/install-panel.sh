@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Guartrix panel installer — one-shot install on a fresh Ubuntu VPS.
-# Installs panel + local daemon + web. Does NOT run a license server
+# Installs panel + local daemon + web. License validation uses LICENSE_SERVER_URL.
 # (customers use LICENSE_SERVER_URL=https://license.guartrix.com).
 #
 # Canonical curl entrypoint (auto-downloads this file to disk + binds a TTY):
@@ -773,8 +773,7 @@ DEFAULT_MAX_MEMORY_MB=0
 DEFAULT_MAX_DATABASES=0
 MONITOR_INTERVAL=20
 BOOT_START_STAGGER_MS=20000
-# Customer installs talk to Guartrix's public license API — no local license-server
-SKIP_LOCAL_LICENSE_SERVER=1
+# Panel validates against Guartrix's public license API
 LICENSE_SERVER_URL=https://license.guartrix.com
 SKIP_LOCAL_DAEMON=${SKIP_LOCAL_DAEMON}
 EOF

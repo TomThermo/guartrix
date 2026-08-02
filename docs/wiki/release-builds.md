@@ -12,13 +12,8 @@ For **selling / self-hosted installs**, ship minified bundles — not TypeScript
 
 npm dependencies (Prisma, Fastify, ssh2, …) stay in `node_modules` — native modules must.
 
-The **license server** is built from a **separate** operator checkout
-(`../guartrix-license-server`). `package:download` zips it from
-`LICENSE_SERVER_HOME` when that tree exists; it is **not** compiled from this
-panel repo.
-
 This is **not DRM**. It raises the bar for casual copying; the real control is your
-[license server](licensing.md). Determined reverse-engineering of Node JS is always possible.
+[license key / validate API](licensing.md). Determined reverse-engineering of Node JS is always possible.
 
 ## Commands (source tree / your build machine)
 
@@ -61,14 +56,10 @@ After `npm run package:download`, open **https://guartrix.com/download** and unl
 | File | Contents |
 |------|----------|
 | `guartrix-bundle-latest.zip` | Master zip of all parts |
-| `guartrix-panel-*.zip` | Customer panel (**no** git, src, download gate, or license-server) |
+| `guartrix-panel-*.zip` | Customer panel (**no** git, src, or download gate) |
 | `guartrix.env.example` | Panel `.env` template (also inside every panel/api/web zip) |
 | `daemon.env.example` | Same content as `data/daemon.env.example` in the daemon zip (next to live `data/daemon.env`) |
-| `license.env.example` | Same content as `data/license.env.example` in the license-server package (next to live `data/license.env`) |
-
-Each component zip includes a **`README.txt`** (panel also has **`INSTALL.txt`**) with install steps for that piece.
 | `guartrix-api/web/daemon-*.zip` | Individual build outputs |
-| `guartrix-license-server-*.zip` | License server (**operators only**; built from `LICENSE_SERVER_HOME`) |
 
 Customer packages are staged with `guartrix_stage_release_tree … customer` which strips
 operator tooling and asserts a denylist (`.git`, `src/`, secrets, download module).
@@ -93,8 +84,9 @@ npm run db:generate && npm run db:push
 bash scripts/start.sh
 ```
 
-Each customer needs a **license key** from your license console (set quotas, features,
-and bound IPs per key first). Put `LICENSE_SERVER_URL` + `LICENSE_KEY` in their `.env`.
+Each customer needs a **license key** (set quotas / features on your side first).
+Put `LICENSE_SERVER_URL` + `LICENSE_KEY` in their `.env` (default server URL is
+`https://license.guartrix.com`).
 
 `install-panel.sh` / `install-daemon.sh` detect a prebuilt release (no `src/`) and skip compile.
 
@@ -106,6 +98,6 @@ and bound IPs per key first). Put `LICENSE_SERVER_URL` + `LICENSE_KEY` in their 
 | `scripts/esbuild-release.mjs` | Bundle + minify api / daemon |
 | `scripts/lib-stage-release.sh` | Shared staging (no sources) for `build/` and tarballs |
 | `scripts/package-release.sh` | Typecheck → release build → stage → `.tar.gz` |
-| `scripts/package-download-bundle.sh` | Component zips + master zip → `data/downloads/` (license zip from sibling) |
+| `scripts/package-download-bundle.sh` | Component zips + master zip → `data/downloads/` |
 
 Do **not** commit `build/`, `dist-release/`, or `dist-download/` (gitignored).

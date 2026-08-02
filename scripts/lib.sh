@@ -6,37 +6,11 @@
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-# Sibling operator checkout (outside the GitHub panel repo). Override with LICENSE_SERVER_HOME.
-# When ROOT is ./build (build-out), the sibling sits next to the panel checkout (../..).
-resolve_license_server_home() {
-  local candidate
-  if [[ -n "${LICENSE_SERVER_HOME:-}" ]]; then
-    LICENSE_SERVER_HOME="$(cd "$LICENSE_SERVER_HOME" 2>/dev/null && pwd || echo "$LICENSE_SERVER_HOME")"
-  else
-    for candidate in \
-      "$ROOT/../guartrix-license-server" \
-      "$ROOT/../../guartrix-license-server"
-    do
-      if [[ -d "$candidate" ]]; then
-        LICENSE_SERVER_HOME="$(cd "$candidate" && pwd)"
-        break
-      fi
-    done
-  fi
-  if [[ -n "${LICENSE_SERVER_HOME:-}" ]]; then
-    LICENSE_SERVER_ENTRY="$LICENSE_SERVER_HOME/dist/index.js"
-  else
-    LICENSE_SERVER_ENTRY=""
-  fi
-}
-resolve_license_server_home
-
 LOG_DIR="${LOG_DIR:-$ROOT/data/logs}"
 mkdir -p "$LOG_DIR"
 DAEMON_LOG="${LOG_DIR}/guartrix-daemon.log"
 API_LOG="${LOG_DIR}/guartrix-api.log"
 WEB_LOG="${LOG_DIR}/guartrix-web.log"
-LICENSE_LOG="${LOG_DIR}/guartrix-license.log"
 MONITOR_LOG="${LOG_DIR}/guartrix-monitor.log"
 PID_DIR="$ROOT/data/run"
 mkdir -p "$PID_DIR"
@@ -67,44 +41,12 @@ load_env_file() {
   done < "$file"
 }
 
-# Same as load_env_file but always overwrites (for standalone license.env).
-load_env_file_force() {
-  local file="$1"
-  [[ -f "$file" ]] || return 0
-  while IFS= read -r line || [[ -n "$line" ]]; do
-    line="${line%"${line##*[![:space:]]}"}"
-    line="${line#"${line%%[![:space:]]*}"}"
-    [[ -z "$line" || "$line" == \#* ]] && continue
-    [[ "$line" != *=* ]] && continue
-    local key="${line%%=*}"
-    local val="${line#*=}"
-    key="${key%"${key##*[![:space:]]}"}"
-    key="${key#"${key%%[![:space:]]*}"}"
-    val="${val%"${val##*[![:space:]]}"}"
-    val="${val#"${val%%[![:space:]]*}"}"
-    if [[ "${val}" == \"*\" && "${val}" == *\" ]]; then
-      val="${val:1:-1}"
-    elif [[ "${val}" == \'*\' && "${val}" == *\' ]]; then
-      val="${val:1:-1}"
-    fi
-    export "$key=$val"
-  done < "$file"
-}
-
 load_env_file "$ROOT/.env"
 load_env_file "$ROOT/data/daemon.env"
-# License server is standalone — bind/secret live in data/license.env only.
-load_env_file_force "$ROOT/data/license.env"
-# Re-resolve after .env (LICENSE_SERVER_HOME may be set there)
-resolve_license_server_home
 
 API_PORT="${API_PORT:-3001}"
 DAEMON_PORT="${DAEMON_PORT:-8081}"
 DAEMON_HOST="${DAEMON_HOST:-127.0.0.1}"
-LICENSE_SERVER_PORT="${LICENSE_SERVER_PORT:-4040}"
-LICENSE_SERVER_HOST="${LICENSE_SERVER_HOST:-0.0.0.0}"
-LICENSE_UI_PORT="${LICENSE_UI_PORT:-4041}"
-LICENSE_UI_HOST="${LICENSE_UI_HOST:-127.0.0.1}"
 WEB_PORT="${WEB_PORT:-80}"
 HTTPS_PORT="${HTTPS_PORT:-443}"
 HTTPS_ENABLED="${HTTPS_ENABLED:-true}"
@@ -162,15 +104,6 @@ stop_old() {
       [[ -n "$p" ]] && pids+=("$p")
     done < <(port_pids "$port")
   done
-  if [[ "${SKIP_LOCAL_LICENSE_SERVER:-0}" != "1" && "${SKIP_LOCAL_LICENSE_SERVER:-}" != "true" ]]; then
-    while IFS= read -r p; do
-      [[ -n "$p" ]] && pids+=("$p")
-    done < <(port_pids "$LICENSE_SERVER_PORT")
-    while IFS= read -r p; do
-      [[ -n "$p" ]] && pids+=("$p")
-    done < <(port_pids "$LICENSE_UI_PORT")
-  fi
-
   # Privileged web ports may need sudo to see/kill
   for port in "$WEB_PORT" "$HTTPS_PORT"; do
     [[ -z "$port" || "$port" == "0" ]] && continue
@@ -191,9 +124,6 @@ stop_old() {
     pgrep -f "$ROOT/scripts/prod-web.mjs" 2>/dev/null || true
     pgrep -f "$ROOT/scripts/start-prod.mjs" 2>/dev/null || true
     pgrep -f "$ROOT/apps/daemon/dist/index.js" 2>/dev/null || true
-    if [[ -n "${LICENSE_SERVER_ENTRY:-}" ]]; then
-      pgrep -f "$LICENSE_SERVER_ENTRY" 2>/dev/null || true
-    fi
   )
 
   # API node processes whose cwd is apps/api
@@ -221,7 +151,7 @@ stop_old() {
   fi
 
   # Clear stale pid files (monitor.pid is left alone — ensure_monitor manages it)
-  rm -f "$PID_DIR"/{daemon,api,web,license}.pid
+  rm -f "$PID_DIR"/{daemon,api,web}.pid
 
   # Confirm panel ports free (Minecraft game ports are left alone)
   for port in "$API_PORT" "$DAEMON_PORT"; do
@@ -229,14 +159,6 @@ stop_old() {
       fail "Port $port is still in use after stop"
     fi
   done
-  if [[ "${SKIP_LOCAL_LICENSE_SERVER:-0}" != "1" && "${SKIP_LOCAL_LICENSE_SERVER:-}" != "true" ]]; then
-    if [[ -n "$(port_pids "$LICENSE_SERVER_PORT")" ]]; then
-      fail "Port $LICENSE_SERVER_PORT is still in use after stop"
-    fi
-    if [[ -n "$(port_pids "$LICENSE_UI_PORT")" ]]; then
-      fail "Port $LICENSE_UI_PORT is still in use after stop"
-    fi
-  fi
   info "Old processes stopped"
 }
 
@@ -261,12 +183,6 @@ preflight() {
   if [[ "${SKIP_LOCAL_DAEMON:-0}" != "1" && "${SKIP_LOCAL_DAEMON:-}" != "true" ]]; then
     [[ -f "$ROOT/apps/daemon/dist/index.js" ]] || fail "Daemon build missing — run: npm run build"
   fi
-  if [[ "${SKIP_LOCAL_LICENSE_SERVER:-0}" != "1" && "${SKIP_LOCAL_LICENSE_SERVER:-}" != "true" ]]; then
-    if [[ -z "${LICENSE_SERVER_HOME:-}" || ! -f "${LICENSE_SERVER_ENTRY:-}" ]]; then
-      fail "Local license server dist missing (LICENSE_SERVER_HOME=${LICENSE_SERVER_HOME:-unset}/dist/index.js). Checkout/build the sibling guartrix-license-server repo, set LICENSE_SERVER_HOME, or set SKIP_LOCAL_LICENSE_SERVER=1 to use LICENSE_SERVER_URL."
-    fi
-  fi
-
   if ! command -v docker >/dev/null 2>&1; then
     fail "docker not found"
   fi
@@ -308,7 +224,7 @@ EOF
     fi
   fi
 
-  info "Preflight OK (Node $(node -v), API :$API_PORT, daemon :$DAEMON_PORT, license-api :$LICENSE_SERVER_PORT, license-ui :$LICENSE_UI_PORT, web :$WEB_PORT)"
+  info "Preflight OK (Node $(node -v), API :$API_PORT, daemon :$DAEMON_PORT, web :$WEB_PORT)"
 }
 
 wait_http() {
@@ -335,21 +251,6 @@ start_services() {
   # shellcheck disable=SC1091
   [[ -f "$ROOT/data/daemon.env" ]] && . "$ROOT/data/daemon.env"
   set +a
-  resolve_license_server_home
-
-  info "Starting license server…"
-  if [[ "${SKIP_LOCAL_LICENSE_SERVER:-0}" == "1" || "${SKIP_LOCAL_LICENSE_SERVER:-}" == "true" ]]; then
-    info "Skipping local license server (SKIP_LOCAL_LICENSE_SERVER=1) — panel will use LICENSE_SERVER_URL"
-  else
-    (
-      cd "$LICENSE_SERVER_HOME"
-      nohup env GUARTRIX_PANEL_ROOT="$ROOT" node "$LICENSE_SERVER_ENTRY" >>"$LICENSE_LOG" 2>&1 &
-      echo $! >"$PID_DIR/license.pid"
-    )
-    wait_http "http://127.0.0.1:${LICENSE_SERVER_PORT}/health" "license-api"
-    wait_http "http://127.0.0.1:${LICENSE_UI_PORT}/health" "license-ui"
-  fi
-
   info "Starting daemon…"
   if [[ "${SKIP_LOCAL_DAEMON:-0}" == "1" || "${SKIP_LOCAL_DAEMON:-}" == "true" ]]; then
     info "Skipping local daemon (SKIP_LOCAL_DAEMON=1) — add remote nodes in the panel"
@@ -359,8 +260,8 @@ start_services() {
     wait_http "http://${DAEMON_HOST}:${DAEMON_PORT}/health" "daemon"
   fi
 
-  # Start web before the API so HTTPS Host proxies (license.* / DAEMON_PUBLIC_HOST)
-  # are already up when the API validates the license and talks to the local node.
+  # Start web before the API so HTTPS Host proxies (e.g. DAEMON_PUBLIC_HOST)
+  # are already up when the API talks to the local node.
   info "Starting web (client)…"
   local needs_root=0
   if [[ "$WEB_PORT" -gt 0 && "$WEB_PORT" -lt 1024 ]]; then needs_root=1; fi
@@ -430,12 +331,6 @@ ensure_monitor() {
 summary() {
   echo
   info "All services up"
-  if [[ "${SKIP_LOCAL_LICENSE_SERVER:-0}" == "1" || "${SKIP_LOCAL_LICENSE_SERVER:-}" == "true" ]]; then
-    info "  license remote (SKIP_LOCAL_LICENSE_SERVER=1) — set URL in Admin → License or LICENSE_SERVER_URL"
-  else
-    info "  license-api http://${PUBLIC_IP:-127.0.0.1}:${LICENSE_SERVER_PORT}/health (bind ${LICENSE_SERVER_HOST})"
-    info "  license-ui  http://${LICENSE_UI_HOST}:${LICENSE_UI_PORT}/ (admin console)"
-  fi
   if [[ "${SKIP_LOCAL_DAEMON:-0}" == "1" || "${SKIP_LOCAL_DAEMON:-}" == "true" ]]; then
     info "  daemon  skipped (SKIP_LOCAL_DAEMON=1) — add remote nodes in the panel"
   else
@@ -443,6 +338,6 @@ summary() {
   fi
   info "  API     http://127.0.0.1:${API_PORT}/api/health"
   info "  web     http://${PUBLIC_HOST}:${WEB_PORT}/"
-  info "  logs    $LICENSE_LOG | $DAEMON_LOG | $API_LOG | $WEB_LOG | $MONITOR_LOG"
+  info "  logs    $DAEMON_LOG | $API_LOG | $WEB_LOG | $MONITOR_LOG"
   info "  pids    $PID_DIR/"
 }

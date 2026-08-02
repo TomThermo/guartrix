@@ -18,8 +18,6 @@ Alternatives: `npm run prod` or `npm run build && npm run start:prod`.
 | Web HTTPS | `0.0.0.0:443` | Origin cert in `cert/` or `TLS_*` |
 | API | `127.0.0.1:3001` | Not public — proxied by web |
 | Daemon (local) | `127.0.0.1:8081` | Token in `data/daemon.env` |
-| License API | remote / local | Public validate via `LICENSE_SERVER_URL` (default `https://license.guartrix.com`). Local process only when `SKIP_LOCAL_LICENSE_SERVER=0` and sibling `guartrix-license-server` is present |
-| License UI | `127.0.0.1:4041` | Admin console on the license host only (see [Licensing](licensing.md)) |
 | SFTP | `0.0.0.0:2022` | Per node |
 | MySQL | `127.0.0.1:3306` | Panel (+ game DB container on nodes) |
 
@@ -29,12 +27,12 @@ Binding ports &lt; 1024 needs passwordless sudo, or set `WEB_PORT=8080`.
 
 `scripts/start.sh` starts `scripts/monitor.sh` (~20s interval):
 
-- Restarts license / daemon / API / web if unhealthy
+- Restarts daemon / API / web if unhealthy
 - Does **not** restart `docker.service` (would wipe `--rm` game containers)
 - Does **not** stop Minecraft servers when the panel restarts
 - When `ACTIVITY_WEBHOOK_URL` is set, posts Discord-compatible alerts on restart / critical backoff
 
-Disable with `NO_MONITOR=1`. Logs: `data/logs/guartrix-*.log` (includes `guartrix-license.log`).
+Disable with `NO_MONITOR=1`. Logs: `data/logs/guartrix-*.log`.
 
 If you run under **systemd** (`guartrix-{daemon,api,web}.service` from `install-panel.sh`),
 prefer **`bash scripts/start.sh`** for the first boot / day-to-day ops so the
@@ -59,32 +57,6 @@ sudo bash scripts/install-panel-backup-cron.sh
 ```
 
 Copy dumps off-box periodically — a failed disk loses users, quotas, billing and activity.
-
-## License store backup
-
-```bash
-bash scripts/backup-licenses.sh
-# → data/backups/licenses/licenses_*.tar.gz (keys + signing PEMs; keeps last 30)
-```
-
-Daily timer (~03:30 UTC):
-
-```bash
-sudo bash scripts/install-license-backup-cron.sh
-```
-
-Without these backups a lost disk loses **all customer license keys** and the Ed25519
-signing key (panels must get a new public key if you regenerate).
-
-## Public license hostname TLS
-
-`license.guartrix.com` is **DNS-only** (grey cloud) with a Let’s Encrypt cert on prod-web SNI
-(so `/v1/validate` is not blocked by Cloudflare bot challenges):
-
-```bash
-sudo bash scripts/install-license-le-cert.sh
-bash build/start.sh
-```
 
 ## Public daemon hostname TLS (local node)
 
