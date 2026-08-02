@@ -1,87 +1,68 @@
 #!/usr/bin/env bash
-# Guartrix one-shot installer entrypoint.
+# Guartrix install entrypoint (curl|bash safe).
 #
-# Interactive (recommended — no flags):
+# Known-good pattern (what users already use successfully):
+#   curl …/install-panel.sh -o /tmp/gp.sh && sudo bash /tmp/gp.sh
+#
+# This wrapper does the same automatically so this works too:
 #   curl -fsSL https://raw.githubusercontent.com/TomThermo/guartrix/main/scripts/install.sh | sudo bash
 #
-# When piped via curl, this downloads install-panel.sh and re-runs it with /dev/tty
-# attached (required for prompts under curl|bash).
-# Local checkouts use the sibling scripts/install-panel.sh.
-#
-# Optional flags / env: see install-panel.sh --help
-# Non-interactive automation: GUARTRIX_NONINTERACTIVE=1 plus flags/env.
-#
-# Override fetch source:
-#   GUARTRIX_INSTALL_PANEL=/path/to/install-panel.sh
-#   GUARTRIX_INSTALL_REF=<git-sha-or-branch>   # pin raw.githubusercontent.com ref
-#   GUARTRIX_INSTALL_RAW_BASE=https://…/scripts
+# Why: under `curl | sudo bash`, stdin is the script pipe — not a TTY. Interactive
+# prompts then hang or stay invisible. Running a on-disk script with stdin bound
+# to /dev/tty matches the working /tmp/gp.sh flow.
 set -euo pipefail
 
 REPO_SLUG="${GUARTRIX_INSTALL_REPO:-TomThermo/guartrix}"
 INSTALL_REF="${GUARTRIX_INSTALL_REF:-main}"
-RAW_BASE="${GUARTRIX_INSTALL_RAW_BASE:-https://raw.githubusercontent.com/${REPO_SLUG}/${INSTALL_REF}/scripts}"
+PANEL_URL="${GUARTRIX_INSTALL_PANEL_URL:-https://raw.githubusercontent.com/${REPO_SLUG}/${INSTALL_REF}/scripts/install-panel.sh}"
+# Optional: local path instead of download (dev checkouts)
 PANEL_SRC="${GUARTRIX_INSTALL_PANEL:-}"
-MIN_PANEL_MARKER='INSTALLER_VERSION="1.0.10"'
 
 ROOT=""
 if [[ -n "${BASH_SOURCE[0]:-}" ]]; then
   ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)" || ROOT=""
 fi
 
-fetch_panel() {
-  local url="$1"
-  local dest="$2"
-  # Bust GitHub raw CDN (max-age=300) — stale main was serving old install-panel.sh
-  # while install.sh was already new, which hung the wizard after role choice.
-  local bust
+TMP="$(mktemp -t guartrix-install.XXXXXX)"
+cleanup() { rm -f "$TMP"; }
+trap cleanup EXIT
+
+if [[ -n "$PANEL_SRC" && -f "$PANEL_SRC" ]]; then
+  cp -f "$PANEL_SRC" "$TMP"
+  echo "[guartrix] Using local installer ${PANEL_SRC}"
+elif [[ -n "$ROOT" && -f "$ROOT/install-panel.sh" ]]; then
+  cp -f "$ROOT/install-panel.sh" "$TMP"
+  echo "[guartrix] Using local installer ${ROOT}/install-panel.sh"
+else
   bust="$(date +%s)"
-  echo "[guartrix] Fetching installer from ${url} …"
+  echo "[guartrix] Downloading installer…"
   curl -fsSL \
     -H 'Cache-Control: no-cache' \
     -H 'Pragma: no-cache' \
-    "${url}?t=${bust}" \
-    -o "$dest"
-}
-
-panel_is_current() {
-  local f="$1"
-  grep -q "$MIN_PANEL_MARKER" "$f" 2>/dev/null || grep -q 'tty_out_nl' "$f" 2>/dev/null
-}
-
-PANEL=""
-CLEANUP=""
-if [[ -n "$PANEL_SRC" && -f "$PANEL_SRC" ]]; then
-  PANEL="$PANEL_SRC"
-elif [[ -n "$PANEL_SRC" && "$PANEL_SRC" == https://* ]]; then
-  CLEANUP="$(mktemp)"
-  fetch_panel "$PANEL_SRC" "$CLEANUP"
-  PANEL="$CLEANUP"
-elif [[ -n "$ROOT" && -f "$ROOT/install-panel.sh" ]]; then
-  PANEL="$ROOT/install-panel.sh"
-else
-  CLEANUP="$(mktemp)"
-  fetch_panel "${RAW_BASE}/install-panel.sh" "$CLEANUP"
-  PANEL="$CLEANUP"
+    "${PANEL_URL}?t=${bust}" \
+    -o "$TMP"
 fi
 
-if ! panel_is_current "$PANEL"; then
-  echo "[guartrix] ERROR: install-panel.sh is older than 1.0.10 (wizard hangs after role choice)." >&2
-  echo "[guartrix] GitHub raw CDN may still be stale. Retry with a commit pin:" >&2
-  echo "  curl -fsSL 'https://raw.githubusercontent.com/${REPO_SLUG}/20c7759b84bf01dcdd376e30525a2b17af468165/scripts/install.sh' | sudo bash" >&2
-  echo "Or download to a file first:" >&2
-  echo "  curl -fsSL 'https://raw.githubusercontent.com/${REPO_SLUG}/main/scripts/install-panel.sh?t=$(date +%s)' -o /tmp/gp.sh && sudo bash /tmp/gp.sh" >&2
-  [[ -n "$CLEANUP" ]] && rm -f "$CLEANUP"
+chmod 700 "$TMP"
+
+if ! grep -q 'tty_out_nl' "$TMP" 2>/dev/null; then
+  echo "[guartrix] ERROR: downloaded installer looks too old (missing tty fixes)." >&2
+  echo "[guartrix] Wait ~5m for GitHub raw CDN, or run:" >&2
+  echo "  curl -fsSL '${PANEL_URL}?t=$(date +%s)' -o /tmp/gp.sh && sudo bash /tmp/gp.sh" >&2
   exit 1
 fi
 
+# Match the working command: bash /path/to/file with a real TTY on stdin.
+# Only redirect stdin — leave stdout/stderr as the user's terminal (redirecting
+# all three to /dev/tty has caused hangs under some sudo/SSH setups).
 set +e
-# Re-attach the controlling TTY so the panel wizard can prompt under curl|bash.
-if [[ -r /dev/tty && -w /dev/tty ]]; then
-  bash "$PANEL" "$@" </dev/tty >/dev/tty 2>/dev/tty
+if [[ -r /dev/tty ]]; then
+  bash "$TMP" "$@" </dev/tty
 else
-  bash "$PANEL" "$@"
+  echo "[guartrix] ERROR: no /dev/tty — cannot run interactive installer from a pipe." >&2
+  echo "[guartrix] Use: curl -fsSL '…/install-panel.sh' -o /tmp/gp.sh && sudo bash /tmp/gp.sh" >&2
+  exit 1
 fi
 rc=$?
 set -e
-[[ -n "$CLEANUP" ]] && rm -f "$CLEANUP"
 exit "$rc"

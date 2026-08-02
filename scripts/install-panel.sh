@@ -3,8 +3,11 @@
 # Installs panel + local daemon + web. Does NOT run a license server
 # (customers use LICENSE_SERVER_URL=https://license.guartrix.com).
 #
+# Canonical curl entrypoint (auto-downloads this file to disk + binds a TTY):
 #   curl -fsSL https://raw.githubusercontent.com/TomThermo/guartrix/main/scripts/install.sh | sudo bash
-#   # Interactive wizard (HTTPS, IP/domain, MySQL, admin password, license) — no flags needed
+#
+# Direct (also fine — script file already on disk):
+#   curl -fsSL …/install-panel.sh -o /tmp/gp.sh && sudo bash /tmp/gp.sh
 #
 # Optional flags (automation / skip wizard):
 #   # HTTP via public IP only (no TLS):
@@ -24,6 +27,27 @@
 #   GUARTRIX_INSTALL_ROLE=full|panel|daemon
 
 set -euo pipefail
+
+# If this script was started via `curl | bash` (stdin = pipe), re-exec from a
+# temp file with /dev/tty as stdin — same as the known-good /tmp/gp.sh flow.
+if [[ -z "${GUARTRIX_INSTALL_BOOTED:-}" && ! -t 0 ]]; then
+  export GUARTRIX_INSTALL_BOOTED=1
+  _boot="$(mktemp -t guartrix-install.XXXXXX)"
+  if [[ -n "${BASH_SOURCE[0]:-}" && -f "${BASH_SOURCE[0]}" ]]; then
+    cp -f "${BASH_SOURCE[0]}" "$_boot"
+  else
+    curl -fsSL -H 'Cache-Control: no-cache' \
+      "https://raw.githubusercontent.com/TomThermo/guartrix/main/scripts/install-panel.sh?t=$(date +%s)" \
+      -o "$_boot"
+  fi
+  chmod 700 "$_boot"
+  if [[ ! -r /dev/tty ]]; then
+    echo "ERROR: no /dev/tty — run: curl …/install-panel.sh -o /tmp/gp.sh && sudo bash /tmp/gp.sh" >&2
+    rm -f "$_boot"
+    exit 1
+  fi
+  exec bash "$_boot" "$@" </dev/tty
+fi
 
 REPO_URL="${GUARTRIX_REPO_URL:-https://github.com/TomThermo/guartrix.git}"
 INSTALL_DIR="${GUARTRIX_INSTALL_DIR:-/opt/guartrix}"
@@ -53,7 +77,8 @@ SKIP_START=0
 
 usage() {
   cat <<'EOF'
-Guartrix installer (Ubuntu 22.04/24.04)
+Guartrix installer (Ubuntu 24.04 recommended; 22.04 OK)
+
 
 Roles:
   full    Panel API + web + local daemon (default)
@@ -124,7 +149,7 @@ normalize_https_flag() {
 # Interactive I/O for curl|bash (stdin is the script pipe — not a TTY).
 # Always talk to /dev/tty directly: non-interactive bash may line-buffer stdout, so
 # prompts without a trailing newline never appear and the wizard looks "hung".
-INSTALLER_VERSION="1.0.15"
+INSTALLER_VERSION="1.0.17"
 
 can_prompt() {
   [[ -r /dev/tty && -w /dev/tty ]] || [[ -t 0 && -t 1 ]]

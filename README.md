@@ -46,13 +46,28 @@ Full gallery (login, create server, users, backups, players, …): **[Panel guid
 
 ## Quick start
 
-### New Ubuntu VPS (one command)
+### Supported Linux
+
+The one-command installer uses **apt** (Docker, Node 22, packages).
+
+| Distro | Support |
+|--------|---------|
+| **Ubuntu 24.04 LTS** | **Best choice** — recommended for new installs |
+| **Ubuntu 22.04 LTS** | Supported |
+| Debian 12 (Bookworm) | Usually works (same apt-based flow); not primary QA target |
+| Other (RHEL, Fedora, Arch, …) | Not supported by `install.sh` — use a manual checkout |
+
+Use a **fresh VPS** with a public IPv4. x86_64 is the normal path.
+
+### New VPS (one command)
 
 Interactive wizard (recommended — no flags):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/TomThermo/guartrix/main/scripts/install.sh | sudo bash
 ```
+
+(`install.sh` downloads the full installer to a temp file and runs it with a TTY — required for `curl | sudo bash`.)
 
 Asks role (full panel / panel-only / daemon-only), then IP, HTTPS, MySQL, admin, license.
 

@@ -1,6 +1,6 @@
 # Install the panel
 
-Target: fresh Ubuntu with a public IP. Optional domain + HTTPS (Cloudflare recommended).
+Target: fresh **Ubuntu 24.04 LTS** (best) or **22.04 LTS** with a public IP. Optional domain + HTTPS (Cloudflare recommended). Debian 12 may work; other distros are not covered by the apt-based installer.
 
 Installs **panel + local daemon + web** (+ MySQL via Docker). Does **not** install the
 Guartrix license server — the panel uses `https://license.guartrix.com` by default.
@@ -27,13 +27,9 @@ No flags. The installer asks for:
 
 Daemon-only asks for token + node id from **System → Add node** instead of panel DB/HTTPS details.
 
-(`scripts/install-panel.sh` is the same installer; `install.sh` fetches it when piped via curl.)
+(`scripts/install.sh` downloads `install-panel.sh` to a temp file and runs it with a real TTY — same as the manual `/tmp/gp.sh` flow. That is required because `curl | sudo bash` leaves stdin as a pipe, which hangs the wizard.)
 
-After you pick a role, the next prompt is **Install directory** (default `/opt/guartrix`). The banner must show a version (**v1.0.12+**). If you still see plain `Guartrix installer` without `v…`, GitHub raw CDN served a stale file — bypass it:
-
-```bash
-curl -fsSL "https://raw.githubusercontent.com/TomThermo/guartrix/main/scripts/install-panel.sh?t=$(date +%s)" -o /tmp/gp.sh && sudo bash /tmp/gp.sh
-```
+After you pick a role, the next prompt is **Install directory**. Banner should show **v1.0.17+**.
 
 ### HTTP only (flags / automation)
 
