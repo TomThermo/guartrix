@@ -69,34 +69,19 @@ Use a clean VPS with a public IPv4 address (x86_64).
 
 ## Installation
 
-### One-command install (recommended)
+### One-command install
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/TomThermo/guartrix/main/scripts/install.sh | sudo bash
 ```
 
-`install.sh` downloads the full installer to `/tmp/guartrix-install.sh` and runs it
-inside a real terminal (`script`). Banner should show **v1.0.19+**.
+That is the supported install path (interactive wizard). Requires an SSH/terminal session and Ubuntu 22.04/24.04.
 
-If a pipe still misbehaves on your host, use the equivalent two-step form:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/TomThermo/guartrix/main/scripts/install-panel.sh \
-  -o /tmp/guartrix-install.sh && sudo bash /tmp/guartrix-install.sh
-```
-
-The wizard configures install role (full panel, panel-only, or daemon-only), network access (HTTP or HTTPS), MySQL, admin password, and license key.
-
-**Automation examples:**
+**Automation** (no wizard prompts for set flags):
 
 ```bash
-# Full panel over HTTP
 curl -fsSL …/install.sh | sudo bash -s -- --full --http --ip YOUR.PUBLIC.IP
-
-# Panel only (remote game nodes)
 curl -fsSL …/install.sh | sudo bash -s -- --panel-only --http --ip YOUR.PUBLIC.IP
-
-# Daemon only (existing panel)
 curl -fsSL …/install.sh | sudo bash -s -- --daemon-only \
   --token … --node-id … --ip NODE_IP --panel https://YOUR_PANEL
 ```

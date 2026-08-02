@@ -1,66 +1,100 @@
 #!/usr/bin/env bash
-# Guartrix install entrypoint for:  curl …/install.sh | sudo bash
+# Guartrix — one-line installer
 #
-# Under curl|bash, stdin is a pipe — interactive prompts break. This wrapper
-# downloads install-panel.sh to disk and re-runs it inside `script(1)` so the
-# installer gets a real PTY (same effective setup as:
-#   curl …/install-panel.sh -o /tmp/gp.sh && sudo bash /tmp/gp.sh
-# ).
+#   curl -fsSL https://raw.githubusercontent.com/TomThermo/guartrix/main/scripts/install.sh | sudo bash
+#
+# curl|bash leaves stdin as a pipe, so prompts cannot work there. We download
+# the real installer to disk and run it on a PTY wired to /dev/tty.
 set -euo pipefail
 
-REPO_SLUG="${GUARTRIX_INSTALL_REPO:-TomThermo/guartrix}"
-INSTALL_REF="${GUARTRIX_INSTALL_REF:-main}"
-PANEL_URL="${GUARTRIX_INSTALL_PANEL_URL:-https://raw.githubusercontent.com/${REPO_SLUG}/${INSTALL_REF}/scripts/install-panel.sh}"
-PANEL_SRC="${GUARTRIX_INSTALL_PANEL:-}"
+URL="${GUARTRIX_INSTALL_PANEL_URL:-https://raw.githubusercontent.com/TomThermo/guartrix/main/scripts/install-panel.sh}"
 DEST="${GUARTRIX_INSTALL_DEST:-/tmp/guartrix-install.sh}"
+SRC="${GUARTRIX_INSTALL_PANEL:-}"
 
-ROOT=""
-if [[ -n "${BASH_SOURCE[0]:-}" ]]; then
-  ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)" || ROOT=""
-fi
-
-if [[ -n "$PANEL_SRC" && -f "$PANEL_SRC" ]]; then
-  cp -f "$PANEL_SRC" "$DEST"
-  echo "[guartrix] Using local installer ${PANEL_SRC}"
-elif [[ -n "$ROOT" && -f "$ROOT/install-panel.sh" ]]; then
-  cp -f "$ROOT/install-panel.sh" "$DEST"
-  echo "[guartrix] Using local installer ${ROOT}/install-panel.sh"
+# Local checkout / override
+if [[ -n "$SRC" && -f "$SRC" ]]; then
+  cp -f "$SRC" "$DEST"
+elif [[ -n "${BASH_SOURCE[0]:-}" && -f "$(dirname "${BASH_SOURCE[0]}")/install-panel.sh" ]]; then
+  cp -f "$(dirname "${BASH_SOURCE[0]}")/install-panel.sh" "$DEST"
 else
   echo "[guartrix] Downloading installer…"
-  curl -fsSL \
-    -H 'Cache-Control: no-cache' \
-    -H 'Pragma: no-cache' \
-    "${PANEL_URL}?t=$(date +%s)" \
-    -o "$DEST"
+  curl -fsSL -H 'Cache-Control: no-cache' "${URL}?t=$(date +%s)" -o "$DEST"
 fi
-
 chmod 700 "$DEST"
 
-if ! grep -q 'INSTALLER_VERSION=' "$DEST" 2>/dev/null; then
-  echo "[guartrix] ERROR: download does not look like the Guartrix installer." >&2
+grep -q 'INSTALLER_VERSION=' "$DEST" || {
+  echo "[guartrix] ERROR: bad download (${DEST})" >&2
   exit 1
+}
+
+echo "[guartrix] Starting $(grep -m1 'INSTALLER_VERSION=' "$DEST" | cut -d= -f2 | tr -d '"') …"
+
+[[ -r /dev/tty && -w /dev/tty ]] || {
+  echo "[guartrix] ERROR: need an interactive terminal (SSH)." >&2
+  echo "  curl -fsSL '${URL}' -o ${DEST} && sudo bash ${DEST}" >&2
+  exit 1
+}
+
+# PTY ↔ /dev/tty bridge (works under curl | sudo bash)
+if command -v python3 >/dev/null 2>&1; then
+  exec python3 - "$DEST" "$@" <<'PY'
+import errno, os, pty, select, sys, termios, tty
+
+installer, *args = sys.argv[1:]
+pid, master = pty.fork()
+if pid == 0:
+    os.execvp("bash", ["bash", installer, *args])
+
+tty_fd = os.open("/dev/tty", os.O_RDWR)
+old = None
+try:
+    old = termios.tcgetattr(tty_fd)
+    tty.setraw(tty_fd)
+except termios.error:
+    pass
+
+def read(fd):
+    try:
+        return os.read(fd, 8192)
+    except OSError as e:
+        if e.errno == errno.EIO:
+            return b""
+        raise
+
+try:
+    while True:
+        r, _, _ = select.select([master, tty_fd], [], [])
+        if master in r:
+            data = read(master)
+            if not data:
+                break
+            os.write(tty_fd, data)
+        if tty_fd in r:
+            data = read(tty_fd)
+            if not data:
+                break
+            os.write(master, data)
+finally:
+    if old is not None:
+        try:
+            termios.tcsetattr(tty_fd, termios.TCSADRAIN, old)
+        except termios.error:
+            pass
+    for fd in (tty_fd, master):
+        try:
+            os.close(fd)
+        except OSError:
+            pass
+    _, st = os.waitpid(pid, 0)
+    sys.exit(os.WEXITSTATUS(st) if os.WIFEXITED(st) else 128 + os.WTERMSIG(st))
+PY
 fi
 
-VER="$(sed -n 's/^INSTALLER_VERSION="\([^"]*\)".*/\1/p' "$DEST" | head -1)"
-echo "[guartrix] Starting installer v${VER:-?} from ${DEST}"
-
-# Build a safely quoted command line for script -c
-cmd="bash $(printf '%q' "$DEST")"
-for a in "$@"; do
-  cmd+=" $(printf '%q' "$a")"
-done
-
-# Preferred: allocate a PTY so read/echo behave like a normal interactive shell.
-if command -v script >/dev/null 2>&1 && [[ -r /dev/tty ]]; then
-  # util-linux script: -e return child status, -q quiet header, -c run command
+# Fallback without python3
+if command -v script >/dev/null 2>&1; then
+  cmd="bash $(printf '%q' "$DEST")"
+  for a in "$@"; do cmd+=" $(printf '%q' "$a")"; done
   exec script -q -e -c "$cmd" /dev/null </dev/tty >/dev/tty 2>/dev/tty
 fi
 
-# Fallback without script(1)
-if [[ -r /dev/tty ]]; then
-  exec bash "$DEST" "$@" </dev/tty >/dev/tty 2>/dev/tty
-fi
-
-echo "[guartrix] ERROR: no usable TTY. Run instead:" >&2
-echo "  curl -fsSL '${PANEL_URL}' -o /tmp/guartrix-install.sh && sudo bash /tmp/guartrix-install.sh" >&2
-exit 1
+exec bash "$DEST" "$@" </dev/tty >/dev/tty 2>/dev/tty
