@@ -124,7 +124,7 @@ normalize_https_flag() {
 # Interactive I/O for curl|bash (stdin is the script pipe — not a TTY).
 # Always talk to /dev/tty directly: non-interactive bash may line-buffer stdout, so
 # prompts without a trailing newline never appear and the wizard looks "hung".
-INSTALLER_VERSION="1.0.13"
+INSTALLER_VERSION="1.0.14"
 
 can_prompt() {
   [[ -r /dev/tty && -w /dev/tty ]] || [[ -t 0 && -t 1 ]]
@@ -662,7 +662,37 @@ else
   MYSQL_PORT=3306
   MYSQL_DATABASE=guartrix_panel
   MYSQL_USER=guartrix
-  MYSQL_PASSWORD="$(openssl rand -hex 24)"
+  MYSQL_PASSWORD=""
+  # Official MySQL image only applies MYSQL_* on first volume init. Re-runs must
+  # reuse the password the container/volume was created with — not a new random one.
+  if docker ps -a --format '{{.Names}}' 2>/dev/null | grep -qx guartrix-mysql; then
+    _denv="$(docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' guartrix-mysql 2>/dev/null || true)"
+    MYSQL_PASSWORD="$(printf '%s\n' "$_denv" | sed -n 's/^MYSQL_PASSWORD=//p' | head -1)"
+    _db="$(printf '%s\n' "$_denv" | sed -n 's/^MYSQL_DATABASE=//p' | head -1)"
+    _user="$(printf '%s\n' "$_denv" | sed -n 's/^MYSQL_USER=//p' | head -1)"
+    _root="$(printf '%s\n' "$_denv" | sed -n 's/^MYSQL_ROOT_PASSWORD=//p' | head -1)"
+    [[ -n "$_db" ]] && MYSQL_DATABASE="$_db"
+    [[ -n "$_user" ]] && MYSQL_USER="$_user"
+    [[ -n "$_root" ]] && MYSQL_ROOT_PASSWORD="$_root"
+    if [[ -n "$MYSQL_PASSWORD" ]]; then
+      echo "[guartrix] Reusing panel MySQL credentials from container guartrix-mysql"
+    fi
+    unset _denv _db _user _root
+  fi
+  if [[ -z "$MYSQL_PASSWORD" && -f "${INSTALL_DIR}/.env" ]]; then
+    MYSQL_PASSWORD="$(grep -E '^MYSQL_PASSWORD=' "${INSTALL_DIR}/.env" | head -1 | cut -d= -f2- || true)"
+    _db="$(grep -E '^MYSQL_DATABASE=' "${INSTALL_DIR}/.env" | head -1 | cut -d= -f2- || true)"
+    _user="$(grep -E '^MYSQL_USER=' "${INSTALL_DIR}/.env" | head -1 | cut -d= -f2- || true)"
+    [[ -n "$_db" ]] && MYSQL_DATABASE="$_db"
+    [[ -n "$_user" ]] && MYSQL_USER="$_user"
+    if [[ -n "$MYSQL_PASSWORD" ]]; then
+      echo "[guartrix] Reusing panel MySQL password from ${INSTALL_DIR}/.env"
+    fi
+    unset _db _user
+  fi
+  if [[ -z "$MYSQL_PASSWORD" ]]; then
+    MYSQL_PASSWORD="$(openssl rand -hex 24)"
+  fi
   enc_user="$(uri_encode "$MYSQL_USER")"
   enc_pass="$(uri_encode "$MYSQL_PASSWORD")"
   DATABASE_URL="mysql://${enc_user}:${enc_pass}@127.0.0.1:3306/${MYSQL_DATABASE}"

@@ -61,6 +61,7 @@ Set `GUARTRIX_NONINTERACTIVE=1` to never prompt.
 ### Panel MySQL
 
 **Docker (default)** — installer starts `guartrix-mysql` on `127.0.0.1:3306` and writes `DATABASE_URL`.
+On re-install it reuses the password from the existing container (MySQL only applies `MYSQL_PASSWORD` on first volume init).
 
 ```bash
 curl -fsSL … | sudo bash -s -- --http --ip YOUR.PUBLIC.IP --mysql-docker
