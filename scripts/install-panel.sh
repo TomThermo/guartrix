@@ -124,7 +124,7 @@ normalize_https_flag() {
 # Interactive I/O for curl|bash (stdin is the script pipe — not a TTY).
 # Always talk to /dev/tty directly: non-interactive bash may line-buffer stdout, so
 # prompts without a trailing newline never appear and the wizard looks "hung".
-INSTALLER_VERSION="1.0.10"
+INSTALLER_VERSION="1.0.11"
 
 can_prompt() {
   [[ -r /dev/tty && -w /dev/tty ]] || [[ -t 0 && -t 1 ]]
