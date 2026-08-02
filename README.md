@@ -48,22 +48,23 @@ Full gallery (login, create server, users, backups, players, …): **[Panel guid
 
 ### New Ubuntu VPS (one command)
 
-HTTP via server IP (no TLS):
+Interactive wizard (recommended — no flags):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/TomThermo/guartrix/main/scripts/install.sh | sudo bash -s -- \
-  --http --ip YOUR.PUBLIC.IP
+curl -fsSL https://raw.githubusercontent.com/TomThermo/guartrix/main/scripts/install.sh | sudo bash
 ```
 
-HTTPS with a domain:
+Asks: install dir, public IP, HTTPS yes/no, admin password, license key, MySQL Docker vs existing — then installs.
+
+Optional flags (automation):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/TomThermo/guartrix/main/scripts/install.sh | sudo bash -s -- \
-  --https --domain your.domain.com --ip YOUR.PUBLIC.IP
-```
+# HTTP via server IP
+curl -fsSL … | sudo bash -s -- --http --ip YOUR.PUBLIC.IP
 
-Interactive installs ask whether to use HTTPS (default: HTTP/IP) and whether
-panel MySQL should be Docker or an existing server (default: Docker).
+# HTTPS with a domain
+curl -fsSL … | sudo bash -s -- --https --domain your.domain.com --ip YOUR.PUBLIC.IP
+```
 
 (`scripts/install-panel.sh` is the same installer.)
 

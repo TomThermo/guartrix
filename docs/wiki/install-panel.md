@@ -7,7 +7,26 @@ Guartrix license server — the panel uses `https://license.guartrix.com` by def
 
 ## One-command install (GitHub)
 
-### HTTP only (server IP, no TLS)
+### Interactive (recommended)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/TomThermo/guartrix/main/scripts/install.sh | sudo bash
+```
+
+No flags. The installer asks for:
+
+1. Install directory (default `/opt/guartrix`)
+2. Public IPv4 (auto-detected, editable)
+3. HTTPS yes/no (default: HTTP via IP)
+4. Domain (if HTTPS) or optional hostname (if HTTP)
+5. Admin password (blank = generate)
+6. License key (blank = set later in Admin → License)
+7. Panel MySQL: Docker (default) or existing server
+8. Confirm summary → install
+
+(`scripts/install-panel.sh` is the same installer; `install.sh` fetches it when piped via curl.)
+
+### HTTP only (flags / automation)
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/TomThermo/guartrix/main/scripts/install.sh | sudo bash -s -- \
@@ -27,11 +46,8 @@ curl -fsSL https://raw.githubusercontent.com/TomThermo/guartrix/main/scripts/ins
   --ip YOUR.PUBLIC.IP
 ```
 
-(`scripts/install-panel.sh` is identical.)
-
-Interactive installs (TTY) ask: **Use HTTPS with a domain? [y/N]** — default is HTTP/IP.
-
-They also ask: **Use Docker MySQL for the panel? [Y/n]** — default is Docker.
+Passing any flag skips the full wizard; unset values may still be prompted when a TTY is available.
+Set `GUARTRIX_NONINTERACTIVE=1` to never prompt.
 
 ### Panel MySQL
 

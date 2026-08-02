@@ -4,9 +4,9 @@
 # (customers use LICENSE_SERVER_URL=https://license.guartrix.com).
 #
 #   curl -fsSL https://raw.githubusercontent.com/TomThermo/guartrix/main/scripts/install.sh | sudo bash
-#   # same as scripts/install-panel.sh
+#   # Interactive wizard (HTTPS, IP/domain, MySQL, admin password, license) — no flags needed
 #
-# Or with options:
+# Optional flags (automation / skip wizard):
 #   # HTTP via public IP only (no TLS):
 #   curl -fsSL … | sudo bash -s -- --http --ip 1.2.3.4
 #   # HTTPS with domain + cert:
@@ -15,7 +15,7 @@
 #   curl -fsSL … | sudo bash -s -- --mysql-external --mysql-host 10.0.0.5 \
 #     --mysql-user guartrix --mysql-password '…' --mysql-database guartrix_panel
 #
-# Env overrides (non-interactive):
+# Env overrides (non-interactive — set GUARTRIX_NONINTERACTIVE=1 to skip wizard):
 #   GUARTRIX_DOMAIN, GUARTRIX_PUBLIC_IP, GUARTRIX_ADMIN_PASSWORD,
 #   GUARTRIX_REPO_URL, GUARTRIX_INSTALL_DIR, GUARTRIX_LICENSE_KEY,
 #   GUARTRIX_HTTPS=0|1 (0 = HTTP via IP/host, 1 = HTTPS),
@@ -71,9 +71,13 @@ Options:
   --skip-start           Install only; do not start services
   -h, --help             Show help
 
-Interactive installs ask about HTTPS and panel MySQL (Docker vs existing).
-Game-server MySQL (daemon) still uses Docker; if the panel DB already uses
-127.0.0.1:3306, game MySQL is placed on 3307 to avoid a port clash.
+Interactive (no flags, with a TTY — e.g. curl|bash):
+  Asks install dir, public IP, HTTPS yes/no, admin password, license key,
+  and panel MySQL (Docker vs existing). Confirm summary, then installs.
+
+Optional flags skip the full wizard for automation. Set GUARTRIX_NONINTERACTIVE=1
+to never prompt. Game-server MySQL (daemon) still uses Docker; if the panel DB
+already uses 127.0.0.1:3306, game MySQL is placed on 3307.
 
 Env: GUARTRIX_HTTPS, GUARTRIX_MYSQL_MODE, GUARTRIX_DATABASE_URL, …
 EOF
@@ -92,7 +96,11 @@ normalize_https_flag() {
   esac
 }
 
-# Read a line from the controlling terminal when possible (works with curl|bash -s).
+# Read a line from the controlling terminal when possible (works with curl|bash).
+can_prompt() {
+  [[ -r /dev/tty ]] || [[ -t 0 ]]
+}
+
 prompt_tty() {
   local prompt="$1"
   local reply=""
@@ -103,6 +111,29 @@ prompt_tty() {
     read -r -p "$prompt" reply || true
   fi
   printf '%s' "$reply"
+}
+
+prompt_tty_secret() {
+  local prompt="$1"
+  local reply=""
+  if [[ -r /dev/tty ]]; then
+    printf '%s' "$prompt" > /dev/tty
+    IFS= read -rs reply < /dev/tty || true
+    printf '\n' > /dev/tty
+  elif [[ -t 0 ]]; then
+    read -rs -p "$prompt" reply || true
+    printf '\n'
+  fi
+  printf '%s' "$reply"
+}
+
+say() {
+  # Prefer the controlling TTY so banners show during curl|bash
+  if [[ -w /dev/tty ]]; then
+    printf '%s\n' "$*" > /dev/tty
+  else
+    printf '%s\n' "$*"
+  fi
 }
 
 normalize_mysql_mode() {
@@ -117,6 +148,12 @@ normalize_mysql_mode() {
 uri_encode() {
   python3 -c 'import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1], safe=""))' "$1"
 }
+
+# True when invoked with no CLI flags → full interactive wizard (curl|bash default)
+WIZARD=0
+if [[ $# -eq 0 ]] && can_prompt && [[ -z "${GUARTRIX_NONINTERACTIVE:-}" ]]; then
+  WIZARD=1
+fi
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -162,6 +199,122 @@ if [[ "$(id -u)" -ne 0 ]]; then
   exit 1
 fi
 
+# Detect public IP early (wizard can confirm)
+DETECTED_IP="$(curl -4 -fsSL https://ifconfig.me 2>/dev/null || curl -4 -fsSL https://api.ipify.org 2>/dev/null || true)"
+if [[ -z "$PUBLIC_IP" ]]; then
+  PUBLIC_IP="$DETECTED_IP"
+fi
+
+# ---------------------------------------------------------------------------
+# Interactive wizard (no CLI flags): ask everything before long installs
+# ---------------------------------------------------------------------------
+if [[ "$WIZARD" -eq 1 ]]; then
+  say ""
+  say "=============================================="
+  say " Guartrix panel installer"
+  say "=============================================="
+  say " Answer the questions below. Press Enter for the default in [brackets]."
+  say " Flags are optional — this wizard covers a full install."
+  say ""
+
+  dir_in="$(prompt_tty "Install directory [${INSTALL_DIR}]: ")"
+  INSTALL_DIR="${dir_in:-$INSTALL_DIR}"
+
+  ip_default="${PUBLIC_IP:-$DETECTED_IP}"
+  ip_in="$(prompt_tty "Public IPv4 [${ip_default:-?}]: ")"
+  PUBLIC_IP="${ip_in:-$ip_default}"
+  if [[ -z "$PUBLIC_IP" ]]; then
+    echo "ERROR: public IP is required." >&2
+    exit 1
+  fi
+
+  say ""
+  say "Access mode"
+  say "  n = HTTP only — open http://${PUBLIC_IP} (no TLS cert)"
+  say "  y = HTTPS — domain + TLS on :443"
+  ans="$(prompt_tty "Use HTTPS with a domain? [y/N]: ")"
+  case "${ans,,}" in
+    y|yes) HTTPS_MODE=1 ;;
+    *) HTTPS_MODE=0 ;;
+  esac
+
+  if [[ "$HTTPS_MODE" -eq 1 ]]; then
+    while true; do
+      DOMAIN="$(prompt_tty "Public domain (e.g. panel.example.com): ")"
+      if [[ -n "$DOMAIN" ]] && ! is_ipv4 "$DOMAIN"; then
+        break
+      fi
+      say "Please enter a hostname (not an IP)."
+    done
+  else
+    host_in="$(prompt_tty "Panel hostname for HTTP (blank = use IP ${PUBLIC_IP}): ")"
+    DOMAIN="${host_in:-$PUBLIC_IP}"
+  fi
+
+  say ""
+  pw_in="$(prompt_tty_secret "Admin password (blank = generate a strong one): ")"
+  if [[ -n "$pw_in" ]]; then
+    ADMIN_PASSWORD="$pw_in"
+  fi
+
+  say ""
+  lic_in="$(prompt_tty "License key GTRX-… (blank = set later in Admin → License): ")"
+  LICENSE_KEY="${lic_in:-}"
+
+  say ""
+  say "Panel database (Prisma)"
+  say "  Y = Docker MySQL on this server (recommended)"
+  say "  n = Existing MySQL/MariaDB (create DB + user first)"
+  ans="$(prompt_tty "Use Docker MySQL for the panel? [Y/n]: ")"
+  case "${ans,,}" in
+    n|no) MYSQL_MODE=external ;;
+    *) MYSQL_MODE=docker ;;
+  esac
+
+  if [[ "$MYSQL_MODE" == "external" ]]; then
+    MYSQL_HOST="$(prompt_tty "MySQL host [127.0.0.1]: ")"
+    MYSQL_HOST="${MYSQL_HOST:-127.0.0.1}"
+    port_in="$(prompt_tty "MySQL port [3306]: ")"
+    MYSQL_PORT="${port_in:-3306}"
+    db_in="$(prompt_tty "Database name [guartrix_panel]: ")"
+    MYSQL_DATABASE="${db_in:-guartrix_panel}"
+    user_in="$(prompt_tty "MySQL user [guartrix]: ")"
+    MYSQL_USER="${user_in:-guartrix}"
+    while [[ -z "$MYSQL_PASSWORD" ]]; do
+      MYSQL_PASSWORD="$(prompt_tty_secret "MySQL password: ")"
+      if [[ -z "$MYSQL_PASSWORD" ]]; then
+        say "Password is required for external MySQL."
+      fi
+    done
+  fi
+
+  say ""
+  say "----------------------------------------------"
+  say " Summary"
+  say "  Dir:      ${INSTALL_DIR}"
+  say "  IP:       ${PUBLIC_IP}"
+  if [[ "$HTTPS_MODE" -eq 1 ]]; then
+    say "  URL:      https://${DOMAIN}"
+  else
+    say "  URL:      http://${DOMAIN}"
+  fi
+  say "  Admin:    admin / (password set or generated)"
+  say "  License:  ${LICENSE_KEY:-"(set later)"}"
+  say "  Panel DB: ${MYSQL_MODE}"
+  if [[ "$MYSQL_MODE" == "external" ]]; then
+    say "            ${MYSQL_USER}@${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DATABASE}"
+  fi
+  say "----------------------------------------------"
+  conf="$(prompt_tty "Continue with install? [Y/n]: ")"
+  case "${conf,,}" in
+    n|no)
+      say "Aborted."
+      exit 0
+      ;;
+  esac
+  say ""
+fi
+
 export DEBIAN_FRONTEND=noninteractive
 
 echo "[guartrix] Installing panel prerequisites…"
@@ -184,9 +337,9 @@ if [[ -z "$PUBLIC_IP" ]]; then
   PUBLIC_IP="$(curl -4 -fsSL https://ifconfig.me 2>/dev/null || curl -4 -fsSL https://api.ipify.org 2>/dev/null || true)"
 fi
 
-# Decide HTTPS vs HTTP (IP) before writing .env
+# Decide HTTPS vs HTTP when not already set by wizard/flags
 if [[ -z "$HTTPS_MODE" ]]; then
-  if [[ -r /dev/tty || -t 0 ]]; then
+  if can_prompt; then
     echo
     echo "[guartrix] Access mode"
     echo "  1) HTTP only — open the panel at http://SERVER_IP (no TLS cert needed)"
@@ -205,7 +358,7 @@ fi
 
 if [[ "$HTTPS_MODE" -eq 1 ]]; then
   if [[ -z "$DOMAIN" ]] || is_ipv4 "$DOMAIN"; then
-    if [[ -r /dev/tty || -t 0 ]]; then
+    if can_prompt; then
       DOMAIN="$(prompt_tty "Public domain for HTTPS (e.g. panel.example.com): ")"
     fi
   fi
@@ -224,11 +377,10 @@ if [[ "$HTTPS_MODE" -eq 1 ]]; then
   TRUST_PROXY=true
   echo "[guartrix] Mode: HTTPS → ${PUBLIC_BASE_URL}"
 else
-  # HTTP / IP mode — panel reachable at http://PUBLIC_IP
+  # HTTP / IP mode — panel reachable at http://PUBLIC_IP (or optional hostname)
   if [[ -z "$DOMAIN" ]] || is_ipv4 "$DOMAIN"; then
     PUBLIC_HOST="${PUBLIC_IP:-127.0.0.1}"
   else
-    # Optional: hostname over plain HTTP
     PUBLIC_HOST="$DOMAIN"
   fi
   if [[ -z "$PUBLIC_IP" ]]; then
@@ -243,8 +395,19 @@ else
 fi
 
 if [[ -z "$ADMIN_PASSWORD" ]]; then
+  if can_prompt && [[ "$WIZARD" -eq 0 ]]; then
+    pw_in="$(prompt_tty_secret "Admin password (blank = generate): ")"
+    ADMIN_PASSWORD="${pw_in:-}"
+  fi
+fi
+if [[ -z "$ADMIN_PASSWORD" ]]; then
   ADMIN_PASSWORD="$(openssl rand -base64 18 | tr -d '/+=' | head -c 20)Aa1!"
   echo "[guartrix] Generated ADMIN_PASSWORD (save this): ${ADMIN_PASSWORD}"
+fi
+
+if [[ -z "$LICENSE_KEY" ]] && can_prompt && [[ "$WIZARD" -eq 0 ]]; then
+  lic_in="$(prompt_tty "License key GTRX-… (blank = set later): ")"
+  LICENSE_KEY="${lic_in:-}"
 fi
 
 SESSION_SECRET="$(openssl rand -hex 32)"
@@ -254,7 +417,7 @@ DAEMON_MYSQL_PORT=3306
 
 # --- Panel MySQL: Docker vs existing server ---
 if [[ -z "$MYSQL_MODE" ]]; then
-  if [[ -r /dev/tty || -t 0 ]]; then
+  if can_prompt; then
     echo
     echo "[guartrix] Panel database (Prisma)"
     echo "  1) Docker MySQL — install starts container guartrix-mysql on 127.0.0.1:3306 (recommended)"
@@ -272,7 +435,7 @@ fi
 
 if [[ "$MYSQL_MODE" == "external" ]]; then
   if [[ -z "$DATABASE_URL_OVERRIDE" ]]; then
-    if [[ -z "$MYSQL_HOST" ]] && [[ -r /dev/tty || -t 0 ]]; then
+    if [[ -z "$MYSQL_HOST" ]] && can_prompt; then
       MYSQL_HOST="$(prompt_tty "MySQL host [127.0.0.1]: ")"
       MYSQL_HOST="${MYSQL_HOST:-127.0.0.1}"
       port_in="$(prompt_tty "MySQL port [${MYSQL_PORT}]: ")"
@@ -282,7 +445,7 @@ if [[ "$MYSQL_MODE" == "external" ]]; then
       user_in="$(prompt_tty "MySQL user [${MYSQL_USER}]: ")"
       MYSQL_USER="${user_in:-$MYSQL_USER}"
       if [[ -z "$MYSQL_PASSWORD" ]]; then
-        MYSQL_PASSWORD="$(prompt_tty "MySQL password: ")"
+        MYSQL_PASSWORD="$(prompt_tty_secret "MySQL password: ")"
       fi
     fi
     if [[ -z "$MYSQL_HOST" || -z "$MYSQL_PASSWORD" ]]; then
