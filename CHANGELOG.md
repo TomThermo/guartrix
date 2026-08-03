@@ -7,6 +7,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.40] — 2026-08-03
+
+- Optional **backup encryption** at rest (`BACKUP_ENCRYPTION=1`, AES-256-GCM → `.tar.gz.enc`)
+- Encrypted badge in Backup panel; restore decrypts with panel key; downloads stay ciphertext
+
+## [1.0.39] — 2026-08-03
+
+- Split `ServerDetailPage` / `ServerSettings` into `server-detail/` + `server-settings/` modules
+- Offload Mineflayer bots to a forked API worker (`bot-worker-main` IPC; `BOT_WORKER=0` fallback)
+
 ## [1.0.37] — 2026-08-03
 
 - P1 pass: readiness (`/api/ready` checks local daemon), crash-loop alerts (`server.crash_loop`)

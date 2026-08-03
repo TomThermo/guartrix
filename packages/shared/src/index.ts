@@ -960,12 +960,16 @@ export interface ServerBackup {
   createdAt: string;
   note: string | null;
   trigger: "manual" | "scheduled" | "uploaded";
+  /** True when archive is AES-GCM sealed on disk (`.tar.gz.enc`). */
+  encrypted?: boolean;
 }
 
 export interface BackupListResponse {
   backups: ServerBackup[];
   schedule: BackupSchedule;
   busy: boolean;
+  /** Panel has BACKUP_ENCRYPTION enabled for new backups. */
+  encryptionEnabled?: boolean;
   limits?: {
     maxUploadBytes: number;
     chunkBytes: number;

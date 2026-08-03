@@ -74,6 +74,8 @@ export function BackupPanel({
   const [restoreTarget, setRestoreTarget] = useState<ServerBackup | null>(null);
   const [actionBusy, setActionBusy] = useState(false);
 
+  const [encryptionEnabled, setEncryptionEnabled] = useState(false);
+
   const maxUploadLabel = formatBytes(BACKUP_UPLOAD_MAX_BYTES);
 
   const refresh = useCallback(async (opts?: { syncForm?: boolean }) => {
@@ -81,6 +83,7 @@ export function BackupPanel({
     setBackups(data.backups);
     setSchedule(data.schedule);
     setBusy(data.busy);
+    setEncryptionEnabled(Boolean(data.encryptionEnabled));
     if (opts?.syncForm) {
       setMode(data.schedule.mode);
       setIntervalHours(data.schedule.intervalHours);
@@ -326,6 +329,13 @@ export function BackupPanel({
         libraries are skipped. If the server is running, Guartrix runs <code>save-all</code> first.
         You can upload <code>.tar.gz</code>, <code>.tgz</code> or <code>.zip</code> (zips are unpacked
         and converted). Max upload {maxUploadLabel}.
+        {encryptionEnabled ? (
+          <>
+            {" "}
+            New backups are <strong>encrypted at rest</strong> (AES-256-GCM) as{" "}
+            <code>.tar.gz.enc</code> — downloads stay ciphertext; restore needs the panel key.
+          </>
+        ) : null}
       </Alert>
 
       <Row className="g-4 mb-4">
@@ -524,6 +534,12 @@ export function BackupPanel({
                 <Badge bg={badge.bg} className="mt-1">
                   {badge.label}
                 </Badge>
+                {b.encrypted ? (
+                  <Badge bg="dark" className="mt-1 ms-1" title="Encrypted at rest">
+                    <i className="fa-solid fa-lock me-1" />
+                    Encrypted
+                  </Badge>
+                ) : null}
                 {isDownloading && (
                   <div className="mt-2" style={{ minWidth: 180 }}>
                     <ProgressBar now={downloadPct} label={`${downloadPct}%`} />

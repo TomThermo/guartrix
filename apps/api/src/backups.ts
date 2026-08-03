@@ -9,6 +9,12 @@ import type {
 } from "@msm/shared";
 import { formatBytes } from "@msm/shared";
 import { logActivity } from "./activity-log.js";
+import {
+  decryptBackupArchive,
+  encryptBackupArchive,
+  isBackupEncryptionEnabled,
+  isEncryptedBackupPath,
+} from "./backup-crypto.js";
 import { serverBackupsDir, serverDir } from "./config.js";
 import { logger } from "./logger.js";
 import { processManager } from "./process-manager.js";
@@ -85,6 +91,31 @@ function metaPath(serverId: string, backupId: string): string {
 
 function archivePath(serverId: string, backupId: string): string {
   return path.join(serverBackupsDir(serverId), `${backupId}.tar.gz`);
+}
+
+function encryptedPath(serverId: string, backupId: string): string {
+  return path.join(serverBackupsDir(serverId), `${backupId}.tar.gz.enc`);
+}
+
+/** Resolve on-disk archive path (plain or encrypted). */
+export async function resolveBackupArchivePath(
+  serverId: string,
+  backupId: string,
+): Promise<{ path: string; encrypted: boolean }> {
+  const enc = encryptedPath(serverId, backupId);
+  const plain = archivePath(serverId, backupId);
+  try {
+    await fs.access(enc);
+    return { path: enc, encrypted: true };
+  } catch {
+    // continue
+  }
+  try {
+    await fs.access(plain);
+    return { path: plain, encrypted: false };
+  } catch {
+    throw new Error("Backup not found");
+  }
 }
 
 function defaultSchedule(): BackupSchedule {
@@ -176,10 +207,18 @@ export async function listBackups(serverId: string): Promise<ServerBackup[]> {
   await fs.mkdir(dir, { recursive: true });
   const names = await fs.readdir(dir);
   const backups: ServerBackup[] = [];
+  const seen = new Set<string>();
 
   for (const name of names) {
-    if (!name.endsWith(".tar.gz")) continue;
-    const id = name.replace(/\.tar.gz$/, "");
+    const encrypted = name.endsWith(".tar.gz.enc");
+    const plain = name.endsWith(".tar.gz") && !encrypted;
+    if (!encrypted && !plain) continue;
+    const id = encrypted
+      ? name.replace(/\.tar\.gz\.enc$/, "")
+      : name.replace(/\.tar\.gz$/, "");
+    if (seen.has(id)) continue;
+    seen.add(id);
+
     const archive = path.join(dir, name);
     const st = await fs.stat(archive).catch(() => null);
     if (!st) continue;
@@ -187,15 +226,18 @@ export async function listBackups(serverId: string): Promise<ServerBackup[]> {
     let note: string | null = null;
     let trigger: ServerBackup["trigger"] = "manual";
     let createdAt = st.mtime.toISOString();
+    let metaEncrypted = encrypted;
     try {
       const meta = JSON.parse(await fs.readFile(metaPath(serverId, id), "utf8")) as {
         note?: string | null;
         trigger?: ServerBackup["trigger"];
         createdAt?: string;
+        encrypted?: boolean;
       };
       note = meta.note ?? null;
       trigger = meta.trigger ?? "manual";
       createdAt = meta.createdAt ?? createdAt;
+      if (typeof meta.encrypted === "boolean") metaEncrypted = meta.encrypted;
     } catch {
       // no meta
     }
@@ -208,6 +250,7 @@ export async function listBackups(serverId: string): Promise<ServerBackup[]> {
       createdAt,
       note,
       trigger,
+      encrypted: metaEncrypted || encrypted,
     });
   }
 
@@ -220,6 +263,7 @@ async function pruneBackups(serverId: string, keepCount: number): Promise<void> 
   const extra = backups.slice(Math.max(1, keepCount));
   for (const b of extra) {
     await fs.rm(archivePath(serverId, b.id), { force: true }).catch(() => undefined);
+    await fs.rm(encryptedPath(serverId, b.id), { force: true }).catch(() => undefined);
     await fs.rm(metaPath(serverId, b.id), { force: true }).catch(() => undefined);
   }
 }
@@ -253,7 +297,6 @@ export async function createBackup(opts: {
 
     const createdAt = new Date();
     const id = createdAt.toISOString().replace(/[:.]/g, "-");
-    const fileName = `${id}.tar.gz`;
     const dest = archivePath(serverId, id);
 
     // Prefer daemon export so remote-node worlds are included (panel DATA_DIR may be empty).
@@ -276,9 +319,23 @@ export async function createBackup(opts: {
       );
     }
 
-    const st = await fs.stat(dest);
+    const stPlain = await fs.stat(dest);
     const trigger = opts.trigger ?? "manual";
     const note = opts.note?.trim() || null;
+
+    let fileName = `${id}.tar.gz`;
+    let sizeBytes = stPlain.size;
+    let encrypted = false;
+    let archiveForOffsite = dest;
+
+    if (isBackupEncryptionEnabled()) {
+      const sealed = await encryptBackupArchive(dest);
+      fileName = path.basename(sealed.encPath);
+      sizeBytes = sealed.sizeBytes;
+      encrypted = true;
+      archiveForOffsite = sealed.encPath;
+    }
+
     await fs.writeFile(
       metaPath(serverId, id),
       JSON.stringify(
@@ -288,7 +345,8 @@ export async function createBackup(opts: {
           createdAt: createdAt.toISOString(),
           note,
           trigger,
-          sizeBytes: st.size,
+          sizeBytes,
+          encrypted,
         },
         null,
         2,
@@ -308,7 +366,7 @@ export async function createBackup(opts: {
     }
 
     await runOffsiteBackupHook({
-      archivePath: dest,
+      archivePath: archiveForOffsite,
       serverId,
       backupId: id,
       fileName,
@@ -317,11 +375,12 @@ export async function createBackup(opts: {
     return {
       id,
       fileName,
-      sizeBytes: st.size,
-      sizeLabel: formatBytes(st.size),
+      sizeBytes,
+      sizeLabel: formatBytes(sizeBytes),
       createdAt: createdAt.toISOString(),
       note,
       trigger,
+      encrypted,
     };
   } finally {
     busyServers.delete(serverId);
@@ -349,9 +408,21 @@ export async function finalizeUploadedBackup(opts: {
     await fs.rename(opts.partialPath, dest);
   }
 
-  const st = await fs.stat(dest);
+  const stPlain = await fs.stat(dest);
   const createdAt = opts.createdAt ?? new Date().toISOString();
   const note = opts.note?.trim() || null;
+
+  let fileName = `${backupId}.tar.gz`;
+  let sizeBytes = stPlain.size;
+  let encrypted = false;
+
+  if (isBackupEncryptionEnabled()) {
+    const sealed = await encryptBackupArchive(dest);
+    fileName = path.basename(sealed.encPath);
+    sizeBytes = sealed.sizeBytes;
+    encrypted = true;
+  }
+
   await fs.writeFile(
     metaPath(serverId, backupId),
     JSON.stringify(
@@ -360,7 +431,8 @@ export async function finalizeUploadedBackup(opts: {
         note,
         trigger: "uploaded",
         createdAt,
-        sizeBytes: st.size,
+        sizeBytes,
+        encrypted,
         originalName: opts.originalName ?? null,
       },
       null,
@@ -372,12 +444,13 @@ export async function finalizeUploadedBackup(opts: {
   await pruneBackups(serverId, schedule.keepCount);
   return {
     id: backupId,
-    fileName: `${backupId}.tar.gz`,
-    sizeBytes: st.size,
-    sizeLabel: formatBytes(st.size),
+    fileName,
+    sizeBytes,
+    sizeLabel: formatBytes(sizeBytes),
     createdAt,
     note,
     trigger: "uploaded",
+    encrypted,
   };
 }
 
@@ -424,10 +497,14 @@ export async function restoreBackup(opts: {
     throw new Error("Stop the server before restoring a backup");
   }
 
-  const archive = await assertBackupExists(serverId, backupId);
+  const { path: archive, encrypted } = await resolveBackupArchivePath(
+    serverId,
+    backupId,
+  );
   const dest = serverDir(serverId);
 
   busyServers.add(serverId);
+  let plainTmp: string | null = null;
   try {
     await fs.mkdir(dest, { recursive: true });
 
@@ -437,38 +514,56 @@ export async function restoreBackup(opts: {
       await fs.rm(path.join(dest, name), { recursive: true, force: true });
     }
 
-    await safeExtractArchive(archive, dest);
+    let extractFrom = archive;
+    if (encrypted || isEncryptedBackupPath(archive)) {
+      plainTmp = path.join(
+        serverBackupsDir(serverId),
+        `.restore-${backupId}-${process.pid}.tar.gz`,
+      );
+      try {
+        await decryptBackupArchive(archive, plainTmp);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        throw new Error(
+          `Could not decrypt backup (wrong BACKUP_ENCRYPTION_KEY / SESSION_SECRET?): ${message}`,
+        );
+      }
+      extractFrom = plainTmp;
+    }
+
+    await safeExtractArchive(extractFrom, dest);
 
     // Drop stale locks from the archive era
     await fs.rm(path.join(dest, "session.lock"), { force: true }).catch(() => undefined);
   } finally {
+    if (plainTmp) {
+      await fs.rm(plainTmp, { force: true }).catch(() => undefined);
+    }
     busyServers.delete(serverId);
   }
 }
 
 export async function deleteBackup(serverId: string, backupId: string): Promise<void> {
-  const archive = archivePath(serverId, backupId);
-  try {
-    await fs.access(archive);
-  } catch {
-    throw new Error("Backup not found");
-  }
+  const { path: archive } = await resolveBackupArchivePath(serverId, backupId);
   await fs.rm(archive, { force: true });
+  await fs.rm(archivePath(serverId, backupId), { force: true }).catch(() => undefined);
+  await fs.rm(encryptedPath(serverId, backupId), { force: true }).catch(() => undefined);
   await fs.rm(metaPath(serverId, backupId), { force: true }).catch(() => undefined);
 }
 
-
-export function getBackupFilePath(serverId: string, backupId: string): string {
-  return archivePath(serverId, backupId);
+export async function getBackupFilePath(
+  serverId: string,
+  backupId: string,
+): Promise<string> {
+  const { path: file } = await resolveBackupArchivePath(serverId, backupId);
+  return file;
 }
 
-export async function assertBackupExists(serverId: string, backupId: string): Promise<string> {
-  const file = archivePath(serverId, backupId);
-  try {
-    await fs.access(file);
-  } catch {
-    throw new Error("Backup not found");
-  }
+export async function assertBackupExists(
+  serverId: string,
+  backupId: string,
+): Promise<string> {
+  const { path: file } = await resolveBackupArchivePath(serverId, backupId);
   return file;
 }
 

@@ -110,10 +110,12 @@ export function registerBackupRoutes(app: FastifyInstance): void {
         listBackups(server.id),
         readBackupSchedule(server.id),
       ]);
+      const { isBackupEncryptionEnabled } = await import("../backup-crypto.js");
       return {
         backups,
         schedule,
         busy: isBackupBusy(server.id),
+        encryptionEnabled: isBackupEncryptionEnabled(),
         limits: {
           maxUploadBytes: BACKUP_UPLOAD_MAX_BYTES,
           chunkBytes: BACKUP_TRANSFER_CHUNK_BYTES,
@@ -334,8 +336,12 @@ export function registerBackupRoutes(app: FastifyInstance): void {
           request.params.backupId,
         );
         const st = await fsp.stat(file);
-        const fileName = `${server.name.replace(/[^\w.\- ]+/g, "_")}-${request.params.backupId}.tar.gz`;
-        reply.header("Content-Type", "application/gzip");
+        const enc = file.endsWith(".tar.gz.enc");
+        const fileName = `${server.name.replace(/[^\w.\- ]+/g, "_")}-${request.params.backupId}${enc ? ".tar.gz.enc" : ".tar.gz"}`;
+        reply.header(
+          "Content-Type",
+          enc ? "application/octet-stream" : "application/gzip",
+        );
         reply.header(
           "Content-Disposition",
           `attachment; filename="${fileName}"`,

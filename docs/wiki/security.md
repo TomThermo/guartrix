@@ -41,7 +41,7 @@ another tool on the host needs it.
 | Proxy | `X-Forwarded-*` overwritten from the socket by prod-web; API trusts XFF only from `TRUSTED_PROXIES` |
 | CSRF | Origin/Referer check on cookie-auth mutating `/api` routes |
 | Sessions | `httpOnly` + `SameSite=Lax`; regenerate on login; purge on password reset |
-| Secrets at rest | TOTP secrets and game MySQL `Database.password` sealed with AES-256-GCM keyed from `SESSION_SECRET` (purpose salts); legacy plaintext passwords accepted and re-sealed on read/write |
+| Secrets at rest | TOTP secrets, game MySQL `Database.password`, and optional backups (`BACKUP_ENCRYPTION=1` → `.tar.gz.enc` AES-256-GCM) sealed with purpose salts from `SESSION_SECRET` / `BACKUP_ENCRYPTION_KEY`; legacy plaintext passwords accepted and re-sealed on read/write |
 | 2FA | Optional TOTP + recovery codes; role-required via `TWO_FACTOR_REQUIRED_ROLES` — see [Accounts & quotas](accounts-and-quotas.md) |
 | Client API | Personal Bearer keys (`gt_…`), scoped permissions, per-key rate limit — see [Client API](client-api.md) |
 | Files / SFTP | Symlink jail, `O_NOFOLLOW` uploads, member-safe archive extract, sensitive `guartrix-*.json` blocked |

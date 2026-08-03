@@ -106,6 +106,8 @@ The license **server** is hosted separately by Guartrix (default `https://licens
 | `ALERT_EMAIL` | Address that also receives critical-event mail (needs `SMTP_*`) |
 | `ACTIVITY_ALERT_MUTE` | Comma-separated action keys to never alert on, e.g. `auth.login-failed` |
 | `BACKUP_OFFSITE_CMD` | Optional shell command after each backup (`{path}` `{serverId}` `{backupId}` `{fileName}`) |
+| `BACKUP_ENCRYPTION` | `1` = seal new backups with AES-256-GCM (`.tar.gz.enc`) |
+| `BACKUP_ENCRYPTION_KEY` | Optional passphrase / 64-hex / base64-32 key (else derived from `SESSION_SECRET`) |
 
 See [Activity log](activity-log.md) for the event list and payload format.
 
