@@ -7,6 +7,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.42] — 2026-08-03
+
+- Fix: panel **Stop** / **Kill** no longer trigger auto-restart (intentional stop flag + treat Docker SIGTERM exit 143 as clean)
+
 ## [1.0.41] — 2026-08-03
 
 - Node **location** labels (schema + admin UI + create picker)

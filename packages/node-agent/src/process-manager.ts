@@ -233,6 +233,8 @@ class ProcessManager extends EventEmitter {
   private lastConfigs = new Map<string, DaemonServerConfig>();
   private restartAttempts = new Map<string, { count: number; at: number }>();
   private statuses = new Map<string, ServerStatus>();
+  /** Panel-issued stop/kill — never treat the following exit as a crash. */
+  private intentionalStops = new Set<string>();
 
   isRunning(serverId: string): boolean {
     return this.processes.has(serverId);
@@ -534,9 +536,22 @@ class ProcessManager extends EventEmitter {
           const signal = child.signalCode;
           // 137 = 128+SIGKILL — typical Docker OOM kill; do not treat as clean stop.
           const oom = code === 137 || code === 137 - 256;
+          // SIGTERM/SIGINT via docker stop often surface as exit 143/130 with no signalCode.
+          const intentional =
+            this.intentionalStops.has(serverId) ||
+            this.getStatus(serverId) === "STOPPING";
           const clean =
-            !oom &&
-            (code === 0 || signal === "SIGTERM" || signal === "SIGINT");
+            intentional ||
+            (!oom &&
+              (code === 0 ||
+                code === 130 ||
+                code === 143 ||
+                signal === "SIGTERM" ||
+                signal === "SIGINT"));
+          if (intentional) {
+            this.intentionalStops.delete(serverId);
+            this.restartAttempts.delete(serverId);
+          }
           if (clean) {
             // Intentional stop() already announces OFF after wait — avoid duplicate lines.
             if (this.getStatus(serverId) !== "STOPPING") {
@@ -907,6 +922,9 @@ class ProcessManager extends EventEmitter {
 
   private async maybeAutoRestart(serverId: string, reason: string): Promise<void> {
     try {
+      // Never revive a panel-issued stop/kill.
+      if (this.intentionalStops.has(serverId)) return;
+
       const server = this.lastConfigs.get(serverId);
       if (!server?.autoRestart) return;
 
@@ -931,11 +949,19 @@ class ProcessManager extends EventEmitter {
       const delayMs = Math.min(60_000, 5_000 * count);
       await new Promise((r) => setTimeout(r, delayMs));
 
-      // Bail if someone started it manually or disabled auto-restart
+      // Bail if someone started it manually, disabled auto-restart, or stopped it.
+      if (this.intentionalStops.has(serverId)) return;
       const again = this.lastConfigs.get(serverId);
       if (!again?.autoRestart || this.processes.has(serverId)) return;
       const status = this.statuses.get(serverId);
-      if (status === "RUNNING" || status === "STARTING") return;
+      if (
+        status === "RUNNING" ||
+        status === "STARTING" ||
+        status === "STOPPING" ||
+        status === "STOPPED"
+      ) {
+        return;
+      }
 
       this.setStatus(
         serverId,
@@ -953,10 +979,14 @@ class ProcessManager extends EventEmitter {
     const managed = this.processes.get(serverId);
     const name = managed?.container ?? containerName(serverId);
 
+    this.intentionalStops.add(serverId);
+    this.restartAttempts.delete(serverId);
+
     if (!managed) {
       this.daemonSay(serverId, "Server marked as OFF");
       await removeContainer(serverId);
       this.setStatus(serverId, "STOPPED", null);
+      this.intentionalStops.delete(serverId);
       return;
     }
 
@@ -994,6 +1024,8 @@ class ProcessManager extends EventEmitter {
     await removeContainer(serverId);
     this.daemonSay(serverId, "Server marked as OFF");
     this.setStatus(serverId, "STOPPED", null);
+    // Keep the flag briefly so a late attach-exit handler cannot auto-restart.
+    setTimeout(() => this.intentionalStops.delete(serverId), 60_000);
   }
 
   /** Immediate force-stop: docker kill + remove, no graceful `stop` command. */
@@ -1001,6 +1033,8 @@ class ProcessManager extends EventEmitter {
     const managed = this.processes.get(serverId);
     const name = managed?.container ?? containerName(serverId);
 
+    this.intentionalStops.add(serverId);
+    this.restartAttempts.delete(serverId);
     this.setStatus(serverId, "STOPPING");
     this.daemonSay(serverId, "Server marked as KILLING");
     this.daemonSay(serverId, "Force-killing Docker container...");
@@ -1030,6 +1064,7 @@ class ProcessManager extends EventEmitter {
     await removeContainer(serverId);
     this.daemonSay(serverId, "Server marked as OFF");
     this.setStatus(serverId, "STOPPED", null);
+    setTimeout(() => this.intentionalStops.delete(serverId), 60_000);
   }
 
   async sendCommand(serverId: string, command: string): Promise<void> {
