@@ -11,7 +11,7 @@
 ```bash
 cp .env.example .env
 npm install
-npm run db:generate && npm run db:push
+npm run db:generate && bash scripts/db-migrate.sh
 
 # Terminal 1
 npm run dev:api
@@ -28,6 +28,12 @@ npm run dev:daemon
 
 Keep `HOST=127.0.0.1` so the API is not exposed on the public interface.
 
+Schema changes: edit `apps/api/prisma/schema.prisma`, then
+`npm run db:migrate:dev -w @msm/api` (creates a migration). Installs and
+upgrades use `bash scripts/db-migrate.sh` / `npm run db:migrate` (`prisma migrate deploy`).
+`db:push` remains only for throwaway local prototyping — do not use it on
+customer or operator hosts.
+
 ## Build & prod-like restart
 
 ```bash
@@ -43,6 +49,24 @@ npm run package:release    # → dist-release/guartrix-*.tar.gz
 ```
 
 Details: [Release builds](release-builds.md).
+
+## Tests & CI
+
+Unit tests use [Vitest](https://vitest.dev/) at the repo root (`apps/api` + `packages/*`):
+
+```bash
+npm test              # vitest run (CI gate)
+npm run test:watch    # vitest watch mode
+```
+
+GitHub Actions (`.github/workflows/ci.yml`) on push/PR to `main`: install → Prisma generate → build shared → typecheck API/web → `npm test` → `npm run build`.
+
+Playwright smoke under `e2e/` is **optional** and skipped unless `E2E_BASE_URL` is set:
+
+```bash
+npx playwright install chromium
+E2E_BASE_URL=http://127.0.0.1:5173 npx playwright test
+```
 
 ## Workspace tips
 

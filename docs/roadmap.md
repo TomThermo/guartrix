@@ -1,5 +1,33 @@
 # Guartrix roadmap
 
+## English summary
+
+What is **already shipped**, and what is **still open**. Order = recommended sprints (Ptero/Wings ideas that fit Guartrix).
+
+**Live:** [guartrix.com](https://guartrix.com) · **Wiki:** [docs/wiki/README.md](wiki/README.md)
+
+Last updated: 2026-08-03
+
+### Done (high level)
+
+- Multi-node daemon (Wings-style), SFTP, MySQL, backups, subusers, Modrinth
+- Disk quota + CPU limits, allocations, activity log, 2FA, Client/Application API
+- Node transfer, schedule chains + file archives, Mollie billing
+- License enforcement (free tier + paid caps), hosting tools, PWA shell
+
+### Still optional / later (P2)
+
+- Eggs / nests (only if multi-game)
+- Extra mounts, location labels, Redis / HA panel (see [scaling.md](wiki/scaling.md))
+
+### Next ops actions
+
+Set `ACTIVITY_WEBHOOK_URL` (and optional `ALERT_EMAIL` / `SMTP_*`) for Discord alerts, and `MOLLIE_API_KEY` if checkout should go live. Install the panel DB backup timer (`sudo bash scripts/install-panel-backup-cron.sh`).
+
+---
+
+## Nederlands (detail)
+
 Wat er **al af** is, en wat we **nog moeten doen**. Volgorde = aanbevolen sprints (Ptero/Wings-ideeën die bij Guartrix passen).
 
 **Live:** [guartrix.com](https://guartrix.com) · **Wiki:** [docs/wiki/README.md](wiki/README.md)

@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # prisma generate / schema parse only — no live DB in this job
+      DATABASE_URL: mysql://ci:ci@127.0.0.1:3306/ci
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npm run db:generate
+
+      - name: Build shared
+        run: npm run build -w @msm/shared
+
+      - name: Typecheck API
+        run: npx tsc -p apps/api --noEmit
+
+      - name: Typecheck web
+        run: npm run typecheck -w @msm/web
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build workspaces
+        run: npm run build

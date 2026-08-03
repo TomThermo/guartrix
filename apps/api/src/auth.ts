@@ -1,4 +1,4 @@
-import { createHash, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { Server } from "@prisma/client";
 import { nanoid } from "nanoid";
@@ -17,6 +17,7 @@ import { assertSameOrigin } from "./csrf.js";
 import { prisma } from "./db.js";
 import { hostNodeName, hostPublicIp, hostTotalMemoryGb, hostTotalMemoryMb } from "./host-resources.js";
 import { isSmtpConfigured, sendMail } from "./mail.js";
+import { hashPassword, verifyPassword } from "./password-hash.js";
 import {
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
@@ -32,6 +33,8 @@ import {
   userCanAccessServer,
 } from "./server-access.js";
 
+export { hashPassword, verifyPassword } from "./password-hash.js";
+
 declare module "fastify" {
   interface Session {
     authenticated?: boolean;
@@ -46,21 +49,6 @@ declare module "fastify" {
     authUserCache?: AuthUser | null;
     authUserCacheLoaded?: boolean;
   }
-}
-
-export function hashPassword(password: string, salt?: string): string {
-  const s = salt ?? randomBytes(16).toString("hex");
-  const hash = scryptSync(password, s, 64).toString("hex");
-  return `${s}:${hash}`;
-}
-
-export function verifyPassword(password: string, stored: string): boolean {
-  const [salt, hash] = stored.split(":");
-  if (!salt || !hash) return false;
-  const next = scryptSync(password, salt, 64);
-  const prev = Buffer.from(hash, "hex");
-  if (prev.length !== next.length) return false;
-  return timingSafeEqual(prev, next);
 }
 
 /** Verify the current session user's password (e.g. destructive actions). */

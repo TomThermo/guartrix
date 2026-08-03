@@ -81,7 +81,7 @@ cd guartrix-panel-1.0.0
 
 cp .env.example .env   # fill secrets / PUBLIC_* / DATABASE_URL / LICENSE_*
 npm install
-npm run db:generate && npm run db:push
+npm run db:generate && bash scripts/db-migrate.sh
 bash scripts/start.sh
 ```
 

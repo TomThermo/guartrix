@@ -585,7 +585,7 @@ if [[ -z "$MYSQL_MODE" ]]; then
     echo "[guartrix] Panel database (Prisma)"
     echo "  1) Docker MySQL — install starts container guartrix-mysql on 127.0.0.1:3306 (recommended)"
     echo "  2) Existing MySQL/MariaDB — you provide host, database, user, password"
-    echo "     (create the empty database + user beforehand; installer runs db:push)"
+    echo "     (create the empty database + user beforehand; installer runs migrate deploy)"
     ask ans "Use Docker MySQL for the panel? [Y/n]: "
     case "${ans,,}" in
       n|no) MYSQL_MODE=external ;;
@@ -852,7 +852,7 @@ else
 fi
 
 # Prisma CLI loads apps/api/.env (next to prisma/), not the panel root .env.
-# Also export DATABASE_URL so db:push works even without a dotenv file.
+# Also export DATABASE_URL so migrate works even without a dotenv file.
 if [[ ! -e apps/api/.env ]]; then
   ln -sfn ../../.env apps/api/.env
 fi
@@ -865,8 +865,8 @@ if [[ -z "${DATABASE_URL:-}" ]]; then
   exit 1
 fi
 export DATABASE_URL
-echo "[guartrix] Applying database schema (prisma db push)…"
-npm run db:push -w @msm/api
+echo "[guartrix] Applying database migrations (prisma migrate deploy)…"
+bash scripts/db-migrate.sh
 
 # systemd units
 if [[ "$SKIP_LOCAL_DAEMON" -eq 0 ]]; then

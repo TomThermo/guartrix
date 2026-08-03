@@ -151,6 +151,16 @@ async function main() {
 
   app.get("/health", async () => ({ ok: true }));
 
+  /** Readiness: daemon process is up and Docker Engine is reachable. */
+  app.get("/ready", async (_request, reply) => {
+    try {
+      await getDockerVersion();
+      return { ok: true };
+    } catch {
+      return reply.status(503).send({ ok: false, error: "docker unavailable" });
+    }
+  });
+
   let sftpHandle: Awaited<ReturnType<typeof startSftpServer>> | null = null;
 
   app.get("/system", async () => ({

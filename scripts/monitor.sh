@@ -58,10 +58,12 @@ stack_healthy() {
   if [[ "${SKIP_LOCAL_DAEMON:-0}" != "1" && "${SKIP_LOCAL_DAEMON:-}" != "true" ]]; then
     pid_alive "$PID_DIR/daemon.pid" || { mlog "daemon process is not running"; return 1; }
     http_ok "http://${DAEMON_HOST}:${DAEMON_PORT}/health" || { mlog "daemon health check failed"; return 1; }
+    http_ok "http://${DAEMON_HOST}:${DAEMON_PORT}/ready" || { mlog "daemon ready check failed"; return 1; }
   fi
   pid_alive "$PID_DIR/api.pid" || { mlog "API process is not running"; return 1; }
   pid_alive "$PID_DIR/web.pid" || { mlog "web process is not running"; return 1; }
   http_ok "http://127.0.0.1:${API_PORT}/api/health" || { mlog "API health check failed"; return 1; }
+  http_ok "http://127.0.0.1:${API_PORT}/api/ready" || { mlog "API ready check failed"; return 1; }
   http_ok "http://127.0.0.1:${WEB_PORT}/" || { mlog "web health check failed"; return 1; }
   return 0
 }

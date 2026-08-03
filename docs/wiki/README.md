@@ -33,7 +33,7 @@ Operator and developer documentation for the Guartrix Minecraft hosting panel.
 | [Move between nodes](node-transfer.md) | Admin transfer: stop → sync → rebind ports/DNS → start |
 | [Security](security.md) | Hardening checklist and known controls |
 | [Scaling](scaling.md) | Multi-node scale; when Redis is (not) needed |
-| [Development](development.md) | Local `dev:*` workflow |
+| [Development](development.md) | Local `dev:*` workflow, Vitest, CI |
 | **[Roadmap](../roadmap.md)** | Done vs open sprints (Application API / Mollie done → …) |
 
 ## Screenshot preview

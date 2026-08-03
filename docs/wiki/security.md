@@ -41,6 +41,7 @@ another tool on the host needs it.
 | Proxy | `X-Forwarded-*` overwritten from the socket by prod-web; API trusts XFF only from `TRUSTED_PROXIES` |
 | CSRF | Origin/Referer check on cookie-auth mutating `/api` routes |
 | Sessions | `httpOnly` + `SameSite=Lax`; regenerate on login; purge on password reset |
+| Secrets at rest | TOTP secrets and game MySQL `Database.password` sealed with AES-256-GCM keyed from `SESSION_SECRET` (purpose salts); legacy plaintext passwords accepted and re-sealed on read/write |
 | 2FA | Optional TOTP + recovery codes; role-required via `TWO_FACTOR_REQUIRED_ROLES` — see [Accounts & quotas](accounts-and-quotas.md) |
 | Client API | Personal Bearer keys (`gt_…`), scoped permissions, per-key rate limit — see [Client API](client-api.md) |
 | Files / SFTP | Symlink jail, `O_NOFOLLOW` uploads, member-safe archive extract, sensitive `guartrix-*.json` blocked |
@@ -59,9 +60,9 @@ another tool on the host needs it.
 Rotate these in order when a secret may have leaked:
 
 1. **`SESSION_SECRET`** — generate a new long random value in `.env`.  
-   The encrypted node-token vault (`data/node-tokens.json`) is keyed from this secret. After changing it, regenerate daemon tokens for every node (System → node → reinstall / rotate token) and update remote `daemon.env`. Restart with `bash scripts/start.sh`.
+   This secret keys the encrypted node-token vault (`data/node-tokens.json`), sealed TOTP secrets, and sealed game MySQL passwords (`Database.password`). After changing it, regenerate daemon tokens for every node (System → node → reinstall / rotate token) and update remote `daemon.env`. Existing sealed TOTP / DB passwords become unreadable until re-enrolled or passwords are rotated — prefer rotating game DB passwords from the panel after a secret change. Restart with `bash scripts/start.sh`.
 2. **Daemon bearer (`DAEMON_TOKEN` / per-node tokens)** — rotate via the panel (new token → update `data/daemon.env` or remote install). Old hash on `Node.tokenHash` is replaced; restart daemon.
-3. **MySQL passwords** — panel DB (`MYSQL_PASSWORD` / `DATABASE_URL`) and game MySQL root in `data/daemon.env`. Update env, restart, and recreate game DB users if needed.
+3. **MySQL passwords** — panel DB (`MYSQL_PASSWORD` / `DATABASE_URL`) and game MySQL root in `data/daemon.env`. Update env, restart, and recreate game DB users if needed. Game-server DB user passwords in the panel are stored sealed; recreate those databases (or change passwords on the node MySQL) after a `SESSION_SECRET` change.
 4. **Application / Client API keys** — revoke compromised `gta_` / `gt_` keys in Admin → Billing / Security; issue new ones.
 5. **Mollie / Cloudflare / SMTP** — rotate at the provider console, then update `.env`.
 6. **TLS private key** — replace `cert/*.key` (or `TLS_KEY_FILE`) and reload web.

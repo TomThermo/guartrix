@@ -58,7 +58,8 @@ guartrix_stage_release_tree() {
     start.sh start-prod.mjs prod-web.mjs lib.sh monitor.sh \
     install.sh install-panel.sh install-daemon.sh \
     install-host-hardening.sh \
-    backup-panel-db.sh install-panel-backup-cron.sh
+    backup-panel-db.sh install-panel-backup-cron.sh \
+    db-migrate.sh
   do
     [[ -f "$ROOT/scripts/$s" ]] && cp "$ROOT/scripts/$s" "$STAGE/scripts/"
   done

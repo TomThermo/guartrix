@@ -34,6 +34,7 @@ Apex `/download` redirects to that host when configured.
 
 `scripts/start.sh` starts `scripts/monitor.sh` (~20s interval):
 
+- Checks API `/api/health` (liveness) and `/api/ready` (DB), daemon `/health` and `/ready` (Docker)
 - Restarts daemon / API / web if unhealthy
 - Does **not** restart `docker.service` (would wipe `--rm` game containers)
 - Does **not** stop Minecraft servers when the panel restarts

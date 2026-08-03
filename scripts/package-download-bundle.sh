@@ -119,7 +119,7 @@ Install / run
   # From a full panel tree that already has node_modules + prisma:
   npm install
   npm run db:generate -w @msm/api
-  npm run db:push -w @msm/api
+  bash scripts/db-migrate.sh
   # Or with the panel start script (recommended):
   bash scripts/start.sh
 
@@ -228,7 +228,7 @@ Guartrix Panel ${VERSION} — install
 
 3) Install deps + database
    npm install
-   npm run db:generate && npm run db:push
+   npm run db:generate && bash scripts/db-migrate.sh
 
 4) TLS (optional but recommended)
    Place Cloudflare Origin cert as cert/guartrix.com.crt + .key
@@ -286,7 +286,7 @@ Recommended install (panel):
   # follow INSTALL.txt
   cp .env.example .env
   npm install
-  npm run db:generate && npm run db:push
+  npm run db:generate && bash scripts/db-migrate.sh
   bash scripts/start.sh
 EOF
 

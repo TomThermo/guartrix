@@ -17,17 +17,25 @@
     "package:release": "bash scripts/package-release.sh",
     "package:download": "bash scripts/package-download-bundle.sh",
     "db:generate": "npm run db:generate -w @msm/api",
+    "db:migrate": "npm run db:migrate -w @msm/api",
     "db:push": "npm run db:push -w @msm/api",
     "start": "npm run start -w @msm/api",
     "start:prod": "node scripts/start-prod.mjs",
     "start:sh": "bash scripts/start.sh",
     "prod": "npm run build && npm run start:prod",
-    "prod:release": "npm run build:release && npm run start:prod"
+    "prod:release": "npm run build:release && npm run start:prod",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "engines": {
+    "node": ">=22"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "esbuild": "^0.25.0",
     "playwright": "^1.55.0",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.2",
+    "vitest": "^3.2.7"
   },
-  "version": "1.0.34"
+  "version": "1.0.36"
 }

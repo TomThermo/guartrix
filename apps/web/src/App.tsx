@@ -12,6 +12,7 @@ import {
 } from "react-bootstrap";
 import { api } from "./api";
 import { useAuth } from "./auth";
+import { ErrorBoundary } from "./ErrorBoundary";
 
 const LoginPage = lazy(() =>
   import("./pages/LoginPage").then((m) => ({ default: m.LoginPage })),
@@ -402,19 +403,21 @@ function Shell({ children }: { children: ReactNode }) {
 
 function PublicRoutes() {
   return (
-    <Suspense fallback={<PageFallback />}>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-        <Route path="/reset-password" element={<ResetPasswordPage />} />
-        <Route path="/verify-email" element={<VerifyEmailPage />} />
-        <Route path="/terms" element={<TermsPage />} />
-        <Route path="/privacy" element={<PrivacyPage />} />
-        <Route path="/invite/:token" element={<InvitePage />} />
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
-    </Suspense>
+    <ErrorBoundary>
+      <Suspense fallback={<PageFallback />}>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/verify-email" element={<VerifyEmailPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/invite/:token" element={<InvitePage />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </Suspense>
+    </ErrorBoundary>
   );
 }
 
@@ -450,89 +453,91 @@ export function App() {
 
   return (
     <Shell>
-      <Suspense fallback={<PageFallback />}>
-        <Routes>
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="/login" element={<Navigate to="/" replace />} />
-          <Route path="/register" element={<Navigate to="/" replace />} />
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="/reset-password" element={<ResetPasswordPage />} />
-          <Route path="/verify-email" element={<VerifyEmailPage />} />
-          <Route path="/terms" element={<TermsPage />} />
-          <Route path="/privacy" element={<PrivacyPage />} />
-          <Route path="/invite/:token" element={<InvitePage />} />
-          <Route
-            path="/servers/new"
-            element={
-              user?.role === "VIEWER" ? (
-                <Navigate to="/" replace />
-              ) : (
-                <CreateServerPage />
-              )
-            }
-          />
-          <Route path="/servers/:id" element={<ServerDetailPage />} />
-          <Route path="/account/security" element={<AccountSecurityPage />} />
-          <Route path="/account/billing" element={<AccountBillingPage />} />
-          <Route
-            path="/users"
-            element={
-              user?.role === "ADMIN" ? <UsersPage /> : <Navigate to="/" replace />
-            }
-          />
-          <Route
-            path="/admin/billing"
-            element={
-              user?.role === "ADMIN" ? (
-                <AdminBillingPage />
-              ) : (
-                <Navigate to="/" replace />
-              )
-            }
-          />
-          <Route
-            path="/admin/system"
-            element={
-              user?.role === "ADMIN" ? (
-                <SystemSettingsPage />
-              ) : (
-                <Navigate to="/" replace />
-              )
-            }
-          />
-          <Route
-            path="/admin/license"
-            element={
-              user?.role === "ADMIN" ? (
-                <AdminLicensePage />
-              ) : (
-                <Navigate to="/" replace />
-              )
-            }
-          />
-          <Route
-            path="/admin/activity"
-            element={
-              user?.role === "ADMIN" ? (
-                <AdminActivityPage />
-              ) : (
-                <Navigate to="/" replace />
-              )
-            }
-          />
-          <Route
-            path="/statusline"
-            element={
-              user?.role === "ADMIN" ? (
-                <StatusLinePage />
-              ) : (
-                <Navigate to="/" replace />
-              )
-            }
-          />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Suspense>
+      <ErrorBoundary>
+        <Suspense fallback={<PageFallback />}>
+          <Routes>
+            <Route path="/" element={<DashboardPage />} />
+            <Route path="/login" element={<Navigate to="/" replace />} />
+            <Route path="/register" element={<Navigate to="/" replace />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/verify-email" element={<VerifyEmailPage />} />
+            <Route path="/terms" element={<TermsPage />} />
+            <Route path="/privacy" element={<PrivacyPage />} />
+            <Route path="/invite/:token" element={<InvitePage />} />
+            <Route
+              path="/servers/new"
+              element={
+                user?.role === "VIEWER" ? (
+                  <Navigate to="/" replace />
+                ) : (
+                  <CreateServerPage />
+                )
+              }
+            />
+            <Route path="/servers/:id" element={<ServerDetailPage />} />
+            <Route path="/account/security" element={<AccountSecurityPage />} />
+            <Route path="/account/billing" element={<AccountBillingPage />} />
+            <Route
+              path="/users"
+              element={
+                user?.role === "ADMIN" ? <UsersPage /> : <Navigate to="/" replace />
+              }
+            />
+            <Route
+              path="/admin/billing"
+              element={
+                user?.role === "ADMIN" ? (
+                  <AdminBillingPage />
+                ) : (
+                  <Navigate to="/" replace />
+                )
+              }
+            />
+            <Route
+              path="/admin/system"
+              element={
+                user?.role === "ADMIN" ? (
+                  <SystemSettingsPage />
+                ) : (
+                  <Navigate to="/" replace />
+                )
+              }
+            />
+            <Route
+              path="/admin/license"
+              element={
+                user?.role === "ADMIN" ? (
+                  <AdminLicensePage />
+                ) : (
+                  <Navigate to="/" replace />
+                )
+              }
+            />
+            <Route
+              path="/admin/activity"
+              element={
+                user?.role === "ADMIN" ? (
+                  <AdminActivityPage />
+                ) : (
+                  <Navigate to="/" replace />
+                )
+              }
+            />
+            <Route
+              path="/statusline"
+              element={
+                user?.role === "ADMIN" ? (
+                  <StatusLinePage />
+                ) : (
+                  <Navigate to="/" replace />
+                )
+              }
+            />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
+      </ErrorBoundary>
     </Shell>
   );
 }

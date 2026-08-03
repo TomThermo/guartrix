@@ -6,7 +6,7 @@
 |---|---|
 | **Product** | [guartrix.com](https://guartrix.com) |
 | **Source** | [github.com/TomThermo/guartrix](https://github.com/TomThermo/guartrix) |
-| **Documentation** | [Wiki](docs/wiki/README.md) · [Panel guide](docs/wiki/panel-guide.md) · [Roadmap](docs/roadmap.md) |
+| **Documentation** | [Wiki](docs/wiki/README.md) · [Panel guide](docs/wiki/panel-guide.md) · [Roadmap](docs/roadmap.md) · [Changelog](CHANGELOG.md) |
 
 ---
 
@@ -106,7 +106,7 @@ Guides: [Install the panel](docs/wiki/install-panel.md) · [Install nodes](docs/
 ```bash
 cp .env.example .env   # configure secrets, PUBLIC_*, DATABASE_URL, LICENSE_*
 npm install
-npm run db:generate && npm run db:push
+npm run db:generate && bash scripts/db-migrate.sh
 npm run build && bash scripts/start.sh
 ```
 

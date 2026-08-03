@@ -37,13 +37,13 @@ export function isDaemonAuthorized(request: FastifyRequest): boolean {
   return safeEqualString(token, daemonConfig.token);
 }
 
-/** Auth middleware — skip /health. */
+/** Auth middleware — skip /health and /ready. */
 export async function requireDaemonAuth(
   request: FastifyRequest,
   reply: FastifyReply,
 ): Promise<void> {
   const pathOnly = request.url.split("?")[0] ?? "";
-  if (pathOnly === "/health") return;
+  if (pathOnly === "/health" || pathOnly === "/ready") return;
   if (!isDaemonAuthorized(request)) {
     return reply.status(401).send({ error: "Unauthorized" });
   }

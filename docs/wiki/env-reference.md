@@ -11,7 +11,7 @@ Copy `.env.example` → `.env` (repo root). Secrets must stay gitignored. The lo
 | `API_PORT` | Default `3001` |
 | `WEB_PORT` / `HTTPS_PORT` | Default `80` / `443` |
 | `HTTPS_ENABLED` | `false` = HTTP-only / IP install (installer `--http`); `true` = TLS on `:443` |
-| `SESSION_SECRET` | Long random string |
+| `SESSION_SECRET` | Long random string — also keys at-rest seals (TOTP secrets, game MySQL passwords, node-token vault) |
 | `SESSION_SECURE` | `true` when serving over HTTPS; `false` for plain HTTP/IP |
 | `TRUST_PROXY` | `true` behind Cloudflare / prod-web HTTPS; usually `false` for direct IP HTTP |
 | `TRUSTED_PROXIES` | Peer IPs allowed to set `X-Forwarded-For` (default `127.0.0.1,::1`). Use `*` only if every hop is trusted |
@@ -19,6 +19,7 @@ Copy `.env.example` → `.env` (repo root). Secrets must stay gitignored. The lo
 | `PUBLIC_IP` | Public IP when useful for players/DNS |
 | `PUBLIC_BASE_URL` | Full origin, e.g. `https://guartrix.com` or `http://203.0.113.10` |
 | `DATA_DIR` | Default `./data` |
+| `LOG_LEVEL` | API pino level (`fatal`…`trace`; default `info`) |
 | `WEB_HOST` | Web bind address (default `0.0.0.0`) |
 | `JAVA_PATH` | Host Java binary (fallback when not using the per-server Java picker) |
 | `DOCKER_IMAGE` | Default `eclipse-temurin:25-jre-jammy` |
@@ -28,7 +29,7 @@ Copy `.env.example` → `.env` (repo root). Secrets must stay gitignored. The lo
 
 | Variable | Purpose |
 |----------|---------|
-| `DATABASE_URL` | Prisma MySQL URL |
+| `DATABASE_URL` | Prisma MySQL URL (optional pool params: `connection_limit`, `pool_timeout`, `connect_timeout`) |
 | `MYSQL_HOST` / `MYSQL_PORT` / `MYSQL_DATABASE` / `MYSQL_USER` / `MYSQL_PASSWORD` | Same connection, split fields (installer / docs) |
 
 Installer: `--mysql-docker` (default) or `--mysql-external` / `--database-url`. Game-server MySQL is separate (`data/daemon.env`, Docker `guartrix-mysql`).

@@ -15,6 +15,11 @@ import {
   daemonMysqlEnsure,
   resolveNodeForServer,
 } from "../daemon-client.js";
+import {
+  isSealedDatabasePassword,
+  sealDatabasePassword,
+  unsealDatabasePassword,
+} from "../db-password.js";
 import { prisma } from "../db.js";
 import { assertCanCreateDatabase } from "../quotas.js";
 
@@ -31,13 +36,19 @@ function serializeDatabase(row: {
   createdAt: Date;
   updatedAt: Date;
 }): ServerDatabase {
+  let password = row.password;
+  try {
+    password = unsealDatabasePassword(row.password);
+  } catch {
+    password = row.password;
+  }
   return {
     id: row.id,
     serverId: row.serverId,
     nodeId: row.nodeId,
     name: row.name,
     username: row.username,
-    password: row.password,
+    password,
     host: row.host,
     port: row.port,
     remote: row.remote,
@@ -45,6 +56,21 @@ function serializeDatabase(row: {
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
+}
+
+/** Best-effort: seal legacy plaintext passwords still stored in the panel DB. */
+function resealPlaintextPasswords(
+  rows: Array<{ id: string; password: string }>,
+): void {
+  for (const row of rows) {
+    if (isSealedDatabasePassword(row.password)) continue;
+    void prisma.database
+      .update({
+        where: { id: row.id },
+        data: { password: sealDatabasePassword(row.password) },
+      })
+      .catch(() => undefined);
+  }
 }
 
 function sanitizeSuffix(raw: string): string {
@@ -122,6 +148,7 @@ export function registerDatabaseRoutes(app: FastifyInstance): void {
         where: { serverId: access.server.id },
         orderBy: { createdAt: "asc" },
       });
+      resealPlaintextPasswords(rows);
       const quota = await resolveQuotaForServer(access.server);
       const limit = quota.limit ?? DEFAULT_MAX_DATABASES;
       const remaining =
@@ -228,7 +255,7 @@ export function registerDatabaseRoutes(app: FastifyInstance): void {
             nodeId,
             name: created.database.name,
             username: created.database.username,
-            password: created.database.password,
+            password: sealDatabasePassword(created.database.password),
             host: created.database.host,
             port: created.database.port,
             remote: created.database.remote,

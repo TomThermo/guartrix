@@ -1,7 +1,7 @@
 import type { OnlinePlayer, OnlinePlayersResponse } from "@msm/shared";
 import { prisma } from "./db.js";
 import { pingMinecraftServer } from "./mc-ping.js";
-import { listPlayerHistory, touchOnlinePlayers } from "./player-history.js";
+import { listPlayerHistory, touchOnlinePlayers } from "@msm/node-agent";
 import { processManager } from "./process-manager.js";
 
 function emptyOnline(

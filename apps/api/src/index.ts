@@ -66,6 +66,7 @@ import {
   startDaemonEventBridge,
   stopDaemonEventBridge,
 } from "./daemon-events.js";
+import { genReqId, logger } from "./logger.js";
 
 async function main() {
   await fs.mkdir(path.join(config.dataDir, "servers"), { recursive: true });
@@ -81,15 +82,15 @@ async function main() {
   // multi-node: restore all node tokens, then refresh/ensure the local daemon token.
   const restored = loadPersistedNodeTokens();
   if (restored > 0) {
-    console.info(`[guartrix] Restored ${restored} daemon token(s) from vault`);
+    logger.info({ restored }, "Restored daemon token(s) from vault");
   }
   const skipLocalDaemon =
     process.env.SKIP_LOCAL_DAEMON === "1" ||
     process.env.SKIP_LOCAL_DAEMON === "true";
   let localNodeId: string | null = null;
   if (skipLocalDaemon) {
-    console.info(
-      "[guartrix] SKIP_LOCAL_DAEMON=1 — not creating/starting a local daemon node (use remote nodes)",
+    logger.info(
+      "SKIP_LOCAL_DAEMON=1 — not creating/starting a local daemon node (use remote nodes)",
     );
   } else {
     const { nodeId, token } = await ensureLocalNode();
@@ -101,11 +102,11 @@ async function main() {
     const { migratePrimaryAllocations } = await import("./allocations.js");
     const n = await migratePrimaryAllocations();
     if (n > 0) {
-      console.info(`[guartrix] Backfilled ${n} primary allocation(s)`);
+      logger.info({ count: n }, "Backfilled primary allocation(s)");
     }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.warn(`[guartrix] Allocation migration skipped: ${msg}`);
+    logger.warn({ err: msg }, "Allocation migration skipped");
   }
 
   // Reconcile status with reality instead of blindly marking everything
@@ -122,9 +123,12 @@ async function main() {
     try {
       actuallyRunning = await daemonIsRunning(id);
     } catch (err) {
-      console.warn(
-        `[guartrix] Could not verify running state for ${id} (assuming stopped):`,
-        err instanceof Error ? err.message : err,
+      logger.warn(
+        {
+          serverId: id,
+          err: err instanceof Error ? err.message : String(err),
+        },
+        "Could not verify running state (assuming stopped)",
       );
     }
     await prisma.server.update({
@@ -139,9 +143,13 @@ async function main() {
     try {
       await daemonCleanupContainers(n.id);
     } catch (err) {
-      console.warn(
-        `[guartrix] Daemon cleanup skipped for node ${n.name}:`,
-        err instanceof Error ? err.message : err,
+      logger.warn(
+        {
+          nodeId: n.id,
+          nodeName: n.name,
+          err: err instanceof Error ? err.message : String(err),
+        },
+        "Daemon cleanup skipped for node",
       );
     }
   }
@@ -158,7 +166,10 @@ async function main() {
     .filter(Boolean);
 
   const app = Fastify({
-    logger: true,
+    loggerInstance: logger,
+    requestIdHeader: "x-request-id",
+    requestIdLogLabel: "reqId",
+    genReqId,
     bodyLimit: 32 * 1024 * 1024,
     connectionTimeout: 0,
     requestTimeout: 0,
@@ -273,6 +284,16 @@ async function main() {
 
   app.get("/api/health", async () => ({ ok: true }));
 
+  /** Readiness: panel process is up and can reach the database. */
+  app.get("/api/ready", async (_request, reply) => {
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+      return { ok: true };
+    } catch {
+      return reply.status(503).send({ ok: false, error: "database unavailable" });
+    }
+  });
+
   let lastActivityPrune = 0;
   const schedulerTimer = setInterval(() => {
     void (async () => {
@@ -383,6 +404,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error(err);
+  logger.error({ err }, "API failed to start");
   process.exit(1);
 });

@@ -16,6 +16,11 @@ import {
   daemonWipeServerOnNode,
 } from "./daemon-client.js";
 import { prisma } from "./db.js";
+import {
+  isSealedDatabasePassword,
+  sealDatabasePassword,
+  unsealDatabasePassword,
+} from "./db-password.js";
 import { assertNodeCapacity } from "./nodes.js";
 import { processManager } from "./process-manager.js";
 import { updateServerProperties } from "./properties.js";
@@ -355,10 +360,11 @@ async function runTransfer(
         );
         const dumpPath = path.join(staging, `db-${db.name}.sql`);
         await daemonMysqlDumpToFile(fromNodeId, db.name, dumpPath);
+        const plainPassword = unsealDatabasePassword(db.password);
         await daemonMysqlCreate(toNodeId, {
           name: db.name,
           username: db.username,
-          password: db.password,
+          password: plainPassword,
           remote: db.remote,
         });
         await daemonMysqlRestoreFromFile(toNodeId, db.name, dumpPath);
@@ -376,6 +382,9 @@ async function runTransfer(
             nodeId: toNodeId,
             host: destStatus.host,
             port: destStatus.port,
+            ...(!isSealedDatabasePassword(db.password)
+              ? { password: sealDatabasePassword(plainPassword) }
+              : {}),
           },
         });
         await fs.rm(dumpPath, { force: true }).catch(() => undefined);

@@ -149,7 +149,7 @@ npm install
 npm run db:generate
 # Prisma CLI reads apps/api/.env — symlink if needed:
 #   ln -sfn ../../.env apps/api/.env
-npm run db:push
+bash scripts/db-migrate.sh
 npm run build
 bash scripts/start.sh
 ```

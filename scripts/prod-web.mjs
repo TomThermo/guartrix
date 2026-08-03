@@ -811,6 +811,11 @@ function withSecurityHeaders(handler) {
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("X-Frame-Options", "DENY");
     res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+    // style-src needs 'unsafe-inline' for Bootstrap + React inline styles
+    // (className-driven UI). A per-request style nonce would require
+    // rewriting every Vite/Bootstrap stylesheet injection — leave for a
+    // dedicated CSP pass. style-src-attr mirrors style-src so attribute
+    // styles stay allowed while we keep script-src strict (no unsafe-inline).
     res.setHeader(
       "Content-Security-Policy",
       [
@@ -821,6 +826,7 @@ function withSecurityHeaders(handler) {
         "img-src 'self' data: https: blob:",
         "font-src 'self' data:",
         "style-src 'self' 'unsafe-inline'",
+        "style-src-attr 'unsafe-inline'",
         "script-src 'self'",
         "connect-src 'self' wss: https:",
         "frame-src 'self' https:",
