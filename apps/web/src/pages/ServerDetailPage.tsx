@@ -43,6 +43,7 @@ import { SftpPanel } from "../components/SftpPanel";
 import { SubUsersPanel } from "../components/SubUsersPanel";
 import { TasksPanel } from "../components/TasksPanel";
 import { UpdateBanner } from "../components/UpdateBanner";
+import { VersionPickerModal } from "../components/VersionPickerModal";
 import { WhitelistManagerPanel } from "../components/WhitelistManagerPanel";
 import { WhitelistStartModal } from "../components/WhitelistStartModal";
 import { WhitelistToggleModal } from "../components/WhitelistToggleModal";
@@ -331,6 +332,7 @@ function ServerDetailPageInner({
   const [showClone, setShowClone] = useState(false);
   const [showReinstall, setShowReinstall] = useState(false);
   const [showChangeType, setShowChangeType] = useState(false);
+  const [showVersionPicker, setShowVersionPicker] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [addonUpdateCount, setAddonUpdateCount] = useState(0);
   const sharedOnline = useSharedOnlinePlayers();
@@ -832,6 +834,28 @@ function ServerDetailPageInner({
           </div>
           {(canClone || isAdmin || can("settings.update")) && (
             <div className="server-toolbar btn-group btn-group-sm" role="group">
+              {can("settings.update") && (
+                <Button
+                  variant="outline-secondary"
+                  disabled={busy}
+                  title="Change Minecraft version"
+                  onClick={() => setShowVersionPicker(true)}
+                >
+                  <i className="fa-solid fa-code-branch" />
+                  <span className="btn-label">Version</span>
+                </Button>
+              )}
+              {can("settings.update") && (
+                <Button
+                  variant="outline-secondary"
+                  disabled={busy}
+                  title="Change software (Paper, Fabric, …)"
+                  onClick={() => setShowChangeType(true)}
+                >
+                  <i className="fa-solid fa-puzzle-piece" />
+                  <span className="btn-label">Software</span>
+                </Button>
+              )}
               {canClone && (
                 <Button
                   variant="outline-secondary"
@@ -958,6 +982,19 @@ function ServerDetailPageInner({
         />
       )}
 
+      {showVersionPicker && (
+        <VersionPickerModal
+          show={showVersionPicker}
+          server={server}
+          onHide={() => setShowVersionPicker(false)}
+          onUpdated={(s) => {
+            setServer((prev) => (prev ? { ...prev, ...s } : prev));
+          }}
+          onError={setError}
+          onNotice={setNotice}
+        />
+      )}
+
       {showTransfer && (
         <TransferOwnerModal
           server={server}
@@ -1037,10 +1074,6 @@ function ServerDetailPageInner({
         }}
         onError={setError}
         onNotice={setNotice}
-        showVersionPicker={can("settings.update")}
-        onChangeType={
-          can("settings.update") ? () => setShowChangeType(true) : undefined
-        }
       />
 
       <Card className="server-detail-card border-0 shadow-sm">
