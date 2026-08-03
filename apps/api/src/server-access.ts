@@ -86,6 +86,93 @@ export async function getServerPermissions(
   return granted;
 }
 
+/**
+ * Batch variant of getServerPermissions for dashboard list — one SubUser query
+ * + one license read instead of N findSubUserForAccess round-trips.
+ */
+export async function getServerPermissionsBatch(
+  user: AuthUser,
+  servers: Array<Pick<Server, "id" | "ownerId">>,
+): Promise<Map<string, string[]>> {
+  const out = new Map<string, string[]>();
+  if (servers.length === 0) return out;
+
+  let features: Parameters<typeof applyLicenseFeatureCeiling>[1] = null;
+  try {
+    const state = getCachedLicenseState() ?? (await validateLicense(false));
+    if (state?.valid) features = state.features ?? null;
+  } catch {
+    /* ignore */
+  }
+
+  const ceiling = (granted: string[]) =>
+    features ? applyLicenseFeatureCeiling(granted, features) : granted;
+
+  if (user.role === "ADMIN") {
+    for (const s of servers) out.set(s.id, ceiling([ALL_PERMISSIONS_WILDCARD]));
+    return out;
+  }
+
+  const needSub: Array<Pick<Server, "id" | "ownerId">> = [];
+  for (const s of servers) {
+    if (s.ownerId === user.id) {
+      out.set(s.id, ceiling([ALL_PERMISSIONS_WILDCARD]));
+    } else {
+      needSub.push(s);
+    }
+  }
+
+  if (needSub.length === 0) return out;
+
+  const dbUser = await prisma.user.findUnique({ where: { id: user.id } });
+  const email =
+    dbUser?.emailVerified && dbUser.email
+      ? dbUser.email.trim().toLowerCase()
+      : null;
+  const ids = needSub.map((s) => s.id);
+
+  const subs = await prisma.subUser.findMany({
+    where: {
+      serverId: { in: ids },
+      OR: [
+        { userId: user.id },
+        ...(email ? [{ email }] : []),
+      ],
+    },
+  });
+
+  const byServer = new Map<string, (typeof subs)[number]>();
+  for (const sub of subs) {
+    const existing = byServer.get(sub.serverId);
+    // Prefer rows already linked to this userId over email-only invites.
+    if (!existing || (sub.userId === user.id && existing.userId !== user.id)) {
+      byServer.set(sub.serverId, sub);
+    }
+  }
+
+  const linkIds: string[] = [];
+  for (const s of needSub) {
+    const sub = byServer.get(s.id);
+    if (!sub) {
+      out.set(s.id, ceiling([]));
+      continue;
+    }
+    if (!sub.userId) linkIds.push(sub.id);
+    out.set(s.id, ceiling(parsePermissionsJson(sub.permissions)));
+  }
+
+  if (linkIds.length > 0) {
+    await prisma.subUser
+      .updateMany({
+        where: { id: { in: linkIds } },
+        data: { userId: user.id },
+      })
+      .catch(() => undefined);
+  }
+
+  return out;
+}
+
 export async function userCanAccessServer(
   user: AuthUser,
   server: Pick<Server, "id" | "ownerId">,

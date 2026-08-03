@@ -20,19 +20,16 @@ function emptyOnline(
 }
 
 /**
- * Fast path for dashboard polls: daemon/WS player cache only — no Minecraft ping.
+ * Fast path for dashboard polls: in-memory WS/daemon event cache only —
+ * no per-server HTTP round-trips to the node.
  */
 export async function getOnlinePlayersCached(
   serverId: string,
 ): Promise<OnlinePlayersResponse> {
-  const tracked = await processManager.refreshPlayers(serverId).catch(() =>
-    processManager.getOnlinePlayerNames(serverId),
-  );
-  const managedRunning = await processManager
-    .refreshRunning(serverId)
-    .catch(() => processManager.isRunning(serverId));
+  const names = processManager.getOnlinePlayerNames(serverId);
+  const managedRunning = processManager.isRunning(serverId);
 
-  const players: OnlinePlayer[] = [...tracked]
+  const players: OnlinePlayer[] = [...names]
     .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }))
     .map((name) => ({ name, uuid: null }));
 

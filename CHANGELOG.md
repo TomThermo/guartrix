@@ -7,6 +7,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.49] — 2026-08-03
+
+- Perf: batch server permissions on dashboard list (kill N+1 SubUser lookups)
+- Perf: `/online` and `/stats` dashboard bulk use in-memory caches only (no daemon fan-out)
+- Perf: `checkAllServerUpdates` scoped to visible ids; 3m addon-update cache
+- Web: lazy-load ServerDetail tab panels (smaller initial chunk)
+- API: extract `routes/servers-dashboard.ts` for list/bulk poll endpoints
+
 ## [1.0.48] — 2026-08-03
 
 - i18n: remaining settings/backup/network/SFTP/admin notices and client fallbacks (EN/NL)

@@ -6,8 +6,6 @@ import { addonKindFor, hasPermission } from "@msm/shared";
 import {
   getSessionUser,
   isAuthenticated,
-  listVisibleServerIds,
-  listVisibleServers,
   requireServerAccess,
   requireWrite,
   verifySessionPassword,
@@ -43,7 +41,7 @@ import {
   readPlayers,
 } from "../players.js";
 import { listVersions } from "../providers/jars.js";
-import { getAllOnlinePlayers, getOnlinePlayers } from "../online-players.js";
+import { getOnlinePlayers } from "../online-players.js";
 import { processManager, fixDataOwnership } from "../process-manager.js";
 import { readServerProperties, updateServerProperties } from "../properties.js";
 import {
@@ -54,7 +52,6 @@ import { serverListInclude, toMcServer, toServerDetail } from "../serialize.js";
 import { collectServerStats } from "../stats.js";
 import {
   applyServerUpdate,
-  checkAllServerUpdates,
   checkServerUpdate,
 } from "../updates.js";
 import {
@@ -66,6 +63,10 @@ import {
   reinstallServer,
   resetWorld,
 } from "../server-lifecycle.js";
+import {
+  invalidateAddonUpdateCache,
+  registerServerDashboardRoutes,
+} from "./servers-dashboard.js";
 import { registerServerPlayerRoutes } from "./servers-players.js";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
@@ -183,92 +184,7 @@ export function registerServerRoutes(app: FastifyInstance): void {
   });
 
   registerServerPlayerRoutes(app);
-
-  app.get("/api/servers", async (request, reply) => {
-    const user = await getSessionUser(request);
-    if (!user) {
-      const { apiKeyRateLimitedMessage } = await import("../api-keys.js");
-      const rate = apiKeyRateLimitedMessage(request);
-      if (rate) return reply.status(429).send({ error: rate });
-      return reply.status(401).send({ error: "Unauthorized" });
-    }
-    const servers = await listVisibleServers(user, request);
-    const { getServerPermissions } = await import("../server-access.js");
-    return Promise.all(
-      servers.map(async (server) => ({
-        ...toMcServer(server),
-        permissions: await getServerPermissions(user, server),
-      })),
-    );
-  });
-
-  app.get("/api/servers/stats", async (request, reply) => {
-    const user = await getSessionUser(request);
-    if (!user) return reply.status(401).send({ error: "Unauthorized" });
-    const ids = await listVisibleServerIds(user, request);
-    const cached = processManager.getAllCachedStats();
-    const entries = await Promise.all(
-      ids.map(async (id) => {
-        if (cached[id]) return [id, cached[id]] as const;
-        return [id, await collectServerStats(id)] as const;
-      }),
-    );
-    return Object.fromEntries(entries);
-  });
-
-  app.get("/api/servers/online", async (request, reply) => {
-    const user = await getSessionUser(request);
-    if (!user) return reply.status(401).send({ error: "Unauthorized" });
-    const ids = await listVisibleServerIds(user, request);
-    return getAllOnlinePlayers(ids);
-  });
-
-  app.get("/api/servers/updates", async (request, reply) => {
-    const user = await getSessionUser(request);
-    if (!user) return reply.status(401).send({ error: "Unauthorized" });
-    const ids = new Set(await listVisibleServerIds(user, request));
-    const all = await checkAllServerUpdates();
-    return Object.fromEntries(Object.entries(all).filter(([id]) => ids.has(id)));
-  });
-
-  app.get("/api/servers/addon-updates", async (request, reply) => {
-    const user = await getSessionUser(request);
-    if (!user) return reply.status(401).send({ error: "Unauthorized" });
-    const servers = await listVisibleServers(user, request);
-    const eligible = servers.filter((s) => addonKindFor(s.type as ServerType));
-
-    const out: Record<string, { available: number }> = {};
-    let next = 0;
-    const workers = Array.from(
-      { length: Math.min(2, Math.max(eligible.length, 1)) },
-      async () => {
-        while (next < eligible.length) {
-          const i = next++;
-          const s = eligible[i]!;
-          const allowed = await userHasServerPermission(
-            user,
-            { id: s.id, ownerId: s.ownerId },
-            "addon.read",
-          );
-          if (!allowed) continue;
-          try {
-            const updates = await checkInstalledAddonUpdates({
-              serverDir: serverDir(s.id),
-              type: s.type as ServerType,
-              mcVersion: s.mcVersion,
-            });
-            out[s.id] = {
-              available: updates.filter((u) => u.available).length,
-            };
-          } catch {
-            out[s.id] = { available: 0 };
-          }
-        }
-      },
-    );
-    await Promise.all(workers);
-    return out;
-  });
+  registerServerDashboardRoutes(app);
 
   app.get<{ Params: { id: string }; Querystring: { disk?: string } }>(
     "/api/servers/:id/stats",
@@ -1348,6 +1264,7 @@ export function registerServerRoutes(app: FastifyInstance): void {
       try {
         await fixDataOwnership(serverDir(server.id));
         const result = await syncInstalledAddons(serverDir(server.id), server.type);
+        invalidateAddonUpdateCache(server.id);
         logActivity({
           action: "addon.sync",
           request,
@@ -1683,6 +1600,7 @@ export function registerServerRoutes(app: FastifyInstance): void {
         projectId,
         versionId: request.body?.versionId,
       });
+      invalidateAddonUpdateCache(server.id);
       logActivity({
         action: "addon.install",
         request,
@@ -1716,6 +1634,7 @@ export function registerServerRoutes(app: FastifyInstance): void {
           server.type,
           request.params.projectId,
         );
+        invalidateAddonUpdateCache(server.id);
         logActivity({
           action: "addon.delete",
           request,

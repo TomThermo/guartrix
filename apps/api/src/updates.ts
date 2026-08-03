@@ -228,10 +228,12 @@ export async function checkServerUpdate(server: Server): Promise<ServerUpdateInf
   };
 }
 
-export async function checkAllServerUpdates(): Promise<
-  Record<string, ServerUpdateInfo>
-> {
-  const servers = await prisma.server.findMany();
+export async function checkAllServerUpdates(
+  serverIds?: string[],
+): Promise<Record<string, ServerUpdateInfo>> {
+  const servers = await prisma.server.findMany({
+    where: serverIds && serverIds.length > 0 ? { id: { in: serverIds } } : undefined,
+  });
   const entries = await Promise.all(
     servers.map(async (s) => [s.id, await checkServerUpdate(s)] as const),
   );

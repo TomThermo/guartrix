@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, lazy, Suspense } from "react";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import type {
   ConnectInfo,
@@ -17,32 +17,13 @@ import {
 import { api, ApiError } from "../api";
 import { useAuth } from "../auth";
 import { useI18n } from "../i18n/react";
-import { ActivityPanel } from "../components/ActivityPanel";
-import { AddonPanel } from "../components/AddonPanel";
-import { BackupPanel } from "../components/BackupPanel";
-import { BansPanel } from "../components/BansPanel";
-import { BotsPanel } from "../components/BotsPanel";
 import { ServerConsoleLayout } from "../components/ServerConsoleLayout";
-import { DatabasesPanel } from "../components/DatabasesPanel";
-import { AllocationsPanel } from "../components/AllocationsPanel";
 import { CloneServerModal } from "../components/CloneServerModal";
 import { ChangeTypeModal } from "../components/ChangeTypeModal";
 import { ReinstallServerModal } from "../components/ReinstallServerModal";
 import { DeleteServerModal } from "../components/DeleteServerModal";
-import { EngineSettingsPanel } from "../components/EngineSettingsPanel";
-import { ModpackPanel } from "../components/ModpackPanel";
-import { FileManager } from "../components/FileManager";
-import { LogPanel } from "../components/LogPanel";
-import { OnlinePlayers } from "../components/OnlinePlayers";
-import { ResourceMeter } from "../components/ResourceMeter";
-import { ServerSettings } from "../components/ServerSettings";
-import { WorldSeedMapCard } from "../components/WorldSeedMapCard";
-import { SftpPanel } from "../components/SftpPanel";
-import { SubUsersPanel } from "../components/SubUsersPanel";
-import { TasksPanel } from "../components/TasksPanel";
 import { UpdateBanner } from "../components/UpdateBanner";
 import { VersionPickerModal } from "../components/VersionPickerModal";
-import { WhitelistManagerPanel } from "../components/WhitelistManagerPanel";
 import { WhitelistStartModal } from "../components/WhitelistStartModal";
 import { WhitelistToggleModal } from "../components/WhitelistToggleModal";
 import { KillServerModal } from "../components/KillServerModal";
@@ -64,6 +45,90 @@ import {
 import { ServerDetailHeader } from "../components/server-detail/ServerDetailHeader";
 import { ServerDetailSideNav } from "../components/server-detail/ServerDetailSideNav";
 
+const ActivityPanel = lazy(() =>
+  import("../components/ActivityPanel").then((m) => ({ default: m.ActivityPanel })),
+);
+const AddonPanel = lazy(() =>
+  import("../components/AddonPanel").then((m) => ({ default: m.AddonPanel })),
+);
+const BackupPanel = lazy(() =>
+  import("../components/BackupPanel").then((m) => ({ default: m.BackupPanel })),
+);
+const BansPanel = lazy(() =>
+  import("../components/BansPanel").then((m) => ({ default: m.BansPanel })),
+);
+const BotsPanel = lazy(() =>
+  import("../components/BotsPanel").then((m) => ({ default: m.BotsPanel })),
+);
+const DatabasesPanel = lazy(() =>
+  import("../components/DatabasesPanel").then((m) => ({
+    default: m.DatabasesPanel,
+  })),
+);
+const AllocationsPanel = lazy(() =>
+  import("../components/AllocationsPanel").then((m) => ({
+    default: m.AllocationsPanel,
+  })),
+);
+const EngineSettingsPanel = lazy(() =>
+  import("../components/EngineSettingsPanel").then((m) => ({
+    default: m.EngineSettingsPanel,
+  })),
+);
+const ModpackPanel = lazy(() =>
+  import("../components/ModpackPanel").then((m) => ({ default: m.ModpackPanel })),
+);
+const FileManager = lazy(() =>
+  import("../components/FileManager").then((m) => ({ default: m.FileManager })),
+);
+const LogPanel = lazy(() =>
+  import("../components/LogPanel").then((m) => ({ default: m.LogPanel })),
+);
+const OnlinePlayers = lazy(() =>
+  import("../components/OnlinePlayers").then((m) => ({
+    default: m.OnlinePlayers,
+  })),
+);
+const ResourceMeter = lazy(() =>
+  import("../components/ResourceMeter").then((m) => ({
+    default: m.ResourceMeter,
+  })),
+);
+const ServerSettings = lazy(() =>
+  import("../components/ServerSettings").then((m) => ({
+    default: m.ServerSettings,
+  })),
+);
+const WorldSeedMapCard = lazy(() =>
+  import("../components/WorldSeedMapCard").then((m) => ({
+    default: m.WorldSeedMapCard,
+  })),
+);
+const SftpPanel = lazy(() =>
+  import("../components/SftpPanel").then((m) => ({ default: m.SftpPanel })),
+);
+const SubUsersPanel = lazy(() =>
+  import("../components/SubUsersPanel").then((m) => ({
+    default: m.SubUsersPanel,
+  })),
+);
+const TasksPanel = lazy(() =>
+  import("../components/TasksPanel").then((m) => ({ default: m.TasksPanel })),
+);
+const WhitelistManagerPanel = lazy(() =>
+  import("../components/WhitelistManagerPanel").then((m) => ({
+    default: m.WhitelistManagerPanel,
+  })),
+);
+
+function TabFallback() {
+  return (
+    <div className="text-center text-secondary py-5">
+      <Spinner animation="border" size="sm" className="me-2" />
+      Loading…
+    </div>
+  );
+}
 
 export function ServerDetailPage() {
   const { id = "" } = useParams();
@@ -622,6 +687,7 @@ function ServerDetailPageInner({
 
             <Card.Body className="server-detail-body">
               <Tab.Content>
+            <Suspense fallback={<TabFallback />}>
             {tab === "settings" && (
               <ServerSettings
                 server={server}
@@ -841,6 +907,7 @@ function ServerDetailPageInner({
                 consoleNotices={consoleNotices}
               />
             )}
+            </Suspense>
               </Tab.Content>
             </Card.Body>
           </div>
