@@ -47,7 +47,6 @@ import { WhitelistManagerPanel } from "../components/WhitelistManagerPanel";
 import { WhitelistStartModal } from "../components/WhitelistStartModal";
 import { WhitelistToggleModal } from "../components/WhitelistToggleModal";
 import { KillServerModal } from "../components/KillServerModal";
-import { JoinCard } from "../components/JoinCard";
 import { TransferOwnerModal } from "../components/TransferOwnerModal";
 import { TransferNodeModal } from "../components/TransferNodeModal";
 import { statusBadgeClass, typeIcon, typeLabel, copyText } from "../utils";
@@ -698,30 +697,137 @@ function ServerDetailPageInner({
             className="server-icon-badge"
             src={`/api/servers/${server.id}/icon?t=${server.hasIcon ? server.updatedAt : "default"}`}
             alt=""
-            width={48}
-            height={48}
+            width={40}
+            height={40}
           />
           <div className="server-detail-title-text min-w-0">
-            <h1 className="server-detail-name text-truncate">{server.name}</h1>
-            <Button
-              size="sm"
-              variant="link"
-              className="server-detail-address p-0 text-secondary text-decoration-none text-truncate"
-              onClick={() => void copyConnect()}
-              title="Copy connect address"
-            >
-              <i className="fa-solid fa-copy" aria-hidden />
-              <span className="text-truncate">
-                {connectInfo?.address ?? `:${server.port}`}
+            <div className="server-detail-name-line">
+              <h1 className="server-detail-name text-truncate">{server.name}</h1>
+              <Button
+                size="sm"
+                variant="link"
+                className="server-detail-address p-0 text-secondary text-decoration-none text-truncate"
+                onClick={() => void copyConnect()}
+                title="Copy connect address"
+              >
+                <i className="fa-solid fa-copy" aria-hidden />
+                <span className="text-truncate">
+                  {connectInfo?.address ?? `:${server.port}`}
+                </span>
+              </Button>
+            </div>
+            <div className="server-detail-meta">
+              <span className={statusBadgeClass(server.status)}>{server.status}</span>
+              <Badge bg="secondary">
+                <i className={`fa-solid ${typeIcon(server.type)}`} aria-hidden />
+                {typeLabel(server.type)}
+              </Badge>
+              {isAdmin || server.ownerUsername ? (
+                <Badge
+                  bg={server.ownerUsername ? "dark" : "secondary"}
+                  title={isAdmin ? "Click to transfer owner" : "Owner"}
+                  role={isAdmin ? "button" : undefined}
+                  style={isAdmin ? { cursor: "pointer" } : undefined}
+                  onClick={isAdmin ? () => setShowTransfer(true) : undefined}
+                >
+                  <i className="fa-solid fa-user" aria-hidden />
+                  {server.ownerUsername ?? "Unassigned"}
+                </Badge>
+              ) : null}
+              <span className="server-detail-meta-text">
+                {[
+                  server.mcVersion,
+                  server.fabricLoaderVersion
+                    ? `loader ${server.fabricLoaderVersion}`
+                    : null,
+                  server.forgeVersion ? `forge ${server.forgeVersion}` : null,
+                  server.paperBuild ? `build ${server.paperBuild}` : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
               </span>
-            </Button>
-            <div className="mt-1">
-              <JoinCard
-                server={server}
-                connect={connectInfo}
-                compact
-                onNotice={setNotice}
-              />
+              {can("player.read") && (
+                <Badge
+                  bg="secondary"
+                  className="server-detail-meta-action"
+                  role="button"
+                  tabIndex={0}
+                  title="Online players — open Online Players"
+                  onClick={() => changeTab("players")}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      changeTab("players");
+                    }
+                  }}
+                >
+                  <i className="fa-solid fa-users" aria-hidden />
+                  {online
+                    ? `${online.playersOnline}${online.playersMax > 0 ? `/${online.playersMax}` : ""}`
+                    : server.status === "RUNNING"
+                      ? "…/…"
+                      : "0/0"}
+                </Badge>
+              )}
+              {can("settings.read") && (
+                <Badge
+                  bg={whitelistOn ? "success" : "warning"}
+                  text={whitelistOn ? undefined : "dark"}
+                  className="server-detail-meta-action"
+                  role="button"
+                  tabIndex={0}
+                  title={
+                    can("settings.update")
+                      ? "Click to change whitelist"
+                      : whitelistOn
+                        ? "Whitelist enabled"
+                        : "Whitelist disabled"
+                  }
+                  onClick={() => {
+                    if (can("settings.update")) setShowWhitelistModal(true);
+                    else changeTab("whitelist");
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      if (can("settings.update")) setShowWhitelistModal(true);
+                      else changeTab("whitelist");
+                    }
+                  }}
+                >
+                  <i
+                    className={`fa-solid ${whitelistOn ? "fa-shield-halved" : "fa-shield"}`}
+                    aria-hidden
+                  />
+                  WL {whitelistOn ? "on" : "off"}
+                </Badge>
+              )}
+              {supportsAddons && can("addon.read") && (
+                <Badge
+                  bg={addonUpdateCount > 0 ? "danger" : "secondary"}
+                  className="server-detail-meta-action"
+                  role="button"
+                  tabIndex={0}
+                  title="Open Plugin Management"
+                  onClick={() => changeTab("addons")}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      changeTab("addons");
+                    }
+                  }}
+                >
+                  <i className="fa-solid fa-puzzle-piece" aria-hidden />
+                  {addonUpdateCount > 0
+                    ? `${addonUpdateCount} update${addonUpdateCount === 1 ? "" : "s"}`
+                    : "Up to date"}
+                </Badge>
+              )}
+              {server.autoRestart && (
+                <Badge bg="info" text="dark">
+                  Auto-restart
+                </Badge>
+              )}
             </div>
           </div>
           {(canClone || isAdmin || can("settings.update")) && (
@@ -771,118 +877,6 @@ function ServerDetailPageInner({
                 </Button>
               )}
             </div>
-          )}
-        </div>
-
-        <div className="server-detail-meta">
-          <span className={statusBadgeClass(server.status)}>{server.status}</span>
-          <Badge bg="secondary">
-            <i className={`fa-solid ${typeIcon(server.type)}`} aria-hidden />
-            {typeLabel(server.type)}
-          </Badge>
-          {isAdmin || server.ownerUsername ? (
-            <Badge
-              bg={server.ownerUsername ? "dark" : "secondary"}
-              title={isAdmin ? "Click to transfer owner" : "Owner"}
-              role={isAdmin ? "button" : undefined}
-              style={isAdmin ? { cursor: "pointer" } : undefined}
-              onClick={isAdmin ? () => setShowTransfer(true) : undefined}
-            >
-              <i className="fa-solid fa-user" aria-hidden />
-              {server.ownerUsername ?? "Unassigned"}
-            </Badge>
-          ) : null}
-          <span className="server-detail-meta-text">{server.mcVersion}</span>
-          {server.fabricLoaderVersion && (
-            <span className="server-detail-meta-text">loader {server.fabricLoaderVersion}</span>
-          )}
-          {server.forgeVersion && (
-            <span className="server-detail-meta-text">forge {server.forgeVersion}</span>
-          )}
-          {server.paperBuild && (
-            <span className="server-detail-meta-text">build {server.paperBuild}</span>
-          )}
-          {can("player.read") && (
-            <Badge
-              bg="secondary"
-              className="server-detail-meta-action"
-              role="button"
-              tabIndex={0}
-              title="Online players — open Online Players"
-              onClick={() => changeTab("players")}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  changeTab("players");
-                }
-              }}
-            >
-              <i className="fa-solid fa-users" aria-hidden />
-              {online
-                ? `${online.playersOnline}${online.playersMax > 0 ? `/${online.playersMax}` : ""}`
-                : server.status === "RUNNING"
-                  ? "…/…"
-                  : "0/0"}
-            </Badge>
-          )}
-          {can("settings.read") && (
-            <Badge
-              bg={whitelistOn ? "success" : "warning"}
-              text={whitelistOn ? undefined : "dark"}
-              className="server-detail-meta-action"
-              role="button"
-              tabIndex={0}
-              title={
-                can("settings.update")
-                  ? "Click to change whitelist"
-                  : whitelistOn
-                    ? "Whitelist enabled"
-                    : "Whitelist disabled"
-              }
-              onClick={() => {
-                if (can("settings.update")) setShowWhitelistModal(true);
-                else changeTab("whitelist");
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  if (can("settings.update")) setShowWhitelistModal(true);
-                  else changeTab("whitelist");
-                }
-              }}
-            >
-              <i
-                className={`fa-solid ${whitelistOn ? "fa-shield-halved" : "fa-shield"}`}
-                aria-hidden
-              />
-              Whitelist {whitelistOn ? "on" : "off"}
-            </Badge>
-          )}
-          {supportsAddons && can("addon.read") && (
-            <Badge
-              bg={addonUpdateCount > 0 ? "danger" : "secondary"}
-              className="server-detail-meta-action"
-              role="button"
-              tabIndex={0}
-              title="Open Plugin Management"
-              onClick={() => changeTab("addons")}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  changeTab("addons");
-                }
-              }}
-            >
-              <i className="fa-solid fa-puzzle-piece" aria-hidden />
-              {addonUpdateCount > 0
-                ? `${addonUpdateCount} update${addonUpdateCount === 1 ? "" : "s"}`
-                : "Up to date"}
-            </Badge>
-          )}
-          {server.autoRestart && (
-            <Badge bg="info" text="dark">
-              Auto-restart
-            </Badge>
           )}
         </div>
       </div>
