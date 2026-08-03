@@ -181,6 +181,30 @@ export function AdminLicensePage() {
     }
   }
 
+  async function onRemoveKey() {
+    if (
+      !window.confirm(
+        "Remove the license key? The panel drops to the free tier (1 node, 1 server, 10 GB disk) and servers above those caps are stopped.",
+      )
+    ) {
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const data = await api.deleteAdminLicense();
+      setInfo(data);
+      setServerUrl(data.serverUrl);
+      setNotice("License key removed — free tier is now active.");
+      notifyLicenseChanged(data.valid);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Remove failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function onResetServerUrl() {
     setBusy(true);
     setError(null);
@@ -342,6 +366,17 @@ export function AdminLicensePage() {
                 >
                   {busy ? <Spinner size="sm" /> : "Revalidate"}
                 </Button>
+                {info.hasKey && (
+                  <Button
+                    size="sm"
+                    variant="outline-danger"
+                    disabled={busy}
+                    onClick={() => void onRemoveKey()}
+                  >
+                    <i className="fa-solid fa-trash-can me-1" />
+                    Remove license
+                  </Button>
+                )}
               </div>
             </Card.Body>
           </Card>

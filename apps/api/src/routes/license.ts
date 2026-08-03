@@ -1,8 +1,10 @@
 import type { FastifyInstance } from "fastify";
 import { requireAdmin, requireAuth } from "../auth.js";
+import { logActivity } from "../activity-log.js";
 import {
   getLicenseKey,
   setLicenseKey,
+  clearLicenseKey,
   validateLicense,
   userFacingLicenseMessage,
   LICENSE_POWER_BLOCKED_CODE,
@@ -84,6 +86,25 @@ export function registerLicenseRoutes(app: FastifyInstance): void {
 
   app.post("/api/admin/license/revalidate", async (request, reply) => {
     if (!(await requireAdmin(request, reply))) return;
+    return adminLicensePayload();
+  });
+
+  /** Remove the license key — the panel drops to the unlicensed free tier. */
+  app.delete("/api/admin/license", async (request, reply) => {
+    const user = await requireAdmin(request, reply);
+    if (!user) return;
+    const hadKey = Boolean(await getLicenseKey());
+    await clearLicenseKey();
+    logActivity({
+      action: "license.removed",
+      request,
+      user,
+      serverId: null,
+      success: true,
+      metadata: { hadKey },
+    });
+    // Revalidate now so free-tier enforcement (stop over-cap servers) applies
+    // immediately instead of on the next background check.
     return adminLicensePayload();
   });
 

@@ -233,11 +233,12 @@ function maskKey(key: string): string {
 }
 
 export async function getLicenseKey(): Promise<string> {
+  // The key file is authoritative once it exists: an empty file means the
+  // admin removed the license via the UI, so LICENSE_KEY in .env is ignored.
   try {
-    const fromFile = (await fs.readFile(KEY_FILE(), "utf8")).trim();
-    if (fromFile) return fromFile;
+    return (await fs.readFile(KEY_FILE(), "utf8")).trim();
   } catch {
-    /* none */
+    /* no file — fall back to env */
   }
   return process.env.LICENSE_KEY?.trim() || "";
 }
@@ -245,6 +246,16 @@ export async function getLicenseKey(): Promise<string> {
 export async function setLicenseKey(key: string): Promise<void> {
   await fs.mkdir(config.dataDir, { recursive: true });
   await fs.writeFile(KEY_FILE(), key.trim() + "\n", { mode: 0o600 });
+  cached = null;
+  cachedAt = 0;
+}
+
+/** Remove the license key — panel drops to the unlicensed free tier. */
+export async function clearLicenseKey(): Promise<void> {
+  await fs.mkdir(config.dataDir, { recursive: true });
+  // Empty file (not deletion) so a LICENSE_KEY left in .env does not resurface.
+  await fs.writeFile(KEY_FILE(), "", { mode: 0o600 });
+  await fs.rm(LAST_OK_FILE(), { force: true });
   cached = null;
   cachedAt = 0;
 }

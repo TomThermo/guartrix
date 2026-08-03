@@ -108,6 +108,11 @@ export const ACTIVITY_ACTIONS: Record<string, ActivityActionMeta> = {
     label: "License expired — game servers stopped",
     critical: true,
   },
+  "license.removed": {
+    category: "admin",
+    label: "Removed the license key",
+    critical: true,
+  },
   "server.owner-change": {
     category: "server",
     label: "Changed the server owner",

@@ -327,6 +327,38 @@ export const api = {
       method: "PUT",
       body: JSON.stringify({ key }),
     }),
+  /** Remove the license key — panel drops to the unlicensed free tier. */
+  deleteAdminLicense: () =>
+    request<{
+      valid: boolean;
+      status: string;
+      message: string;
+      expiresAt: string | null;
+      label: string | null;
+      checkedAt: string;
+      keyMasked: string;
+      hasKey: boolean;
+      serverUrl: string;
+      serverUrlSource: "file" | "env" | "default";
+      serverUrlEnvDefault: string;
+      maxServers?: number | null;
+      maxNodes?: number | null;
+      maxMemoryMb?: number | null;
+      maxMemoryMbPerServer?: number | null;
+      maxDiskMb?: number | null;
+      freeTier?: boolean;
+      features?: string[] | null;
+      boundIp?: string | null;
+      boundIps?: string[];
+      usage?: {
+        serverCount: number;
+        memoryUsedMb: number;
+        maxServerMemoryMb: number;
+        nodeCount?: number;
+      };
+    }>("/api/admin/license", {
+      method: "DELETE",
+    }),
   setAdminLicenseServerUrl: (url: string | null) =>
     request<{
       valid: boolean;

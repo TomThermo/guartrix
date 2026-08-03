@@ -8,6 +8,8 @@ Default:
 
 Set the key in `.env` as `LICENSE_KEY`, or under **Admin → License**. You can also change the license API URL there if Guartrix gives you a different endpoint.
 
+**Remove license** (Admin → License) deletes the key and drops the panel to the free tier immediately (a `LICENSE_KEY` left in `.env` stays ignored until a new key is saved). The removal is recorded in the activity log.
+
 ## Free tier (no valid license)
 
 Without a valid license (missing key, expired, revoked, or grace expired), the panel stays online and runs a **free tier**:

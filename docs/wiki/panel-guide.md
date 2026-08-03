@@ -99,7 +99,8 @@ More: [Install nodes](install-nodes.md)
 
 **License** (`/admin/license`) — panel license status, expiry, masked key,
 **allowance vs in use** (nodes / servers / total RAM / largest server vs license caps),
-enabled **features** (green = on, red = not included), revalidate, change key, and
+enabled **features** (green = on, red = not included), revalidate, change key,
+**remove license** (drops to the free tier), and
 **license server URL** (typically `https://license.guartrix.com`). Quotas and
 features are set on your license by Guartrix; they apply after revalidate (or the
 next ~10 minute background check). Tabs and dashboard chips without a license
