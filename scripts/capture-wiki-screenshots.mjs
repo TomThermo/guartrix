@@ -3,7 +3,13 @@
  * Capture wiki / README screenshots from the live panel.
  *
  * Usage:
- *   GUARTRIX_USER=admin GUARTRIX_PASS='…' node scripts/capture-wiki-screenshots.mjs
+ *   GUARTRIX_USER=admin GUARTRIX_PASS='…' GUARTRIX_SERVER_ID=… \
+ *     node scripts/capture-wiki-screenshots.mjs
+ *
+ * Optional:
+ *   GUARTRIX_DEMO_SERVER_NAME=server1  — hide other servers on dashboard
+ *   GUARTRIX_SCRUB_IPS=1               — replace public IPv4 with 127.0.0.1
+ *   GUARTRIX_PLACEHOLDER_PLAYERS=1     — mock online/history player APIs
  *
  * Requires: puppeteer installed in /tmp/gx-shot (or PUPPETEER_MODULE).
  */
@@ -40,10 +46,17 @@ loadEnvFile();
 const BASE = process.env.GUARTRIX_BASE_URL || "https://guartrix.com";
 const USER = process.env.GUARTRIX_USER || process.env.ADMIN_USERNAME || "admin";
 const PASS = process.env.GUARTRIX_PASS || process.env.ADMIN_PASSWORD || "";
-const SERVER_ID = process.env.GUARTRIX_SERVER_ID || "cgksNsMXCnTQ";
+const SERVER_ID = process.env.GUARTRIX_SERVER_ID || "";
+const DEMO_NAME = process.env.GUARTRIX_DEMO_SERVER_NAME || "server1";
+const SCRUB_IPS = process.env.GUARTRIX_SCRUB_IPS !== "0";
+const PLACEHOLDER_PLAYERS = process.env.GUARTRIX_PLACEHOLDER_PLAYERS !== "0";
 
 if (!PASS) {
   console.error("Set GUARTRIX_PASS or ADMIN_PASSWORD in .env");
+  process.exit(1);
+}
+if (!SERVER_ID) {
+  console.error("Set GUARTRIX_SERVER_ID to the demo server id");
   process.exit(1);
 }
 
@@ -54,12 +67,90 @@ const puppeteer = require(puppeteerPath);
 
 fs.mkdirSync(OUT, { recursive: true });
 
+/** Well-known demo UUIDs (Steve / Alex style placeholders — not real accounts). */
+const PLACEHOLDERS = {
+  online: [
+    { name: "Steve", uuid: "8667ba71-b85a-4004-af54-457a9734eed7" },
+    { name: "Alex", uuid: "ec561538-f3fd-461d-aff5-086b22154bce" },
+  ],
+  history: [
+    {
+      name: "Notch",
+      uuid: "069a79f4-44e9-4726-a5be-fca90e38aaf5",
+      firstSeenAt: "2026-01-10T12:00:00.000Z",
+      lastSeenAt: "2026-01-12T18:30:00.000Z",
+      lastJoinedAt: "2026-01-12T17:00:00.000Z",
+      lastLeftAt: "2026-01-12T18:30:00.000Z",
+      online: false,
+    },
+    {
+      name: "Herobrine",
+      uuid: "f84c6a79-0a4e-45e0-834d-1e55c0abcabc",
+      firstSeenAt: "2026-01-08T09:00:00.000Z",
+      lastSeenAt: "2026-01-09T09:00:00.000Z",
+      lastJoinedAt: "2026-01-09T08:00:00.000Z",
+      lastLeftAt: "2026-01-09T09:00:00.000Z",
+      online: false,
+    },
+  ],
+};
+
+async function sanitizePage(page) {
+  await page.evaluate(
+    ({ demoName, scrubIps }) => {
+      // Hide other servers on the dashboard list
+      for (const row of document.querySelectorAll(".server-row")) {
+        const nameEl = row.querySelector(".server-row-name");
+        const name = (nameEl?.textContent || row.textContent || "").trim();
+        if (!new RegExp(`\\b${demoName}\\b`, "i").test(name)) {
+          row.remove();
+        }
+      }
+      // Fix "n/n" counters after hiding rows
+      const visible = document.querySelectorAll(".server-row").length;
+      for (const el of document.querySelectorAll("body *")) {
+        if (!el.childElementCount && /^\d+\s*\/\s*\d+$/.test((el.textContent || "").trim())) {
+          if (visible > 0) el.textContent = `${visible}/${visible}`;
+        }
+      }
+
+      if (!scrubIps) return;
+
+      const ipRe =
+        /\b(?!127\.0\.0\.1)(?:\d{1,3}\.){3}\d{1,3}\b/g;
+      const walk = (node) => {
+        if (node.nodeType === Node.TEXT_NODE) {
+          if (ipRe.test(node.nodeValue || "")) {
+            node.nodeValue = (node.nodeValue || "").replace(ipRe, "127.0.0.1");
+          }
+          return;
+        }
+        if (node.nodeType !== Node.ELEMENT_NODE) return;
+        const tag = node.tagName;
+        if (tag === "SCRIPT" || tag === "STYLE" || tag === "NOSCRIPT") return;
+        for (const child of [...node.childNodes]) walk(child);
+      };
+      walk(document.body);
+
+      // Scrub common real hostnames that leak in join/SFTP cards when unwanted
+      for (const el of document.querySelectorAll(".font-monospace, code, .join-card, .server-row-meta")) {
+        if (!el.childElementCount && el.textContent) {
+          el.textContent = el.textContent
+            .replace(/\b\d{1,3}(?:\.\d{1,3}){3}\b/g, (m) =>
+              m === "127.0.0.1" ? m : "127.0.0.1",
+            );
+        }
+      }
+    },
+    { demoName: DEMO_NAME, scrubIps: SCRUB_IPS },
+  );
+}
+
 async function shot(page, name, opts = {}) {
-  const dest = path.join(OUT, name);
-  await page.waitForTimeout?.(200).catch(() => {});
   await new Promise((r) => setTimeout(r, opts.delay ?? 400));
+  await sanitizePage(page);
   await page.screenshot({
-    path: dest,
+    path: path.join(OUT, name),
     fullPage: opts.fullPage ?? true,
   });
   console.log("wrote", name);
@@ -103,9 +194,15 @@ async function clickText(page, text, selector = "button, a, .btn, .nav-link") {
 
 async function dismissModals(page) {
   await page.keyboard.press("Escape").catch(() => {});
-  await page.evaluate(() => {
-    document.querySelectorAll(".modal.show .btn-close, .modal.show [data-bs-dismiss='modal']").forEach((b) => b.click());
-  }).catch(() => {});
+  await page
+    .evaluate(() => {
+      document
+        .querySelectorAll(
+          ".modal.show .btn-close, .modal.show [data-bs-dismiss='modal']",
+        )
+        .forEach((b) => b.click());
+    })
+    .catch(() => {});
   await new Promise((r) => setTimeout(r, 300));
 }
 
@@ -123,6 +220,60 @@ async function main() {
   const page = await browser.newPage();
   page.setDefaultTimeout(45000);
 
+  if (PLACEHOLDER_PLAYERS) {
+    await page.setRequestInterception(true);
+    page.on("request", (req) => {
+      const url = req.url();
+      try {
+        if (
+          req.method() === "GET" &&
+          /\/api\/servers\/[^/]+\/online(?:\?|$)/.test(url)
+        ) {
+          const body = {
+            online: true,
+            playersOnline: PLACEHOLDERS.online.length,
+            playersMax: 20,
+            players: PLACEHOLDERS.online,
+            history: PLACEHOLDERS.history,
+            source: "console",
+            latencyMs: 12,
+          };
+          void req.respond({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify(body),
+          });
+          return;
+        }
+        if (
+          req.method() === "GET" &&
+          /\/api\/servers\/online(?:\?|$)/.test(url)
+        ) {
+          const body = {
+            [SERVER_ID]: {
+              online: true,
+              playersOnline: PLACEHOLDERS.online.length,
+              playersMax: 20,
+              players: PLACEHOLDERS.online,
+              history: [],
+              source: "console",
+              latencyMs: 12,
+            },
+          };
+          void req.respond({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify(body),
+          });
+          return;
+        }
+      } catch {
+        // fall through
+      }
+      void req.continue();
+    });
+  }
+
   // --- Public pages ---
   await page.goto(`${BASE}/login`, { waitUntil: "networkidle2" });
   await shot(page, "01-login.png");
@@ -135,21 +286,27 @@ async function main() {
 
   // --- Login ---
   await page.goto(`${BASE}/login`, { waitUntil: "networkidle2" });
-  await page.waitForSelector('input[name="username"], input[type="text"], #username');
-  const userSel =
-    (await page.$('input[name="username"]')) ? 'input[name="username"]'
-    : (await page.$("#username")) ? "#username"
-    : 'input[type="text"]';
-  const passSel =
-    (await page.$('input[name="password"]')) ? 'input[name="password"]'
-    : (await page.$("#password")) ? "#password"
-    : 'input[type="password"]';
+  await page.waitForSelector(
+    'input[name="username"], input[type="text"], #username',
+  );
+  const userSel = (await page.$('input[name="username"]'))
+    ? 'input[name="username"]'
+    : (await page.$("#username"))
+      ? "#username"
+      : 'input[type="text"]';
+  const passSel = (await page.$('input[name="password"]'))
+    ? 'input[name="password"]'
+    : (await page.$("#password"))
+      ? "#password"
+      : 'input[type="password"]';
   await page.click(userSel, { clickCount: 3 });
   await page.type(userSel, USER, { delay: 20 });
   await page.click(passSel, { clickCount: 3 });
   await page.type(passSel, PASS, { delay: 20 });
   await Promise.all([
-    page.waitForNavigation({ waitUntil: "networkidle2", timeout: 60000 }).catch(() => {}),
+    page
+      .waitForNavigation({ waitUntil: "networkidle2", timeout: 60000 })
+      .catch(() => {}),
     page.click('button[type="submit"], .btn-primary'),
   ]);
   await new Promise((r) => setTimeout(r, 1200));
@@ -189,7 +346,7 @@ async function main() {
   await page.goto(`${BASE}/admin/activity`, { waitUntil: "networkidle2" });
   await shot(page, "26-admin-activity.png");
 
-  // License (missing before)
+  // License
   await page.goto(`${BASE}/admin/license`, { waitUntil: "networkidle2" });
   await shot(page, "31-admin-license.png");
 
@@ -231,7 +388,6 @@ async function main() {
   await serverTab("allocations", "24-server-network.png", "Network");
   await serverTab("activity", "30-server-activity.png", "Activity Log");
 
-  // Engine / Modpacks / Bots (missing from older set)
   await serverTab("engine", "32-server-engine.png", "Engine");
   await serverTab("modpacks", "33-server-modpacks.png", "Modpacks");
   await serverTab("bots", "38-server-bots.png", "Bots");
@@ -244,7 +400,7 @@ async function main() {
     await dismissModals(page);
   }
 
-  // Clone modal (new)
+  // Clone modal
   await page.goto(`${serverBase}?tab=console`, { waitUntil: "networkidle2" });
   if (await clickText(page, "Clone")) {
     await new Promise((r) => setTimeout(r, 700));
@@ -252,11 +408,11 @@ async function main() {
     await dismissModals(page);
   }
 
-  // Whitelist toggle modal from header chip if present
+  // Whitelist toggle modal
   await page.goto(`${serverBase}?tab=console`, { waitUntil: "networkidle2" });
   const wl = await page.evaluate(() => {
-    const el = [...document.querySelectorAll("button, a, .chip, .badge, .btn")].find((n) =>
-      /whitelist/i.test(n.textContent || ""),
+    const el = [...document.querySelectorAll("button, a, .chip, .badge, .btn")].find(
+      (n) => /WL\s/i.test(n.textContent || "") || /^Whitelist/i.test(n.textContent || ""),
     );
     if (!el) return false;
     el.click();
@@ -268,24 +424,43 @@ async function main() {
     await dismissModals(page);
   }
 
-  // Addon version picker — open first Install / Change version if present
+  // Addon version picker — prefer title="Change version", else Install
   await page.goto(`${serverBase}?tab=addons`, { waitUntil: "networkidle2" });
   await new Promise((r) => setTimeout(r, 1500));
-  if (
-    (await clickText(page, "Change version")) ||
-    (await clickText(page, "Install"))
-  ) {
-    await new Promise((r) => setTimeout(r, 1200));
+  await page.keyboard.press("Escape").catch(() => {});
+  let opened = await page.evaluate(() => {
+    const btn = document.querySelector('button[title="Change version"]');
+    if (btn) {
+      btn.click();
+      return "change";
+    }
+    return null;
+  });
+  if (!opened) {
+    // Search + Install for a common Paper plugin
+    const search = await page.$('input[type="search"], input[placeholder*="earch"]');
+    if (search) {
+      await search.click({ clickCount: 3 });
+      await search.type("LuckPerms", { delay: 15 });
+      await clickText(page, "Search");
+      await new Promise((r) => setTimeout(r, 2000));
+    }
+    opened = (await clickText(page, "Install")) ? "install" : null;
+  }
+  if (opened) {
+    await new Promise((r) => setTimeout(r, 1500));
     await shot(page, "36-addon-version-picker.png", { fullPage: false });
     await dismissModals(page);
   }
 
-  // Import page / modal if linked from create
-  await page.goto(`${BASE}/`, { waitUntil: "networkidle2" });
-  if (await clickText(page, "Import")) {
-    await new Promise((r) => setTimeout(r, 800));
+  // Import archive tab
+  await page.goto(`${BASE}/servers/new`, { waitUntil: "networkidle2" });
+  if (
+    (await clickText(page, "Import archive")) ||
+    (await clickText(page, "Import"))
+  ) {
+    await new Promise((r) => setTimeout(r, 700));
     await shot(page, "37-import-server.png");
-    await dismissModals(page);
   }
 
   await browser.close();
