@@ -8,7 +8,7 @@ export function PrivacyPage() {
         <Link to="/login">← Back</Link>
       </p>
       <h1 className="h3 mb-3">Privacy Policy</h1>
-      <p className="text-secondary small">Last updated: July 28, 2026</p>
+      <p className="text-secondary small">Last updated: August 3, 2026</p>
       <p>
         This policy describes what Guartrix collects when you use the panel at guartrix.com.
       </p>
@@ -20,6 +20,11 @@ export function PrivacyPage() {
         <li>Operational logs (panel, game nodes, SFTP auth) for security and debugging</li>
         <li>Password-reset tokens (hashed) until used or expired</li>
       </ul>
+      <h2 className="h5 mt-4">Your rights</h2>
+      <p>
+        Signed-in users can export their account data or delete their account under{" "}
+        <Link to="/account/security">Account → Security</Link>.
+      </p>
       <h2 className="h5 mt-4">How we use it</h2>
       <p>
         Data is used to run the panel, authenticate you (including SFTP), send reset emails,

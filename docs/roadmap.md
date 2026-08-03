@@ -15,10 +15,17 @@ Last updated: 2026-08-03
 - Node transfer, schedule chains + file archives, Mollie billing
 - License enforcement (free tier + paid caps), hosting tools, PWA shell
 
-### Still optional / later (P2)
+### Still optional / later (P2+)
 
 - Eggs / nests (only if multi-game)
-- Extra mounts, location labels, Redis / HA panel (see [scaling.md](wiki/scaling.md))
+- Extra host mounts, Redis / multi-API HA (see [scaling.md](wiki/scaling.md))
+- Schedules in Prisma, i18n, OpenAPI codegen
+
+### Shipped recently (improvement backlog)
+
+- Node **location** labels, file-backed rate limits, GDPR export/delete
+- Prometheus `/metrics`, optional Sentry, Docker log rotation, scrypt hash versioning
+- Dev MySQL via `docker-compose.dev.yml`
 
 ### Next ops actions
 

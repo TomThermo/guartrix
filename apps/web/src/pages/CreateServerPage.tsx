@@ -240,6 +240,7 @@ export function CreateServerPage() {
             return (
               <option key={n.id} value={n.id}>
                 {n.name}
+                {n.location ? ` (${n.location})` : ""}
                 {n.isLocal ? " (local)" : ""}
                 {recommended ? " ★ recommended" : ""}
                 {n.memoryMb > 0

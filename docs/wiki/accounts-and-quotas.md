@@ -45,6 +45,11 @@ Without SMTP, messages are written under `data/mail-outbox/`.
 - Login is password → 6-digit code (or a recovery code). **SFTP** accepts the panel password or an **app password** (`gtap_…`) from Account → Security.
 - Set `TWO_FACTOR_REQUIRED_ROLES=ADMIN` (or `ADMIN,OPERATOR`) so those roles must enrol before any mutating API call succeeds. Admins can **Reset 2FA** on the Users page if someone loses their device.
 
+## Export & delete account
+
+- **Export data** (Account → Security) downloads a JSON copy of your profile, owned servers, recent activity, subuser memberships, API key metadata (no secrets), and billing rows.
+- **Delete account** requires your password and typing `DELETE`. The last admin cannot self-delete. Owned servers are reassigned to another admin when one exists.
+
 ## API keys (Client API)
 
 - Create under **Security** → API keys. Token shown once; revoke anytime.

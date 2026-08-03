@@ -18,12 +18,22 @@ import {
   writeLocalDaemonEnvIfLocal,
 } from "../nodes.js";
 
+const locationSchema = z
+  .union([z.string().max(64), z.null()])
+  .optional()
+  .transform((v) => {
+    if (v == null) return v;
+    const t = v.trim();
+    return t.length > 0 ? t : null;
+  });
+
 const createSchema = z.object({
   name: z.string().min(1).max(64),
   fqdn: z.string().min(1).max(255),
   scheme: z.enum(["http", "https"]).optional().default("http"),
   daemonPort: z.number().int().min(1).max(65535).optional().default(8081),
   memoryMb: z.number().int().min(0).optional().default(0),
+  location: locationSchema,
 });
 
 const updateSchema = z.object({
@@ -32,6 +42,7 @@ const updateSchema = z.object({
   scheme: z.enum(["http", "https"]).optional(),
   daemonPort: z.number().int().min(1).max(65535).optional(),
   memoryMb: z.number().int().min(0).optional(),
+  location: locationSchema,
 });
 
 async function serializeNodeWithUsage(nodeId: string) {
@@ -76,6 +87,7 @@ export function registerNodeRoutes(app: FastifyInstance): void {
     }
     const token = generateDaemonToken();
     const sftpPort = Number(process.env.SFTP_PORT ?? 2022) || 2022;
+    const location = parsed.data.location ?? null;
     const node = await prisma.node.create({
       data: {
         id: nanoid(12),
@@ -84,6 +96,7 @@ export function registerNodeRoutes(app: FastifyInstance): void {
         scheme: parsed.data.scheme,
         daemonPort: parsed.data.daemonPort,
         memoryMb: parsed.data.memoryMb,
+        location,
         tokenHash: hashDaemonToken(token),
         isLocal: false,
         status: "UNKNOWN",
@@ -122,9 +135,20 @@ export function registerNodeRoutes(app: FastifyInstance): void {
         where: { id: request.params.id },
       });
       if (!existing) return reply.status(404).send({ error: "Not found" });
+      const data: {
+        name?: string;
+        fqdn?: string;
+        scheme?: string;
+        daemonPort?: number;
+        memoryMb?: number;
+        location?: string | null;
+      } = { ...parsed.data };
+      if (parsed.data.location !== undefined) {
+        data.location = parsed.data.location;
+      }
       await prisma.node.update({
         where: { id: request.params.id },
-        data: parsed.data,
+        data,
       });
       if (parsed.data.name || parsed.data.fqdn) {
         await syncNodeSftpDns(request.params.id);

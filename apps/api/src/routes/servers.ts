@@ -1407,6 +1407,7 @@ export function registerServerRoutes(app: FastifyInstance): void {
           type: access.server.type as ServerType,
           mcVersion: access.server.mcVersion,
           projectId: item.projectId,
+          versionId: item.versionId,
         });
         installed.push(item.name);
       } catch (err) {

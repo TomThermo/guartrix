@@ -10,10 +10,42 @@ import { PrismaClient } from "@prisma/client";
  * Prefer a dedicated pooler (ProxySQL / RDS Proxy) only when running
  * multiple API replicas — see docs/wiki/scaling.md.
  *
- * Query logging: Prisma `warn`/`error` surfaces slow-query warnings when
- * the engine emits them; set LOG_LEVEL=debug on the process logger for
- * broader API diagnostics (not every SQL statement).
+ * Slow queries: set `PRISMA_SLOW_MS` (e.g. `200`) to log statements that
+ * exceed that duration via `$on('query')`. Otherwise only Prisma warn/error.
  */
-export const prisma = new PrismaClient({
-  log: ["warn", "error"],
-});
+const slowMsRaw = process.env.PRISMA_SLOW_MS?.trim();
+const slowMs =
+  slowMsRaw && Number.isFinite(Number(slowMsRaw)) && Number(slowMsRaw) > 0
+    ? Number(slowMsRaw)
+    : null;
+
+function createPrisma(): PrismaClient {
+  if (slowMs == null) {
+    return new PrismaClient({ log: ["warn", "error"] });
+  }
+
+  const client = new PrismaClient({
+    log: [
+      { emit: "event", level: "query" },
+      { emit: "stdout", level: "warn" },
+      { emit: "stdout", level: "error" },
+    ],
+  });
+
+  client.$on("query", (e) => {
+    if (e.duration < slowMs) return;
+    console.warn(
+      JSON.stringify({
+        level: "warn",
+        msg: "Slow Prisma query",
+        durationMs: e.duration,
+        target: e.target,
+        query: e.query,
+      }),
+    );
+  });
+
+  return client;
+}
+
+export const prisma = createPrisma();

@@ -91,6 +91,11 @@ While a server is **RUNNING**, the daemon opens a Docker Engine API stats stream
 
 Disk walks use a **30s cache** (stale-while-revalidate) so UI polls never block on large worlds.
 
+## Prometheus & errors (optional)
+
+- **Metrics:** API exposes Prometheus text at `GET /api/metrics` and `GET /metrics` (`prom-client`: process defaults, HTTP counter/histogram, servers-by-status gauge cached 15s, in-memory transfer job count). Daemon exposes `GET /metrics` (process defaults + Docker reachable gauge). Auth: `METRICS_TOKEN` as `Authorization: Bearer …` or `?token=`; if unset, loopback only (daemon also accepts a normal daemon JWT).
+- **Sentry:** set `SENTRY_DSN` to enable `@sentry/node` on API and daemon (`tracesSampleRate: 0.1`). Browser/Vite (`VITE_SENTRY_DSN`) is not wired yet.
+
 ## Data flow notes
 
 - **Sessions:** `data/sessions/*.json` (not Redis). Survive API restart on the same host. Session cookies use `rolling: false` so routine GETs/polls do not rewrite the session file every request (expiry still follows `maxAge` from login).

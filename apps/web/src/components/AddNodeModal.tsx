@@ -41,6 +41,7 @@ export function AddNodeModal({ existingNode, onClose, onChanged }: Props) {
   const [fqdn, setFqdn] = useState("");
   const [scheme, setScheme] = useState<"http" | "https">("http");
   const [daemonPort, setDaemonPort] = useState(8081);
+  const [location, setLocation] = useState("");
 
   const [install, setInstall] = useState<InstallInfo | null>(null);
   const [nodeLabel, setNodeLabel] = useState(existingNode?.name ?? "");
@@ -111,7 +112,13 @@ export function AddNodeModal({ existingNode, onClose, onChanged }: Props) {
     setBusy(true);
     setError(null);
     try {
-      const res = await api.createNode({ name, fqdn, scheme, daemonPort });
+      const res = await api.createNode({
+        name,
+        fqdn,
+        scheme,
+        daemonPort,
+        location: location.trim() || null,
+      });
       setNodeLabel(res.node.name);
       const installRes = await api.getNodeInstall(res.node.id);
       setInstall({
@@ -338,6 +345,20 @@ export function AddNodeModal({ existingNode, onClose, onChanged }: Props) {
                     min={1}
                     max={65535}
                   />
+                </Form.Group>
+              </Col>
+              <Col md={12}>
+                <Form.Group>
+                  <Form.Label>Location / region (optional)</Form.Label>
+                  <Form.Control
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    maxLength={64}
+                    placeholder="eu-west, Frankfurt, us-east…"
+                  />
+                  <Form.Text className="text-secondary">
+                    Shown in the node picker when creating servers.
+                  </Form.Text>
                 </Form.Group>
               </Col>
             </Row>

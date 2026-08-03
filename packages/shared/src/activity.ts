@@ -235,6 +235,12 @@ export const ACTIVITY_ACTIONS: Record<string, ActivityActionMeta> = {
     label: "Reset a user's two-factor auth",
     critical: true,
   },
+  "account.export": { category: "auth", label: "Exported account data" },
+  "account.delete": {
+    category: "auth",
+    label: "Deleted their account",
+    critical: true,
+  },
   "api-key.create": { category: "auth", label: "Created an API key" },
   "api-key.revoke": {
     category: "auth",

@@ -122,6 +122,11 @@ export async function hydrateTransferJobsFromDisk(): Promise<void> {
   }
 }
 
+/** In-memory transfer job count (for Prometheus). */
+export function countTransferJobsInMemory(): number {
+  return jobs.size;
+}
+
 export function getTransferJob(serverId: string): TransferJobStatus | null {
   const job = jobs.get(serverId);
   if (!job) return null;

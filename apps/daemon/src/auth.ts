@@ -6,6 +6,7 @@ import {
   verifyDaemonJwt,
 } from "@msm/shared/daemon-jwt";
 import { daemonConfig } from "./config.js";
+import { isMetricsTokenOrLocalhost } from "./metrics.js";
 
 export function extractBearerToken(request: FastifyRequest): string | null {
   const header = request.headers.authorization;
@@ -37,13 +38,19 @@ export function isDaemonAuthorized(request: FastifyRequest): boolean {
   return safeEqualString(token, daemonConfig.token);
 }
 
-/** Auth middleware — skip /health and /ready. */
+/** Auth middleware — skip /health and /ready; /metrics allows localhost or METRICS_TOKEN. */
 export async function requireDaemonAuth(
   request: FastifyRequest,
   reply: FastifyReply,
 ): Promise<void> {
   const pathOnly = request.url.split("?")[0] ?? "";
   if (pathOnly === "/health" || pathOnly === "/ready") return;
+  if (pathOnly === "/metrics") {
+    if (isMetricsTokenOrLocalhost(request) || isDaemonAuthorized(request)) {
+      return;
+    }
+    return reply.status(401).send({ error: "Unauthorized" });
+  }
   if (!isDaemonAuthorized(request)) {
     return reply.status(401).send({ error: "Unauthorized" });
   }

@@ -1,17 +1,19 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { Link, Navigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import { Alert, Button, Card, Form, ListGroup, Spinner } from "react-bootstrap";
 import { api } from "../api";
 import { useAuth } from "../auth";
 import { TotpQr } from "../components/TotpQr";
 import { ApiKeysPanel } from "../components/ApiKeysPanel";
 import { AppPasswordsPanel } from "../components/AppPasswordsPanel";
+import { ConfirmModal } from "../components/ConfirmModal";
 import { copyText } from "../utils";
 
 type Step = "idle" | "setup" | "recovery" | "disable" | "regen";
 
 export function AccountSecurityPage() {
-  const { user, refreshUser, authenticated } = useAuth();
+  const { user, refreshUser, authenticated, logout } = useAuth();
+  const navigate = useNavigate();
   const [enabled, setEnabled] = useState(false);
   const [required, setRequired] = useState(false);
   const [recoveryLeft, setRecoveryLeft] = useState(0);
@@ -26,6 +28,12 @@ export function AccountSecurityPage() {
   const [code, setCode] = useState("");
   const [password, setPassword] = useState("");
   const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null);
+
+  const [exportBusy, setExportBusy] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteConfirm, setDeleteConfirm] = useState("");
 
   const refresh = useCallback(async () => {
     const status = await api.getTwoFactor();
@@ -140,6 +148,42 @@ export function AccountSecurityPage() {
       () => setNotice("Recovery codes copied."),
       () => undefined,
     );
+  }
+
+  async function onExportData() {
+    setExportBusy(true);
+    setError(null);
+    try {
+      await api.exportAccountData();
+      setNotice("Account data download started.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Export failed");
+    } finally {
+      setExportBusy(false);
+    }
+  }
+
+  async function onDeleteAccount() {
+    if (deleteConfirm !== "DELETE") {
+      setError('Type DELETE to confirm account deletion.');
+      return;
+    }
+    if (!deletePassword) {
+      setError("Password is required.");
+      return;
+    }
+    setDeleteBusy(true);
+    setError(null);
+    try {
+      await api.deleteAccount(deletePassword);
+      setShowDelete(false);
+      await logout();
+      navigate("/login", { replace: true });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Delete failed");
+    } finally {
+      setDeleteBusy(false);
+    }
   }
 
   if (loading) {
@@ -409,6 +453,78 @@ export function AccountSecurityPage() {
       </Card>
 
       <ApiKeysPanel onError={setError} />
+
+      <Card className="mb-4">
+        <Card.Body>
+          <Card.Title className="h5">Your data</Card.Title>
+          <p className="small text-secondary mb-3">
+            Download a copy of your account data, or permanently delete your
+            account. Deleting signs you out immediately.
+          </p>
+          <div className="d-flex flex-wrap gap-2 mb-3">
+            <Button
+              variant="outline-primary"
+              disabled={busy || exportBusy}
+              onClick={() => void onExportData()}
+            >
+              {exportBusy ? "Preparing…" : "Export data"}
+            </Button>
+            <Button
+              variant="outline-danger"
+              disabled={busy}
+              onClick={() => {
+                setDeletePassword("");
+                setDeleteConfirm("");
+                setShowDelete(true);
+              }}
+            >
+              Delete account
+            </Button>
+          </div>
+        </Card.Body>
+      </Card>
+
+      <ConfirmModal
+        show={showDelete}
+        title="Delete your account?"
+        variant="danger"
+        confirmLabel="Delete account"
+        busy={deleteBusy}
+        onCancel={() => {
+          if (!deleteBusy) setShowDelete(false);
+        }}
+        onConfirm={() => void onDeleteAccount()}
+        body={
+          <div>
+            <p className="mb-3">
+              This permanently removes your account, API keys, and billing
+              records. Owned servers are reassigned to another admin when
+              possible. Type <strong>DELETE</strong> and enter your password to
+              confirm.
+            </p>
+            <Form.Group className="mb-3" controlId="delete-confirm">
+              <Form.Label>Confirmation</Form.Label>
+              <Form.Control
+                value={deleteConfirm}
+                onChange={(e) => setDeleteConfirm(e.target.value)}
+                placeholder="DELETE"
+                autoComplete="off"
+                disabled={deleteBusy}
+              />
+            </Form.Group>
+            <Form.Group controlId="delete-password">
+              <Form.Label>Password</Form.Label>
+              <Form.Control
+                type="password"
+                autoComplete="current-password"
+                value={deletePassword}
+                onChange={(e) => setDeletePassword(e.target.value)}
+                disabled={deleteBusy}
+              />
+            </Form.Group>
+          </div>
+        }
+      />
     </>
   );
 }

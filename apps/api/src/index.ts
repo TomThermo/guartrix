@@ -20,11 +20,16 @@ import { processManager } from "./process-manager.js";
 import { runDueBackupSchedules } from "./backups.js";
 import { runDueScheduledTasks } from "./scheduled-tasks.js";
 import { FileSessionStore, ensureSessionDir } from "./session-store.js";
+import {
+  createRateLimitStore,
+  setActiveRateLimitStore,
+} from "./rate-limit-store.js";
 import { pruneActivityLog } from "./activity-log.js";
 import { startActivityWatch } from "./activity-watch.js";
 import { startDiscordStatusWorker } from "./discord-status.js";
 import { startDiskWatch } from "./disk-watch.js";
 import { registerActivityRoutes } from "./routes/activity.js";
+import { registerAccountGdprRoutes } from "./routes/account-gdpr.js";
 import { registerTwoFactorRoutes, registerTwoFactorGuard } from "./routes/two-factor.js";
 import { registerApiKeyRoutes } from "./routes/api-keys.js";
 import { registerAppPasswordRoutes } from "./routes/app-passwords.js";
@@ -67,9 +72,26 @@ import {
   stopDaemonEventBridge,
 } from "./daemon-events.js";
 import { genReqId, logger } from "./logger.js";
+import { registerMetrics } from "./metrics.js";
 import type { FastifyBaseLogger } from "fastify";
 
+async function initSentry(): Promise<void> {
+  const dsn = process.env.SENTRY_DSN?.trim();
+  if (!dsn) return;
+  try {
+    const Sentry = await import("@sentry/node");
+    Sentry.init({
+      dsn,
+      tracesSampleRate: 0.1,
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn(`[guartrix] Sentry init skipped: ${msg}`);
+  }
+}
+
 async function main() {
+  await initSentry();
   await fs.mkdir(path.join(config.dataDir, "servers"), { recursive: true });
   await fs.mkdir(path.join(config.dataDir, "backups"), { recursive: true });
   await migrateLegacyBrandFiles();
@@ -78,6 +100,7 @@ async function main() {
   const sessionStore = new FileSessionStore(sessionsDir);
   const { setActiveSessionStore } = await import("./session-store.js");
   setActiveSessionStore(sessionStore);
+  setActiveRateLimitStore(createRateLimitStore(config.dataDir));
   await ensureBootstrapAdmin();
 
   // multi-node: restore all node tokens, then refresh/ensure the local daemon token.
@@ -261,9 +284,11 @@ async function main() {
   });
 
   registerCsrfGuard(app);
+  registerMetrics(app);
   registerAuthRoutes(app);
   registerTwoFactorRoutes(app);
   registerTwoFactorGuard(app);
+  registerAccountGdprRoutes(app);
   registerApiKeyRoutes(app);
   registerAppPasswordRoutes(app);
   registerApplicationKeyAdminRoutes(app);

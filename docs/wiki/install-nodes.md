@@ -9,6 +9,7 @@ A **node** is a VPS running the Guartrix daemon. Minecraft servers are scheduled
 3. Read the short howto, then enter:
    - **Name** (e.g. `node-2`)
    - **Host / FQDN** — IP or hostname the **panel** uses to reach this VPS
+   - Optional **Location / region** label (shown in the create-server node picker)
    - Scheme (`http` on LAN/VPS is typical) and daemon port (`8081`)
 4. On the install step, enter SSH user + password **or** private key.
 5. Watch the **live log** from the remote server.

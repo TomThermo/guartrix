@@ -75,6 +75,8 @@ export function SystemSettingsPage() {
   const [editName, setEditName] = useState("");
   const [editingUrlId, setEditingUrlId] = useState<string | null>(null);
   const [editUrl, setEditUrl] = useState("");
+  const [editingLocationId, setEditingLocationId] = useState<string | null>(null);
+  const [editLocation, setEditLocation] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [installNode, setInstallNode] = useState<DaemonNode | null>(null);
 
@@ -179,6 +181,23 @@ export function SystemSettingsPage() {
       setNotice(
         "Daemon URL updated. Use Test connection — for a local node the daemon must listen where the panel can reach it.",
       );
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function onSaveLocation(id: string) {
+    setBusyId(id);
+    setError(null);
+    try {
+      await api.updateNode(id, {
+        location: editLocation.trim() || null,
+      });
+      setEditingLocationId(null);
+      setNotice("Node location updated.");
       await refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -356,6 +375,57 @@ export function SystemSettingsPage() {
                 <dl className="row small mb-3">
                   <dt className="col-5 text-secondary">Type</dt>
                   <dd className="col-7">{node.isLocal ? "Local" : "Remote"}</dd>
+                  <dt className="col-5 text-secondary">Location</dt>
+                  <dd className="col-7">
+                    {editingLocationId === node.id ? (
+                      <InputGroup size="sm">
+                        <Form.Control
+                          value={editLocation}
+                          onChange={(e) => setEditLocation(e.target.value)}
+                          maxLength={64}
+                          placeholder="eu-west, Frankfurt…"
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              void onSaveLocation(node.id);
+                            }
+                            if (e.key === "Escape") setEditingLocationId(null);
+                          }}
+                        />
+                        <Button
+                          variant="primary"
+                          disabled={busyId === node.id}
+                          onClick={() => void onSaveLocation(node.id)}
+                        >
+                          Save
+                        </Button>
+                        <Button
+                          variant="outline-secondary"
+                          onClick={() => setEditingLocationId(null)}
+                        >
+                          Cancel
+                        </Button>
+                      </InputGroup>
+                    ) : (
+                      <span className="d-inline-flex align-items-center gap-2">
+                        <span>{node.location || "—"}</span>
+                        <button
+                          type="button"
+                          className="btn btn-link btn-sm p-0 text-secondary"
+                          title="Edit location"
+                          onClick={() => {
+                            setEditingLocationId(node.id);
+                            setEditLocation(node.location ?? "");
+                            setEditingId(null);
+                            setEditingUrlId(null);
+                          }}
+                        >
+                          <i className="fa-solid fa-pen" />
+                        </button>
+                      </span>
+                    )}
+                  </dd>
                   <dt className="col-5 text-secondary">Servers</dt>
                   <dd className="col-7">{node.serverCount}</dd>
                   <dt className="col-5 text-secondary">RAM total</dt>

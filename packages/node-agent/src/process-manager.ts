@@ -828,6 +828,8 @@ class ProcessManager extends EventEmitter {
 
     // Detached run: the container outlives the daemon. Console I/O goes through
     // `docker attach --sig-proxy=false` so a panel restart never kills Minecraft.
+    const logMaxSize = process.env.DOCKER_LOG_MAX_SIZE?.trim() || "10m";
+    const logMaxFile = process.env.DOCKER_LOG_MAX_FILE?.trim() || "3";
     await docker(
       [
         "run",
@@ -845,6 +847,12 @@ class ProcessManager extends EventEmitter {
         "ALL",
         "--pids-limit",
         "512",
+        "--log-driver",
+        "json-file",
+        "--log-opt",
+        `max-size=${logMaxSize}`,
+        "--log-opt",
+        `max-file=${logMaxFile}`,
         "--label",
         "guartrix=1",
         "--label",

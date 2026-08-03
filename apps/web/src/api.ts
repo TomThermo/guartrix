@@ -218,6 +218,33 @@ export const api = {
       `/api/account/api-keys/${id}`,
       { method: "DELETE" },
     ),
+  exportAccountData: async () => {
+    const res = await fetch("/api/account/export", { credentials: "include" });
+    if (!res.ok) {
+      if (res.status === 401) notifyUnauthorized();
+      const data = await res.json().catch(() => ({}));
+      throw new Error(
+        typeof data.error === "string" ? data.error : res.statusText,
+      );
+    }
+    const blob = await res.blob();
+    const cd = res.headers.get("Content-Disposition") ?? "";
+    const match = /filename="([^"]+)"/i.exec(cd);
+    const fileName = match?.[1] || "guartrix-account-export.json";
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  },
+  deleteAccount: (password: string) =>
+    request<{ ok: boolean }>("/api/account", {
+      method: "DELETE",
+      body: JSON.stringify({ password, confirm: "DELETE" }),
+    }),
   register: (body: {
     username: string;
     email: string;

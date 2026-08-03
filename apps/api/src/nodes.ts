@@ -51,6 +51,7 @@ export function serializeNode(
   node: {
     id: string;
     name: string;
+    location?: string | null;
     fqdn: string;
     scheme: string;
     daemonPort: number;
@@ -76,6 +77,7 @@ export function serializeNode(
   return {
     id: node.id,
     name: node.name,
+    location: node.location?.trim() ? node.location.trim() : null,
     fqdn: node.fqdn,
     scheme: node.scheme,
     daemonPort: node.daemonPort,

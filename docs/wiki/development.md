@@ -28,6 +28,16 @@ npm run dev:daemon
 
 Keep `HOST=127.0.0.1` so the API is not exposed on the public interface.
 
+### Dev MySQL (Docker Compose)
+
+```bash
+docker compose -f docker-compose.dev.yml up -d
+# DATABASE_URL=mysql://guartrix:guartrix@127.0.0.1:3306/guartrix_panel
+```
+
+Then `bash scripts/db-migrate.sh` and start the API/web as above.
+
+
 Schema changes: edit `apps/api/prisma/schema.prisma`, then
 `npm run db:migrate:dev -w @msm/api` (creates a migration). Installs and
 upgrades use `bash scripts/db-migrate.sh` / `npm run db:migrate` (`prisma migrate deploy`).

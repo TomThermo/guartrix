@@ -15,6 +15,7 @@ import { verifyUserAppPassword } from "./app-passwords.js";
 import {
   getServerPermissions,
 } from "../server-access.js";
+import { getRateLimitStore } from "../rate-limit-store.js";
 
 const authBodySchema = z.object({
   username: z.string().min(1).max(64),
@@ -22,23 +23,20 @@ const authBodySchema = z.object({
   password: z.string().min(1).max(256),
 });
 
-/** Simple per-IP rate limit for SFTP auth (daemon → panel). */
-const recentAttempts = new Map<string, { count: number; resetAt: number }>();
+const SFTP_AUTH_RATE_WINDOW_MS = 60_000;
+const SFTP_AUTH_RATE_MAX = 30;
 
 function rateLimitKey(nodeId: string, username: string): string {
-  return `${nodeId}:${username.toLowerCase()}`;
+  return `sftp:${nodeId}:${username.toLowerCase()}`;
 }
 
 function checkRateLimit(key: string): boolean {
-  const now = Date.now();
-  const entry = recentAttempts.get(key);
-  if (!entry || entry.resetAt < now) {
-    recentAttempts.set(key, { count: 1, resetAt: now + 60_000 });
-    return true;
-  }
-  if (entry.count >= 30) return false;
-  entry.count += 1;
-  return true;
+  const { limited } = getRateLimitStore().hit(
+    key,
+    SFTP_AUTH_RATE_WINDOW_MS,
+    SFTP_AUTH_RATE_MAX,
+  );
+  return !limited;
 }
 
 async function resolveDaemonNodeFromBearer(token: string) {

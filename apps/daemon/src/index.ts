@@ -68,6 +68,22 @@ import {
 } from "@msm/node-agent";
 import { daemonConfig } from "./config.js";
 import { isDaemonAuthorized, requireDaemonAuth } from "./auth.js";
+import { registerDaemonMetrics } from "./metrics.js";
+
+async function initSentry(): Promise<void> {
+  const dsn = process.env.SENTRY_DSN?.trim();
+  if (!dsn) return;
+  try {
+    const Sentry = await import("@sentry/node");
+    Sentry.init({
+      dsn,
+      tracesSampleRate: 0.1,
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn(`[guartrix-daemon] Sentry init skipped: ${msg}`);
+  }
+}
 
 const serverTypeSchema = z.enum(
   ALL_SERVER_TYPES as [ServerType, ...ServerType[]],
@@ -119,6 +135,8 @@ function sendJson(socket: { send: (data: string) => void }, payload: unknown): v
 }
 
 async function main() {
+  await initSentry();
+
   const app = Fastify({
     logger: true,
     bodyLimit: 32 * 1024 * 1024,
@@ -148,6 +166,8 @@ async function main() {
   });
 
   app.addHook("preHandler", requireDaemonAuth);
+
+  registerDaemonMetrics(app);
 
   app.get("/health", async () => ({ ok: true }));
 

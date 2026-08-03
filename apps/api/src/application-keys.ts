@@ -6,6 +6,7 @@ import {
   type ApplicationApiKeyRecord,
 } from "@msm/shared";
 import { prisma } from "./db.js";
+import { getRateLimitStore } from "./rate-limit-store.js";
 
 export interface ApplicationAuthContext {
   keyId: string;
@@ -75,8 +76,6 @@ function extractBearer(request: FastifyRequest): string | null {
   return match?.[1] ?? null;
 }
 
-const rateBuckets = new Map<string, { count: number; resetAt: number }>();
-
 function applicationRateLimit(): number {
   const raw = Number(
     process.env.APPLICATION_API_RATE_LIMIT ?? APPLICATION_API_RATE_DEFAULT,
@@ -87,14 +86,12 @@ function applicationRateLimit(): number {
 
 export function checkApplicationKeyRate(keyId: string): string | null {
   const limit = applicationRateLimit();
-  const now = Date.now();
-  let bucket = rateBuckets.get(keyId);
-  if (!bucket || now >= bucket.resetAt) {
-    bucket = { count: 0, resetAt: now + APPLICATION_API_RATE_WINDOW_MS };
-    rateBuckets.set(keyId, bucket);
-  }
-  bucket.count += 1;
-  if (bucket.count > limit) {
+  const { limited } = getRateLimitStore().hit(
+    `appkey:${keyId}`,
+    APPLICATION_API_RATE_WINDOW_MS,
+    limit,
+  );
+  if (limited) {
     return `Application API rate limit exceeded (${limit}/min)`;
   }
   return null;

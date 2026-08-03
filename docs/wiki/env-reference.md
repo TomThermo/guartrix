@@ -20,9 +20,14 @@ Copy `.env.example` → `.env` (repo root). Secrets must stay gitignored. The lo
 | `PUBLIC_BASE_URL` | Full origin, e.g. `https://guartrix.com` or `http://203.0.113.10` |
 | `DATA_DIR` | Default `./data` |
 | `LOG_LEVEL` | API pino level (`fatal`…`trace`; default `info`) |
+| `PRISMA_SLOW_MS` | When set (e.g. `200`), log Prisma queries slower than N ms |
+| `METRICS_TOKEN` | Bearer/`?token=` for Prometheus `GET /api/metrics` and `/metrics` (API + daemon). Unset = localhost only |
+| `SENTRY_DSN` | Optional Sentry DSN for API + daemon (`@sentry/node`, tracesSampleRate `0.1`). Web: document `VITE_SENTRY_DSN` for a later pass |
 | `WEB_HOST` | Web bind address (default `0.0.0.0`) |
 | `JAVA_PATH` | Host Java binary (fallback when not using the per-server Java picker) |
 | `DOCKER_IMAGE` | Default `eclipse-temurin:25-jre-jammy` |
+| `DOCKER_LOG_MAX_SIZE` | Docker `json-file` max-size for game containers (default `10m`; daemon/`data/daemon.env`) |
+| `DOCKER_LOG_MAX_FILE` | Docker `json-file` max-file count (default `3`) |
 | `MANAGE_FIREWALL` | Open/close game ports via ufw when true |
 
 ## Database (panel)
@@ -46,6 +51,7 @@ Installer: `--mysql-docker` (default) or `--mysql-external` / `--database-url`. 
 | `TWO_FACTOR_REQUIRED_ROLES` | Comma-separated roles that must enable TOTP (e.g. `ADMIN`). Empty = optional |
 | `API_KEY_RATE_LIMIT` | Max Client API requests per minute per key (default **120**) |
 | `APPLICATION_API_RATE_LIMIT` | Max Application API (`gta_`) requests per minute per key (default **120**) |
+| `RATE_LIMIT_STORE` | `file` (default) persists counters under `data/rate-limits/`; `memory` is in-process only |
 | `MOLLIE_API_KEY` | Mollie Payments API key (`test_…` / `live_…`); enables checkout |
 | `BILLING_WEBHOOK_URL` | Optional outbound JSON webhook on payment paid / provisioned / subscription events |
 | `CURSEFORGE_API_KEY` | Optional CurseForge API key for Modpacks tab search/install |

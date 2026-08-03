@@ -248,6 +248,8 @@ export type NodeStatus = "ONLINE" | "OFFLINE" | "UNKNOWN";
 export interface DaemonNode {
   id: string;
   name: string;
+  /** Optional region / location label (e.g. "eu-west"). */
+  location: string | null;
   fqdn: string;
   scheme: string;
   daemonPort: number;
@@ -333,6 +335,8 @@ export interface CreateNodeRequest {
   scheme?: "http" | "https";
   daemonPort?: number;
   memoryMb?: number;
+  /** Optional region / location label. */
+  location?: string | null;
 }
 
 export interface UpdateNodeRequest {
@@ -341,6 +345,8 @@ export interface UpdateNodeRequest {
   scheme?: "http" | "https";
   daemonPort?: number;
   memoryMb?: number;
+  /** Optional region / location label; empty string clears. */
+  location?: string | null;
 }
 
 export interface CreateNodeResponse {
@@ -1121,6 +1127,10 @@ export interface PluginStackItem {
   projectId: string;
   slug: string;
   name: string;
+  /** Optional Modrinth version id for reproducible installs. */
+  versionId?: string;
+  /** Human version label when versionId is pinned. */
+  versionNumber?: string;
 }
 
 export interface PluginStack {

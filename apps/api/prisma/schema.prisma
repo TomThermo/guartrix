@@ -42,6 +42,8 @@ enum NodeStatus {
 model Node {
   id          String     @id
   name        String
+  /** Optional region / location label shown in the UI (e.g. "eu-west", "Frankfurt"). */
+  location    String?
   /** Hostname or IP used to reach the daemon (no scheme). */
   fqdn        String
   scheme      String     @default("http")

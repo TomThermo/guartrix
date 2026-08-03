@@ -7,6 +7,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.41] — 2026-08-03
+
+- Node **location** labels (schema + admin UI + create picker)
+- File-backed rate-limit store (`RATE_LIMIT_STORE=file`, default)
+- GDPR: `GET /api/account/export` + `DELETE /api/account` (Account Security UI)
+- Versioned scrypt password hashes (`scrypt$v1$…`) with legacy verify + rehash on login
+- Prometheus `/metrics` (API + daemon; `METRICS_TOKEN` or localhost)
+- Optional Sentry (`SENTRY_DSN`); Prisma slow-query log (`PRISMA_SLOW_MS`)
+- Docker json-file log rotation (`DOCKER_LOG_MAX_SIZE` / `DOCKER_LOG_MAX_FILE`)
+- Dev MySQL Compose (`docker-compose.dev.yml`); stack items can pin `versionId`
+
 ## [1.0.40] — 2026-08-03
 
 - Optional **backup encryption** at rest (`BACKUP_ENCRYPTION=1`, AES-256-GCM → `.tar.gz.enc`)

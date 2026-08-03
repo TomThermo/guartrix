@@ -52,6 +52,7 @@ const MUTATING = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 function csrfExemptPath(pathname: string): boolean {
   if (pathname === "/api/health" || pathname === "/api/ready") return true;
+  if (pathname === "/api/metrics" || pathname === "/metrics") return true;
   if (pathname.startsWith("/api/internal/")) return true;
   if (pathname.startsWith("/api/public/")) return true;
   return false;

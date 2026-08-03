@@ -31,6 +31,7 @@ const MUTATING = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 /** Paths still allowed while a required-role user has not enrolled yet. */
 function twoFactorExemptPath(pathname: string): boolean {
   if (pathname === "/api/health" || pathname === "/api/ready") return true;
+  if (pathname === "/api/metrics" || pathname === "/metrics") return true;
   if (pathname.startsWith("/api/internal/")) return true;
   if (pathname.startsWith("/api/public/")) return true;
   if (pathname === "/api/auth/me") return true;

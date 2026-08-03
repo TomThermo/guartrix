@@ -6,6 +6,7 @@ import {
   type ApiKeyRecord,
 } from "@msm/shared";
 import { prisma } from "./db.js";
+import { getRateLimitStore } from "./rate-limit-store.js";
 
 export interface ApiKeyAuthContext {
   keyId: string;
@@ -98,9 +99,7 @@ function extractBearer(request: FastifyRequest): string | null {
   return match?.[1] ?? null;
 }
 
-/** In-memory per-key sliding window. */
-const rateBuckets = new Map<string, { count: number; resetAt: number }>();
-
+/** In-memory / file-backed per-key sliding window. */
 function apiKeyRateLimit(): number {
   const raw = Number(process.env.API_KEY_RATE_LIMIT ?? API_KEY_RATE_DEFAULT);
   if (!Number.isFinite(raw) || raw < 1) return API_KEY_RATE_DEFAULT;
@@ -113,14 +112,12 @@ function apiKeyRateLimit(): number {
  */
 export function checkApiKeyRate(keyId: string): string | null {
   const limit = apiKeyRateLimit();
-  const now = Date.now();
-  let bucket = rateBuckets.get(keyId);
-  if (!bucket || now >= bucket.resetAt) {
-    bucket = { count: 0, resetAt: now + API_KEY_RATE_WINDOW_MS };
-    rateBuckets.set(keyId, bucket);
-  }
-  bucket.count += 1;
-  if (bucket.count > limit) {
+  const { limited } = getRateLimitStore().hit(
+    `apikey:${keyId}`,
+    API_KEY_RATE_WINDOW_MS,
+    limit,
+  );
+  if (limited) {
     return `API key rate limit exceeded (${limit}/min)`;
   }
   return null;

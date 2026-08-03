@@ -17,13 +17,14 @@ import { assertSameOrigin } from "./csrf.js";
 import { prisma } from "./db.js";
 import { hostNodeName, hostPublicIp, hostTotalMemoryGb, hostTotalMemoryMb } from "./host-resources.js";
 import { isSmtpConfigured, sendMail } from "./mail.js";
-import { hashPassword, verifyPassword } from "./password-hash.js";
+import { hashPassword, needsRehash, verifyPassword } from "./password-hash.js";
 import {
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
   passwordPolicyMessage,
   strongPasswordRefine,
 } from "./password-policy.js";
+import { getRateLimitStore } from "./rate-limit-store.js";
 import { destroySessionsForUser } from "./session-store.js";
 import { consumeRecoveryCode, verifyTotp } from "./totp.js";
 import {
@@ -33,7 +34,7 @@ import {
   userCanAccessServer,
 } from "./server-access.js";
 
-export { hashPassword, verifyPassword } from "./password-hash.js";
+export { hashPassword, needsRehash, verifyPassword } from "./password-hash.js";
 
 declare module "fastify" {
   interface Session {
@@ -495,29 +496,27 @@ const resetPasswordSchema = z.object({
   password: passwordSchema,
 });
 
-const loginAttempts = new Map<string, { count: number; resetAt: number }>();
+const LOGIN_RATE_WINDOW_MS = 15 * 60_000;
+const LOGIN_RATE_MAX = 20;
 
 function clientKey(request: FastifyRequest): string {
-  return request.ip || "unknown";
+  return `login:${request.ip || "unknown"}`;
 }
 
 function checkLoginRate(request: FastifyRequest): string | null {
-  const key = clientKey(request);
-  const now = Date.now();
-  const entry = loginAttempts.get(key);
-  if (!entry || now > entry.resetAt) {
-    loginAttempts.set(key, { count: 1, resetAt: now + 15 * 60_000 });
-    return null;
-  }
-  entry.count += 1;
-  if (entry.count > 20) {
+  const { limited } = getRateLimitStore().hit(
+    clientKey(request),
+    LOGIN_RATE_WINDOW_MS,
+    LOGIN_RATE_MAX,
+  );
+  if (limited) {
     return "Too many login attempts. Try again in 15 minutes.";
   }
   return null;
 }
 
 function clearLoginRate(request: FastifyRequest): void {
-  loginAttempts.delete(clientKey(request));
+  getRateLimitStore().clear(clientKey(request));
 }
 
 /** When SMTP is live, non-admin accounts must verify email before a session. */
@@ -579,6 +578,13 @@ export function registerAuthRoutes(app: FastifyInstance): void {
           metadata: { username, reason: user ? "wrong password" : "unknown user" },
         });
         return reply.status(401).send({ error: "Invalid credentials" });
+      }
+
+      if (needsRehash(user.passwordHash)) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { passwordHash: hashPassword(password) },
+        });
       }
 
       if (emailVerificationBlocksLogin(user)) {

@@ -41,6 +41,8 @@ another tool on the host needs it.
 | Proxy | `X-Forwarded-*` overwritten from the socket by prod-web; API trusts XFF only from `TRUSTED_PROXIES` |
 | CSRF | Origin/Referer check on cookie-auth mutating `/api` routes |
 | Sessions | `httpOnly` + `SameSite=Lax`; regenerate on login; purge on password reset |
+| Rate limits | Login / API-key / SFTP counters via `RATE_LIMIT_STORE` (`file` default under `data/rate-limits/`, or `memory`) |
+| Passwords | Versioned scrypt hashes (`scrypt$v1$…`); legacy `salt:hash` still verifies and upgrades on login |
 | Secrets at rest | TOTP secrets, game MySQL `Database.password`, and optional backups (`BACKUP_ENCRYPTION=1` → `.tar.gz.enc` AES-256-GCM) sealed with purpose salts from `SESSION_SECRET` / `BACKUP_ENCRYPTION_KEY`; legacy plaintext passwords accepted and re-sealed on read/write |
 | 2FA | Optional TOTP + recovery codes; role-required via `TWO_FACTOR_REQUIRED_ROLES` — see [Accounts & quotas](accounts-and-quotas.md) |
 | Client API | Personal Bearer keys (`gt_…`), scoped permissions, per-key rate limit — see [Client API](client-api.md) |
