@@ -7,6 +7,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.51] — 2026-08-03
+
+- API: extract `servers-addons`, `servers-power`, `servers-world` (`servers.ts` 2195→1440)
+- API: move `listVisibleServers` / `listVisibleServerIds` into `server-access.ts`
+- Web: extract `FileBrowserTable` from FileManager
+- OpenAPI: auth login/register/logout + dashboard bulk + addons/seed/disk/connect stubs
+
 ## [1.0.50] — 2026-08-03
 
 - API: peel auth HTTP into `routes/auth.ts` (helpers stay in `auth.ts`)

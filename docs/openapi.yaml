@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Guartrix API
-  version: "1.0.50"
+  version: "1.0.51"
   description: |
     Machine-readable surface for the Guartrix panel.
 
@@ -412,8 +412,132 @@ paths:
   /api/servers/stats:
     get:
       tags: [Client]
-      summary: Aggregate server stats for dashboard
+      summary: Aggregate server stats for dashboard (cache-only)
       security: [{ ClientApiKey: [] }, { SessionCookie: [] }]
       responses:
         "200":
-          description: Stats summary for visible servers
+          description: Stats map for visible servers
+  /api/servers/online:
+    get:
+      tags: [Client]
+      summary: Online player counts (cache-only bulk)
+      security: [{ ClientApiKey: [] }, { SessionCookie: [] }]
+      responses:
+        "200":
+          description: "{ online: Record<serverId, count> }"
+  /api/servers/updates:
+    get:
+      tags: [Client]
+      summary: Jar update availability for visible servers
+      security: [{ ClientApiKey: [] }, { SessionCookie: [] }]
+      responses:
+        "200":
+          description: Update info per visible server
+  /api/servers/addon-updates:
+    get:
+      tags: [Client]
+      summary: Addon update counts (TTL-cached)
+      security: [{ ClientApiKey: [] }, { SessionCookie: [] }]
+      responses:
+        "200":
+          description: Available addon update counts
+  /api/auth/login:
+    post:
+      tags: [Account]
+      summary: Password login (may park for 2FA)
+      security: [{ SessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username: { type: string }
+                password: { type: string }
+                rememberMe: { type: boolean }
+      responses:
+        "200":
+          description: "{ ok, user? } or { twoFactorRequired: true }"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: Login rate limited
+  /api/auth/logout:
+    post:
+      tags: [Account]
+      summary: End session
+      security: [{ SessionCookie: [] }]
+      responses:
+        "200":
+          description: "{ ok: true }"
+  /api/auth/register:
+    post:
+      tags: [Account]
+      summary: Self-serve registration (when enabled)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, email, password, acceptTerms]
+              properties:
+                username: { type: string }
+                email: { type: string, format: email }
+                password: { type: string }
+                acceptTerms: { type: boolean }
+      responses:
+        "201":
+          description: Account created (may require email verify)
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/servers/{id}/addons:
+    get:
+      tags: [Client]
+      summary: List installed addons
+      security: [{ ClientApiKey: [] }, { SessionCookie: [] }]
+      parameters:
+        - $ref: "#/components/parameters/ServerId"
+      responses:
+        "200":
+          description: "{ installed, type, mcVersion, kind }"
+  /api/servers/{id}/world/seed:
+    get:
+      tags: [Client]
+      summary: Read world seed info
+      security: [{ ClientApiKey: [] }, { SessionCookie: [] }]
+      parameters:
+        - $ref: "#/components/parameters/ServerId"
+      responses:
+        "200":
+          description: Seed metadata
+  /api/servers/{id}/disk:
+    get:
+      tags: [Client]
+      summary: Disk usage breakdown
+      security: [{ ClientApiKey: [] }, { SessionCookie: [] }]
+      parameters:
+        - $ref: "#/components/parameters/ServerId"
+      responses:
+        "200":
+          description: DiskUsageBreakdown
+  /api/servers/{id}/connect:
+    get:
+      tags: [Client]
+      summary: Join address / SFTP connection hints
+      security: [{ ClientApiKey: [] }, { SessionCookie: [] }]
+      parameters:
+        - $ref: "#/components/parameters/ServerId"
+      responses:
+        "200":
+          description: Connection details

@@ -1,12 +1,12 @@
 import type { FastifyInstance } from "fastify";
 import type { ServerType } from "@msm/shared";
 import { addonKindFor, hasPermission } from "@msm/shared";
+import { getSessionUser } from "../auth.js";
 import {
-  getSessionUser,
+  getServerPermissionsBatch,
   listVisibleServerIds,
   listVisibleServers,
-} from "../auth.js";
-import { getServerPermissionsBatch } from "../server-access.js";
+} from "../server-access.js";
 import { checkInstalledAddonUpdates } from "../addons.js";
 import { serverDir } from "../config.js";
 import { getAllOnlinePlayers } from "../online-players.js";

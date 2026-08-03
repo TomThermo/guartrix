@@ -285,61 +285,10 @@ export async function requireServerAccess(
   return { user, server, permissions };
 }
 
-export async function listVisibleServers(user: AuthUser, request?: FastifyRequest) {
-  const { serverListInclude } = await import("./serialize.js");
-  let rows;
-  if (user.role === "ADMIN") {
-    rows = await prisma.server.findMany({
-      orderBy: { createdAt: "desc" },
-      include: serverListInclude,
-    });
-  } else {
-    rows = await prisma.server.findMany({
-      where: {
-        OR: [
-          { ownerId: user.id },
-          { subUsers: { some: { userId: user.id } } },
-        ],
-      },
-      orderBy: { createdAt: "desc" },
-      include: serverListInclude,
-    });
-  }
-  const allow = request?.apiKeyAuth?.serverIds;
-  if (allow) {
-    const set = new Set(allow);
-    rows = rows.filter((s) => set.has(s.id));
-  }
-  return rows;
-}
-
-export async function listVisibleServerIds(
-  user: AuthUser,
-  request?: FastifyRequest,
-): Promise<string[]> {
-  let ids: string[];
-  if (user.role === "ADMIN") {
-    const rows = await prisma.server.findMany({ select: { id: true } });
-    ids = rows.map((r) => r.id);
-  } else {
-    const rows = await prisma.server.findMany({
-      where: {
-        OR: [
-          { ownerId: user.id },
-          { subUsers: { some: { userId: user.id } } },
-        ],
-      },
-      select: { id: true },
-    });
-    ids = rows.map((r) => r.id);
-  }
-  const allow = request?.apiKeyAuth?.serverIds;
-  if (allow) {
-    const set = new Set(allow);
-    ids = ids.filter((id) => set.has(id));
-  }
-  return ids;
-}
+export {
+  listVisibleServerIds,
+  listVisibleServers,
+} from "./server-access.js";
 
 /** Guard all /api/servers/:serverId/* routes by ownership or subuser access. */
 export function registerOwnershipGuard(app: FastifyInstance): void {

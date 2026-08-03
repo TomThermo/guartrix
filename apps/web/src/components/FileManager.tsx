@@ -6,18 +6,15 @@ import {
   Form,
   InputGroup,
   Row,
-  Spinner,
-  Stack,
-  Table,
 } from "react-bootstrap";
 import { api } from "../api";
 import { useI18n } from "../i18n/react";
 import { useVisibleInterval } from "../hooks/useVisibleInterval";
-import { formatBytes } from "../utils";
 import { ConfirmModal } from "./ConfirmModal";
 import { DiskUsageCard } from "./DiskUsageCard";
+import { FileBrowserTable } from "./file-manager/FileBrowserTable";
 import { FileEditorPane } from "./file-manager/FileEditorPane";
-import { isArchiveName, joinPath, parentPath } from "./file-manager/paths";
+import { joinPath, parentPath } from "./file-manager/paths";
 import { PromptModal } from "./PromptModal";
 
 type Dialog =
@@ -434,8 +431,6 @@ export function FileManager({
     }
   }
 
-  const colSpan = 5;
-
   return (
     <div>
       <h2 className="h5 mb-3">{t("files.title")}</h2>
@@ -561,138 +556,27 @@ export function FileManager({
 
       <Row className="g-3">
         <Col lg={editing ? 6 : 12}>
-          {loading ? (
-            <div className="text-secondary py-3">
-              <Spinner size="sm" className="me-2" />
-              {t("common.loading")}…
-            </div>
-          ) : (
-            <div className="table-responsive border rounded surface">
-              <Table hover className="mb-0 align-middle">
-                <thead>
-                  <tr className="text-secondary">
-                    <th style={{ width: "2.5rem" }}>
-                      {(canDownload || canArchive) && (
-                        <Form.Check
-                          type="checkbox"
-                          checked={allSelected}
-                          disabled={!entries.length || busy}
-                          onChange={toggleSelectAll}
-                          aria-label="Select all"
-                        />
-                      )}
-                    </th>
-                    <th>{t("common.name")}</th>
-                    <th>{t("files.size")}</th>
-                    <th>{t("files.modified")}</th>
-                    <th />
-                  </tr>
-                </thead>
-                <tbody>
-                  {cwd !== "." && cwd !== "" && (
-                    <tr>
-                      <td colSpan={colSpan}>
-                        <Button
-                          variant="link"
-                          className="p-0"
-                          onClick={() => void goTo(parentPath(cwd))}
-                          disabled={busy}
-                        >
-                          <i className="fa-solid fa-folder-open me-1" />
-                          ..
-                        </Button>
-                      </td>
-                    </tr>
-                  )}
-                  {entries.map((entry) => (
-                    <tr key={entry.path} className={editing?.path === entry.path ? "table-active" : undefined}>
-                      <td>
-                        {(canDownload || canArchive) && (
-                          <Form.Check
-                            type="checkbox"
-                            checked={selected.has(entry.path)}
-                            disabled={busy}
-                            onChange={() => toggleSelect(entry.path)}
-                            aria-label={`Select ${entry.name}`}
-                          />
-                        )}
-                      </td>
-                      <td>
-                        <Button
-                          variant="link"
-                          className="p-0 text-start"
-                          onClick={() => void openEntry(entry)}
-                          disabled={busy}
-                        >
-                          <i
-                            className={`fa-solid ${entry.type === "dir" ? "fa-folder text-warning" : "fa-file text-secondary"} me-2`}
-                          />
-                          {entry.name}
-                        </Button>
-                      </td>
-                      <td className="small text-secondary">
-                        {entry.type === "dir" ? "—" : formatBytes(entry.size)}
-                      </td>
-                      <td className="small text-secondary">
-                        {new Date(entry.modifiedAt).toLocaleString()}
-                      </td>
-                      <td className="text-end">
-                        <Stack direction="horizontal" gap={1} className="justify-content-end flex-wrap">
-                          {canDownload && entry.type === "file" && (
-                            <Button
-                              size="sm"
-                              variant="outline-secondary"
-                              disabled={busy}
-                              onClick={() => void onDownload(entry)}
-                            >
-                              {t("files.download")}
-                            </Button>
-                          )}
-                          {canArchive && entry.type === "file" && isArchiveName(entry.name) && (
-                            <Button
-                              size="sm"
-                              variant="outline-secondary"
-                              disabled={busy}
-                              onClick={() => void onDecompress(entry)}
-                            >
-                              Unzip
-                            </Button>
-                          )}
-                          {canUpdate && (
-                            <Button
-                              size="sm"
-                              variant="outline-secondary"
-                              disabled={busy}
-                              onClick={() => void onRename(entry)}
-                            >
-                              {t("files.rename")}
-                            </Button>
-                          )}
-                          {canDelete && (
-                            <Button
-                              size="sm"
-                              variant="outline-danger"
-                              disabled={busy}
-                              onClick={() => void onDelete(entry)}
-                            >
-                              {t("files.delete")}
-                            </Button>
-                          )}
-                        </Stack>
-                      </td>
-                    </tr>
-                  ))}
-                  {!entries.length && (
-                    <tr>
-                      <td colSpan={colSpan} className="text-secondary">
-                        {t("files.empty")}
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </Table>
-            </div>
-          )}
+          <FileBrowserTable
+            cwd={cwd}
+            entries={entries}
+            loading={loading}
+            busy={busy}
+            editingPath={editing?.path ?? null}
+            selected={selected}
+            allSelected={allSelected}
+            canDownload={canDownload}
+            canArchive={canArchive}
+            canUpdate={canUpdate}
+            canDelete={canDelete}
+            onGoTo={goTo}
+            onOpenEntry={openEntry}
+            onToggleSelect={toggleSelect}
+            onToggleSelectAll={toggleSelectAll}
+            onDownload={onDownload}
+            onDecompress={onDecompress}
+            onRename={onRename}
+            onDelete={onDelete}
+          />
         </Col>
 
         {editing && (

@@ -257,3 +257,64 @@ export function hasServerPermission(
 ): boolean {
   return hasPermission(access.permissions, required);
 }
+
+/** Servers the user may see (owner / subuser / admin), optionally API-key scoped. */
+export async function listVisibleServers(
+  user: AuthUser,
+  request?: { apiKeyAuth?: { serverIds: string[] | null } | null },
+) {
+  const { serverListInclude } = await import("./serialize.js");
+  let rows;
+  if (user.role === "ADMIN") {
+    rows = await prisma.server.findMany({
+      orderBy: { createdAt: "desc" },
+      include: serverListInclude,
+    });
+  } else {
+    rows = await prisma.server.findMany({
+      where: {
+        OR: [
+          { ownerId: user.id },
+          { subUsers: { some: { userId: user.id } } },
+        ],
+      },
+      orderBy: { createdAt: "desc" },
+      include: serverListInclude,
+    });
+  }
+  const allow = request?.apiKeyAuth?.serverIds;
+  if (allow) {
+    const set = new Set(allow);
+    rows = rows.filter((s) => set.has(s.id));
+  }
+  return rows;
+}
+
+/** Same visibility as listVisibleServers, ids only (dashboard bulk polls). */
+export async function listVisibleServerIds(
+  user: AuthUser,
+  request?: { apiKeyAuth?: { serverIds: string[] | null } | null },
+): Promise<string[]> {
+  let ids: string[];
+  if (user.role === "ADMIN") {
+    const rows = await prisma.server.findMany({ select: { id: true } });
+    ids = rows.map((r) => r.id);
+  } else {
+    const rows = await prisma.server.findMany({
+      where: {
+        OR: [
+          { ownerId: user.id },
+          { subUsers: { some: { userId: user.id } } },
+        ],
+      },
+      select: { id: true },
+    });
+    ids = rows.map((r) => r.id);
+  }
+  const allow = request?.apiKeyAuth?.serverIds;
+  if (allow) {
+    const set = new Set(allow);
+    ids = ids.filter((id) => set.has(id));
+  }
+  return ids;
+}
