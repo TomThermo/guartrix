@@ -94,7 +94,10 @@ mkdir -p "$API_STAGE/apps/api/dist" "$API_STAGE/apps/api/prisma"
 cp "$ROOT/apps/api/package.json" "$API_STAGE/apps/api/"
 cp -a "$ROOT/apps/api/dist/." "$API_STAGE/apps/api/dist/"
 cp -a "$ROOT/apps/api/prisma/." "$API_STAGE/apps/api/prisma/"
-cp "$ROOT/.env.example" "$API_STAGE/.env.example"
+# Prefer customer-sanitized env (no DOWNLOAD_* / ALLOW_UNSIGNED)
+cp "$FULL_STAGE/.env.example" "$API_STAGE/.env.example"
+mkdir -p "$API_STAGE/data/licenses"
+cp "$FULL_STAGE/data/licenses/signing-public.pem" "$API_STAGE/data/licenses/"
 cat >"$API_STAGE/README.txt" <<EOF
 Guartrix API ${VERSION}
 =======================
@@ -134,7 +137,7 @@ rm -rf "$WEB_STAGE"
 mkdir -p "$WEB_STAGE/apps/web/dist"
 cp "$ROOT/apps/web/package.json" "$WEB_STAGE/apps/web/"
 cp -a "$ROOT/apps/web/dist/." "$WEB_STAGE/apps/web/dist/"
-cp "$ROOT/.env.example" "$WEB_STAGE/.env.example"
+cp "$FULL_STAGE/.env.example" "$WEB_STAGE/.env.example"
 cat >"$WEB_STAGE/README.txt" <<EOF
 Guartrix Web UI ${VERSION}
 ==========================
@@ -168,7 +171,7 @@ cp "$ROOT/apps/daemon/package.json" "$DAEMON_STAGE/apps/daemon/"
 cp -a "$ROOT/apps/daemon/dist/." "$DAEMON_STAGE/apps/daemon/dist/"
 [[ -f "$ROOT/scripts/install-daemon.sh" ]] && cp "$ROOT/scripts/install-daemon.sh" "$DAEMON_STAGE/scripts/"
 cp "$ROOT/data/daemon.env.example" "$DAEMON_STAGE/data/daemon.env.example"
-cp "$ROOT/.env.example" "$DAEMON_STAGE/panel.env.example"
+cp "$FULL_STAGE/.env.example" "$DAEMON_STAGE/panel.env.example"
 cat >"$DAEMON_STAGE/README.txt" <<EOF
 Guartrix Daemon ${VERSION}
 ==========================
@@ -221,6 +224,7 @@ Guartrix Panel ${VERSION} — install
      DATABASE_URL (MySQL)
      LICENSE_SERVER_URL=https://license.guartrix.com
      LICENSE_KEY=GTRX-…   (from Guartrix)
+   Keep data/licenses/signing-public.pem (ships with this zip — needed to verify licenses).
 
 3) Install deps + database
    npm install
@@ -235,7 +239,7 @@ Guartrix Panel ${VERSION} — install
    # or: bash start.sh if present at the tree root
 
 6) Open https://\$PUBLIC_HOST/ and log in with ADMIN_PASSWORD.
-   Activate the license under Admin → License.
+   Activate the license under Admin → License (or run free tier: 1 node, 1 server, 10 GB disk).
    Local daemon: Admin → System (node URL / Test connection).
 
 Docs: docs/wiki/install-panel.md , docs/wiki/env-reference.md
@@ -245,6 +249,7 @@ printf '%s\n' \
   "" \
   "See INSTALL.txt for step-by-step setup." \
   "Env template: .env.example → copy to .env" \
+  "Includes data/licenses/signing-public.pem for license verify." \
   "Set LICENSE_SERVER_URL=https://license.guartrix.com and your LICENSE_KEY." \
   >"$FULL_STAGE/DOWNLOAD-README.txt"
 TMP_PANEL="${OUT_DIR}/guartrix-panel-${VERSION}"
@@ -258,7 +263,8 @@ echo "[download]   guartrix-panel-${VERSION}.zip"
 
 echo "[download] Assembling master zip…"
 cp -a "$PARTS/." "$BUNDLE_DIR/"
-cp -f "$ROOT/.env.example" "$BUNDLE_DIR/guartrix.env.example"
+# Sanitized panel env (not the operator root .env.example)
+cp -f "$TMP_PANEL/.env.example" "$BUNDLE_DIR/guartrix.env.example"
 cp -f "$ROOT/data/daemon.env.example" "$BUNDLE_DIR/daemon.env.example"
 cat >"$BUNDLE_DIR/README.txt" <<EOF
 Guartrix download bundle ${VERSION} (${STAMP})
@@ -301,6 +307,7 @@ MANIFEST_JSON="$(
   BUNDLE_VERSION="$VERSION" \
   BUNDLE_STAMP="$STAMP" \
   ROOT_DIR="$ROOT" \
+  PANEL_ENV="$TMP_PANEL/.env.example" \
   node <<'NODE'
 const fs = require("fs");
 const path = require("path");
@@ -313,13 +320,13 @@ const parts = files.map((name) => {
 });
 const masterStat = fs.statSync(process.env.MASTER_PATH);
 const extras = [];
-const panelEnv = path.join(root, ".env.example");
+const panelEnv = process.env.PANEL_ENV;
 const daemonEnv = path.join(root, "data/daemon.env.example");
-if (fs.existsSync(panelEnv)) {
+if (panelEnv && fs.existsSync(panelEnv)) {
   extras.push({
     name: "guartrix.env.example",
     bytes: fs.statSync(panelEnv).size,
-    label: "Panel .env.example",
+    label: "Panel .env.example (customer)",
   });
 }
 if (fs.existsSync(daemonEnv)) {
@@ -353,7 +360,8 @@ if [[ "$PUBLISH" -eq 1 ]]; then
   cp -f "$MASTER_ZIP" "$PUBLISH_DIR/"
   cp -f "$PARTS"/*.zip "$PUBLISH_DIR/"
   # Env templates (also inside zips — listed separately on /download)
-  cp -f "$ROOT/.env.example" "$PUBLISH_DIR/guartrix.env.example"
+  # Use customer-sanitized panel env, not the operator root .env.example
+  cp -f "$TMP_PANEL/.env.example" "$PUBLISH_DIR/guartrix.env.example"
   [[ -f "$ROOT/data/daemon.env.example" ]] && cp -f "$ROOT/data/daemon.env.example" "$PUBLISH_DIR/daemon.env.example"
   printf '%s\n' "$MANIFEST_JSON" >"$PUBLISH_DIR/manifest.json"
   ln -sfn "$(basename "$MASTER_ZIP")" "$PUBLISH_DIR/guartrix-bundle-latest.zip"

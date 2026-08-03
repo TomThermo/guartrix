@@ -38,8 +38,17 @@ guartrix_stage_release_tree() {
   cp "$ROOT/package.json" "$STAGE/"
   cp "$ROOT/package-lock.json" "$STAGE/"
   cp "$ROOT/.env.example" "$STAGE/"
-  mkdir -p "$STAGE/data"
+  mkdir -p "$STAGE/data/licenses"
   [[ -f "$ROOT/data/daemon.env.example" ]] && cp "$ROOT/data/daemon.env.example" "$STAGE/data/"
+  # Ed25519 verify key — required for signed license responses on customer installs.
+  # Never ship signing-private.pem / licenses.json.
+  if [[ -f "$ROOT/data/licenses/signing-public.pem" ]]; then
+    cp "$ROOT/data/licenses/signing-public.pem" "$STAGE/data/licenses/signing-public.pem"
+    chmod 644 "$STAGE/data/licenses/signing-public.pem"
+  else
+    echo "[guartrix] ERROR: missing data/licenses/signing-public.pem — customer panels cannot verify licenses" >&2
+    return 1
+  fi
   [[ -f "$ROOT/VERSION" ]] && cp "$ROOT/VERSION" "$STAGE/"
   cp "$ROOT/README.md" "$STAGE/"
   [[ -f "$ROOT/LICENSE" ]] && cp "$ROOT/LICENSE" "$STAGE/" || true
@@ -189,6 +198,7 @@ text = text
     if (/DOWNLOAD_/i.test(line)) return false;
     if (/LETSENCRYPT_/i.test(line)) return false;
     if (/LICENSE_TLS_/i.test(line)) return false;
+    if (/LICENSE_ALLOW_UNSIGNED/i.test(line)) return false;
     if (/install-license-le-cert/i.test(line)) return false;
     if (/package:download/i.test(line)) return false;
     return true;
@@ -208,7 +218,10 @@ LICENSE_SERVER_URL=https://license.guartrix.com
 LICENSE_KEY=GTRX-…
 ```
 
-Activate the key under Admin → License. Contact Guartrix for keys and quotas.
+This package ships `data/licenses/signing-public.pem` so the panel can verify
+signed responses from the license API. Activate the key under Admin → License.
+Without a valid key the panel runs a free tier (1 node, 1 server, 10 GB disk).
+Contact Guartrix for keys and quotas.
 EOF
 
   if [[ -f "$STAGE/.env.example" ]]; then
@@ -231,6 +244,9 @@ text = text
     if (/^#?\s*SKIP_LOCAL_LICENSE_SERVER/i.test(t)) return false;
     if (/^#?\s*LICENSE_PUBLIC_HOST/i.test(t)) return false;
     if (/^#?\s*LICENSE_PROXY_/i.test(t)) return false;
+    if (/^#?\s*LICENSE_ALLOW_UNSIGNED/i.test(t)) return false;
+    if (/accept unsigned validate/i.test(t)) return false;
+    if (/Emergency only: accept unsigned/i.test(t)) return false;
     if (/sibling guartrix-license-server/i.test(t)) return false;
     if (/SNI cert for DNS-only license/i.test(t)) return false;
     if (/sudo bash scripts\/install-license/i.test(t)) return false;
@@ -307,6 +323,15 @@ guartrix_assert_release_clean() {
     fi
     if [[ -f "$STAGE/scripts/prod-web-download.mjs" ]]; then
       echo "[guartrix] ERROR: download gate must not be in customer zip" >&2
+      bad=1
+    fi
+    if [[ ! -f "$STAGE/data/licenses/signing-public.pem" ]]; then
+      echo "[guartrix] ERROR: customer zip must include data/licenses/signing-public.pem" >&2
+      bad=1
+    fi
+    if [[ -f "$STAGE/.env.example" ]] && rg -n 'LICENSE_ALLOW_UNSIGNED|DOWNLOAD_PASSWORD' "$STAGE/.env.example" >/dev/null 2>&1; then
+      echo "[guartrix] ERROR: customer .env.example still has operator-only license/download knobs" >&2
+      rg -n 'LICENSE_ALLOW_UNSIGNED|DOWNLOAD_PASSWORD' "$STAGE/.env.example" >&2 || true
       bad=1
     fi
     if rg -l 'DOWNLOAD_PASSWORD|package-download-bundle\.sh' "$STAGE" 2>/dev/null | head -5 | grep -q .; then

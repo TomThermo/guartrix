@@ -44,8 +44,7 @@ The **website/panel UI stays online** when a license expires. Admins see a banne
 | `LICENSE_SERVER_URL` | License API base URL (default `https://license.guartrix.com`) |
 | `LICENSE_KEY` | Your `GTRX-…` key |
 | `LICENSE_INSTALL_ID` | Optional stable install id (else auto-file under `data/`) |
-| `LICENSE_VERIFY_PUBLIC_KEY` | Optional PEM; else `data/licenses/signing-public.pem` shipped with the panel |
-| `LICENSE_ALLOW_UNSIGNED` | `1` = accept unsigned validate JSON (**insecure**, emergency only) |
+| `LICENSE_VERIFY_PUBLIC_KEY` | Optional PEM; else `data/licenses/signing-public.pem` **shipped in every customer panel zip** |
 | `LICENSE_UNREACHABLE_GRACE_MS` | Soft-valid window if the API is unreachable (default 24h) |
 | `LICENSE_VALIDATE_INTERVAL_MS` | How often to re-check (default 10 minutes) |
 
