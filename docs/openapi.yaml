@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Guartrix API
-  version: "1.0.45"
+  version: "1.0.48"
   description: |
     Machine-readable surface for the Guartrix panel.
 
@@ -19,6 +19,7 @@ tags:
   - name: Application
   - name: Account
   - name: Health
+  - name: Metrics
 components:
   securitySchemes:
     ClientApiKey:
@@ -35,6 +36,12 @@ components:
       type: apiKey
       in: cookie
       name: sessionId
+    MetricsToken:
+      type: http
+      scheme: bearer
+      description: |
+        `METRICS_TOKEN` as Bearer or `?token=`. If unset, only loopback peers
+        (127.0.0.1 / ::1) — X-Forwarded-For is ignored.
   parameters:
     ServerId:
       name: id
@@ -343,3 +350,70 @@ paths:
       responses:
         "200":
           description: Payments
+  /api/metrics:
+    get:
+      tags: [Metrics]
+      summary: Prometheus metrics (text exposition)
+      description: Same handler as `/metrics`.
+      security: [{ MetricsToken: [] }]
+      responses:
+        "200":
+          description: Prometheus text format
+        "401":
+          description: Missing or invalid token (when METRICS_TOKEN is set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /metrics:
+    get:
+      tags: [Metrics]
+      summary: Prometheus metrics (alias)
+      description: Same handler as `/api/metrics`.
+      security: [{ MetricsToken: [] }]
+      responses:
+        "200":
+          description: Prometheus text format
+        "401":
+          description: Missing or invalid token (when METRICS_TOKEN is set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/auth/me:
+    get:
+      tags: [Account]
+      summary: Session probe — current user or unauthenticated
+      security: [{ SessionCookie: [] }]
+      responses:
+        "200":
+          description: "{ authenticated, user? }"
+  /api/auth/config:
+    get:
+      tags: [Account]
+      summary: Public auth UI config (registration, password policy)
+      responses:
+        "200":
+          description: "{ registrationEnabled, passwordMinLength, … }"
+  /api/license/status:
+    get:
+      tags: [Account]
+      summary: Sanitized license status (logged-in users)
+      security: [{ SessionCookie: [] }]
+      responses:
+        "200":
+          description: "{ valid, status, message, expiresAt? }"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/servers/stats:
+    get:
+      tags: [Client]
+      summary: Aggregate server stats for dashboard
+      security: [{ ClientApiKey: [] }, { SessionCookie: [] }]
+      responses:
+        "200":
+          description: Stats summary for visible servers

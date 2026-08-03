@@ -75,7 +75,7 @@ export function ActivityPanel({
     setLoading(true);
     void load(0)
       .catch((err) =>
-        onError(err instanceof Error ? err.message : "Failed to load activity"),
+        onError(err instanceof Error ? err.message : t("activity.loadFailed")),
       )
       .finally(() => setLoading(false));
   }, [load, onError]);
@@ -94,7 +94,7 @@ export function ActivityPanel({
     try {
       await load(nextOffset);
     } catch (err) {
-      onError(err instanceof Error ? err.message : "Failed to load activity");
+      onError(err instanceof Error ? err.message : t("activity.loadFailed"));
     } finally {
       setLoading(false);
     }

@@ -87,7 +87,7 @@ export function DashboardPage() {
       setOnlineMap(online);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load");
+      setError(err instanceof Error ? err.message : t("dashboard.loadFailed"));
     } finally {
       setLoading(false);
     }
@@ -135,7 +135,7 @@ export function DashboardPage() {
       const detail = await api.getServer(serverId);
       setWhitelistModal(detail);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load whitelist");
+      setError(err instanceof Error ? err.message : t("dashboard.whitelistLoadFailed"));
     } finally {
       setWhitelistModalBusy(false);
     }

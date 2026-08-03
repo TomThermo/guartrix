@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { Alert, Badge, Button, Card, Col, Row, Spinner, Table } from "react-bootstrap";
 import { api } from "../api";
 import { useI18n } from "../i18n/react";
+import { t as translate } from "../i18n";
 import { SystemLogsPanel } from "../components/SystemLogsPanel";
 import { copyText, formatGb, statusVariant } from "../utils";
 
@@ -407,7 +408,7 @@ function NodeCard({ node }: { node: StatusNode }) {
           </>
         ) : (
           node.reachable && (
-            <div className="text-secondary small">No containers on this node.</div>
+            <div className="text-secondary small">{translate("admin.noContainers")}</div>
           )
         )}
       </Card.Body>

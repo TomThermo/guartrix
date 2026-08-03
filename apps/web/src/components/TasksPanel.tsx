@@ -86,7 +86,7 @@ export function TasksPanel({
   useEffect(() => {
     setLoading(true);
     void refresh()
-      .catch((err) => onError(err instanceof Error ? err.message : "Failed to load tasks"))
+      .catch((err) => onError(err instanceof Error ? err.message : t("schedules.loadFailed")))
       .finally(() => setLoading(false));
   }, [refresh, onError]);
 

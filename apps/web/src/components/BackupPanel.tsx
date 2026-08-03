@@ -32,13 +32,20 @@ interface Props {
   canEditSchedule?: boolean;
 }
 
-function triggerBadge(trigger: ServerBackup["trigger"]): {
+function triggerBadge(
+  trigger: ServerBackup["trigger"],
+  t: (key: string) => string,
+): {
   bg: string;
   label: string;
 } {
-  if (trigger === "scheduled") return { bg: "primary", label: "Scheduled" };
-  if (trigger === "uploaded") return { bg: "info", label: "Uploaded" };
-  return { bg: "secondary", label: "Manual" };
+  if (trigger === "scheduled") {
+    return { bg: "primary", label: t("backups.triggerScheduled") };
+  }
+  if (trigger === "uploaded") {
+    return { bg: "info", label: t("backups.triggerUploaded") };
+  }
+  return { bg: "secondary", label: t("backups.triggerManual") };
 }
 
 export function BackupPanel({
@@ -100,7 +107,7 @@ export function BackupPanel({
     void refresh({ syncForm: true })
       .catch((err) => {
         if (!cancelled) {
-          onError(err instanceof Error ? err.message : "Failed to load backups");
+          onError(err instanceof Error ? err.message : t("backups.loadFailed"));
         }
       })
       .finally(() => {
@@ -140,10 +147,15 @@ export function BackupPanel({
       setNote("");
       setBackups((prev) => [result.backup, ...prev.filter((b) => b.id !== result.backup.id)]);
       setSchedule(result.schedule);
-      onNotice(`Backup created: ${result.backup.fileName} (${result.backup.sizeLabel})`);
+      onNotice(
+        t("backups.noticeCreated", {
+          fileName: result.backup.fileName,
+          size: result.backup.sizeLabel,
+        }),
+      );
       await refresh();
     } catch (err) {
-      onError(err instanceof Error ? err.message : "Backup failed");
+      onError(err instanceof Error ? err.message : t("backups.backupFailed"));
     } finally {
       setBusy(false);
     }
@@ -152,14 +164,14 @@ export function BackupPanel({
   async function onUpload() {
     if (!canCreate) return;
     if (!uploadFile) {
-      onError("Choose a .tar.gz, .tgz or .zip backup file first");
+      onError(t("backups.chooseFileFirst"));
       return;
     }
     onError(null);
     onNotice(null);
     setUploading(true);
     setUploadPct(0);
-    setUploadLabel("Starting…");
+    setUploadLabel(t("backups.uploadStarting"));
     const ac = new AbortController();
     uploadAbortRef.current = ac;
     try {
@@ -172,8 +184,8 @@ export function BackupPanel({
           if (p.phase === "finalize") {
             setUploadLabel(
               uploadFile?.name.toLowerCase().endsWith(".zip")
-                ? "Upload done — unpacking zip…"
-                : "Upload done — saving backup…",
+                ? t("backups.uploadUnpacking")
+                : t("backups.uploadSaving"),
             );
             return;
           }
@@ -189,14 +201,19 @@ export function BackupPanel({
       setUploadFile(null);
       setUploadNote("");
       setUploadPct(100);
-      setUploadLabel("Done");
-      onNotice(`Backup uploaded: ${backup.fileName} (${backup.sizeLabel})`);
+      setUploadLabel(t("backups.uploadDone"));
+      onNotice(
+        t("backups.noticeUploaded", {
+          fileName: backup.fileName,
+          size: backup.sizeLabel,
+        }),
+      );
       await refresh();
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {
-        onNotice("Upload cancelled.");
+        onNotice(t("backups.uploadCancelled"));
       } else {
-        onError(err instanceof Error ? err.message : "Upload failed");
+        onError(err instanceof Error ? err.message : t("backups.uploadFailed"));
       }
     } finally {
       setUploading(false);
@@ -222,12 +239,12 @@ export function BackupPanel({
           setDownloadPct(Math.min(100, Math.round((p.receivedBytes / p.totalBytes) * 100)));
         },
       });
-      onNotice(`Downloaded ${backup.fileName}`);
+      onNotice(t("backups.noticeDownloaded", { fileName: backup.fileName }));
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {
-        onNotice("Download cancelled.");
+        onNotice(t("backups.downloadCancelled"));
       } else {
-        onError(err instanceof Error ? err.message : "Download failed");
+        onError(err instanceof Error ? err.message : t("backups.downloadFailed"));
       }
     } finally {
       setDownloadingId(null);
@@ -255,11 +272,13 @@ export function BackupPanel({
       setSchedule(result.schedule);
       onNotice(
         result.schedule.mode === "off"
-          ? "Automatic backups disabled."
-          : `Schedule saved. Next backup: ${formatWhen(result.schedule.nextRunAt)}`,
+          ? t("backups.scheduleDisabled")
+          : t("backups.scheduleSaved", {
+              when: formatWhen(result.schedule.nextRunAt),
+            }),
       );
     } catch (err) {
-      onError(err instanceof Error ? err.message : "Could not save schedule");
+      onError(err instanceof Error ? err.message : t("backups.saveScheduleFailed"));
     } finally {
       setSavingSchedule(false);
     }
@@ -278,10 +297,10 @@ export function BackupPanel({
     try {
       await api.deleteBackup(serverId, deleteTarget.id);
       setBackups((prev) => prev.filter((b) => b.id !== deleteTarget.id));
-      onNotice("Backup deleted.");
+      onNotice(t("backups.deleted"));
       setDeleteTarget(null);
     } catch (err) {
-      onError(err instanceof Error ? err.message : "Delete failed");
+      onError(err instanceof Error ? err.message : t("backups.deleteFailed"));
     } finally {
       setActionBusy(false);
     }
@@ -301,14 +320,12 @@ export function BackupPanel({
     try {
       await api.restoreBackup(serverId, restoreTarget.id, startAfter);
       onNotice(
-        startAfter
-          ? "Backup restored; server starting."
-          : "Backup restored. Start the server when ready.",
+        startAfter ? t("backups.restoreStarting") : t("backups.restoreOnly"),
       );
       setRestoreTarget(null);
       await refresh();
     } catch (err) {
-      onError(err instanceof Error ? err.message : "Restore failed");
+      onError(err instanceof Error ? err.message : t("backups.restoreFailed"));
     } finally {
       setActionBusy(false);
       setBusy(false);
@@ -357,7 +374,7 @@ export function BackupPanel({
               ) : (
                 <>
                   <i className="fa-solid fa-floppy-disk me-2" />
-                  Backup now
+                  {t("backups.backupNow")}
                 </>
               )}
             </Button>
@@ -366,10 +383,10 @@ export function BackupPanel({
 
             <h3 className="h6 mb-3">
               <i className="fa-solid fa-cloud-arrow-up me-2" />
-              Upload backup
+              {t("backups.uploadTitle")}
             </h3>
             <Form.Group className="mb-3">
-              <Form.Label>.tar.gz / .tgz / .zip (max {maxUploadLabel})</Form.Label>
+              <Form.Label>{t("backups.uploadFormats", { max: maxUploadLabel })}</Form.Label>
               <Form.Control
                 type="file"
                 accept=".tar.gz,.tgz,.zip,application/gzip,application/x-gzip,application/zip,application/x-zip-compressed"
@@ -387,11 +404,11 @@ export function BackupPanel({
               )}
             </Form.Group>
             <Form.Group className="mb-3">
-              <Form.Label>Note (optional)</Form.Label>
+              <Form.Label>{t("backups.noteOptional")}</Form.Label>
               <Form.Control
                 value={uploadNote}
                 onChange={(e) => setUploadNote(e.target.value)}
-                placeholder="Restored from another host…"
+                placeholder={t("backups.uploadNotePlaceholder")}
                 maxLength={120}
                 disabled={uploading || busy}
               />
@@ -410,7 +427,7 @@ export function BackupPanel({
               >
                 {uploading ? (
                   <>
-                    <Spinner size="sm" className="me-2" /> Uploading…
+                    <Spinner size="sm" className="me-2" /> {t("backups.uploading")}
                   </>
                 ) : (
                   <>
@@ -432,31 +449,34 @@ export function BackupPanel({
           <Col lg={canCreate ? 7 : 12}>
           <h3 className="h6 mb-3">
             <i className="fa-solid fa-clock me-2" />
-            Automatic schedule
+            {t("backups.scheduleTitle")}
           </h3>
           <Form onSubmit={(e) => void onSaveSchedule(e)}>
             <Form.Group className="mb-3">
-              <Form.Label>Mode</Form.Label>
+              <Form.Label>{t("backups.mode")}</Form.Label>
               <Form.Select
                 value={mode}
                 onChange={(e) => setMode(e.target.value as BackupScheduleMode)}
               >
-                <option value="off">Off</option>
-                <option value="interval">Every X hours</option>
-                <option value="daily">Once per day at…</option>
+                <option value="off">{t("backups.modeOff")}</option>
+                <option value="interval">{t("backups.modeInterval")}</option>
+                <option value="daily">{t("backups.modeDaily")}</option>
               </Form.Select>
             </Form.Group>
 
             {mode === "interval" && (
               <Form.Group className="mb-3">
-                <Form.Label>Interval (hours)</Form.Label>
+                <Form.Label>{t("backups.intervalHours")}</Form.Label>
                 <Form.Select
                   value={intervalHours}
                   onChange={(e) => setIntervalHours(Number(e.target.value))}
                 >
                   {[1, 2, 3, 4, 6, 8, 12, 24, 48].map((h) => (
                     <option key={h} value={h}>
-                      Every {h} hour{h === 1 ? "" : "s"}
+                      {t("backups.everyHours", {
+                        h,
+                        plural: h === 1 ? "" : "s",
+                      })}
                     </option>
                   ))}
                 </Form.Select>
@@ -465,7 +485,7 @@ export function BackupPanel({
 
             {mode === "daily" && (
               <Form.Group className="mb-3">
-                <Form.Label>Time (server local)</Form.Label>
+                <Form.Label>{t("backups.timeLocal")}</Form.Label>
                 <Form.Control
                   type="time"
                   value={dailyAt}
@@ -476,23 +496,23 @@ export function BackupPanel({
             )}
 
             <Form.Group className="mb-3">
-              <Form.Label>Keep last</Form.Label>
+              <Form.Label>{t("backups.keepLast")}</Form.Label>
               <Form.Select
                 value={keepCount}
                 onChange={(e) => setKeepCount(Number(e.target.value))}
               >
                 {[3, 5, 7, 10, 14, 20, 30].map((n) => (
                   <option key={n} value={n}>
-                    {n} backups
+                    {t("backups.backupsCount", { n })}
                   </option>
                 ))}
               </Form.Select>
             </Form.Group>
 
             <div className="small text-secondary mb-3">
-              Last run: {formatWhen(schedule.lastRunAt)}
+              {t("backups.lastRun", { when: formatWhen(schedule.lastRunAt) })}
               <br />
-              Next run: {formatWhen(schedule.nextRunAt)}
+              {t("backups.nextRun", { when: formatWhen(schedule.nextRunAt) })}
             </div>
 
             <Button type="submit" variant="outline-primary" disabled={savingSchedule}>
@@ -505,14 +525,14 @@ export function BackupPanel({
 
       <h3 className="h6 mb-3">
         <i className="fa-solid fa-box-archive me-2" />
-        Backups ({backups.length})
+        {t("backups.listTitle", { count: backups.length })}
       </h3>
       <ListGroup>
         {backups.length === 0 && (
           <ListGroup.Item className="text-secondary">{t("backups.empty")}</ListGroup.Item>
         )}
         {backups.map((b) => {
-          const badge = triggerBadge(b.trigger);
+          const badge = triggerBadge(b.trigger, t);
           const isDownloading = downloadingId === b.id;
           return (
             <ListGroup.Item
@@ -529,9 +549,9 @@ export function BackupPanel({
                   {badge.label}
                 </Badge>
                 {b.encrypted ? (
-                  <Badge bg="dark" className="mt-1 ms-1" title="Encrypted at rest">
+                  <Badge bg="dark" className="mt-1 ms-1" title={t("backups.encryptedAtRest")}>
                     <i className="fa-solid fa-lock me-1" />
-                    Encrypted
+                    {t("backups.encrypted")}
                   </Badge>
                 ) : null}
                 {isDownloading && (
@@ -580,10 +600,10 @@ export function BackupPanel({
 
       <ConfirmModal
         show={Boolean(deleteTarget)}
-        title="Delete backup?"
+        title={t("backups.deleteTitle")}
         body={
           deleteTarget
-            ? `Delete backup ${deleteTarget.fileName}?`
+            ? t("backups.deleteBody", { fileName: deleteTarget.fileName })
             : ""
         }
         confirmLabel={t("common.delete")}
@@ -597,23 +617,23 @@ export function BackupPanel({
       />
       <ConfirmModal
         show={Boolean(restoreTarget)}
-        title="Restore backup?"
+        title={t("backups.restoreTitle")}
         body={
           restoreTarget ? (
             <>
               <p className="mb-2">
-                Restore backup <strong className="font-monospace">{restoreTarget.fileName}</strong>?
+                {t("backups.restoreBody", { fileName: restoreTarget.fileName })}
               </p>
               <p className="text-secondary small mb-0">
-                The server must be stopped. Current world and files will be overwritten.
+                {t("backups.restoreWarning")}
               </p>
             </>
           ) : (
             ""
           )
         }
-        confirmLabel="Restore & start"
-        secondaryLabel="Restore only"
+        confirmLabel={t("backups.restoreAndStart")}
+        secondaryLabel={t("backups.restoreOnlyLabel")}
         variant="warning"
         busy={actionBusy}
         onCancel={() => {

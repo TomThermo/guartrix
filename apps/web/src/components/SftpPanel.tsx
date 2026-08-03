@@ -65,9 +65,9 @@ export function SftpPanel({ serverId, onError, onNotice }: Props) {
   const copy = async (value: string, label: string) => {
     try {
       await copyText(value);
-      onNotice?.(`${label} copied`);
+      onNotice?.(t("common.copied", { label }));
     } catch {
-      onError?.("Could not copy to clipboard");
+      onError?.(t("common.copyFailed"));
     }
   };
 
@@ -83,8 +83,7 @@ export function SftpPanel({ serverId, onError, onNotice }: Props) {
   if (!info?.sftpEnabled || !info.sftpHost || !info.sftpUsername) {
     return (
       <Alert variant="secondary" className="mb-0">
-        SFTP is not available for this server. The node needs a public SFTP hostname,
-        and your account needs the <code>file.sftp</code> permission.
+        {t("sftp.unavailable")}
       </Alert>
     );
   }
@@ -121,16 +120,14 @@ export function SftpPanel({ serverId, onError, onNotice }: Props) {
             copyLabel={t("common.copy")}
           />
           <div className="py-2">
-            <div className="small text-secondary">Password</div>
-            <div>Your Guartrix panel password</div>
+            <div className="small text-secondary">{t("sftp.password")}</div>
+            <div>{t("sftp.panelPassword")}</div>
           </div>
         </Card.Body>
       </Card>
 
       <p className="small text-secondary mt-3 mb-0">
-        Example FileZilla settings: protocol <strong>SFTP – SSH File Transfer Protocol</strong>,
-        host <code>{host}</code>, port <code>{port}</code>, logon type Normal, user{" "}
-        <code>{username}</code>.
+        {t("sftp.filezillaExample", { host, port, username })}
       </p>
     </>
   );

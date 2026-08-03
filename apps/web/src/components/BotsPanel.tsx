@@ -141,7 +141,7 @@ export function BotsPanel({
   useEffect(() => {
     setLoading(true);
     void refresh()
-      .catch((err) => onError(err instanceof Error ? err.message : "Failed to load bots"))
+      .catch((err) => onError(err instanceof Error ? err.message : t("bots.loadFailed")))
       .finally(() => setLoading(false));
   }, [refresh, onError]);
 

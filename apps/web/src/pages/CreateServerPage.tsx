@@ -141,8 +141,11 @@ export function CreateServerPage() {
     if (!nodeRamOk) {
       setError(
         selectedNode
-          ? `Not enough RAM on node "${selectedNode.name}": available ${formatGb(selectedFreeMb)} (after host reserve)`
-          : "Choose a node",
+          ? t("createServer.notEnoughRam", {
+              name: selectedNode.name,
+              free: formatGb(selectedFreeMb),
+            })
+          : t("createServer.chooseNode"),
       );
       return;
     }
@@ -185,8 +188,11 @@ export function CreateServerPage() {
     if (!nodeRamOk) {
       setError(
         selectedNode
-          ? `Not enough RAM on node "${selectedNode.name}": available ${formatGb(selectedFreeMb)} (after host reserve)`
-          : "Choose a node",
+          ? t("createServer.notEnoughRam", {
+              name: selectedNode.name,
+              free: formatGb(selectedFreeMb),
+            })
+          : t("createServer.chooseNode"),
       );
       return;
     }
@@ -243,10 +249,13 @@ export function CreateServerPage() {
               <option key={n.id} value={n.id}>
                 {n.name}
                 {n.location ? ` (${n.location})` : ""}
-                {n.isLocal ? " (local)" : ""}
-                {recommended ? " ★ recommended" : ""}
+                {n.isLocal ? ` ${t("createServer.localSuffix")}` : ""}
+                {recommended ? ` ${t("createServer.recommended")}` : ""}
                 {n.memoryMb > 0
-                  ? ` — ${formatGb(free)} usable / ${formatGb(n.memoryMb)}`
+                  ? t("createServer.nodeOptionUsable", {
+                      free: formatGb(free),
+                      total: formatGb(n.memoryMb),
+                    })
                   : ""}
                 {n.status !== "ONLINE" ? ` [${n.status}]` : ""}
               </option>
@@ -260,19 +269,23 @@ export function CreateServerPage() {
             {selectedNode.memoryMb > 0 ? (
               nodeRamOk ? (
                 <>
-                  Node has {formatGb(selectedFreeMb)} usable after host reserve
-                  ({formatGb(selectedNode.memoryReserveMb ?? 0)} reserved;{" "}
-                  {formatGb(selectedNode.memoryUsedMb)} of{" "}
-                  {formatGb(selectedNode.memoryMb)} allocated).
+                  {t("createServer.nodeHasUsable", {
+                    free: formatGb(selectedFreeMb),
+                    reserved: formatGb(selectedNode.memoryReserveMb ?? 0),
+                    used: formatGb(selectedNode.memoryUsedMb),
+                    total: formatGb(selectedNode.memoryMb),
+                  })}
                 </>
               ) : (
                 <>
-                  Not enough RAM on this node: you requested {formatGb(memoryMb)}, usable is{" "}
-                  {formatGb(selectedFreeMb)}.
+                  {t("createServer.notEnoughRamDetail", {
+                    requested: formatGb(memoryMb),
+                    usable: formatGb(selectedFreeMb),
+                  })}
                 </>
               )
             ) : (
-              <>Node capacity unknown — click Test connection under System.</>
+              <>{t("createServer.nodeCapacityUnknown")}</>
             )}
           </Form.Text>
         )}

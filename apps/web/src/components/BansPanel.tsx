@@ -53,7 +53,7 @@ export function BansPanel({
 
   useEffect(() => {
     void refresh().catch((err) =>
-      onError(err instanceof Error ? err.message : "Failed to load bans"),
+      onError(err instanceof Error ? err.message : t("bans.loadFailed")),
     );
   }, [refresh, onError]);
 

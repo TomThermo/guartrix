@@ -58,7 +58,7 @@ export function DatabasesPanel({
     setLoading(true);
     void refresh()
       .catch((err) =>
-        onError(err instanceof Error ? err.message : "Failed to load databases"),
+        onError(err instanceof Error ? err.message : t("databases.loadFailed")),
       )
       .finally(() => setLoading(false));
   }, [refresh, onError]);

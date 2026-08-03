@@ -252,7 +252,7 @@ export function ServerSettings({
       await copyText(address);
       onNotice?.(`Copied ${address}`);
     } catch {
-      onError("Could not copy address");
+      onError(t("common.copyAddressFailed"));
     }
   }
 

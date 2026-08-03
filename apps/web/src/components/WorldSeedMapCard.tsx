@@ -103,11 +103,9 @@ export function WorldSeedMapCard({
         bluemapUrl: bluemapUrl.trim() || guess,
       });
       setBluemapUrl(updated.bluemapUrl ?? guess);
-      onNotice(
-        "BlueMap installed. Open an extra TCP allocation for port 8100 if needed, set the live map URL below, then restart.",
-      );
+      onNotice(t("seedmap.bluemapInstalledNotice"));
     } catch (err) {
-      onError(err instanceof Error ? err.message : "BlueMap install failed");
+      onError(err instanceof Error ? err.message : t("seedmap.bluemapInstallFailed"));
     } finally {
       setBluemapBusy(false);
     }
@@ -121,9 +119,9 @@ export function WorldSeedMapCard({
         bluemapUrl: bluemapUrl.trim() || null,
       });
       setBluemapUrl(updated.bluemapUrl ?? "");
-      onNotice("Live map URL saved.");
+      onNotice(t("seedmap.bluemapUrlSaved"));
     } catch (err) {
-      onError(err instanceof Error ? err.message : "Could not save BlueMap URL");
+      onError(err instanceof Error ? err.message : t("seedmap.bluemapUrlSaveFailed"));
     } finally {
       setBluemapBusy(false);
     }
@@ -152,10 +150,10 @@ export function WorldSeedMapCard({
       setInfo(next);
       setIframeKey((k) => k + 1);
       if (fromConsole && next.seed) {
-        onNotice(`World seed from console: ${next.seed}`);
+        onNotice(t("seedmap.seedFromConsole", { seed: next.seed }));
       }
     } catch (err) {
-      onError(err instanceof Error ? err.message : "Could not load world seed");
+      onError(err instanceof Error ? err.message : t("seedmap.seedLoadFailed"));
     } finally {
       setBusy(false);
     }
@@ -169,9 +167,9 @@ export function WorldSeedMapCard({
     if (!displaySeed) return;
     try {
       await navigator.clipboard.writeText(displaySeed);
-      onNotice("Seed copied.");
+      onNotice(t("seedmap.seedCopied"));
     } catch {
-      onError("Could not copy seed");
+      onError(t("seedmap.seedCopyFailed"));
     }
   }
 
@@ -328,7 +326,7 @@ export function WorldSeedMapCard({
               disabled={bluemapBusy}
               onClick={() => void installBlueMap()}
             >
-              {bluemapBusy ? <Spinner size="sm" /> : "Install BlueMap"}
+              {bluemapBusy ? <Spinner size="sm" /> : t("seedmap.installBluemap")}
             </Button>
             {bluemapUrl && (
               <Button

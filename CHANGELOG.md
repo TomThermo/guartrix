@@ -7,6 +7,21 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.48] — 2026-08-03
+
+- i18n: remaining settings/backup/network/SFTP/admin notices and client fallbacks (EN/NL)
+- OpenAPI `info.version` → **1.0.48**; stubs for metrics, auth/me, auth/config, license/status, servers/stats
+- Docs: recommend `DOCKER_NETWORK_MODE=per_server` for multi-tenant; keep `shared` default
+- Docs: curl|sh install supply-chain residual risk + wiki pointer in `install-daemon.sh`
+
+## [1.0.47] — 2026-08-03
+
+- i18n: Plugin Management help/sync/sort UI + modpack/backup/network alert chrome
+
+## [1.0.46] — 2026-08-03
+
+- i18n: expand EN/NL across auth, dashboard, server tabs/panels, modals, admin chrome
+
 ## [1.0.45] — 2026-08-03
 
 - PWA **Web Push** opt-in for critical alerts (crash / crash-loop / disk-high / offline)

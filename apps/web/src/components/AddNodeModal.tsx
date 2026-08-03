@@ -193,9 +193,7 @@ export function AddNodeModal({ existingNode, onClose, onChanged }: Props) {
                     `Install finished, but the connection test failed: ${test.error ?? "unknown"}`,
                   );
                 } else {
-                  setTestSummary(
-                    "Install finished — click Test connection on the node.",
-                  );
+                  setTestSummary(t("admin.installFinishedTest"));
                 }
               }
             }
@@ -222,11 +220,11 @@ export function AddNodeModal({ existingNode, onClose, onChanged }: Props) {
   const canClose = !busy;
   const title =
     step === "howto"
-      ? t("admin.addNode")
+        ? t("admin.addNode")
       : step === "details"
-        ? "New node"
+        ? t("admin.addNodeNew")
         : step === "install"
-          ? `Install daemon — ${nodeLabel || "node"}`
+          ? t("admin.addNodeInstallTitle", { name: nodeLabel || "node" })
           : t("common.done");
 
   return (
@@ -351,15 +349,15 @@ export function AddNodeModal({ existingNode, onClose, onChanged }: Props) {
               </Col>
               <Col md={12}>
                 <Form.Group>
-                  <Form.Label>Location / region (optional)</Form.Label>
+                  <Form.Label>{t("admin.locationLabel")}</Form.Label>
                   <Form.Control
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
                     maxLength={64}
-                    placeholder="eu-west, Frankfurt, us-east…"
+                    placeholder={t("admin.locationPlaceholder")}
                   />
                   <Form.Text className="text-secondary">
-                    Shown in the node picker when creating servers.
+                    {t("admin.locationHint")}
                   </Form.Text>
                 </Form.Group>
               </Col>
@@ -518,20 +516,14 @@ export function AddNodeModal({ existingNode, onClose, onChanged }: Props) {
           <div>
             <Alert variant={installOk ? "success" : "warning"}>
               {installOk
-                ? "Daemon installed on the remote VPS."
-                : "Install finished with warnings."}
+                ? t("admin.daemonInstalled")
+                : t("admin.installFinishedWarnings")}
             </Alert>
             {testSummary && <p className="mb-2">{testSummary}</p>}
             <ol className="mb-0">
-              <li>Close this modal and check that the node shows ONLINE.</li>
-              <li>
-                If not: open firewall ports <code>8081</code>/<code>2022</code> and click
-                Test connection.
-              </li>
-              <li>
-                Create a Minecraft server and select node{" "}
-                <strong>{nodeLabel}</strong>.
-              </li>
+              <li>{t("admin.doneCheckOnline")}</li>
+              <li>{t("admin.doneCheckFirewall")}</li>
+              <li>{t("admin.doneCreateServer", { name: nodeLabel })}</li>
             </ol>
             {log && (
               <details className="mt-3">
@@ -573,7 +565,7 @@ export function AddNodeModal({ existingNode, onClose, onChanged }: Props) {
               variant="primary"
               disabled={busy || !name.trim() || !fqdn.trim()}
             >
-              {busy ? <Spinner size="sm" /> : "Create node & install"}
+              {busy ? <Spinner size="sm" /> : t("admin.createNodeInstall")}
             </Button>
           </>
         )}

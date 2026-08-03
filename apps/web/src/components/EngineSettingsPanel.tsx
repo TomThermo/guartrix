@@ -46,7 +46,7 @@ export function EngineSettingsPanel({
       }
       setDraft(next);
     } catch (err) {
-      onError(err instanceof Error ? err.message : "Failed to load engine settings");
+      onError(err instanceof Error ? err.message : t("engine.loadFailed"));
     } finally {
       setLoading(false);
     }

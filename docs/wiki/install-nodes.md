@@ -87,10 +87,19 @@ Checklist still expects `/health` and `/ready` (Docker reachable) after changes.
 
 ## Docker networks
 
-Default `DOCKER_NETWORK_MODE=shared` puts every game container on the flat `guartrix`
-bridge (same as MySQL). Set `DOCKER_NETWORK_MODE=per_server` in `data/daemon.env` to
-give each server its own `guartrix-s-<id>` network; the daemon still attaches the
-container to the shared bridge so game MySQL DNS (`guartrix-mysql`) keeps working.
+`DOCKER_NETWORK_MODE` controls how game containers are networked on a node
+(`data/daemon.env`):
+
+| Mode | When to use |
+|------|-------------|
+| **`shared`** (default) | Single-tenant hosts, trusted players, or when you want the simplest setup — every game container shares the flat `guartrix` bridge with MySQL (`guartrix-mysql` DNS works out of the box). |
+| **`per_server`** | Multi-tenant nodes or **untrusted players** — each server gets an isolated `guartrix-s-<id>` bridge so containers cannot reach each other’s IPs on the game network. |
+
+Set `DOCKER_NETWORK_MODE=per_server` in `data/daemon.env` for isolation. The daemon
+**still attaches** each game container to the shared `guartrix` bridge as a second
+network so game MySQL DNS (`guartrix-mysql`) keeps working — only peer game traffic
+is segmented on the per-server bridge.
+
 Restart the daemon (and recreate running game containers) after changing the mode.
 
 Shared plugin/world dirs for **extra host mounts** should live under `/var/lib/guartrix/shared` or `/opt/guartrix/shared` on the node (or set panel `EXTRA_MOUNTS_ALLOW_PREFIX`).
@@ -105,3 +114,24 @@ Shared plugin/world dirs for **extra host mounts** should live under `/var/lib/g
 ## Scaling note
 
 Many nodes + one panel is the supported model. See [Scaling](scaling.md).
+
+## Install script supply chain (residual risk)
+
+The panel **Add node** wizard and [`scripts/install-daemon.sh`](../../scripts/install-daemon.sh)
+may install Docker and Node.js via upstream convenience scripts when they are missing:
+
+- Docker: `curl -fsSL https://get.docker.com | sh` — see [Docker Engine install docs](https://docs.docker.com/engine/install/)
+- Node.js 22: `curl -fsSL https://deb.nodesource.com/setup_22.x | bash -` — see [NodeSource distributions](https://github.com/nodesource/distributions)
+
+These are common for greenfield VPS installs but carry **residual supply-chain risk**
+(pipe-to-shell without pinning). For production hardening:
+
+1. Pre-install Docker and Node 22 from **pinned packages** or official repos on the node
+   before running the Guartrix installer (the script skips curl installs when binaries exist).
+2. When you must use the convenience scripts, **pin versions** (e.g. specific Docker CE
+   package, Node 22.x from NodeSource) and verify **checksums / signatures** per the
+   vendor docs — do not blindly re-run `curl | sh` on every deploy.
+3. Prefer cloning or unpacking a **tagged Guartrix release** (`--repo` + `--branch`) rather
+   than pulling arbitrary `main` on sensitive hosts.
+
+See also [Security — install supply chain](security.md#install-script-supply-chain-residual-risk).

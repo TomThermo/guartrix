@@ -54,6 +54,19 @@ export function SettingsStartupPanel({
   memoryMb: number;
 }) {
   const { t } = useI18n();
+
+  function presetBlurb(): string {
+    if (server.type === "PAPER" || server.type === "PURPUR") {
+      return t("settings.presetsPaperPurpur");
+    }
+    if (server.type === "VANILLA") return t("settings.presetsVanilla");
+    if (server.type === "FABRIC" || server.type === "QUILT") {
+      return t("settings.presetsFabricQuilt");
+    }
+    if (isForgeType) return t("settings.presetsForge");
+    return t("settings.presetsGeneric");
+  }
+
   function updateMount(index: number, patch: Partial<ServerExtraMount>) {
     setExtraMounts(
       extraMounts.map((m, i) => (i === index ? { ...m, ...patch } : m)),
@@ -80,29 +93,17 @@ export function SettingsStartupPanel({
     <>
       <fieldset disabled={!startupEditable} className="settings-fieldset border-0 p-0">
         <Alert variant="light" className="border small mb-3">
-          Manage the startup command and Java version for this server.
-          Placeholders: <code>{"{{MEMORY}}"}</code> (RAM in MB)
-          {!isForgeType ? (
-            <>
-              , <code>{"{{JAR}}"}</code> (default <code>server.jar</code>)
-            </>
-          ) : null}
-          . Restart the server to apply changes.
+          {t("settings.startupIntro", {
+            jarHint: !isForgeType ? t("settings.startupJarHint") : "",
+          })}
           {isForgeType ? (
-            <div className="mt-2 mb-0">
-              Forge/NeoForge starts with <code>run.sh</code>. JVM flags from the
-              template are written to <code>user_jvm_args.txt</code> (
-              <code>-jar</code> / <code>nogui</code> are ignored).
-            </div>
+            <div className="mt-2 mb-0">{t("settings.forgeStartupNote")}</div>
           ) : null}
         </Alert>
 
         <Row className="g-3 mb-3">
           <Col md={6}>
-            <Field
-              label="Java version"
-              hint="Java runtime used when this server starts"
-            >
+            <Field label={t("settings.javaVersion")} hint={t("settings.javaVersionHint")}>
               <Form.Select
                 value={javaVersion}
                 onChange={(e) =>
@@ -119,10 +120,7 @@ export function SettingsStartupPanel({
             </Field>
           </Col>
           <Col md={6}>
-            <Field
-              label="Server Jar File"
-              hint="Jar filename in the server directory (e.g. server.jar or paper-1.21.jar)"
-            >
+            <Field label={t("settings.serverJar")} hint={t("settings.serverJarHint")}>
               <Form.Control
                 className="font-monospace"
                 value={serverJar}
@@ -133,18 +131,16 @@ export function SettingsStartupPanel({
                 disabled={!startupEditable || isForgeType}
               />
               <Form.Control.Feedback type="invalid">
-                Must end with .jar (letters, digits, . _ - only)
+                {t("settings.serverJarInvalid")}
               </Form.Control.Feedback>
             </Field>
           </Col>
         </Row>
 
         <Field
-          label={isForgeType ? "JVM args template" : "Startup command"}
+          label={isForgeType ? t("settings.jvmArgsTemplate") : t("settings.startupCommand")}
           hint={
-            isForgeType
-              ? "Flags only; written to user_jvm_args.txt on start"
-              : "Command used to start the server. {{JAR}} is replaced by Server Jar File."
+            isForgeType ? t("settings.jvmArgsHint") : t("settings.startupCommandHint")
           }
         >
           <Form.Control
@@ -158,16 +154,7 @@ export function SettingsStartupPanel({
         </Field>
 
         <div className="small text-secondary mb-2">
-          {server.type === "PAPER" || server.type === "PURPUR"
-            ? "Presets for Paper/Purpur: Default or Aikar’s G1GC."
-            : server.type === "VANILLA"
-              ? "Presets for Vanilla: Default or Performance (G1GC)."
-              : server.type === "FABRIC" || server.type === "QUILT"
-                ? "Presets for Fabric/Quilt: Default or Modded G1GC."
-                : isForgeType
-                  ? "Presets for Forge/NeoForge: Default or Modded G1GC → user_jvm_args.txt."
-                  : "Click a preset to fill the command, then Save."}{" "}
-          Click to fill, then {t("settings.save").toLowerCase()}.
+          {presetBlurb()} {t("settings.presetsClickSave")}.
         </div>
         <div className="d-flex flex-wrap gap-2 mb-3">
           {startupPresets.map((preset) => (
@@ -190,9 +177,7 @@ export function SettingsStartupPanel({
         </div>
 
         <div className="small text-secondary mb-1">
-          {isForgeType
-            ? "Resolved JVM args (preview → user_jvm_args.txt)"
-            : "Resolved command (preview)"}
+          {isForgeType ? t("settings.resolvedJvmArgs") : t("settings.resolvedCommand")}
         </div>
         <pre className="bg-body-tertiary border rounded p-3 small font-monospace mb-0 text-break">
           {resolvedStartupPreview}
@@ -203,8 +188,7 @@ export function SettingsStartupPanel({
           </Alert>
         )}
         <Form.Text className="text-secondary d-block mt-2">
-          <code>-Xmx</code> / <code>-Xms</code> cannot exceed allocated RAM (
-          {memoryMb} MB). Prefer <code>{"{{MEMORY}}"}</code>.
+          {t("settings.heapLimitHint", { memoryMb })}
         </Form.Text>
       </fieldset>
 
@@ -213,24 +197,20 @@ export function SettingsStartupPanel({
           disabled={!settingsEditable}
           className="settings-fieldset border-0 p-0"
         >
-          <h3 className="h6 mb-2">Extra host mounts</h3>
+          <h3 className="h6 mb-2">{t("settings.extraMountsTitle")}</h3>
           <Alert variant="light" className="border small mb-3">
-            Bind shared host directories into the container (e.g. shared plugins).
-            Host paths must be under the panel allowlist (default{" "}
-            <code>/var/lib/guartrix/shared</code> or{" "}
-            <code>/opt/guartrix/shared</code>). Mounts apply on the next
-            start/restart. Container path <code>/data</code> is reserved.
+            {t("settings.extraMountsHelp")}
           </Alert>
 
           {extraMounts.length === 0 ? (
-            <p className="small text-secondary mb-3">No extra mounts configured.</p>
+            <p className="small text-secondary mb-3">{t("settings.noExtraMounts")}</p>
           ) : (
             <div className="d-flex flex-column gap-3 mb-3">
               {extraMounts.map((m, i) => (
                 <div key={i} className="border rounded p-3 bg-body-tertiary">
                   <Row className="g-2 align-items-end">
                     <Col md={5}>
-                      <Field label="Host path" hint="Absolute path on the node">
+                      <Field label={t("settings.hostPath")} hint={t("settings.hostPathHint")}>
                         <Form.Control
                           className="font-monospace small"
                           value={m.host}
@@ -244,8 +224,8 @@ export function SettingsStartupPanel({
                     </Col>
                     <Col md={4}>
                       <Field
-                        label="Container path"
-                        hint="Absolute path inside the container"
+                        label={t("settings.containerPath")}
+                        hint={t("settings.containerPathHint")}
                       >
                         <Form.Control
                           className="font-monospace small"
@@ -262,7 +242,7 @@ export function SettingsStartupPanel({
                       <Form.Check
                         type="checkbox"
                         id={`extra-mount-ro-${i}`}
-                        label="Read-only"
+                        label={t("settings.readOnly")}
                         checked={m.readOnly === true}
                         onChange={(e) =>
                           updateMount(i, { readOnly: e.target.checked })
@@ -277,7 +257,7 @@ export function SettingsStartupPanel({
                         variant="outline-danger"
                         disabled={!settingsEditable}
                         onClick={() => removeMount(i)}
-                        aria-label="Remove mount"
+                        aria-label={t("settings.removeMount")}
                       >
                         <i className="fa-solid fa-trash" aria-hidden />
                       </Button>
@@ -295,7 +275,7 @@ export function SettingsStartupPanel({
             disabled={!settingsEditable || extraMounts.length >= MAX_MOUNTS}
             onClick={addMount}
           >
-            Add mount
+            {t("settings.addMount")}
             {extraMounts.length > 0
               ? ` (${extraMounts.length}/${MAX_MOUNTS})`
               : ""}

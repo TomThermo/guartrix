@@ -26,7 +26,7 @@ export function LogPanel({ serverId, onError }: Props) {
   useEffect(() => {
     setLoading(true);
     void refresh()
-      .catch((err) => onError(err instanceof Error ? err.message : "Failed to load logs"))
+      .catch((err) => onError(err instanceof Error ? err.message : t("logs.loadFailed")))
       .finally(() => setLoading(false));
   }, [refresh, onError]);
 

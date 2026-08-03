@@ -48,7 +48,7 @@ another tool on the host needs it.
 | Client API | Personal Bearer keys (`gt_…`), scoped permissions, per-key rate limit — see [Client API](client-api.md) |
 | Files / SFTP | Symlink jail, `O_NOFOLLOW` uploads, member-safe archive extract, sensitive `guartrix-*.json` blocked |
 | Archives | Symlinks/hardlinks rejected; zip extracted member-by-member |
-| Daemon | Short-lived HS256 JWTs on the wire (HMAC with node secret); raw bearer only if `DAEMON_JWT_LEGACY=true`; `serverId` sanitized; MySQL game users default `remote: 172.%`; containers `--cap-drop=ALL`; optional `DOCKER_NETWORK_MODE=per_server` for per-server bridges (still attaches to shared `guartrix` for game MySQL) |
+| Daemon | Short-lived HS256 JWTs on the wire (HMAC with node secret); raw bearer only if `DAEMON_JWT_LEGACY=true`; `serverId` sanitized; MySQL game users default `remote: 172.%`; containers `--cap-drop=ALL`; **`DOCKER_NETWORK_MODE=shared`** (default) for single-tenant / simple MySQL DNS; **`per_server`** recommended on multi-tenant nodes — isolated `guartrix-s-<id>` bridges with a second attach to shared `guartrix` for game MySQL only |
 | Outbound | Webhook/download SSRF guards (`safe-url.ts`); CDN host allowlist for jars/modpacks |
 | Capacity | Shared `assertNodeCapacity` (incl. reserve) on create/PATCH |
 | Nodes | Only admins pick `nodeId` on create / clone / import |
@@ -81,6 +81,30 @@ Re-check after upgrades:
 - `TRUST_PROXY` + `TRUSTED_PROXIES` still match your edge (default localhost via prod-web).
 
 Daemon short-lived JWT rotation is implemented (panel signs HS256 JWTs; `DAEMON_TOKEN` stays the shared secret). Raw bearer is off by default (`DAEMON_JWT_LEGACY=false`).
+
+## Docker network isolation
+
+On game nodes, **`DOCKER_NETWORK_MODE=shared`** (default) puts every game container on
+one flat `guartrix` bridge — fine for single-tenant hosts or when all players are trusted.
+
+For **multi-tenant** nodes or **untrusted players**, set **`DOCKER_NETWORK_MODE=per_server`**
+in `data/daemon.env` so each server gets its own `guartrix-s-<id>` network. Game containers
+cannot reach sibling servers on that bridge. MySQL still runs on the shared bridge; the
+daemon attaches each game container to **both** networks so `guartrix-mysql` DNS keeps
+working. Restart the daemon and recreate containers after changing the mode. Details:
+[Install nodes — Docker networks](install-nodes.md#docker-networks).
+
+## Install script supply chain (residual risk)
+
+Remote node install (`scripts/install-daemon.sh` and the panel wizard) may run
+`curl | sh` against [get.docker.com](https://get.docker.com/) and
+[NodeSource setup](https://github.com/nodesource/distributions) when Docker / Node 22
+are missing. That is convenient but not fully pinned — treat it as a **residual risk**
+on production VPS hosts.
+
+Mitigations: pre-install Docker and Node from official packages with **pinned versions**
+and verified checksums; skip the pipe-to-shell step; deploy from a **tagged release**
+branch. Full notes: [Install nodes — supply chain](install-nodes.md#install-script-supply-chain-residual-risk).
 
 ## Reporting
 

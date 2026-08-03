@@ -138,7 +138,7 @@ function ServerDetailPageInner({
       setServer(s);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load");
+      setError(err instanceof Error ? err.message : t("common.loadFailed"));
     }
   }, [id]);
 
@@ -333,7 +333,7 @@ function ServerDetailPageInner({
       await copyText(address);
       setNotice(`Copied ${address}`);
     } catch {
-      setError("Could not copy address");
+      setError(t("common.copyAddressFailed"));
     }
   }
 

@@ -82,6 +82,8 @@ echo "[guartrix] Installing remote daemon (node)…"
 apt-get update -y >/dev/null
 apt-get install -y ca-certificates curl gnupg git openssl tar ufw >/dev/null
 
+# Supply-chain note: curl|sh installs below are skipped when docker/node already exist.
+# For pinned packages / checksum verification see docs/wiki/install-nodes.md#install-script-supply-chain-residual-risk
 if ! command -v docker >/dev/null 2>&1; then
   echo "[guartrix] Installing Docker…"
   curl -fsSL https://get.docker.com | sh

@@ -70,7 +70,7 @@ export function AccountBillingPage() {
   useEffect(() => {
     setLoading(true);
     void refresh()
-      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load"))
+      .catch((err) => setError(err instanceof Error ? err.message : t("admin.billingLoadFailed")))
       .finally(() => setLoading(false));
   }, [refresh]);
 
@@ -186,7 +186,7 @@ export function AccountBillingPage() {
             </Alert>
           )}
           {mollie.configured && mollie.testMode && (
-            <Alert variant="info">Mollie is in test mode — use Mollie test methods.</Alert>
+            <Alert variant="info">{t("admin.mollieTestModeAlert")}</Alert>
           )}
 
           {user?.role === "ADMIN" ? (

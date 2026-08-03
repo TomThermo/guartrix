@@ -76,7 +76,7 @@ export function AdminBillingPage() {
   useEffect(() => {
     setLoading(true);
     void refresh()
-      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load"))
+      .catch((err) => setError(err instanceof Error ? err.message : t("admin.billingLoadFailed")))
       .finally(() => setLoading(false));
   }, [refresh]);
 
@@ -143,7 +143,7 @@ export function AdminBillingPage() {
       });
       setNewToken(result.token);
       setKeyName("");
-      setNotice("Application API key created — copy the token now.");
+      setNotice(t("admin.appKeyCreatedNotice"));
       await refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Create key failed");
@@ -184,7 +184,7 @@ export function AdminBillingPage() {
       )}
       {newToken && (
         <Alert variant="warning">
-          <strong>Copy this Application API token now:</strong>
+          <strong>{t("admin.copyAppTokenNow")}</strong>
           <code className="d-block mt-2 user-select-all text-break">{newToken}</code>
         </Alert>
       )}

@@ -61,7 +61,7 @@ export function AllocationsPanel({
     void refresh()
       .catch((err) =>
         onError(
-          err instanceof Error ? err.message : "Failed to load allocations",
+          err instanceof Error ? err.message : t("allocations.loadFailed"),
         ),
       )
       .finally(() => setLoading(false));
@@ -70,9 +70,7 @@ export function AllocationsPanel({
   async function installGeyser() {
     if (!showGeyser) return;
     if (
-      !confirm(
-        "Install Geyser + Floodgate from Modrinth and open UDP on the primary port for Bedrock?\n\nA backup will be created. Restart after install.",
-      )
+      !confirm(t("allocations.geyserConfirm"))
     ) {
       return;
     }
@@ -82,11 +80,14 @@ export function AllocationsPanel({
     try {
       const result = await api.installGeyser(serverId, true);
       onNotice(
-        `Installed ${result.installed.join(", ")}. ${result.hint}`,
+        t("allocations.noticeInstalled", {
+          list: result.installed.join(", "),
+          hint: result.hint,
+        }),
       );
       await refresh();
     } catch (err) {
-      onError(err instanceof Error ? err.message : "Geyser install failed");
+      onError(err instanceof Error ? err.message : t("allocations.geyserInstallFailed"));
     } finally {
       setGeyserBusy(false);
     }
@@ -104,12 +105,10 @@ export function AllocationsPanel({
         alsoUdp,
       });
       setPickId("");
-      onNotice(
-        "Allocation assigned. Restart the server before the new port becomes active.",
-      );
+      onNotice(t("allocations.noticeAssigned"));
       await refresh();
     } catch (err) {
-      onError(err instanceof Error ? err.message : "Could not assign allocation");
+      onError(err instanceof Error ? err.message : t("allocations.assignFailed"));
     } finally {
       setBusy(false);
     }
@@ -120,7 +119,7 @@ export function AllocationsPanel({
     if (!canCreate) return;
     const n = Number(port);
     if (!Number.isFinite(n) || n < 1024 || n > 65535) {
-      onError("Enter a valid port (1024–65535).");
+      onError(t("allocations.invalidPort"));
       return;
     }
     setBusy(true);
@@ -134,11 +133,11 @@ export function AllocationsPanel({
       });
       setPort("");
       onNotice(
-        `Port ${n}/${protocol} assigned. Restart the server before the port becomes active.`,
+        t("allocations.noticePortAssigned", { port: n, protocol }),
       );
       await refresh();
     } catch (err) {
-      onError(err instanceof Error ? err.message : "Could not add port");
+      onError(err instanceof Error ? err.message : t("allocations.addPortFailed"));
     } finally {
       setBusy(false);
     }
@@ -148,7 +147,10 @@ export function AllocationsPanel({
     if (!canUpdate || a.isPrimary) return;
     if (
       !window.confirm(
-        `Make ${a.port}/${a.protocol} the primary game port? The server must be stopped.`,
+        t("allocations.makePrimaryConfirm", {
+          port: a.port,
+          protocol: a.protocol,
+        }),
       )
     ) {
       return;
@@ -162,12 +164,15 @@ export function AllocationsPanel({
         alsoUdp,
       });
       onNotice(
-        `Primary port is now ${a.port}.${alsoUdp ? " UDP companion ensured." : ""} Restart if the server was running.`,
+        t("allocations.noticePrimary", {
+          port: a.port,
+          udp: alsoUdp ? t("allocations.noticePrimaryUdp") : "",
+        }),
       );
       onPrimaryChanged?.();
       await refresh();
     } catch (err) {
-      onError(err instanceof Error ? err.message : "Could not set primary");
+      onError(err instanceof Error ? err.message : t("allocations.setPrimaryFailed"));
     } finally {
       setBusy(false);
     }
@@ -175,7 +180,7 @@ export function AllocationsPanel({
 
   async function onRemove(a: PortAllocation) {
     if (!canDelete || a.isPrimary) return;
-    if (!window.confirm(`Remove port ${a.port}/${a.protocol} from this server?`)) {
+    if (!window.confirm(t("allocations.removeConfirm", { port: a.port, protocol: a.protocol }))) {
       return;
     }
     setBusy(true);
@@ -183,10 +188,10 @@ export function AllocationsPanel({
     onNotice(null);
     try {
       await api.deleteAllocation(serverId, a.id);
-      onNotice(`Port ${a.port} removed. Restart if the server is running.`);
+      onNotice(t("allocations.noticeRemoved", { port: a.port }));
       await refresh();
     } catch (err) {
-      onError(err instanceof Error ? err.message : "Could not remove allocation");
+      onError(err instanceof Error ? err.message : t("allocations.removeFailed"));
     } finally {
       setBusy(false);
     }
@@ -205,10 +210,7 @@ export function AllocationsPanel({
     <div className="databases-panel">
       <header className="databases-panel-header">
         <h2 className="databases-panel-title">{t("allocations.title")}</h2>
-        <p className="databases-panel-lead mb-0">
-          IP and port bindings for this server. Primary is the game port; extras
-          are additional ports players or services can use.
-        </p>
+        <p className="databases-panel-lead mb-0">{t("allocations.lead")}</p>
       </header>
 
       <Alert variant="warning" className="mb-3">
@@ -237,7 +239,7 @@ export function AllocationsPanel({
       <Row className="g-3 databases-layout">
         <Col xs={12} lg={8}>
           <section className="databases-section h-100">
-            <h3 className="databases-section-title">Assigned</h3>
+            <h3 className="databases-section-title">{t("allocations.assigned")}</h3>
             {allocations.length === 0 ? (
               <p className="databases-empty mb-0">{t("allocations.empty")}</p>
             ) : (
@@ -247,7 +249,7 @@ export function AllocationsPanel({
                     <tr>
                       <th>{t("allocations.ip")}</th>
                       <th>{t("allocations.port")}</th>
-                      <th>Protocol</th>
+                      <th>{t("allocations.protocol")}</th>
                       <th>{t("allocations.notes")}</th>
                       <th />
                     </tr>
@@ -277,7 +279,7 @@ export function AllocationsPanel({
                               disabled={busy}
                               onClick={() => void onMakePrimary(a)}
                             >
-                              Make primary
+                              {t("allocations.makePrimary")}
                             </Button>
                           )}
                           {canDelete && !a.isPrimary && (
@@ -287,7 +289,7 @@ export function AllocationsPanel({
                               disabled={busy}
                               onClick={() => void onRemove(a)}
                             >
-                              Remove
+                              {t("common.remove")}
                             </Button>
                           )}
                         </td>
@@ -303,10 +305,10 @@ export function AllocationsPanel({
         {canCreate && (
           <Col xs={12} lg={4}>
             <section className="databases-section">
-              <h3 className="databases-section-title">Assign port</h3>
+              <h3 className="databases-section-title">{t("allocations.assignPort")}</h3>
               {free.length > 0 && (
                 <Form onSubmit={onAssignFree} className="mb-3">
-                  <Form.Label className="small">From node pool</Form.Label>
+                  <Form.Label className="small">{t("allocations.fromPool")}</Form.Label>
                   <Form.Select
                     size="sm"
                     value={pickId}
@@ -326,12 +328,12 @@ export function AllocationsPanel({
                     disabled={busy || !pickId}
                     variant="primary"
                   >
-                    Assign
+                    {t("allocations.assign")}
                   </Button>
                 </Form>
               )}
               <Form onSubmit={onCreatePort}>
-                <Form.Label className="small">Or create by port</Form.Label>
+                <Form.Label className="small">{t("allocations.createByPort")}</Form.Label>
                 <Form.Control
                   size="sm"
                   type="number"
@@ -357,25 +359,24 @@ export function AllocationsPanel({
                   <Form.Check
                     type="checkbox"
                     className="small mb-2"
-                    label="Also open UDP on the same port (query / Geyser)"
+                    label={t("allocations.alsoUdpSamePort")}
                     checked={alsoUdp}
                     onChange={(e) => setAlsoUdp(e.target.checked)}
                   />
                 )}
                 <Button type="submit" size="sm" disabled={busy} variant="primary">
-                  Add port
+                  {t("allocations.add")}
                 </Button>
               </Form>
               <Form.Check
                 type="checkbox"
                 className="small mt-3"
-                label="When making primary: also ensure UDP on that port"
+                label={t("allocations.alsoUdpPrimary")}
                 checked={alsoUdp}
                 onChange={(e) => setAlsoUdp(e.target.checked)}
               />
               <Alert variant="light" className="small mt-3 mb-0 border">
-                Primary mirrors the game port in Settings. Use the UDP companion
-                for Minecraft query or Geyser on the same number.
+                {t("allocations.primaryHelp")}
               </Alert>
             </section>
           </Col>

@@ -67,7 +67,7 @@ export function SubUsersPanel({
     setLoading(true);
     void refresh()
       .catch((err) =>
-        onError(err instanceof Error ? err.message : "Failed to load subusers"),
+        onError(err instanceof Error ? err.message : t("subusers.loadFailed")),
       )
       .finally(() => setLoading(false));
   }, [refresh, onError, canRead]);
