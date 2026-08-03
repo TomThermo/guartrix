@@ -17,12 +17,19 @@ export function startActivityWatch(): void {
       lastStatus.set(serverId, status);
       if (!before || before === status) return;
 
+      const reason = errorMessage ?? "";
+      const isOom =
+        status === "ERROR" &&
+        /oom|out of memory|exit.?137|killed.*memory/i.test(reason);
+
       const action =
-        status === "ERROR"
-          ? "server.crashed"
-          : status === "STOPPED" && before === "RUNNING"
-            ? "server.offline"
-            : null;
+        isOom
+          ? "server.oom"
+          : status === "ERROR"
+            ? "server.crashed"
+            : status === "STOPPED" && before === "RUNNING"
+              ? "server.offline"
+              : null;
       if (!action) return;
 
       void recordActivity({

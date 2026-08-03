@@ -77,7 +77,9 @@ export function registerImportRoutes(app: FastifyInstance): void {
 
     try {
       const { assertCanCreateServer } = await import("../quotas.js");
-      await assertCanCreateServer(user, data.memoryMb);
+      await assertCanCreateServer(user, data.memoryMb, {
+        diskMb: data.diskMb ?? 10_240,
+      });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       return reply.status(403).send({ error: message });

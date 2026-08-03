@@ -338,6 +338,7 @@ export function registerApplicationRoutes(app: FastifyInstance): void {
           maxDatabases: owner.maxDatabases,
         },
         data.memoryMb,
+        { diskMb: data.diskMb },
       );
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

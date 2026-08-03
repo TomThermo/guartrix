@@ -152,6 +152,7 @@ const MIME = {
   ".woff2": "font/woff2",
   ".map": "application/json",
   ".txt": "text/plain; charset=utf-8",
+  ".wasm": "application/wasm",
 };
 
 function contentType(filePath) {
@@ -181,15 +182,19 @@ function safeJoin(root, urlPath) {
 function sendFile(res, filePath) {
   const st = fs.statSync(filePath);
   const base = path.basename(filePath).toLowerCase();
+  const ext = path.extname(filePath).toLowerCase();
   const isHtml = filePath.endsWith("index.html");
   const isSocialPreview =
     base === "og.jpg" || base === "og.png" || base === "favicon.ico";
+  // Fixed-name WASM (and similar) must not be immutable forever — a wrong MIME
+  // once cached breaks WebAssembly.instantiateStreaming for a year.
+  const isVersionedAsset = ext === ".wasm";
   res.writeHead(200, {
     "Content-Type": contentType(filePath),
     "Content-Length": st.size,
     "Cache-Control": isHtml
       ? "no-store, no-cache, must-revalidate"
-      : isSocialPreview
+      : isSocialPreview || isVersionedAsset
         ? "public, max-age=3600"
         : "public, max-age=31536000, immutable",
   });

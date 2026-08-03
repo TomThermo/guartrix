@@ -264,6 +264,8 @@ export const api = {
       maxNodes?: number | null;
       maxMemoryMb?: number | null;
       maxMemoryMbPerServer?: number | null;
+      maxDiskMb?: number | null;
+      freeTier?: boolean;
       features?: string[] | null;
       boundIp?: string | null;
       boundIps?: string[];
@@ -310,6 +312,8 @@ export const api = {
       maxNodes?: number | null;
       maxMemoryMb?: number | null;
       maxMemoryMbPerServer?: number | null;
+      maxDiskMb?: number | null;
+      freeTier?: boolean;
       features?: string[] | null;
       boundIp?: string | null;
       boundIps?: string[];
@@ -340,6 +344,8 @@ export const api = {
       maxNodes?: number | null;
       maxMemoryMb?: number | null;
       maxMemoryMbPerServer?: number | null;
+      maxDiskMb?: number | null;
+      freeTier?: boolean;
       features?: string[] | null;
       boundIp?: string | null;
       boundIps?: string[];
@@ -370,6 +376,8 @@ export const api = {
       maxNodes?: number | null;
       maxMemoryMb?: number | null;
       maxMemoryMbPerServer?: number | null;
+      maxDiskMb?: number | null;
+      freeTier?: boolean;
       features?: string[] | null;
       boundIp?: string | null;
       boundIps?: string[];
@@ -647,6 +655,12 @@ export const api = {
       `/api/servers/${id}/players/action`,
       { method: "POST", body: JSON.stringify(body) },
     ),
+  listPlayerModeration: (id: string, player?: string) => {
+    const q = player ? `?player=${encodeURIComponent(player)}` : "";
+    return request<{ events: import("@msm/shared").PlayerModerationEvent[] }>(
+      `/api/servers/${id}/players/moderation${q}`,
+    );
+  },
   getServerUpdate: (id: string) =>
     request<ServerUpdateInfo>(`/api/servers/${id}/updates`),
   getAllServerUpdates: () =>
@@ -688,6 +702,26 @@ export const api = {
       `/api/servers/${id}/world/reset`,
       { method: "POST", body: JSON.stringify(body ?? {}) },
     ),
+  getWorldSeed: (id: string) =>
+    request<{
+      seed: string | null;
+      source: "console" | "properties" | "none";
+      propertiesSeed: string | null;
+      consoleAvailable: boolean;
+      mapUrl: string | null;
+      externalMapUrl: string | null;
+      mcVersion: string;
+    }>(`/api/servers/${id}/world/seed`),
+  queryWorldSeed: (id: string) =>
+    request<{
+      seed: string | null;
+      source: "console" | "properties" | "none";
+      propertiesSeed: string | null;
+      consoleAvailable: boolean;
+      mapUrl: string | null;
+      externalMapUrl: string | null;
+      mcVersion: string;
+    }>(`/api/servers/${id}/world/seed/query`, { method: "POST", body: "{}" }),
   importWorld: async (id: string, file: File) => {
     const form = new FormData();
     form.append("file", file);
@@ -918,6 +952,22 @@ export const api = {
     }>(`/api/servers/${id}/addons/install`, {
       method: "POST",
       body: JSON.stringify({ projectId, versionId }),
+    }),
+  installAddonStack: (id: string, stackId: string) =>
+    request<{
+      stackId: string;
+      installed: string[];
+      errors: Array<{ name: string; error: string }>;
+    }>(`/api/servers/${id}/addon-stacks`, {
+      method: "POST",
+      body: JSON.stringify({ stackId }),
+    }),
+  getConsoleFavorites: (id: string) =>
+    request<{ commands: string[] }>(`/api/servers/${id}/console-favorites`),
+  setConsoleFavorites: (id: string, commands: string[]) =>
+    request<{ commands: string[] }>(`/api/servers/${id}/console-favorites`, {
+      method: "PUT",
+      body: JSON.stringify({ commands }),
     }),
   uninstallAddon: (id: string, projectId: string) =>
     request<{ ok: boolean; restartRequired: boolean }>(
@@ -1450,6 +1500,45 @@ export const api = {
       `/api/servers/${id}/subusers/${encodeURIComponent(subUserId)}`,
       { method: "DELETE" },
     ),
+  resendSubUserInvite: (id: string, subUserId: string) =>
+    request<{ subuser: ServerSubUser; inviteUrl?: string }>(
+      `/api/servers/${id}/subusers/${encodeURIComponent(subUserId)}/invite`,
+      { method: "POST" },
+    ),
+  getInvite: (token: string) =>
+    request<{
+      email: string;
+      serverId: string;
+      serverName: string;
+      expiresAt: string | null;
+      alreadyLinked: boolean;
+    }>(`/api/invites/${encodeURIComponent(token)}`),
+  acceptInvite: (token: string) =>
+    request<{ ok: boolean; serverId: string }>(
+      `/api/invites/${encodeURIComponent(token)}/accept`,
+      { method: "POST" },
+    ),
+  getProxySetup: (id: string) =>
+    request<{
+      supported: boolean;
+      mode: "none" | "velocity" | "bungeecord";
+      onlineMode: boolean;
+      preventProxyConnections: boolean;
+      velocitySecret: string;
+      checklist: Array<{ id: string; label: string; ok: boolean }>;
+    }>(`/api/servers/${id}/proxy`),
+  applyProxySetup: (id: string, mode: "none" | "velocity" | "bungeecord") =>
+    request<{
+      supported: boolean;
+      mode: "none" | "velocity" | "bungeecord";
+      onlineMode: boolean;
+      preventProxyConnections: boolean;
+      velocitySecret: string;
+      checklist: Array<{ id: string; label: string; ok: boolean }>;
+    }>(`/api/servers/${id}/proxy`, {
+      method: "POST",
+      body: JSON.stringify({ mode }),
+    }),
 
   listTasks: (id: string) =>
     request<{ tasks: ScheduledTask[] }>(`/api/servers/${id}/tasks`),

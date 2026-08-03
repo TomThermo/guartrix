@@ -38,6 +38,7 @@ import { LogPanel } from "../components/LogPanel";
 import { OnlinePlayers } from "../components/OnlinePlayers";
 import { ResourceMeter } from "../components/ResourceMeter";
 import { ServerSettings } from "../components/ServerSettings";
+import { WorldSeedMapCard } from "../components/WorldSeedMapCard";
 import { SftpPanel } from "../components/SftpPanel";
 import { SubUsersPanel } from "../components/SubUsersPanel";
 import { TasksPanel } from "../components/TasksPanel";
@@ -46,6 +47,7 @@ import { WhitelistManagerPanel } from "../components/WhitelistManagerPanel";
 import { WhitelistStartModal } from "../components/WhitelistStartModal";
 import { WhitelistToggleModal } from "../components/WhitelistToggleModal";
 import { KillServerModal } from "../components/KillServerModal";
+import { JoinCard } from "../components/JoinCard";
 import { TransferOwnerModal } from "../components/TransferOwnerModal";
 import { TransferNodeModal } from "../components/TransferNodeModal";
 import { statusBadgeClass, typeIcon, typeLabel, copyText } from "../utils";
@@ -57,6 +59,7 @@ import { useVisibleInterval } from "../hooks/useVisibleInterval";
 
 type TabId =
   | "settings"
+  | "seedmap"
   | "engine"
   | "addons"
   | "modpacks"
@@ -159,6 +162,13 @@ const SERVER_TABS: Array<{
     anyOf: ["settings.read", "settings.update", "startup.read", "startup.update"],
   },
   {
+    id: "seedmap",
+    icon: "fa-map-location-dot",
+    label: "World Map",
+    group: "game",
+    anyOf: ["settings.read", "control.console"],
+  },
+  {
     id: "engine",
     icon: "fa-microchip",
     label: "Engine",
@@ -239,6 +249,7 @@ const SERVER_TABS: Array<{
 
 const TAB_IDS = new Set<string>([
   "settings",
+  "seedmap",
   "engine",
   "addons",
   "modpacks",
@@ -704,6 +715,14 @@ function ServerDetailPageInner({
                 {connectInfo?.address ?? `:${server.port}`}
               </span>
             </Button>
+            <div className="mt-1">
+              <JoinCard
+                server={server}
+                connect={connectInfo}
+                compact
+                onNotice={setNotice}
+              />
+            </div>
           </div>
           {(canClone || isAdmin || can("settings.update")) && (
             <div className="server-toolbar btn-group btn-group-sm" role="group">
@@ -1064,6 +1083,15 @@ function ServerDetailPageInner({
                 }}
                 onError={setError}
                 onNotice={setNotice}
+              />
+            )}
+            {tab === "seedmap" && (
+              <WorldSeedMapCard
+                server={server}
+                formSeed={server.properties?.["level-seed"]}
+                canQueryConsole={can("control.console")}
+                onNotice={setNotice}
+                onError={setError}
               />
             )}
             {tab === "engine" && (

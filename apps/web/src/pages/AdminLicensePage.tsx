@@ -27,6 +27,8 @@ interface LicenseInfo {
   maxNodes?: number | null;
   maxMemoryMb?: number | null;
   maxMemoryMbPerServer?: number | null;
+  maxDiskMb?: number | null;
+  freeTier?: boolean;
   features?: string[] | null;
   boundIp?: string | null;
   boundIps?: string[];
@@ -222,10 +224,9 @@ export function AdminLicensePage() {
     <div>
       <h1 className="h3 mb-1">License</h1>
       <p className="text-secondary mb-3">
-        Panel license status. The license server is a separate service — you can
-        run it on this host or on another machine. When expired or invalid,
-        Minecraft servers are stopped and cannot be started; the website stays
-        online.
+        Panel license status. Without a valid license the install runs in free
+        tier: <strong>1 node</strong>, <strong>1 Minecraft server</strong>,{" "}
+        <strong>10 GB disk</strong>. Activate a license to raise those caps.
       </p>
 
       {error && <Alert variant="danger">{error}</Alert>}
@@ -348,11 +349,14 @@ export function AdminLicensePage() {
           <Card className="mb-3">
             <Card.Body>
               <Card.Title className="h6 mb-1">
-                License allowance vs in use
+                {info.freeTier
+                  ? "Free-tier allowance vs in use"
+                  : "License allowance vs in use"}
               </Card.Title>
               <p className="text-secondary small mb-3">
-                What this license allows on this panel, and how much you already
-                use across all Minecraft servers.
+                {info.freeTier
+                  ? "No valid license — these free-tier caps apply until you activate one."
+                  : "What this license allows on this panel, and how much you already use across all Minecraft servers."}
               </p>
               <div className="row g-3">
                 <div className="col-md-3">
@@ -403,7 +407,9 @@ export function AdminLicensePage() {
                       {" / "}
                       {info.maxMemoryMb != null
                         ? formatGb(info.maxMemoryMb)
-                        : "∞"}
+                        : info.freeTier
+                          ? "—"
+                          : "∞"}
                     </span>
                   </div>
                   {info.maxMemoryMb != null ? (
@@ -415,22 +421,30 @@ export function AdminLicensePage() {
                     />
                   ) : (
                     <div className="text-secondary small">
-                      Unlimited total RAM
+                      {info.freeTier
+                        ? "No free-tier RAM pool cap"
+                        : "Unlimited total RAM"}
                     </div>
                   )}
                 </div>
                 <div className="col-md-3">
                   <div className="d-flex justify-content-between small mb-1">
-                    <span>Largest server</span>
+                    <span>{info.freeTier ? "Disk / server" : "Largest server"}</span>
                     <span className="font-monospace">
-                      {formatGb(usage?.maxServerMemoryMb ?? 0)}
-                      {" / "}
-                      {info.maxMemoryMbPerServer != null
-                        ? `≤${formatGb(info.maxMemoryMbPerServer)}`
-                        : "∞"}
+                      {info.freeTier
+                        ? `≤${(info.maxDiskMb ?? 10_240) / 1024} GB`
+                        : `${formatGb(usage?.maxServerMemoryMb ?? 0)} / ${
+                            info.maxMemoryMbPerServer != null
+                              ? `≤${formatGb(info.maxMemoryMbPerServer)}`
+                              : "∞"
+                          }`}
                     </span>
                   </div>
-                  {info.maxMemoryMbPerServer != null ? (
+                  {info.freeTier ? (
+                    <div className="text-secondary small">
+                      Max {(info.maxDiskMb ?? 10_240) / 1024} GB per server
+                    </div>
+                  ) : info.maxMemoryMbPerServer != null ? (
                     <ProgressBar
                       now={perServerPct}
                       variant={usageVariant(perServerPct)}
@@ -444,7 +458,14 @@ export function AdminLicensePage() {
                   )}
                 </div>
               </div>
-              {info.maxServers == null &&
+              {info.freeTier ? (
+                <Alert variant="warning" className="small mb-0 mt-3 py-2">
+                  Free tier: 1 node, 1 server, 10 GB disk. Extra or over-disk
+                  servers are stopped; start works only within these caps.
+                </Alert>
+              ) : null}
+              {!info.freeTier &&
+                info.maxServers == null &&
                 info.maxNodes == null &&
                 info.maxMemoryMb == null &&
                 info.maxMemoryMbPerServer == null && (

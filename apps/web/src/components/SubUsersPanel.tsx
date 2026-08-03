@@ -122,9 +122,24 @@ export function SubUsersPanel({
           email: email.trim(),
           permissions,
         });
-        if (res.accountCreated) {
+        if (res.inviteUrl) {
+          try {
+            await navigator.clipboard.writeText(res.inviteUrl);
+            onNotice(
+              res.accountCreated
+                ? "Subuser invited (account created). Invite link copied."
+                : "Subuser invited. Invite link copied.",
+            );
+          } catch {
+            onNotice(
+              res.accountCreated
+                ? `Subuser invited (account created). Link: ${res.inviteUrl}`
+                : `Subuser invited. Link: ${res.inviteUrl}`,
+            );
+          }
+        } else if (res.accountCreated) {
           onNotice(
-            `Subuser invited. A new account was created — they will receive an email to set their password.`,
+            "Subuser invited. A new account was created — they will receive an email to set their password.",
           );
         } else {
           onNotice(`Subuser invited: ${res.subuser.email}`);
@@ -152,6 +167,31 @@ export function SubUsersPanel({
       await refresh();
     } catch (err) {
       onError(err instanceof Error ? err.message : "Could not delete subuser");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onResendInvite(row: ServerSubUser) {
+    if (!canCreate) return;
+    setBusy(true);
+    onError(null);
+    onNotice(null);
+    try {
+      const res = await api.resendSubUserInvite(serverId, row.id);
+      if (res.inviteUrl) {
+        try {
+          await navigator.clipboard.writeText(res.inviteUrl);
+          onNotice("Invite link copied and emailed.");
+        } catch {
+          onNotice(`Invite link: ${res.inviteUrl}`);
+        }
+      } else {
+        onNotice("Invite resent.");
+      }
+      await refresh();
+    } catch (err) {
+      onError(err instanceof Error ? err.message : "Could not resend invite");
     } finally {
       setBusy(false);
     }
@@ -201,9 +241,21 @@ export function SubUsersPanel({
                       <div className="small text-secondary">
                         {s.username ? `@${s.username}` : "Pending account"} ·{" "}
                         {s.permissions.length} permissions
+                        {s.invitePending ? " · invite pending" : ""}
                       </div>
                     </div>
-                    <Stack direction="horizontal" gap={1}>
+                    <Stack direction="horizontal" gap={1} className="flex-wrap">
+                      {canCreate && (
+                        <Button
+                          size="sm"
+                          variant="outline-secondary"
+                          disabled={busy}
+                          onClick={() => void onResendInvite(s)}
+                          title="Copy / resend invite link"
+                        >
+                          Invite link
+                        </Button>
+                      )}
                       {canUpdate && (
                         <Button
                           size="sm"

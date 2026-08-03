@@ -68,6 +68,16 @@ export const ACTIVITY_ACTIONS: Record<string, ActivityActionMeta> = {
     label: "Server crashed",
     critical: true,
   },
+  "server.oom": {
+    category: "power",
+    label: "Server ran out of memory (OOM)",
+    critical: true,
+  },
+  "server.disk_high": {
+    category: "server",
+    label: "Server disk usage is high",
+    critical: true,
+  },
   "server.offline": {
     category: "power",
     label: "Server went offline unexpectedly",
@@ -92,6 +102,7 @@ export const ACTIVITY_ACTIONS: Record<string, ActivityActionMeta> = {
   "server.type-change": { category: "server", label: "Changed the server software" },
   "server.world-reset": { category: "server", label: "Reset the world" },
   "server.world-import": { category: "server", label: "Imported a world" },
+  "server.world-seed": { category: "server", label: "Queried the world seed" },
   "license.expired": {
     category: "admin",
     label: "License expired — game servers stopped",

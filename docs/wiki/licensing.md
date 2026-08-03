@@ -8,15 +8,32 @@ Default:
 
 Set the key in `.env` as `LICENSE_KEY`, or under **Admin → License**. You can also change the license API URL there if Guartrix gives you a different endpoint.
 
+## Free tier (no valid license)
+
+Without a valid license (missing key, expired, revoked, or grace expired), the panel stays online and runs a **free tier**:
+
+| Cap | Limit |
+|-----|-------|
+| Nodes | **1** |
+| Minecraft servers | **1** |
+| Disk per server | **10 GB** |
+
+- Creating a second node or server is blocked.
+- Disk above 10 GB (or unlimited `0`) is blocked on create/update.
+- Start/restart works for the single free-tier server if it is within the disk cap.
+- Extra or over-disk servers that are running are stopped on validate / expiry.
+
+Activate a license under **Admin → License** to raise these caps (and unlock license feature quotas).
+
 ## What the panel does
 
 | Piece | Role |
 |-------|------|
 | **Panel API** | Calls `POST /v1/validate` on a schedule; verifies **Ed25519-signed** responses |
-| **Admin → License** | Status, license key, optional server URL override, revalidate |
-| **Game servers** | On expiry / revoke the panel **stops Minecraft servers** and blocks start/restart |
+| **Admin → License** | Status, license key, optional server URL override, revalidate, allowance vs in use |
+| **Game servers** | Licensed product caps (nodes / servers / RAM); free-tier caps when invalid |
 
-The **website/panel UI stays online** when a license expires. End users are not shown a license banner; start/restart shows a console message to contact an administrator. Admins see a banner and use **Admin → License**.
+The **website/panel UI stays online** when a license expires. Admins see a banner (free-tier wording) and use **Admin → License**. End users are not shown a page banner; start/restart over free-tier limits shows a console error.
 
 ## Env (panel)
 

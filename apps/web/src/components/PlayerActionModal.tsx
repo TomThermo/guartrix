@@ -1,6 +1,16 @@
-import { useState, type FormEvent } from "react";
-import type { OnlinePlayer } from "@msm/shared";
-import { Badge, Button, Form, InputGroup, Modal, Stack } from "react-bootstrap";
+import { useEffect, useState, type FormEvent } from "react";
+import type { OnlinePlayer, PlayerModerationEvent } from "@msm/shared";
+import {
+  Badge,
+  Button,
+  Form,
+  InputGroup,
+  ListGroup,
+  Modal,
+  Nav,
+  Spinner,
+  Stack,
+} from "react-bootstrap";
 import { api } from "../api";
 import { PlayerHead } from "./PlayerHead";
 
@@ -74,12 +84,25 @@ export function PlayerActionModal({
   onDone,
 }: Props) {
   const [busy, setBusy] = useState(false);
+  const [tab, setTab] = useState<"actions" | "history">("actions");
+  const [history, setHistory] = useState<PlayerModerationEvent[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const [whisper, setWhisper] = useState("");
   const [reason, setReason] = useState("");
   const [item, setItem] = useState<string>(DEFAULT_GIVE_ITEMS[0].id);
   const [customItem, setCustomItem] = useState("");
   const [count, setCount] = useState(1);
   const [gamemode, setGamemode] = useState("survival");
+
+  useEffect(() => {
+    if (tab !== "history") return;
+    setHistoryLoading(true);
+    void api
+      .listPlayerModeration(serverId, player.name)
+      .then((r) => setHistory(r.events))
+      .catch(() => setHistory([]))
+      .finally(() => setHistoryLoading(false));
+  }, [tab, serverId, player.name]);
 
   function can(action: PlayerAction): boolean {
     if (!online && ONLINE_ONLY.has(action)) return false;
@@ -139,6 +162,43 @@ export function PlayerActionModal({
         {player.uuid && (
           <div className="small text-secondary font-monospace mb-3">{player.uuid}</div>
         )}
+        <Nav variant="tabs" activeKey={tab} className="mb-3">
+          <Nav.Item>
+            <Nav.Link eventKey="actions" onClick={() => setTab("actions")}>
+              Actions
+            </Nav.Link>
+          </Nav.Item>
+          <Nav.Item>
+            <Nav.Link eventKey="history" onClick={() => setTab("history")}>
+              History
+            </Nav.Link>
+          </Nav.Item>
+        </Nav>
+
+        {tab === "history" ? (
+          historyLoading ? (
+            <div className="text-center py-3">
+              <Spinner size="sm" />
+            </div>
+          ) : history.length === 0 ? (
+            <p className="small text-secondary mb-0">No moderation history yet.</p>
+          ) : (
+            <ListGroup variant="flush" className="small">
+              {history.map((ev) => (
+                <ListGroup.Item key={ev.id} className="px-0">
+                  <div className="d-flex justify-content-between gap-2">
+                    <strong className="text-capitalize">{ev.action.replace(/_/g, " ")}</strong>
+                    <span className="text-secondary">
+                      {new Date(ev.createdAt).toLocaleString()}
+                    </span>
+                  </div>
+                  {ev.reason && <div className="text-secondary">{ev.reason}</div>}
+                </ListGroup.Item>
+              ))}
+            </ListGroup>
+          )
+        ) : (
+          <>
         {!online && (
           <p className="small text-secondary">
             Player is offline — kick, whisper, give, gamemode, kill and clear are disabled. Ban, OP
@@ -287,6 +347,8 @@ export function PlayerActionModal({
             </InputGroup>
           </Stack>
         </Form>
+          </>
+        )}
       </Modal.Body>
     </Modal>
   );

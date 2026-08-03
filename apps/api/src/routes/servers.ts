@@ -120,6 +120,17 @@ const updateSchema = z.object({
   properties: z.record(z.string()).optional(),
   autoRestart: z.boolean().optional(),
   startOnBoot: z.boolean().optional(),
+  ownerAlertWebhookUrl: z
+    .union([z.string().url().max(500), z.literal(""), z.null()])
+    .optional(),
+  ownerAlertEmail: z
+    .union([z.string().email().max(255), z.literal(""), z.null()])
+    .optional(),
+  discordStatusWebhookUrl: z
+    .union([z.string().url().max(500), z.literal(""), z.null()])
+    .optional(),
+  discordStatusEnabled: z.boolean().optional(),
+  bluemapUrl: z.union([z.string().url().max(500), z.literal(""), z.null()]).optional(),
   ownerId: z.string().nullable().optional(),
 });
 
@@ -427,6 +438,66 @@ export function registerServerRoutes(app: FastifyInstance): void {
     }
   });
 
+  app.get<{ Params: { id: string }; Querystring: { console?: string } }>(
+    "/api/servers/:id/world/seed",
+    async (request, reply) => {
+      const access = await requireServerAccess(request, reply, request.params.id, {
+        permission: "settings.read",
+      });
+      if (!access) return;
+      const { getWorldSeedInfo } = await import("../world-seed.js");
+      const wantConsole =
+        request.query?.console === "1" || request.query?.console === "true";
+      try {
+        return await getWorldSeedInfo({
+          serverId: access.server.id,
+          mcVersion: access.server.mcVersion,
+          queryConsole: wantConsole,
+        });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        return reply.status(400).send({ error: message });
+      }
+    },
+  );
+
+  app.post<{ Params: { id: string } }>(
+    "/api/servers/:id/world/seed/query",
+    async (request, reply) => {
+      const access = await requireServerAccess(request, reply, request.params.id, {
+        permission: "control.console",
+      });
+      if (!access) return;
+      const { getWorldSeedInfo } = await import("../world-seed.js");
+      try {
+        const info = await getWorldSeedInfo({
+          serverId: access.server.id,
+          mcVersion: access.server.mcVersion,
+          queryConsole: true,
+        });
+        if (!info.seed) {
+          return reply.status(409).send({
+            error: info.consoleAvailable
+              ? "No seed in console output — is the server fully started?"
+              : "Server must be running to query seed via /seed",
+            ...info,
+          });
+        }
+        logActivity({
+          action: "server.world-seed",
+          request,
+          user: access.user,
+          server: access.server,
+          metadata: { seed: info.seed, source: info.source },
+        });
+        return info;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        return reply.status(400).send({ error: message });
+      }
+    },
+  );
+
   app.post<{
     Params: { id: string };
     Body: {
@@ -539,7 +610,7 @@ export function registerServerRoutes(app: FastifyInstance): void {
 
     try {
       const { assertCanCreateServer } = await import("../quotas.js");
-      await assertCanCreateServer(user, data.memoryMb);
+      await assertCanCreateServer(user, data.memoryMb, { diskMb: data.diskMb });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       return reply.status(403).send({ error: message });
@@ -705,6 +776,7 @@ export function registerServerRoutes(app: FastifyInstance): void {
             const { assertCanAllocateMemory } = await import("../quotas.js");
             await assertCanAllocateMemory(owner, data.memoryMb, {
               excludeServerId: server.id,
+              diskMb: data.diskMb ?? server.diskMb,
             });
           } catch (err) {
             const message = err instanceof Error ? err.message : String(err);
@@ -723,6 +795,16 @@ export function registerServerRoutes(app: FastifyInstance): void {
           const message = err instanceof Error ? err.message : String(err);
           return reply.status(403).send({ error: message });
         }
+      }
+    }
+
+    if (data.diskMb !== undefined && data.diskMb !== server.diskMb) {
+      try {
+        const { assertLicenseDiskQuota } = await import("../license.js");
+        await assertLicenseDiskQuota(data.diskMb);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        return reply.status(403).send({ error: message });
       }
     }
 
@@ -833,6 +915,32 @@ export function registerServerRoutes(app: FastifyInstance): void {
         serverJar: nextServerJar,
         autoRestart: data.autoRestart,
         startOnBoot: data.startOnBoot,
+        ownerAlertWebhookUrl:
+          data.ownerAlertWebhookUrl === undefined
+            ? undefined
+            : data.ownerAlertWebhookUrl === null || data.ownerAlertWebhookUrl === ""
+              ? null
+              : data.ownerAlertWebhookUrl.trim(),
+        ownerAlertEmail:
+          data.ownerAlertEmail === undefined
+            ? undefined
+            : data.ownerAlertEmail === null || data.ownerAlertEmail === ""
+              ? null
+              : data.ownerAlertEmail.trim().toLowerCase(),
+        discordStatusWebhookUrl:
+          data.discordStatusWebhookUrl === undefined
+            ? undefined
+            : data.discordStatusWebhookUrl === null ||
+                data.discordStatusWebhookUrl === ""
+              ? null
+              : data.discordStatusWebhookUrl.trim(),
+        discordStatusEnabled: data.discordStatusEnabled,
+        bluemapUrl:
+          data.bluemapUrl === undefined
+            ? undefined
+            : data.bluemapUrl === null || data.bluemapUrl === ""
+              ? null
+              : data.bluemapUrl.trim(),
         ownerId: data.ownerId === undefined ? undefined : data.ownerId,
       },
       include: serverListInclude,
@@ -1530,6 +1638,127 @@ export function registerServerRoutes(app: FastifyInstance): void {
     }
   });
 
+  app.get<{ Params: { id: string } }>(
+    "/api/servers/:id/console-favorites",
+    async (request, reply) => {
+      const access = await requireServerAccess(request, reply, request.params.id, {
+        permission: "control.console",
+      });
+      if (!access) return;
+      const { getConsoleFavorites } = await import("../console-favorites.js");
+      return { commands: await getConsoleFavorites(access.server.id) };
+    },
+  );
+
+  app.put<{ Params: { id: string }; Body: { commands?: string[] } }>(
+    "/api/servers/:id/console-favorites",
+    async (request, reply) => {
+      const access = await requireServerAccess(request, reply, request.params.id, {
+        permission: "control.console",
+      });
+      if (!access) return;
+      const commands = Array.isArray(request.body?.commands)
+        ? request.body!.commands!
+        : [];
+      const { setConsoleFavorites } = await import("../console-favorites.js");
+      return { commands: await setConsoleFavorites(access.server.id, commands) };
+    },
+  );
+
+  app.post<{
+    Params: { id: string };
+    Body: { stackId?: string };
+  }>("/api/servers/:id/addon-stacks", async (request, reply) => {
+    const access = await requireServerAccess(request, reply, request.params.id, {
+      permission: "addon.update",
+    });
+    if (!access) return;
+    const { RECOMMENDED_PLUGIN_STACKS, addonKindFor } = await import("@msm/shared");
+    if (addonKindFor(access.server.type as ServerType) !== "plugin") {
+      return reply
+        .status(400)
+        .send({ error: "Recommended stacks are only for Paper/Purpur" });
+    }
+    const stack = RECOMMENDED_PLUGIN_STACKS.find(
+      (s) => s.id === request.body?.stackId,
+    );
+    if (!stack) return reply.status(404).send({ error: "Unknown stack" });
+
+    const installed: string[] = [];
+    const errors: Array<{ name: string; error: string }> = [];
+    const dir = serverDir(access.server.id);
+    await fixDataOwnership(dir);
+    for (const item of stack.items) {
+      try {
+        await installAddon({
+          serverDir: dir,
+          type: access.server.type as ServerType,
+          mcVersion: access.server.mcVersion,
+          projectId: item.projectId,
+        });
+        installed.push(item.name);
+      } catch (err) {
+        errors.push({
+          name: item.name,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
+    logActivity({
+      action: "addon.install",
+      request,
+      user: access.user,
+      server: access.server,
+      metadata: { stackId: stack.id, installed, errors },
+    });
+    return { stackId: stack.id, installed, errors };
+  });
+
+  app.get<{ Params: { id: string } }>(
+    "/api/servers/:id/proxy",
+    async (request, reply) => {
+      const access = await requireServerAccess(request, reply, request.params.id, {
+        permission: "settings.read",
+      });
+      if (!access) return;
+      const { getProxySetup } = await import("../proxy-setup.js");
+      return getProxySetup(access.server.id, access.server.type as ServerType);
+    },
+  );
+
+  app.post<{
+    Params: { id: string };
+    Body: { mode?: "none" | "velocity" | "bungeecord" };
+  }>("/api/servers/:id/proxy", async (request, reply) => {
+    const access = await requireServerAccess(request, reply, request.params.id, {
+      permission: "settings.update",
+    });
+    if (!access) return;
+    const mode = request.body?.mode ?? "none";
+    if (!["none", "velocity", "bungeecord"].includes(mode)) {
+      return reply.status(400).send({ error: "Invalid proxy mode" });
+    }
+    try {
+      const { applyProxySetup } = await import("../proxy-setup.js");
+      const result = await applyProxySetup(
+        access.server.id,
+        access.server.type as ServerType,
+        mode,
+      );
+      logActivity({
+        action: "settings.engine",
+        request,
+        user: access.user,
+        server: access.server,
+        metadata: { proxyMode: mode },
+      });
+      return result;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return reply.status(400).send({ error: message });
+    }
+  });
+
   app.get<{
     Params: { id: string };
     Querystring: { q?: string; source?: string; offset?: string; limit?: string };
@@ -1795,13 +2024,16 @@ export function registerServerRoutes(app: FastifyInstance): void {
     if (!access) return;
     const server = access.server;
     try {
-      const { assertLicenseAllowsPower, assertLicensePanelQuota } = await import(
-        "../license.js"
-      );
+      const {
+        assertLicenseAllowsPower,
+        assertLicensePanelQuota,
+        assertLicenseDiskQuota,
+      } = await import("../license.js");
       await assertLicenseAllowsPower();
       await assertLicensePanelQuota(server.memoryMb, {
         excludeServerId: server.id,
       });
+      await assertLicenseDiskQuota(server.diskMb);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       const code =
@@ -1893,13 +2125,16 @@ export function registerServerRoutes(app: FastifyInstance): void {
     if (!access) return;
     const server = access.server;
     try {
-      const { assertLicenseAllowsPower, assertLicensePanelQuota } = await import(
-        "../license.js"
-      );
+      const {
+        assertLicenseAllowsPower,
+        assertLicensePanelQuota,
+        assertLicenseDiskQuota,
+      } = await import("../license.js");
       await assertLicenseAllowsPower();
       await assertLicensePanelQuota(server.memoryMb, {
         excludeServerId: server.id,
       });
+      await assertLicenseDiskQuota(server.diskMb);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       const code =
@@ -1994,6 +2229,12 @@ export function registerServerRoutes(app: FastifyInstance): void {
     const sftpPort = node?.sftpPort ?? 2022;
     const sftpEnabled = Boolean(canSftp && sftpHost);
 
+    const maxPlayersRaw = properties["max-players"] ?? "20";
+    const playersMax = Math.max(0, Number.parseInt(maxPlayersRaw, 10) || 20);
+    const onlineNames = processManager.isRunning(server.id)
+      ? processManager.getOnlinePlayerNames(server.id)
+      : [];
+
     return {
       host,
       port: server.port,
@@ -2001,9 +2242,13 @@ export function registerServerRoutes(app: FastifyInstance): void {
       directIp,
       subdomain: subdomainFqdn,
       motd: properties.motd ?? "A Minecraft Server",
-      maxPlayers: properties["max-players"] ?? "20",
+      maxPlayers: maxPlayersRaw,
       onlineMode: properties["online-mode"] !== "false",
       whitelistEnabled: properties["white-list"] === "true",
+      mcVersion: server.mcVersion,
+      onlinePlayers: onlineNames.length,
+      playersMax,
+      serverStatus: server.status,
       sftpEnabled,
       sftpHost: sftpEnabled ? sftpHost : null,
       sftpPort: sftpEnabled ? sftpPort : null,
@@ -2119,9 +2364,10 @@ export function registerServerRoutes(app: FastifyInstance): void {
         return reply.status(403).send({ error: "Only admins can choose a node" });
       }
       const memoryMb = parsed.data.memoryMb ?? source.memoryMb;
+      const diskMb = parsed.data.diskMb ?? source.diskMb;
       try {
         const { assertCanCreateServer } = await import("../quotas.js");
-        await assertCanCreateServer(access.user, memoryMb);
+        await assertCanCreateServer(access.user, memoryMb, { diskMb });
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         return reply.status(403).send({ error: message });

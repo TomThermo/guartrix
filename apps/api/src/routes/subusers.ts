@@ -13,6 +13,7 @@ import { config } from "../config.js";
 import { prisma } from "../db.js";
 import { sendMail } from "../mail.js";
 import {
+  hashInviteToken,
   isServerOwner,
   isValidEmail,
   normalizeInviteEmail,
@@ -35,16 +36,38 @@ function panelBaseUrl(): string {
   return config.publicBaseUrl.replace(/\/$/, "");
 }
 
+const INVITE_TTL_MS = 7 * 24 * 60 * 60_000;
+
+function newInviteToken(): { raw: string; hash: string; expiresAt: Date } {
+  const raw = randomBytes(32).toString("hex");
+  return {
+    raw,
+    hash: hashInviteToken(raw),
+    expiresAt: new Date(Date.now() + INVITE_TTL_MS),
+  };
+}
+
+function inviteUrl(raw: string): string {
+  return `${panelBaseUrl()}/invite/${encodeURIComponent(raw)}`;
+}
+
 function serializeSubUser(row: {
   id: string;
   serverId: string;
   email: string;
   userId: string | null;
   permissions: string;
+  inviteTokenHash?: string | null;
+  inviteExpiresAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
   user?: { username: string } | null;
 }): ServerSubUser {
+  const pending = Boolean(
+    row.inviteTokenHash &&
+      row.inviteExpiresAt &&
+      row.inviteExpiresAt.getTime() > Date.now(),
+  );
   return {
     id: row.id,
     serverId: row.serverId,
@@ -52,6 +75,8 @@ function serializeSubUser(row: {
     userId: row.userId,
     username: row.user?.username ?? null,
     permissions: parsePermissionsJson(row.permissions),
+    invitePending: pending,
+    inviteExpiresAt: row.inviteExpiresAt?.toISOString() ?? null,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
@@ -203,6 +228,7 @@ export function registerSubUserRoutes(app: FastifyInstance): void {
         });
       }
 
+      const invite = newInviteToken();
       const row = await prisma.subUser.create({
         data: {
           id: nanoid(12),
@@ -210,12 +236,42 @@ export function registerSubUserRoutes(app: FastifyInstance): void {
           email,
           userId: user.id,
           permissions: serializePermissions(parsed.data.permissions),
+          inviteTokenHash: invite.hash,
+          inviteExpiresAt: invite.expiresAt,
         },
         include: { user: { select: { username: true } } },
       });
 
+      const url = inviteUrl(invite.raw);
+      if (!accountCreated) {
+        await sendMail({
+          to: email,
+          subject: `You've been invited to ${access.server.name} on Guartrix`,
+          text: [
+            `Hi,`,
+            "",
+            `${access.user.username} invited you to manage “${access.server.name}” on Guartrix.`,
+            "Accept the invite (sign in with this email):",
+            url,
+            "",
+            "This link expires in 7 days.",
+          ].join("\n"),
+        }).catch(() => undefined);
+      } else {
+        // Also include invite link for new accounts (alongside password reset mail).
+        await sendMail({
+          to: email,
+          subject: `Server invite: ${access.server.name}`,
+          text: [
+            `After setting your password, open this invite link to confirm access:`,
+            url,
+          ].join("\n"),
+        }).catch(() => undefined);
+      }
+
       const body: CreateSubUserResponse = {
         subuser: serializeSubUser(row),
+        inviteUrl: url,
         ...(accountCreated ? { accountCreated: true } : {}),
       };
       logActivity({
@@ -230,6 +286,47 @@ export function registerSubUserRoutes(app: FastifyInstance): void {
         },
       });
       return reply.status(201).send(body);
+    },
+  );
+
+  app.post<{ Params: { id: string; subUserId: string } }>(
+    "/api/servers/:id/subusers/:subUserId/invite",
+    async (request, reply) => {
+      const access = await requireServerAccess(request, reply, request.params.id, {
+        permission: "user.create",
+      });
+      if (!access) return;
+
+      const row = await prisma.subUser.findFirst({
+        where: { id: request.params.subUserId, serverId: access.server.id },
+      });
+      if (!row) return reply.status(404).send({ error: "Subuser not found" });
+
+      const invite = newInviteToken();
+      const updated = await prisma.subUser.update({
+        where: { id: row.id },
+        data: {
+          inviteTokenHash: invite.hash,
+          inviteExpiresAt: invite.expiresAt,
+        },
+        include: { user: { select: { username: true } } },
+      });
+      const url = inviteUrl(invite.raw);
+      await sendMail({
+        to: row.email,
+        subject: `Invite to ${access.server.name} on Guartrix`,
+        text: [
+          `${access.user.username} sent you an invite link for “${access.server.name}”.`,
+          url,
+          "",
+          "Sign in with this email to accept. Expires in 7 days.",
+        ].join("\n"),
+      }).catch(() => undefined);
+
+      return {
+        subuser: serializeSubUser(updated),
+        inviteUrl: url,
+      };
     },
   );
 

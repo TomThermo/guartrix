@@ -22,6 +22,8 @@ import { runDueScheduledTasks } from "./scheduled-tasks.js";
 import { FileSessionStore, ensureSessionDir } from "./session-store.js";
 import { pruneActivityLog } from "./activity-log.js";
 import { startActivityWatch } from "./activity-watch.js";
+import { startDiscordStatusWorker } from "./discord-status.js";
+import { startDiskWatch } from "./disk-watch.js";
 import { registerActivityRoutes } from "./routes/activity.js";
 import { registerTwoFactorRoutes, registerTwoFactorGuard } from "./routes/two-factor.js";
 import { registerApiKeyRoutes } from "./routes/api-keys.js";
@@ -47,6 +49,7 @@ import { registerServerRoutes } from "./routes/servers.js";
 import { registerLicenseRoutes } from "./routes/license.js";
 import { registerStatusRoutes } from "./routes/status.js";
 import { registerSubUserRoutes } from "./routes/subusers.js";
+import { registerInviteRoutes } from "./routes/invites.js";
 import { registerTaskRoutes } from "./routes/tasks.js";
 import { registerConsoleWs } from "./ws/console.js";
 import { registerAdminLogsWs } from "./ws/admin-logs.js";
@@ -255,6 +258,7 @@ async function main() {
   registerAllocationRoutes(app);
   registerDatabaseRoutes(app);
   registerSubUserRoutes(app);
+  registerInviteRoutes(app);
   registerImportRoutes(app);
   registerPlayerActionRoutes(app);
   registerIconRoutes(app);
@@ -325,6 +329,8 @@ async function main() {
   }
 
   startActivityWatch();
+  startDiskWatch();
+  startDiscordStatusWorker();
   void startDaemonEventBridge();
 
   const { startLicenseWatcher, validateLicense, assertLicensePanelQuota } =
@@ -340,15 +346,13 @@ async function main() {
   if (!license?.valid) {
     app.log.warn(
       { status: license?.status, message: license?.message },
-      "License not valid — skipping startOnBoot",
+      "License not valid — startOnBoot limited to unlicensed free tier (1 server ≤10 GB)",
     );
   }
-  const bootServers = license?.valid
-    ? await prisma.server.findMany({
-        where: { startOnBoot: true },
-        orderBy: { createdAt: "asc" },
-      })
-    : [];
+  const bootServers = await prisma.server.findMany({
+    where: { startOnBoot: true },
+    orderBy: { createdAt: "asc" },
+  });
   const bootStaggerMs = Number(process.env.BOOT_START_STAGGER_MS ?? 20_000);
   for (let i = 0; i < bootServers.length; i++) {
     const server = bootServers[i]!;

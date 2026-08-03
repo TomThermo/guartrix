@@ -54,7 +54,7 @@ The interactive wizard asks for:
 4. HTTPS yes/no (default: HTTP via IP) — panel roles  
 5. Domain (if HTTPS) or optional hostname (if HTTP)  
 6. Admin password (blank = generate)  
-7. License key (blank = set later in Admin → License)  
+7. License key (blank = the panel runs the **free tier**: 1 node, 1 server, 10 GB disk — set a key later in Admin → License)  
 8. Panel MySQL: Docker (default) or existing server  
 9. Confirm summary → install  
 
@@ -159,7 +159,7 @@ Requirements: Node **22+**, Docker with passwordless `sudo docker`, image `eclip
 ## After install
 
 1. Open the URL printed by the installer (`http://IP` or `https://domain`) and sign in as `admin`.  
-2. Activate your license under **Admin → License** (if `LICENSE_KEY` was not passed).  
+2. Activate your license under **Admin → License** (if `LICENSE_KEY` was not passed). Until then the [free tier](licensing.md#free-tier-no-valid-license) applies: 1 node, 1 server, 10 GB disk.  
 3. Confirm Status / System shows the local node **ONLINE**.  
 4. Optionally harden the host: `bash scripts/install-host-hardening.sh`  
 5. Add remote capacity: [Install nodes](install-nodes.md)

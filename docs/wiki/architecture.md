@@ -35,7 +35,8 @@ Daemon :8081          @msm/node-agent
 | `scripts/` | `start.sh`, `prod-web.mjs`, installers, backups, monitor |
 
 **License validation** uses the public API at `LICENSE_SERVER_URL` (default
-`https://license.guartrix.com`) plus `LICENSE_KEY`. See [Licensing](licensing.md).
+`https://license.guartrix.com`) plus `LICENSE_KEY`. Without a valid license the
+panel enforces a free tier (1 node, 1 server, 10 GB disk). See [Licensing](licensing.md).
 
 ## Resource limits
 

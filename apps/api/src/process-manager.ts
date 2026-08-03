@@ -253,6 +253,47 @@ class ProcessManagerProxy extends EventEmitter {
     });
   }
 
+  /**
+   * Wait for a console line matching `match` after optionally sending a command.
+   * Listener is attached before the command is sent to avoid races.
+   */
+  waitForOutput(
+    serverId: string,
+    match: (line: string) => boolean,
+    opts?: { timeoutMs?: number; command?: string },
+  ): Promise<string> {
+    const timeoutMs = opts?.timeoutMs ?? 10_000;
+    return new Promise((resolve, reject) => {
+      if (opts?.command && !this.running.has(serverId)) {
+        reject(new Error("Server is not running"));
+        return;
+      }
+      const onOutput = (id: string, line: string) => {
+        if (id !== serverId) return;
+        if (!match(line)) return;
+        cleanup();
+        resolve(line);
+      };
+      const timer = setTimeout(() => {
+        cleanup();
+        reject(new Error("Timed out waiting for console output"));
+      }, timeoutMs);
+      const cleanup = () => {
+        clearTimeout(timer);
+        this.off("output", onOutput);
+      };
+      this.on("output", onOutput);
+      if (opts?.command) {
+        try {
+          this.sendCommand(serverId, opts.command);
+        } catch (err) {
+          cleanup();
+          reject(err instanceof Error ? err : new Error(String(err)));
+        }
+      }
+    });
+  }
+
   async stopAll(): Promise<void> {
     const ids = [...this.running];
     await Promise.all(ids.map((id) => this.stop(id).catch(() => undefined)));

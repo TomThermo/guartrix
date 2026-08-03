@@ -261,7 +261,7 @@ class ProcessManager extends EventEmitter {
     }
     // multi-node resume banner when opening the console (not persisted)
     return [
-      `[Guartrix Daemon] Resuming log starting from: ${this.formatDaemonStamp()}`,
+      `[${this.formatDaemonClock()}] [Guartrix Daemon] Resuming log starting from: ${this.formatDaemonStamp()}`,
       ...lines,
     ];
   }
@@ -399,6 +399,12 @@ class ProcessManager extends EventEmitter {
     return `${pad(at.getDate())}-${pad(at.getMonth() + 1)}-${at.getFullYear()} ${pad(at.getHours())}:${pad(at.getMinutes())}:${pad(at.getSeconds())}`;
   }
 
+  /** Minecraft-style clock for console lines (`[05:30:33]`). */
+  private formatDaemonClock(at = new Date()): string {
+    const pad = (n: number) => n.toString().padStart(2, "0");
+    return `${pad(at.getHours())}:${pad(at.getMinutes())}:${pad(at.getSeconds())}`;
+  }
+
   private pushConsoleLine(
     serverId: string,
     line: string,
@@ -413,7 +419,10 @@ class ProcessManager extends EventEmitter {
     if (!this.histories.has(serverId)) {
       this.histories.set(serverId, loadPersistedConsoleHistory(serverId));
     }
-    this.pushConsoleLine(serverId, `[Guartrix Daemon] ${message}`);
+    this.pushConsoleLine(
+      serverId,
+      `[${this.formatDaemonClock()}] [Guartrix Daemon] ${message}`,
+    );
   }
 
   private async emitDiskUsage(serverId: string): Promise<void> {
@@ -1078,7 +1087,7 @@ resourceMonitor.on("disk-quota-exceeded", (serverId: string) => {
       processManager.emit(
         "output",
         serverId,
-        "[Guartrix Daemon] Disk quota exceeded — stopping server (Wings-style enforcement).",
+        `[${new Date().toTimeString().slice(0, 8)}] [Guartrix Daemon] Disk quota exceeded — stopping server (Wings-style enforcement).`,
         "stderr",
       );
       await processManager.kill(serverId);

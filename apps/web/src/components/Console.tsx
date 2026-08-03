@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent, type UIEvent } from "react";
 import type { ConsoleMessage, ServerStats, ServerStatus } from "@msm/shared";
-import { Button, Form, InputGroup } from "react-bootstrap";
+import { Button, Form, InputGroup, Stack } from "react-bootstrap";
+import { api } from "../api";
 
 interface Props {
   serverId: string;
@@ -71,8 +72,33 @@ export function Console({
 }: Props) {
   const [lines, setLines] = useState<string[]>([]);
   const [command, setCommand] = useState("");
+  const [favorites, setFavorites] = useState<string[]>([]);
   const [connected, setConnected] = useState(false);
   const [reconnecting, setReconnecting] = useState(false);
+
+  useEffect(() => {
+    if (!canSend) return;
+    void api
+      .getConsoleFavorites(serverId)
+      .then((r) => setFavorites(r.commands))
+      .catch(() => setFavorites([]));
+  }, [serverId, canSend]);
+
+  async function persistFavorites(next: string[]) {
+    setFavorites(next);
+    try {
+      const saved = await api.setConsoleFavorites(serverId, next);
+      setFavorites(saved.commands);
+    } catch {
+      // keep local
+    }
+  }
+
+  function addFavorite() {
+    const cmd = command.trim().replace(/^\/+/, "");
+    if (!cmd || favorites.includes(cmd)) return;
+    void persistFavorites([...favorites, cmd]);
+  }
   const outputRef = useRef<HTMLDivElement>(null);
   const stickToBottomRef = useRef(true);
   const forceBottomRef = useRef(false);
@@ -236,6 +262,27 @@ export function Console({
           </div>
         ))}
       </div>
+      {canSend && favorites.length > 0 && (
+        <Stack direction="horizontal" gap={1} className="flex-wrap px-2 pt-2 console-favorites">
+          {favorites.map((fav) => (
+            <Button
+              key={fav}
+              size="sm"
+              variant="outline-secondary"
+              className="font-monospace"
+              disabled={!connected}
+              onClick={() => setCommand(fav)}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                void persistFavorites(favorites.filter((f) => f !== fav));
+              }}
+              title="Click to use · right-click to remove"
+            >
+              /{fav}
+            </Button>
+          ))}
+        </Stack>
+      )}
       {canSend && (
         <Form onSubmit={send} className="console-input-bar">
           <InputGroup>
@@ -249,6 +296,15 @@ export function Console({
               spellCheck={false}
               className="font-monospace"
             />
+            <Button
+              type="button"
+              variant="outline-secondary"
+              disabled={!command.trim()}
+              title="Save as favorite"
+              onClick={() => addFavorite()}
+            >
+              <i className="fa-regular fa-star" />
+            </Button>
             <Button type="submit" variant="primary" disabled={!connected}>
               Send
             </Button>

@@ -4,7 +4,7 @@ Wat er **al af** is, en wat we **nog moeten doen**. Volgorde = aanbevolen sprint
 
 **Live:** [guartrix.com](https://guartrix.com) · **Wiki:** [docs/wiki/README.md](wiki/README.md)
 
-Laatst bijgewerkt: 2026-07-28
+Laatst bijgewerkt: 2026-08-03
 
 ---
 
@@ -130,13 +130,21 @@ Hardening-checklist blijft leidend: [security.md](wiki/security.md).
 | Locations | Multi-region / locatie-labels op nodes |
 | Redis / HA panel | Pas nodig bij meerdere API-replica’s — zie [scaling.md](wiki/scaling.md) |
 
+### Post-roadmap (2026-08-03)
+
+- [x] Join card (address/QR) + player moderation history
+- [x] Owner alerts (disk/OOM) + Discord status webhook
+- [x] Velocity/Bungee proxy helpers + subuser invite links
+- [x] BlueMap one-click + recommended plugin stacks + console favorites
+- [x] PWA app-shell (no push)
+
 ### Post-roadmap (2026-08-01)
 
 - [x] Hosting tools: reinstall, version picker, change software type
 - [x] World reset / zip import + create-flow seed/presets
 - [x] Paper/Purpur Engine settings tab
 - [x] Modrinth/CurseForge modpacks + Geyser one-click (UDP)
-- [x] Panel license enforcement (validate API + stop MC on expiry)
+- [x] Panel license enforcement (validate API + free tier 1 node / 1 server / 10 GB; licensed product caps)
 
 ### Post-roadmap (2026-07-28)
 

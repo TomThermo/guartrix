@@ -36,9 +36,14 @@ export function isUnlimited(user: QuotaUser): boolean {
 export async function assertCanCreateServer(
   user: QuotaUser,
   memoryMb: number,
+  opts?: { diskMb?: number },
 ): Promise<void> {
-  const { assertLicensePanelQuota } = await import("./license.js");
+  const { assertLicensePanelQuota, assertLicenseDiskQuota } = await import(
+    "./license.js"
+  );
   await assertLicensePanelQuota(memoryMb, { extraServer: true });
+  // Default provision disk is 10 GB when omitted.
+  await assertLicenseDiskQuota(opts?.diskMb ?? 10_240);
 
   if (isUnlimited(user)) return;
 
@@ -75,13 +80,22 @@ export async function assertCanCreateServer(
 export async function assertCanAllocateMemory(
   user: QuotaUser,
   memoryMb: number,
-  opts?: { excludeServerId?: string; extraServer?: boolean },
+  opts?: {
+    excludeServerId?: string;
+    extraServer?: boolean;
+    diskMb?: number;
+  },
 ): Promise<void> {
-  const { assertLicensePanelQuota } = await import("./license.js");
+  const { assertLicensePanelQuota, assertLicenseDiskQuota } = await import(
+    "./license.js"
+  );
   await assertLicensePanelQuota(memoryMb, {
     excludeServerId: opts?.excludeServerId,
     extraServer: opts?.extraServer ?? false,
   });
+  if (opts?.diskMb !== undefined) {
+    await assertLicenseDiskQuota(opts.diskMb);
+  }
 
   if (isUnlimited(user)) return;
 

@@ -32,6 +32,7 @@ import { api } from "../api";
 import { useAuth } from "../auth";
 import { copyText } from "../utils";
 import { MemorySelect } from "./MemorySelect";
+import { ProxySetupCard } from "./ProxySetupCard";
 import { ServerIconField } from "./ServerIconField";
 import { WorldToolsCard } from "./WorldToolsCard";
 
@@ -165,6 +166,19 @@ export function ServerSettings({
   const [port, setPort] = useState(server.port);
   const [autoRestart, setAutoRestart] = useState(server.autoRestart);
   const [startOnBoot, setStartOnBoot] = useState(server.startOnBoot);
+  const [ownerAlertWebhookUrl, setOwnerAlertWebhookUrl] = useState(
+    server.ownerAlertWebhookUrl ?? "",
+  );
+  const [ownerAlertEmail, setOwnerAlertEmail] = useState(
+    server.ownerAlertEmail ?? "",
+  );
+  const [discordStatusWebhookUrl, setDiscordStatusWebhookUrl] = useState(
+    server.discordStatusWebhookUrl ?? "",
+  );
+  const [discordStatusEnabled, setDiscordStatusEnabled] = useState(
+    server.discordStatusEnabled ?? false,
+  );
+  const [bluemapUrl, setBluemapUrl] = useState(server.bluemapUrl ?? "");
   const [javaVersion, setJavaVersion] = useState<JavaVersion>(
     normalizeJavaVersion(server.javaVersion ?? server.javaPath),
   );
@@ -199,6 +213,11 @@ export function ServerSettings({
     setPort(server.port);
     setAutoRestart(server.autoRestart);
     setStartOnBoot(server.startOnBoot);
+    setOwnerAlertWebhookUrl(server.ownerAlertWebhookUrl ?? "");
+    setOwnerAlertEmail(server.ownerAlertEmail ?? "");
+    setDiscordStatusWebhookUrl(server.discordStatusWebhookUrl ?? "");
+    setDiscordStatusEnabled(server.discordStatusEnabled ?? false);
+    setBluemapUrl(server.bluemapUrl ?? "");
     setJavaVersion(normalizeJavaVersion(server.javaVersion ?? server.javaPath));
     setStartupCommand(
       server.startupCommand?.trim() ||
@@ -233,6 +252,10 @@ export function ServerSettings({
           maxPlayers: server.properties["max-players"] ?? "20",
           onlineMode: server.properties["online-mode"] !== "false",
           whitelistEnabled: server.properties["white-list"] === "true",
+          mcVersion: server.mcVersion,
+          onlinePlayers: 0,
+          playersMax: Number(server.properties["max-players"] ?? 20) || 20,
+          serverStatus: server.status,
         }),
       );
   }, [server.id, server.port, server.properties]);
@@ -270,6 +293,11 @@ export function ServerSettings({
         properties: props,
         autoRestart,
         startOnBoot,
+        ownerAlertWebhookUrl: ownerAlertWebhookUrl.trim() || null,
+        ownerAlertEmail: ownerAlertEmail.trim() || null,
+        discordStatusWebhookUrl: discordStatusWebhookUrl.trim() || null,
+        discordStatusEnabled,
+        bluemapUrl: bluemapUrl.trim() || null,
         ...(startupEditable
           ? {
               javaVersion,
@@ -655,6 +683,82 @@ export function ServerSettings({
                     )}
                   </Col>
                 </Row>
+
+                <Card className="border mb-3 mt-3">
+                  <Card.Body className="py-3">
+                    <div className="fw-semibold mb-1">
+                      <i className="fa-solid fa-bell me-2" />
+                      Owner alerts
+                    </div>
+                    <p className="small text-secondary mb-3">
+                      Optional Discord webhook and/or email for crash, OOM, disk-high,
+                      offline, and backup-failed events on this server.
+                    </p>
+                    <Row className="g-3">
+                      <Col md={6}>
+                        <Field label="Alert webhook URL" hint="Discord-compatible webhook">
+                          <Form.Control
+                            value={ownerAlertWebhookUrl}
+                            onChange={(e) => setOwnerAlertWebhookUrl(e.target.value)}
+                            placeholder="https://discord.com/api/webhooks/…"
+                            disabled={!settingsEditable}
+                          />
+                        </Field>
+                      </Col>
+                      <Col md={6}>
+                        <Field label="Alert email" hint="Leave empty to disable">
+                          <Form.Control
+                            type="email"
+                            value={ownerAlertEmail}
+                            onChange={(e) => setOwnerAlertEmail(e.target.value)}
+                            placeholder="you@example.com"
+                            disabled={!settingsEditable}
+                          />
+                        </Field>
+                      </Col>
+                    </Row>
+                  </Card.Body>
+                </Card>
+
+                <Card className="border mb-3">
+                  <Card.Body className="py-3">
+                    <div className="fw-semibold mb-1">
+                      <i className="fa-brands fa-discord me-2" />
+                      Discord status
+                    </div>
+                    <p className="small text-secondary mb-3">
+                      Keep one channel message updated with online/offline status and
+                      player count (uses a webhook — no bot token).
+                    </p>
+                    <Row className="g-3">
+                      <Col md={8}>
+                        <Field label="Status webhook URL">
+                          <Form.Control
+                            value={discordStatusWebhookUrl}
+                            onChange={(e) => setDiscordStatusWebhookUrl(e.target.value)}
+                            placeholder="https://discord.com/api/webhooks/…"
+                            disabled={!settingsEditable}
+                          />
+                        </Field>
+                      </Col>
+                      <Col md={4}>
+                        <Field label="Enabled">
+                          <Form.Select
+                            value={discordStatusEnabled ? "true" : "false"}
+                            onChange={(e) =>
+                              setDiscordStatusEnabled(e.target.value === "true")
+                            }
+                            disabled={!settingsEditable}
+                          >
+                            <option value="true">On</option>
+                            <option value="false">Off</option>
+                          </Form.Select>
+                        </Field>
+                      </Col>
+                    </Row>
+                  </Card.Body>
+                </Card>
+
                 <div className="mb-3">
                   <Field label="Server icon" hint="Multiplayer list icon">
                     {settingsEditable ? (
@@ -789,6 +893,11 @@ export function ServerSettings({
                   onNotice={(m) => onNotice?.(m)}
                   onError={onError}
                 />
+                <Alert variant="light" className="border mt-3 mb-0 small">
+                  <i className="fa-solid fa-map-location-dot me-2" />
+                  Biome / structure map: open the{" "}
+                  <strong>World Map</strong> tab in the server menu.
+                </Alert>
               </fieldset>
             )}
 
@@ -881,6 +990,19 @@ export function ServerSettings({
 
             {category === "network" && (
               <fieldset disabled={!settingsEditable} className="settings-fieldset">
+                <ProxySetupCard
+                  server={server}
+                  disabled={!settingsEditable}
+                  onNotice={(m) => onNotice?.(m)}
+                  onError={onError}
+                  onApplied={() => {
+                    void api.getServer(server.id).then(onSaved).catch(() => undefined);
+                    void api
+                      .getConnectInfo(server.id)
+                      .then(setConnect)
+                      .catch(() => undefined);
+                  }}
+                />
                 <Row className="g-3 mb-1">
                   <Col md={6}>
                     <Field label="Prevent proxy connections" hint="Block VPNs / proxies">

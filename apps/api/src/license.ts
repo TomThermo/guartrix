@@ -264,25 +264,69 @@ export async function getInstallId(): Promise<string> {
   return id;
 }
 
-async function stopAllGameServers(reason: string): Promise<number> {
+/**
+ * Unlicensed / invalid license free tier for this install.
+ * One node, one Minecraft server, 10 GB disk — enough to evaluate the panel.
+ */
+export const UNLICENSED_MAX_NODES = 1;
+export const UNLICENSED_MAX_SERVERS = 1;
+export const UNLICENSED_MAX_DISK_MB = 10_240;
+
+export function getUnlicensedFreeTier(): {
+  maxNodes: number;
+  maxServers: number;
+  maxDiskMb: number;
+} {
+  return {
+    maxNodes: UNLICENSED_MAX_NODES,
+    maxServers: UNLICENSED_MAX_SERVERS,
+    maxDiskMb: UNLICENSED_MAX_DISK_MB,
+  };
+}
+
+function licenseQuotaError(message: string): Error & { code?: string } {
+  const err = new Error(message) as Error & { code?: string };
+  err.code = "LICENSE_QUOTA";
+  return err;
+}
+
+/** Stop running servers that exceed unlicensed free-tier caps. */
+async function enforceUnlicensedFreeTier(reason: string): Promise<number> {
   const servers = await prisma.server.findMany({
-    where: { status: { in: ["RUNNING", "STARTING", "STOPPING"] } },
-    select: { id: true, name: true },
+    orderBy: { createdAt: "asc" },
+    select: {
+      id: true,
+      name: true,
+      diskMb: true,
+      status: true,
+    },
   });
+  const active = new Set(["RUNNING", "STARTING", "STOPPING"]);
+  const keepIds = new Set(
+    servers.slice(0, UNLICENSED_MAX_SERVERS).map((s) => s.id),
+  );
   let n = 0;
   for (const s of servers) {
+    const overDisk = s.diskMb <= 0 || s.diskMb > UNLICENSED_MAX_DISK_MB;
+    const excess = !keepIds.has(s.id);
+    if (!(overDisk || excess) || !active.has(s.status)) continue;
     try {
       await processManager.stop(s.id);
       n += 1;
+      console.warn(
+        `[license] Stopped ${s.name} (${s.id}): unlicensed free tier (${reason})`,
+      );
     } catch (err) {
       console.warn(
-        `[license] failed to stop ${s.id}:`,
+        `[license] failed to stop free-tier over ${s.id}:`,
         err instanceof Error ? err.message : err,
       );
     }
   }
   if (n > 0) {
-    console.warn(`[license] Stopped ${n} game server(s): ${reason}`);
+    console.warn(
+      `[license] Stopped ${n} game server(s) for unlicensed free tier: ${reason}`,
+    );
   }
   return n;
 }
@@ -354,9 +398,9 @@ export function getCachedLicenseState(): LicenseState | null {
   return cached;
 }
 
-/** Shown to end users on start/restart when the panel license is not valid. */
+/** Shown when start is blocked because free-tier caps are exceeded. */
 export const LICENSE_POWER_BLOCKED_MESSAGE =
-  "ERROR: Cannot start — panel license expired or invalid. Please contact your administrator.";
+  "ERROR: Cannot start — panel license expired or invalid, and this install is over the free tier (1 server, 10 GB disk). Please contact your administrator.";
 
 export const LICENSE_POWER_BLOCKED_CODE = "LICENSE_INVALID";
 
@@ -364,7 +408,10 @@ export async function assertLicenseAllowsPower(): Promise<void> {
   // Force a fresh check on power actions so revoke/expiry applies immediately
   // (not only after the 5-minute cache window).
   const state = await validateLicense(true);
-  if (!state.valid) {
+  if (state.valid) return;
+  // Unlicensed free tier may still start the single allowed server.
+  const usage = await getPanelServerUsage();
+  if (usage.serverCount > UNLICENSED_MAX_SERVERS) {
     const err = new Error(LICENSE_POWER_BLOCKED_MESSAGE) as Error & {
       code?: string;
     };
@@ -381,12 +428,13 @@ export async function startServerIfLicensed(serverId: string): Promise<void> {
   await assertLicenseAllowsPower();
   const server = await prisma.server.findUnique({
     where: { id: serverId },
-    select: { id: true, memoryMb: true },
+    select: { id: true, memoryMb: true, diskMb: true },
   });
   if (!server) throw new Error("Server not found");
   await assertLicensePanelQuota(server.memoryMb, {
     excludeServerId: server.id,
   });
+  await assertLicenseDiskQuota(server.diskMb);
   await processManager.start(serverId);
 }
 
@@ -398,9 +446,9 @@ export function userFacingLicenseMessage(state: LicenseState | null): string {
   }
   if (state.valid) return "License is valid.";
   if (state.status === "unreachable") {
-    return "License could not be verified and grace has expired. Contact your administrator.";
+    return "License could not be verified and grace has expired. Free tier applies: 1 node, 1 server, 10 GB disk.";
   }
-  return LICENSE_POWER_BLOCKED_MESSAGE;
+  return "No valid license. Free tier applies: 1 node, 1 Minecraft server, 10 GB disk.";
 }
 
 export async function validateLicense(force = false): Promise<LicenseState> {
@@ -635,6 +683,13 @@ async function doValidateLicense(): Promise<LicenseState> {
         err instanceof Error ? err.message : err,
       );
     });
+  } else {
+    await enforceUnlicensedFreeTier(cached.message).catch((err) => {
+      console.warn(
+        "[license] free-tier enforcement failed:",
+        err instanceof Error ? err.message : err,
+      );
+    });
   }
   return cached;
 }
@@ -646,14 +701,18 @@ async function maybeEnforceTransition(
   const was = lastValid;
   lastValid = valid;
   if (was === true && valid === false) {
-    const stopped = await stopAllGameServers(message);
+    const stopped = await enforceUnlicensedFreeTier(message);
     logActivity({
       action: "license.expired",
       actor: "system",
       user: null,
       serverId: null,
       success: true,
-      metadata: { message, stopped },
+      metadata: {
+        message,
+        stopped,
+        freeTier: getUnlicensedFreeTier(),
+      },
     });
   }
 }
@@ -719,18 +778,35 @@ function formatLicenseRam(mb: number): string {
 /** Block adding a daemon node when the license maxNodes ceiling is reached. */
 export async function assertLicenseNodeQuota(): Promise<void> {
   const state = await validateLicense(false);
+  const nodeCount = await prisma.node.count();
   if (!state.valid) {
-    throw new Error(state.message || "Panel license is not valid");
+    if (nodeCount >= UNLICENSED_MAX_NODES) {
+      throw licenseQuotaError(
+        `Without a valid license, this panel allows ${UNLICENSED_MAX_NODES} node (currently ${nodeCount}). Activate a license to add more.`,
+      );
+    }
+    return;
   }
   const maxNodes = state.maxNodes ?? null;
   if (maxNodes == null) return;
-  const nodeCount = await prisma.node.count();
   if (nodeCount >= maxNodes) {
-    const err = new Error(
+    throw licenseQuotaError(
       `License node limit reached (${nodeCount}/${maxNodes}). Upgrade the license or remove a node.`,
-    ) as Error & { code?: string };
-    err.code = "LICENSE_QUOTA";
-    throw err;
+    );
+  }
+}
+
+/**
+ * Disk ceiling from licensing. Licensed installs have no product disk cap yet;
+ * unlicensed free tier caps each server at 10 GB (unlimited `diskMb <= 0` blocked).
+ */
+export async function assertLicenseDiskQuota(diskMb: number): Promise<void> {
+  const state = await validateLicense(false);
+  if (state.valid) return;
+  if (diskMb <= 0 || diskMb > UNLICENSED_MAX_DISK_MB) {
+    throw licenseQuotaError(
+      `Without a valid license, disk is limited to ${UNLICENSED_MAX_DISK_MB / 1024} GB per server.`,
+    );
   }
 }
 
@@ -742,23 +818,6 @@ export async function assertLicensePanelQuota(
 ): Promise<void> {
   // Prefer fresh cache after power actions (assertLicenseAllowsPower force-validates).
   const state = await validateLicense(false);
-  if (!state.valid) {
-    throw new Error(state.message || "Panel license is not valid");
-  }
-
-  const maxServers = state.maxServers ?? null;
-  const maxMemoryMb = state.maxMemoryMb ?? null;
-  const maxPerServer = state.maxMemoryMbPerServer ?? null;
-
-  if (maxPerServer != null && memoryMb > maxPerServer) {
-    const err = new Error(
-      `License allows at most ${formatLicenseRam(maxPerServer)} RAM per Minecraft server (this server is set to ${formatLicenseRam(memoryMb)}). Lower Memory in server settings, then try again.`,
-    ) as Error & { code?: string };
-    err.code = "LICENSE_QUOTA";
-    throw err;
-  }
-
-  if (maxServers == null && maxMemoryMb == null) return;
 
   const servers = await prisma.server.findMany({
     select: { id: true, memoryMb: true },
@@ -774,22 +833,44 @@ export async function assertLicensePanelQuota(
       ? servers.length
       : others.length + 1;
 
+  if (!state.valid) {
+    if (opts.extraServer && serverCountAfter > UNLICENSED_MAX_SERVERS) {
+      throw licenseQuotaError(
+        `Without a valid license, this panel allows ${UNLICENSED_MAX_SERVERS} Minecraft server (currently ${servers.length}). Activate a license to add more.`,
+      );
+    }
+    if (!opts.extraServer && servers.length > UNLICENSED_MAX_SERVERS) {
+      throw licenseQuotaError(
+        `Without a valid license, this panel allows ${UNLICENSED_MAX_SERVERS} Minecraft server (currently ${servers.length}). Delete extra servers or activate a license.`,
+      );
+    }
+    return;
+  }
+
+  const maxServers = state.maxServers ?? null;
+  const maxMemoryMb = state.maxMemoryMb ?? null;
+  const maxPerServer = state.maxMemoryMbPerServer ?? null;
+
+  if (maxPerServer != null && memoryMb > maxPerServer) {
+    throw licenseQuotaError(
+      `License allows at most ${formatLicenseRam(maxPerServer)} RAM per Minecraft server (this server is set to ${formatLicenseRam(memoryMb)}). Lower Memory in server settings, then try again.`,
+    );
+  }
+
+  if (maxServers == null && maxMemoryMb == null) return;
+
   const memoryAfter =
     others.reduce((sum, s) => sum + s.memoryMb, 0) + memoryMb;
 
   if (maxServers != null && opts.extraServer && serverCountAfter > maxServers) {
-    const err = new Error(
+    throw licenseQuotaError(
       `License server limit reached (${servers.length}/${maxServers}).`,
-    ) as Error & { code?: string };
-    err.code = "LICENSE_QUOTA";
-    throw err;
+    );
   }
   if (maxMemoryMb != null && memoryAfter > maxMemoryMb) {
-    const err = new Error(
+    throw licenseQuotaError(
       `License RAM pool exceeded: need ${formatLicenseRam(memoryAfter)} total, license allows ${formatLicenseRam(maxMemoryMb)}.`,
-    ) as Error & { code?: string };
-    err.code = "LICENSE_QUOTA";
-    throw err;
+    );
   }
 }
 

@@ -7,7 +7,7 @@ import type {
   InstalledAddonUpdate,
   ServerType,
 } from "@msm/shared";
-import { addonKindFor } from "@msm/shared";
+import { addonKindFor, RECOMMENDED_PLUGIN_STACKS } from "@msm/shared";
 import {
   Alert,
   Badge,
@@ -67,6 +67,7 @@ export function AddonPanel({
   const [busyId, setBusyId] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [updatingAll, setUpdatingAll] = useState(false);
+  const [stackBusy, setStackBusy] = useState<string | null>(null);
   const [detailProjectId, setDetailProjectId] = useState<string | null>(null);
   const [installPick, setInstallPick] = useState<{
     projectId: string;
@@ -344,6 +345,64 @@ export function AddonPanel({
         installed automatically. Jars added via Files/SFTP need{" "}
         <strong>Sync from disk</strong> to appear here — restart required to apply.
       </Alert>
+
+      {kind === "plugin" && canUpdate && (
+        <Alert variant="light" className="border mb-3">
+          <div className="fw-semibold mb-2">
+            <i className="fa-solid fa-layer-group me-2" />
+            Recommended stacks
+          </div>
+          <Stack gap={2}>
+            {RECOMMENDED_PLUGIN_STACKS.map((stack) => (
+              <div
+                key={stack.id}
+                className="d-flex flex-wrap justify-content-between align-items-start gap-2"
+              >
+                <div className="min-w-0">
+                  <div className="fw-semibold">{stack.name}</div>
+                  <div className="small text-secondary">{stack.description}</div>
+                  <div className="small text-secondary">
+                    {stack.items.map((i) => i.name).join(" · ")}
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline-primary"
+                  disabled={stackBusy !== null || busyId !== null}
+                  onClick={() => {
+                    setStackBusy(stack.id);
+                    onError(null);
+                    void api
+                      .installAddonStack(serverId, stack.id)
+                      .then(async (res) => {
+                        await refreshInstalled();
+                        const errPart =
+                          res.errors.length > 0
+                            ? ` · ${res.errors.length} failed`
+                            : "";
+                        onNotice(
+                          `Installed ${res.installed.length} from “${stack.name}”${errPart}. Restart required.`,
+                        );
+                      })
+                      .catch((err) =>
+                        onError(
+                          err instanceof Error ? err.message : "Stack install failed",
+                        ),
+                      )
+                      .finally(() => setStackBusy(null));
+                  }}
+                >
+                  {stackBusy === stack.id ? (
+                    <Spinner size="sm" />
+                  ) : (
+                    "Install"
+                  )}
+                </Button>
+              </div>
+            ))}
+          </Stack>
+        </Alert>
+      )}
 
       <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
         <h3 className="h6 mb-0">

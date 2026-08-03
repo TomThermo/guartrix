@@ -10,6 +10,7 @@ import {
   setLicenseServerUrl,
   getCachedLicenseState,
   getPanelServerUsage,
+  getUnlicensedFreeTier,
 } from "../license.js";
 
 async function adminLicensePayload() {
@@ -18,8 +19,18 @@ async function adminLicensePayload() {
     getLicenseServerUrlInfo(),
     getPanelServerUsage(),
   ]);
+  const freeTier = getUnlicensedFreeTier();
   return {
     ...state,
+    // When unlicensed, surface free-tier caps so Admin → License shows allowance.
+    ...(state.valid
+      ? {}
+      : {
+          maxServers: freeTier.maxServers,
+          maxNodes: freeTier.maxNodes,
+          maxDiskMb: freeTier.maxDiskMb,
+          freeTier: true,
+        }),
     hasKey: Boolean(await getLicenseKey()),
     serverUrl: server.url,
     serverUrlSource: server.source,

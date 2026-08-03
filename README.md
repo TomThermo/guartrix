@@ -38,17 +38,17 @@ Full UI tour: [Panel guide](docs/wiki/panel-guide.md).
 
 ## Capabilities
 
-**Game servers** — create, import, clone, reinstall; change type/version; world reset and upload; live console and power controls.
+**Game servers** — create, import, clone, reinstall; change type/version; world reset and upload; live console and power controls; join card (copy/QR); seed map + optional BlueMap.
 
-**Resources** — RAM, CPU, and disk limits; live Docker stats; optional schedules (backup → restart → commands).
+**Resources** — RAM, CPU, and disk limits; live Docker stats; optional schedules (backup → restart → commands); crash auto-restart; owner alerts and Discord status webhooks.
 
-**Files & access** — in-panel file manager; SFTP on port 2022 (`{username}.{serverId}`); subusers with scoped permissions.
+**Files & access** — in-panel file manager; SFTP on port 2022 (`{username}.{serverId}`); subusers with invite links and scoped permissions.
 
-**Content** — Modrinth plugins/mods and modpacks; optional CurseForge; one-click Geyser.
+**Content** — Modrinth plugins/mods and modpacks; recommended plugin stacks; optional CurseForge; one-click Geyser; Velocity/Bungee helpers.
 
 **Data** — backups (manual and scheduled); per-server MySQL on the node.
 
-**Platform** — registration with email verification; quotas (new accounts start at zero); optional TOTP; activity log and alerts; Client API keys; Mollie billing and Application API; license validation via `license.guartrix.com`.
+**Platform** — registration with email verification; quotas (new accounts start at zero); optional TOTP; activity log and alerts; Client API keys; Mollie billing and Application API; license validation via `license.guartrix.com` (unlicensed free tier: 1 node, 1 server, 10 GB disk).
 
 ---
 

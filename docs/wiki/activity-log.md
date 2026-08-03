@@ -15,7 +15,8 @@ Not to be confused with the **Log Files** tab, which shows the Minecraft
 | Global | Navbar → **Activity** (`/admin/activity`) | Admins only |
 
 Both views page through history and filter by category, exact action, or free
-text (matches actor, server name, action key, IP and metadata).
+text (matches actor, server name, action key, IP and metadata). A **CSV** button
+exports the currently filtered set.
 
 ## Categories
 
@@ -46,9 +47,16 @@ shown under the table.
 
 ## Alerts (Discord / email)
 
-Critical events can be pushed out of the panel — crashes, unexpected offline,
+Critical events can be pushed out of the panel — crashes, **OOM kills**
+(`server.oom`), **disk high** (`server.disk_high`), unexpected offline,
 node offline, node token rotation, failed backups, backup restores, owner
 changes, user deletes, role changes, password resets and failed sign-ins.
+
+Besides the global `ACTIVITY_WEBHOOK_URL` / `ALERT_EMAIL`, each server can set an
+**owner webhook / email** (Server Properties → General) that also receives that
+server's critical alerts. The separate **Discord status** feature (same page)
+keeps one channel message updated with online/offline + player count and is not
+part of the alert pipeline.
 
 ```bash
 # .env

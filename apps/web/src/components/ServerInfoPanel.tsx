@@ -10,6 +10,7 @@ import { Button, Spinner } from "react-bootstrap";
 import { api } from "../api";
 import { useSharedOnlinePlayers } from "../hooks/OnlinePlayersProvider";
 import { copyText } from "../utils";
+import { JoinCard } from "./JoinCard";
 
 interface Props {
   server: McServer;
@@ -152,6 +153,7 @@ export function ServerInfoPanel({
         Information
         {copied && <span className="server-info-copied">Copied</span>}
       </div>
+      <JoinCard server={server} connect={connect} />
       <InfoRow label="Time left" value="Unlimited" />
       <InfoRow label="Address" value={address} mono onCopy={() => void copy("Address", address)} />
       <InfoRow

@@ -31,6 +31,9 @@ const TermsPage = lazy(() =>
 const PrivacyPage = lazy(() =>
   import("./pages/PrivacyPage").then((m) => ({ default: m.PrivacyPage })),
 );
+const InvitePage = lazy(() =>
+  import("./pages/InvitePage").then((m) => ({ default: m.InvitePage })),
+);
 const DashboardPage = lazy(() =>
   import("./pages/DashboardPage").then((m) => ({ default: m.DashboardPage })),
 );
@@ -263,8 +266,8 @@ function Shell({ children }: { children: ReactNode }) {
         {isAdmin && !licenseOk && (
           <Alert variant="danger" className="mt-3 mb-0">
             <strong>License issue.</strong> {licenseMsg || "License is not valid."}{" "}
-            Game servers are stopped and cannot be started until the license is
-            valid.{" "}
+            Free tier applies: 1 node, 1 server, 10 GB disk. Servers beyond those
+            caps are stopped.{" "}
             <Link to="/admin/license" className="alert-link">
               Manage license
             </Link>
@@ -307,6 +310,7 @@ function PublicRoutes() {
         <Route path="/verify-email" element={<VerifyEmailPage />} />
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/invite/:token" element={<InvitePage />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </Suspense>
@@ -321,7 +325,8 @@ function isPublicPath(pathname: string): boolean {
     pathname === "/reset-password" ||
     pathname === "/verify-email" ||
     pathname === "/terms" ||
-    pathname === "/privacy"
+    pathname === "/privacy" ||
+    pathname.startsWith("/invite/")
   );
 }
 
@@ -354,6 +359,7 @@ export function App() {
           <Route path="/verify-email" element={<VerifyEmailPage />} />
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/invite/:token" element={<InvitePage />} />
           <Route
             path="/servers/new"
             element={

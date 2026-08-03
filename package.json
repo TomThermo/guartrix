@@ -26,7 +26,8 @@
   },
   "devDependencies": {
     "esbuild": "^0.25.0",
+    "playwright": "^1.55.0",
     "typescript": "^5.8.2"
   },
-  "version": "1.0.22"
+  "version": "1.0.23"
 }

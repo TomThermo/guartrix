@@ -1,11 +1,13 @@
 import type { ActivityEventRecord } from "@msm/shared";
 import { activityDetail } from "@msm/shared";
 import { config } from "./config.js";
+import { prisma } from "./db.js";
 import { sendMail } from "./mail.js";
 
 /**
  * Outbound alerts for critical activity (crashes, offline nodes, security events).
  * Configure with ACTIVITY_WEBHOOK_URL (Discord-compatible) and/or ALERT_EMAIL.
+ * Per-server owner webhook/email is also honored when set on the Server row.
  */
 
 /** Same action on the same target is only alerted once per window (crash loops). */
@@ -80,8 +82,25 @@ export async function notifyCriticalActivity(
   event: ActivityEventRecord,
 ): Promise<void> {
   const { webhookUrl, alertEmail, mutedActions } = config.alerts;
-  if (!webhookUrl && !alertEmail) return;
   if (mutedActions.includes(event.action)) return;
+
+  let ownerWebhook: string | null = null;
+  let ownerEmail: string | null = null;
+  if (event.serverId) {
+    const row = await prisma.server
+      .findUnique({
+        where: { id: event.serverId },
+        select: {
+          ownerAlertWebhookUrl: true,
+          ownerAlertEmail: true,
+        },
+      })
+      .catch(() => null);
+    ownerWebhook = row?.ownerAlertWebhookUrl?.trim() || null;
+    ownerEmail = row?.ownerAlertEmail?.trim() || null;
+  }
+
+  if (!webhookUrl && !alertEmail && !ownerWebhook && !ownerEmail) return;
 
   const key = `${event.action}:${event.serverId ?? event.userId ?? "global"}`;
   const now = Date.now();
@@ -89,9 +108,12 @@ export async function notifyCriticalActivity(
   if (previous && now - previous < DEDUPE_WINDOW_MS) return;
   lastSent.set(key, now);
 
-  if (webhookUrl) {
+  const webhooks = [webhookUrl, ownerWebhook].filter(
+    (u, i, arr): u is string => Boolean(u) && arr.indexOf(u) === i,
+  );
+  for (const url of webhooks) {
     try {
-      await postWebhook(webhookUrl, event);
+      await postWebhook(url, event);
     } catch (err) {
       console.warn(
         "[guartrix] Activity webhook failed:",
@@ -100,10 +122,13 @@ export async function notifyCriticalActivity(
     }
   }
 
-  if (alertEmail) {
+  const emails = [alertEmail, ownerEmail].filter(
+    (u, i, arr): u is string => Boolean(u) && arr.indexOf(u) === i,
+  );
+  for (const to of emails) {
     try {
       await sendMail({
-        to: alertEmail,
+        to,
         subject: `[Guartrix] ${eventTitle(event)}`,
         text: eventLines(event).join("\n"),
       });

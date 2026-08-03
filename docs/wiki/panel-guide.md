@@ -52,7 +52,7 @@ Admins manage plans (including auto-create / recurring) and Application API keys
 
 ## Dashboard (server list)
 
-Home page lists every Minecraft server you can access: status, engine, RAM/CPU meters, and quick Start / Stop / Restart / Manage.
+Home page lists every Minecraft server you can access: status, engine, RAM/CPU meters, and quick Start / Stop / Restart / Manage. A search box plus **status / node / type** filters narrow the list on larger installs.
 
 Each row shows clickable chips for **disk used / limit**, **online players** (`0/20`), **Whitelist on/off** (opens a toggle modal), and **plugin/mod updates** (opens Plugin Management). Chips deep-link into the matching server tab via `?tab=`.
 
@@ -62,11 +62,11 @@ Each row shows clickable chips for **disk used / limit**, **online players** (`0
 
 ## Create a server
 
-**+ New server** — pick software (Vanilla, Paper, Purpur, Fabric, Quilt, Forge, NeoForge), version, RAM, port, and (admins) which node.
+**+ New server** — pick software (Vanilla, Paper, Purpur, Fabric, Quilt, Forge, NeoForge), version, RAM, port, and (admins) which node. Optional **world preset** (Default / Flat / Void) and **seed** are applied on first start.
 
 ![Create server](assets/03-create-server.png)
 
-You can also **import** / **clone** an existing server from the server detail page.
+The same page has an **Import archive** tab to create a server from an existing world/server `.zip` or `.tar.gz`. **Clone** lives on the server detail page (top actions).
 
 ---
 
@@ -105,7 +105,13 @@ features are set on your license by Guartrix; they apply after revalidate (or th
 next ~10 minute background check). Tabs and dashboard chips without a license
 feature stay hidden.
 
-When the license is expired or revoked, running Minecraft servers are stopped and start/restart is blocked; the panel website stays up. Admins see a red banner with a link to this page. Regular users get a **red console message** when they try to start or restart (no page banner).
+When the license is missing, expired, or revoked, the install runs a **free tier**:
+**1 node**, **1 Minecraft server**, **10 GB disk**. Extra or over-disk servers are
+stopped; start/restart works only within those caps. The panel website stays up.
+Admins see a red banner with a link to this page. Regular users get a **red console
+message** when start/restart is blocked (no page banner).
+
+![Admin license](assets/31-admin-license.png)
 
 More: [Licensing](licensing.md)
 
@@ -138,10 +144,14 @@ Open a server from the dashboard. Sidebar groups:
 | Group | Tabs |
 |-------|------|
 | Manage service | Console, File Manager, **SFTP**, Databases, **Network**, Backups, Subusers |
-| Game | Server Properties, **Engine** (Paper/Purpur), **Plugin Management**, **Modpacks** (Fabric/Forge…), Whitelist, Online Players, Bans |
+| Game | Server Properties, **World Map**, **Engine** (Paper/Purpur), **Plugin Management**, **Modpacks** (Fabric/Forge…), Whitelist, Online Players, Bans |
 | Management | Schedules, **Activity Log**, Log Files, Resources |
 
 The header meta row shows status, loader, owner, version, **online players** (`3/30` — opens Online Players), **Whitelist on/off** (opens a quick toggle modal), and **plugin/mod updates** (opens Plugin Management). Top actions include **Clone**, **Reinstall**, **Move** (admin — to another node), **Owner** (admin), and Start / Stop / Kill / Restart.
+
+![Clone server](assets/34-server-clone-modal.png)
+
+![Whitelist toggle](assets/35-whitelist-toggle-modal.png)
 
 **Version & software** (above the console): pick any listed Minecraft version (upgrade or downgrade with confirm), or **Change software** (Paper ↔ Fabric, etc., with addon wipe when crossing plugin/mod ecosystems). **Reinstall** refreshes the runtime with optional keep-world / keep-addons; a backup is always created first.
 
@@ -151,7 +161,7 @@ More on moving servers: [Move between nodes](node-transfer.md)
 
 ### Console (live)
 
-WebSocket console: live logs, send commands, power controls, address / RAM / CPU / storage / players.
+WebSocket console: live logs, send commands, power controls, address / RAM / CPU / storage / players. Below the console, **history charts** show roughly the last hour of CPU / RAM / network from the API's in-memory ring buffer.
 
 ![Console](assets/08-server-console.png)
 
@@ -207,13 +217,41 @@ Edit `server.properties`, startup / Java settings (permission-scoped). The **Wor
 
 ![Server Properties](assets/15-server-settings.png)
 
+### World Map
+
+Sidebar → **World Map** (`?tab=seedmap`). Shows the seed from `level-seed` or, when the server is running, from the live `/seed` console command. The seed map is embedded from [mcseedmap.net](https://mcseedmap.net/) (biomes and structures). **Open Chunkbase** is available as an alternate new-tab viewer. On Paper/Purpur you can **Install BlueMap** for a live explored-chunk map (expose port `8100`, save the URL). Needs `settings.read` or `control.console`; querying `/seed` needs `control.console`.
+
+### Join card & player tools
+
+Console sidebar **Join this server** shows address, direct IP, version, whitelist, player count, copy buttons, and a QR code. Online Players actions include kick/ban/OP with optional reason plus a **History** tab of moderation events for that player.
+
+### Owner alerts & Discord status
+
+Server Properties → **General**: optional owner Discord webhook / email for crash, OOM, disk-high, offline, and backup-failed. **Discord status** keeps one channel message updated (webhook, no bot token) with online/offline and player count.
+
+### Behind a proxy
+
+Server Properties → **Access**: Velocity or BungeeCord one-click helpers (sets `online-mode=false` + forwarding flags / secret). Restart required. Paper/Purpur only.
+
+### Subuser invite links
+
+Subusers → invite by email generates a copyable `/invite/:token` link (7 days). Recipients sign in with that email and accept. **Invite link** regenerates/resends.
+
+### Console favorites & plugin stacks
+
+Console: star a command to save favorites (chips above the input; right-click to remove). Plugin Management: **Recommended stacks** (Essentials, moderation, BlueMap) install curated Modrinth sets on Paper/Purpur.
+
 ### Engine (Paper / Purpur)
 
 Guided toggles for common `paper-global.yml` / `spigot.yml` / `purpur.yml` keys. Restart after saving. Fabric/Forge: use File Manager `config/`.
 
+![Engine](assets/32-server-engine.png)
+
 ### Modpacks
 
 On Fabric/Quilt/Forge/NeoForge: browse **Modrinth** (and **CurseForge** when `CURSEFORGE_API_KEY` is set), install a pack into the server (pre-backup). Restart required.
+
+![Modpacks](assets/33-server-modpacks.png)
 
 ### Plugin Management (Modrinth)
 
@@ -226,6 +264,8 @@ The panel also checks Modrinth for newer builds compatible with the server’s l
 **Install** / **Change version** opens a version picker. Pick a **Minecraft version** in the dropdown (server version first), then a build; the newest for that MC version is marked **Latest**.
 
 ![Plugin Management](assets/12-server-addons.png)
+
+![Addon version picker](assets/36-addon-version-picker.png)
 
 ### Whitelist Manager
 
@@ -272,9 +312,26 @@ Download or read the Minecraft `logs/*.log` files the server itself wrote.
 
 ### Resources
 
-Disk / usage breakdown for the instance.
+Live meters plus the disk usage breakdown for the instance (World / mods·plugins / backups / other). The ~1-hour CPU / RAM / network **history charts** live on the **Console** tab.
 
 ![Resources](assets/22-server-resources.png)
+
+### Bots (admin)
+
+Admin-only tab to attach / control in-game bots for this server.
+
+![Bots](assets/38-server-bots.png)
+
+---
+
+## Install as app (PWA)
+
+The panel is a Progressive Web App: production builds register a service worker
+(`/sw.js`) that caches the app shell, so browsers offer **Install app** / Add to
+Home Screen and the UI loads instantly on revisit. There are **no push
+notifications** — alerts go via Discord/email webhooks (see
+[Activity log](activity-log.md)). Nothing to configure; a hard refresh picks up
+new panel versions.
 
 ---
 

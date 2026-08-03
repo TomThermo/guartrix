@@ -172,6 +172,7 @@ export async function autoCreateServerForPayment(paymentId: string): Promise<{
         maxDatabases: payment.user.maxDatabases,
       },
       plan.defaultMemoryMb,
+      { diskMb: plan.defaultDiskMb },
     );
 
     const { assertNodeCapacity, resolveCreateNodeId } = await import("./nodes.js");

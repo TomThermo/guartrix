@@ -29,7 +29,7 @@
 | Daemon | Short-lived HS256 JWTs on the wire (HMAC with node secret); raw bearer only if `DAEMON_JWT_LEGACY=true`; `serverId` sanitized; MySQL game users `remote: 172.%` |
 | Capacity | Shared `assertNodeCapacity` (incl. reserve) on create/PATCH |
 | Nodes | Only admins pick `nodeId` on create / clone / import |
-| Invites | No temporary password in JSON — setup link emailed |
+| Invites | No temporary password in JSON — setup link emailed; accept links are hashed tokens with a 7-day TTL |
 | Audit | Activity log records actor + IP per action; secret-looking metadata keys dropped — see [Activity log](activity-log.md) |
 | Watchdog | Restarts unhealthy panel processes; Discord/webhook alert when `ACTIVITY_WEBHOOK_URL` is set |
 | Licensing | Signed validate, IP/install bind, rate limits, feature ceilings — see [Licensing](licensing.md) |

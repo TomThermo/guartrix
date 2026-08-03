@@ -86,6 +86,11 @@ export interface McServer {
   whitelistEnabled: boolean;
   autoRestart: boolean;
   startOnBoot: boolean;
+  ownerAlertWebhookUrl?: string | null;
+  ownerAlertEmail?: string | null;
+  discordStatusWebhookUrl?: string | null;
+  discordStatusEnabled?: boolean;
+  bluemapUrl?: string | null;
   ownerId: string | null;
   ownerUsername: string | null;
   /** True when the current user owns this server (not only a subuser). */
@@ -164,6 +169,11 @@ export interface UpdateServerRequest {
   properties?: ServerProperties;
   autoRestart?: boolean;
   startOnBoot?: boolean;
+  ownerAlertWebhookUrl?: string | null;
+  ownerAlertEmail?: string | null;
+  discordStatusWebhookUrl?: string | null;
+  discordStatusEnabled?: boolean;
+  bluemapUrl?: string | null;
   /** Admin only: reassign server ownership */
   ownerId?: string | null;
 }
@@ -551,12 +561,29 @@ export interface ConnectInfo {
   maxPlayers: string;
   onlineMode: boolean;
   whitelistEnabled: boolean;
+  mcVersion: string;
+  /** Currently online players (best-effort; 0 when stopped). */
+  onlinePlayers: number;
+  /** Parsed max-players as number. */
+  playersMax: number;
+  serverStatus: ServerStatus;
   /** SFTP endpoint for file access (Ferox-style). */
   sftpEnabled?: boolean;
   sftpHost?: string | null;
   sftpPort?: number | null;
   /** `{username}.{serverId}` — password is the panel password. */
   sftpUsername?: string | null;
+}
+
+export interface PlayerModerationEvent {
+  id: string;
+  serverId: string;
+  playerName: string;
+  uuid: string | null;
+  action: string;
+  reason: string | null;
+  actorUserId: string | null;
+  createdAt: string;
 }
 
 export interface PortAllocation {
@@ -1057,6 +1084,9 @@ export interface ServerSubUser {
   userId: string | null;
   username: string | null;
   permissions: string[];
+  /** True when a pending invite token exists. */
+  invitePending?: boolean;
+  inviteExpiresAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -1074,4 +1104,50 @@ export interface CreateSubUserResponse {
   subuser: ServerSubUser;
   /** True when a new panel account was created (password set via invite email). */
   accountCreated?: boolean;
+  /** Absolute invite URL (shown once / on resend). */
+  inviteUrl?: string;
 }
+
+/** Curated Paper/Purpur plugin stacks (Modrinth project ids). */
+export interface PluginStackItem {
+  projectId: string;
+  slug: string;
+  name: string;
+}
+
+export interface PluginStack {
+  id: string;
+  name: string;
+  description: string;
+  items: PluginStackItem[];
+}
+
+export const RECOMMENDED_PLUGIN_STACKS: PluginStack[] = [
+  {
+    id: "essentials",
+    name: "Essentials",
+    description: "Core survival utilities: homes, kits, warps, and moderation basics.",
+    items: [
+      { projectId: "hXiIvTyT", slug: "essentialsx", name: "EssentialsX" },
+      { projectId: "Vebnzrzj", slug: "luckperms", name: "LuckPerms" },
+    ],
+  },
+  {
+    id: "moderation",
+    name: "Moderation & audit",
+    description: "Permissions, rollback, and performance insight.",
+    items: [
+      { projectId: "Vebnzrzj", slug: "luckperms", name: "LuckPerms" },
+      { projectId: "Lu3KuzdV", slug: "coreprotect", name: "CoreProtect" },
+      { projectId: "l6YH9Als", slug: "spark", name: "spark" },
+    ],
+  },
+  {
+    id: "map",
+    name: "Live map",
+    description: "In-browser explored-chunk map (BlueMap).",
+    items: [
+      { projectId: "swbUV1cr", slug: "bluemap", name: "BlueMap" },
+    ],
+  },
+];

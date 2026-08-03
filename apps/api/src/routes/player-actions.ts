@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { logActivity } from "../activity-log.js";
 import { requireServerAccess } from "../auth.js";
+import { listModerationEvents, recordModerationEvent } from "../moderation.js";
 import { processManager } from "../process-manager.js";
 
 const PLAYER_NAME = /^[A-Za-z0-9_]{3,16}$/;
@@ -118,9 +119,10 @@ export function registerPlayerActionRoutes(app: FastifyInstance): void {
       try {
         const command = buildCommand(parsed.data);
         processManager.sendCommand(access.server.id, command);
+        const activityAction =
+          ACTIVITY_ACTION_BY_PLAYER_ACTION[parsed.data.action] ?? "player.action";
         logActivity({
-          action:
-            ACTIVITY_ACTION_BY_PLAYER_ACTION[parsed.data.action] ?? "player.action",
+          action: activityAction,
           request,
           user: access.user,
           server: access.server,
@@ -130,6 +132,15 @@ export function registerPlayerActionRoutes(app: FastifyInstance): void {
             reason: parsed.data.reason,
           },
         });
+        if (ACTIVITY_ACTION_BY_PLAYER_ACTION[parsed.data.action]) {
+          void recordModerationEvent({
+            serverId: access.server.id,
+            playerName: parsed.data.name,
+            action: parsed.data.action,
+            reason: parsed.data.reason,
+            actorUserId: access.user.id,
+          });
+        }
         return {
           ok: true,
           command,
@@ -142,4 +153,21 @@ export function registerPlayerActionRoutes(app: FastifyInstance): void {
       }
     },
   );
+
+  app.get<{
+    Params: { id: string };
+    Querystring: { player?: string; limit?: string };
+  }>("/api/servers/:id/players/moderation", async (request, reply) => {
+    const access = await requireServerAccess(request, reply, request.params.id, {
+      permission: "player.read",
+    });
+    if (!access) return;
+    const limit = request.query.limit ? Number(request.query.limit) : 50;
+    return {
+      events: await listModerationEvents(access.server.id, {
+        playerName: request.query.player?.trim() || undefined,
+        limit: Number.isFinite(limit) ? limit : 50,
+      }),
+    };
+  });
 }

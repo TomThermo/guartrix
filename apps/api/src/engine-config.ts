@@ -78,6 +78,33 @@ export const ENGINE_FIELDS: EngineFieldDef[] = [
     hint: "Purpur only",
     type: "boolean",
   },
+  {
+    id: "spigot-bungeecord",
+    file: "spigot.yml",
+    path: "settings.bungeecord",
+    label: "BungeeCord mode",
+    hint: "spigot.yml — legacy proxy IP forwarding",
+    type: "boolean",
+    defaultValue: false,
+  },
+  {
+    id: "paper-velocity-enabled",
+    file: "config/paper-global.yml",
+    path: "proxies.velocity.enabled",
+    label: "Velocity modern forwarding",
+    hint: "paper-global.yml",
+    type: "boolean",
+    defaultValue: false,
+  },
+  {
+    id: "paper-velocity-secret",
+    file: "config/paper-global.yml",
+    path: "proxies.velocity.secret",
+    label: "Velocity forwarding secret",
+    hint: "Must match the proxy forwarding.secret",
+    type: "string",
+    defaultValue: "",
+  },
 ];
 
 function getAt(obj: unknown, dotted: string): unknown {

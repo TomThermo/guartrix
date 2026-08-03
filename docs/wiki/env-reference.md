@@ -19,6 +19,8 @@ Copy `.env.example` → `.env` (repo root). Secrets must stay gitignored. The lo
 | `PUBLIC_IP` | Public IP when useful for players/DNS |
 | `PUBLIC_BASE_URL` | Full origin, e.g. `https://guartrix.com` or `http://203.0.113.10` |
 | `DATA_DIR` | Default `./data` |
+| `WEB_HOST` | Web bind address (default `0.0.0.0`) |
+| `JAVA_PATH` | Host Java binary (fallback when not using the per-server Java picker) |
 | `DOCKER_IMAGE` | Default `eclipse-temurin:25-jre-jammy` |
 | `MANAGE_FIREWALL` | Open/close game ports via ufw when true |
 
@@ -46,7 +48,7 @@ Installer: `--mysql-docker` (default) or `--mysql-external` / `--database-url`. 
 | `MOLLIE_API_KEY` | Mollie Payments API key (`test_…` / `live_…`); enables checkout |
 | `BILLING_WEBHOOK_URL` | Optional outbound JSON webhook on payment paid / provisioned / subscription events |
 | `CURSEFORGE_API_KEY` | Optional CurseForge API key for Modpacks tab search/install |
-| `LICENSE_SERVER_URL` | Panel: license API URL (default `https://license.$PUBLIC_HOST` / `https://license.guartrix.com`) |
+| `LICENSE_SERVER_URL` | Panel: license API URL. Default `https://license.guartrix.com` (or `https://license.<PUBLIC_HOST>` when `PUBLIC_HOST` is a real domain and the var is unset) |
 | `SKIP_LOCAL_DAEMON` | Panel: `1` = no local daemon / local node (panel-only install; use remote nodes) |
 | `LICENSE_KEY` | Panel license key |
 | `LICENSE_INSTALL_ID` | Optional stable install id (else auto-file in `data/`) |
@@ -54,10 +56,8 @@ Installer: `--mysql-docker` (default) or `--mysql-external` / `--database-url`. 
 | `LICENSE_ALLOW_UNSIGNED` | `1` = accept unsigned validate JSON (insecure; migration only) |
 | `LICENSE_UNREACHABLE_GRACE_MS` | Soft-valid window if license host unreachable (default `86400000` = 24h) |
 | `LICENSE_VALIDATE_INTERVAL_MS` | How often the panel calls `/v1/validate` in the background (default `600000` = 10m) |
-| `DAEMON_PUBLIC_HOST` | Hostname prod-web routes to the local daemon (e.g. `node1.guartrix.com`) |
 
-
-The license **server** is hosted separately by Guartrix (default `https://license.guartrix.com`). Panel installs only need `LICENSE_SERVER_URL` and `LICENSE_KEY`.
+The license **server** is hosted separately by Guartrix (default `https://license.guartrix.com`). Panel installs only need `LICENSE_SERVER_URL` and `LICENSE_KEY`. Without a valid key the panel runs the [free tier](licensing.md#free-tier-no-valid-license) (1 node, 1 server, 10 GB disk).
 
 ## Nodes & SFTP
 
@@ -76,12 +76,13 @@ The license **server** is hosted separately by Guartrix (default `https://licens
 | `PANEL_URL` | URL the daemon uses for SFTP password checks |
 | `GUARTRIX_REPO_URL` | Git URL for remote install scripts |
 | `MYSQL_PORT` / `MYSQL_IMAGE` | Per-node game MySQL container |
+| `MYSQL_PUBLIC_HOST` | Hostname plugins use for game MySQL (default Docker DNS `guartrix-mysql`) |
 
 ## Cloudflare / TLS (optional)
 
 | Variable | Purpose |
 |----------|---------|
-| `CLOUDFLARE_API_TOKEN` / `ZONE_ID` / `DOMAIN` | Auto A records for servers |
+| `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ZONE_ID` / `CLOUDFLARE_DOMAIN` | Auto A records for servers (optional `CLOUDFLARE_ACCOUNT_ID`) |
 | `TLS_CERT_FILE` / `TLS_KEY_FILE` | Override Origin cert paths (panel behind Cloudflare) |
 | `DAEMON_TLS_CERT_FILE` / `DAEMON_TLS_KEY_FILE` | SNI cert for DNS-only `node1.*` / `DAEMON_PUBLIC_HOST` (LE by default) |
 | `LETSENCRYPT_EMAIL` | Email for `scripts/install-daemon-le-cert.sh` |
@@ -107,7 +108,9 @@ See [Activity log](activity-log.md) for the event list and payload format.
 | Variable | Purpose |
 |----------|---------|
 | `NO_MONITOR` | `1` disables `scripts/monitor.sh` |
-| `MONITOR_INTERVAL` | Seconds between checks |
+| `MONITOR_INTERVAL` | Seconds between checks (default `20`) |
+| `MONITOR_MAX_RESTARTS` | Restarts within the window before backing off (default `6`) |
+| `MONITOR_BACKOFF` | Cool-down seconds after hitting the restart cap (default `300`) |
 | `BOOT_START_STAGGER_MS` | Delay between auto-start servers after reboot |
 
 See `.env.example` for the full commented template.
