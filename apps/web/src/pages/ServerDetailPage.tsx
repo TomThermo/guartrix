@@ -12,6 +12,7 @@ import {
   Badge,
   Button,
   Card,
+  Dropdown,
   Nav,
   Offcanvas,
   Spinner,
@@ -833,74 +834,159 @@ function ServerDetailPageInner({
             </div>
           </div>
           {(canClone || isAdmin || can("settings.update")) && (
-            <div className="server-toolbar btn-group btn-group-sm" role="group">
-              {can("settings.update") && (
-                <Button
+            <>
+              <div
+                className="server-toolbar d-none d-md-inline-flex btn-group btn-group-sm"
+                role="group"
+              >
+                {can("settings.update") && (
+                  <Button
+                    variant="outline-secondary"
+                    disabled={busy}
+                    title="Change Minecraft version"
+                    onClick={() => setShowVersionPicker(true)}
+                  >
+                    <i className="fa-solid fa-code-branch" />
+                    <span className="btn-label">Version</span>
+                  </Button>
+                )}
+                {can("settings.update") && (
+                  <Button
+                    variant="outline-secondary"
+                    disabled={busy}
+                    title="Change software (Paper, Fabric, …)"
+                    onClick={() => setShowChangeType(true)}
+                  >
+                    <i className="fa-solid fa-puzzle-piece" />
+                    <span className="btn-label">Software</span>
+                  </Button>
+                )}
+                {canClone && (
+                  <Button
+                    variant="outline-secondary"
+                    disabled={busy}
+                    title="Clone server"
+                    onClick={() => setShowClone(true)}
+                  >
+                    <i className="fa-solid fa-clone" />
+                    <span className="btn-label">Clone</span>
+                  </Button>
+                )}
+                {can("settings.update") && (
+                  <Button
+                    variant="outline-secondary"
+                    disabled={busy}
+                    title="Reinstall server"
+                    onClick={() => setShowReinstall(true)}
+                  >
+                    <i className="fa-solid fa-rotate" />
+                    <span className="btn-label">Reinstall</span>
+                  </Button>
+                )}
+                {isAdmin && (
+                  <Button
+                    variant="outline-secondary"
+                    disabled={busy || server.status === "TRANSFERRING"}
+                    title="Move to another node"
+                    onClick={() => setShowNodeTransfer(true)}
+                  >
+                    <i className="fa-solid fa-right-left" />
+                    <span className="btn-label">Move</span>
+                  </Button>
+                )}
+                {isAdmin && (
+                  <Button
+                    variant="outline-secondary"
+                    disabled={busy}
+                    title="Transfer owner"
+                    onClick={() => setShowTransfer(true)}
+                  >
+                    <i className="fa-solid fa-user-tag" />
+                    <span className="btn-label">Owner</span>
+                  </Button>
+                )}
+              </div>
+
+              <Dropdown
+                align="end"
+                className="server-manage-dropdown d-md-none"
+              >
+                <Dropdown.Toggle
                   variant="outline-secondary"
+                  size="sm"
+                  id={`server-manage-${server.id}`}
+                  className="server-manage-toggle"
                   disabled={busy}
-                  title="Change Minecraft version"
-                  onClick={() => setShowVersionPicker(true)}
                 >
-                  <i className="fa-solid fa-code-branch" />
-                  <span className="btn-label">Version</span>
-                </Button>
-              )}
-              {can("settings.update") && (
-                <Button
-                  variant="outline-secondary"
-                  disabled={busy}
-                  title="Change software (Paper, Fabric, …)"
-                  onClick={() => setShowChangeType(true)}
-                >
-                  <i className="fa-solid fa-puzzle-piece" />
-                  <span className="btn-label">Software</span>
-                </Button>
-              )}
-              {canClone && (
-                <Button
-                  variant="outline-secondary"
-                  disabled={busy}
-                  title="Clone server"
-                  onClick={() => setShowClone(true)}
-                >
-                  <i className="fa-solid fa-clone" />
-                  <span className="btn-label">Clone</span>
-                </Button>
-              )}
-              {can("settings.update") && (
-                <Button
-                  variant="outline-secondary"
-                  disabled={busy}
-                  title="Reinstall server"
-                  onClick={() => setShowReinstall(true)}
-                >
-                  <i className="fa-solid fa-rotate" />
-                  <span className="btn-label">Reinstall</span>
-                </Button>
-              )}
-              {isAdmin && (
-                <Button
-                  variant="outline-secondary"
-                  disabled={busy || server.status === "TRANSFERRING"}
-                  title="Move to another node"
-                  onClick={() => setShowNodeTransfer(true)}
-                >
-                  <i className="fa-solid fa-right-left" />
-                  <span className="btn-label">Move</span>
-                </Button>
-              )}
-              {isAdmin && (
-                <Button
-                  variant="outline-secondary"
-                  disabled={busy}
-                  title="Transfer owner"
-                  onClick={() => setShowTransfer(true)}
-                >
-                  <i className="fa-solid fa-user-tag" />
-                  <span className="btn-label">Owner</span>
-                </Button>
-              )}
-            </div>
+                  <i className="fa-solid fa-ellipsis-vertical" aria-hidden />
+                  <span>Manage</span>
+                </Dropdown.Toggle>
+                <Dropdown.Menu className="server-manage-menu">
+                  <Dropdown.Header>Server actions</Dropdown.Header>
+                  {can("settings.update") && (
+                    <Dropdown.Item
+                      as="button"
+                      disabled={busy}
+                      onClick={() => setShowVersionPicker(true)}
+                    >
+                      <i className="fa-solid fa-code-branch fa-fw me-2 text-secondary" />
+                      Change version
+                    </Dropdown.Item>
+                  )}
+                  {can("settings.update") && (
+                    <Dropdown.Item
+                      as="button"
+                      disabled={busy}
+                      onClick={() => setShowChangeType(true)}
+                    >
+                      <i className="fa-solid fa-puzzle-piece fa-fw me-2 text-secondary" />
+                      Change software
+                    </Dropdown.Item>
+                  )}
+                  {canClone && (
+                    <Dropdown.Item
+                      as="button"
+                      disabled={busy}
+                      onClick={() => setShowClone(true)}
+                    >
+                      <i className="fa-solid fa-clone fa-fw me-2 text-secondary" />
+                      Clone server
+                    </Dropdown.Item>
+                  )}
+                  {can("settings.update") && (
+                    <Dropdown.Item
+                      as="button"
+                      disabled={busy}
+                      onClick={() => setShowReinstall(true)}
+                    >
+                      <i className="fa-solid fa-rotate fa-fw me-2 text-secondary" />
+                      Reinstall
+                    </Dropdown.Item>
+                  )}
+                  {isAdmin && (
+                    <>
+                      <Dropdown.Divider />
+                      <Dropdown.Item
+                        as="button"
+                        disabled={busy || server.status === "TRANSFERRING"}
+                        onClick={() => setShowNodeTransfer(true)}
+                      >
+                        <i className="fa-solid fa-right-left fa-fw me-2 text-secondary" />
+                        Move to node
+                      </Dropdown.Item>
+                      <Dropdown.Item
+                        as="button"
+                        disabled={busy}
+                        onClick={() => setShowTransfer(true)}
+                      >
+                        <i className="fa-solid fa-user-tag fa-fw me-2 text-secondary" />
+                        Transfer owner
+                      </Dropdown.Item>
+                    </>
+                  )}
+                </Dropdown.Menu>
+              </Dropdown>
+            </>
           )}
         </div>
       </div>

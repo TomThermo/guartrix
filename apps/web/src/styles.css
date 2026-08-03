@@ -2076,6 +2076,60 @@ body {
   min-width: 2.15rem;
 }
 
+.server-manage-dropdown {
+  flex-shrink: 0;
+  margin-left: auto;
+  align-self: flex-start;
+}
+
+.server-manage-toggle {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.2rem;
+  padding-inline: 0.65rem;
+}
+
+.server-manage-toggle::after {
+  margin-left: 0.15rem;
+}
+
+.server-manage-menu {
+  background: var(--bh-bg-raised);
+  border-color: var(--bh-border);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  min-width: 14rem;
+  padding: 0.4rem;
+}
+
+.server-manage-menu .dropdown-header {
+  color: var(--bh-muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.35rem 0.75rem 0.25rem;
+}
+
+.server-manage-menu .dropdown-item {
+  color: var(--bh-text);
+  border-radius: 0.4rem;
+  padding: 0.5rem 0.75rem;
+  display: flex;
+  align-items: center;
+}
+
+.server-manage-menu .dropdown-item:hover,
+.server-manage-menu .dropdown-item:focus {
+  background: rgba(93, 186, 106, 0.12);
+  color: var(--bh-text);
+}
+
+.server-manage-menu .dropdown-divider {
+  border-color: var(--bh-border);
+  margin: 0.35rem 0.4rem;
+}
+
 .settings-nav {
   flex-direction: column;
 }
@@ -2135,16 +2189,17 @@ body {
   }
 
   .server-detail-header {
-    gap: 0;
+    gap: 0.55rem;
   }
 
   .server-detail-title-row {
-    gap: 0.5rem;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.55rem;
+    align-items: flex-start;
   }
 
   .server-burger-btn,
-  .server-detail-header .server-icon-badge,
-  .server-toolbar .btn {
+  .server-detail-header .server-icon-badge {
     width: 2.2rem;
     height: 2.2rem;
     min-width: 2.2rem;
@@ -2155,16 +2210,57 @@ body {
     border-radius: 0.4rem;
   }
 
+  .server-detail-title-text {
+    flex: 1 1 calc(100% - 5.5rem);
+    min-width: 0;
+  }
+
   .server-detail-name {
     font-size: 1.05rem;
+    max-width: 100%;
   }
 
   .server-detail-name-line {
-    gap: 0.2rem 0.55rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.15rem;
   }
 
   .server-detail-address {
+    max-width: 100%;
     font-size: 0.72rem;
+  }
+
+  .server-detail-meta {
+    gap: 0.25rem;
+  }
+
+  .server-detail-meta .badge,
+  .server-detail-meta .status-badge {
+    font-size: 0.64rem;
+    padding: 0.24rem 0.4rem;
+    min-height: 1.25rem;
+  }
+
+  .server-detail-meta-text {
+    flex: 1 1 100%;
+    font-size: 0.68rem;
+    padding: 0.1rem 0;
+  }
+
+  .server-manage-dropdown {
+    order: 2;
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .server-manage-toggle {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .server-manage-toggle::after {
+    margin-left: 0.4rem;
   }
 
   .server-toolbar {

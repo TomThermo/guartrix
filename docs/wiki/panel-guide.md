@@ -154,7 +154,7 @@ The header meta row shows status, loader, owner, version, **online players** (`3
 
 ![Whitelist toggle](assets/35-whitelist-toggle-modal.png)
 
-**Version & software** live in the header toolbar (**Version** / **Software**). Pick any listed Minecraft version (upgrade or downgrade with confirm), or change software (Paper ↔ Fabric, etc., with addon wipe when crossing plugin/mod ecosystems). When a newer build is available, a yellow **Update available** banner still appears above the console. **Reinstall** refreshes the runtime with optional keep-world / keep-addons; a backup is always created first.
+**Version & software** live in the header toolbar (**Version** / **Software** on desktop; on small screens open **Manage**). Pick any listed Minecraft version (upgrade or downgrade with confirm), or change software (Paper ↔ Fabric, etc., with addon wipe when crossing plugin/mod ecosystems). When a newer build is available, a yellow **Update available** banner still appears above the console. **Reinstall** refreshes the runtime with optional keep-world / keep-addons; a backup is always created first.
 
 More on moving servers: [Move between nodes](node-transfer.md)
 
