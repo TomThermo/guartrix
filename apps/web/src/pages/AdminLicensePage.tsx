@@ -1,12 +1,19 @@
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 import type { PanelVersionStatus } from "@msm/shared";
 import {
   Alert,
   Badge,
   Button,
-  Card,
+  Col,
   Form,
   ProgressBar,
+  Row,
   Spinner,
 } from "react-bootstrap";
 import { api } from "../api";
@@ -41,15 +48,15 @@ interface LicenseInfo {
 }
 
 const FEATURE_GROUPS: Array<{ id: string; label: string }> = [
-  { id: "power", label: "Power / console" },
+  { id: "power", label: "Power" },
   { id: "user", label: "Subusers" },
-  { id: "server", label: "Settings / allocations" },
+  { id: "server", label: "Settings" },
   { id: "database", label: "Databases" },
-  { id: "file", label: "File manager / SFTP" },
+  { id: "file", label: "Files" },
   { id: "backup", label: "Backups" },
   { id: "schedule", label: "Schedules" },
   { id: "player", label: "Players" },
-  { id: "addon", label: "Addons / mods" },
+  { id: "addon", label: "Addons" },
 ];
 
 function formatGb(mb: number): string {
@@ -76,6 +83,59 @@ function notifyLicenseChanged(valid?: boolean) {
     new CustomEvent("guartrix:license-changed", {
       detail: { valid },
     }),
+  );
+}
+
+function Meta({
+  label,
+  children,
+  mono,
+}: {
+  label: string;
+  children: ReactNode;
+  mono?: boolean;
+}) {
+  return (
+    <div className="license-meta">
+      <div className="license-meta-label">{label}</div>
+      <div className={`license-meta-value${mono ? " font-monospace" : ""}`}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function UsageMeter({
+  label,
+  usedLabel,
+  pct,
+  capped,
+  uncappedHint,
+}: {
+  label: string;
+  usedLabel: string;
+  pct: number;
+  capped: boolean;
+  uncappedHint: string;
+}) {
+  return (
+    <div className="license-meter">
+      <div className="d-flex justify-content-between align-items-baseline gap-2">
+        <span className="license-meter-label">{label}</span>
+        <span className="font-monospace small text-secondary text-nowrap">
+          {usedLabel}
+        </span>
+      </div>
+      {capped ? (
+        <ProgressBar
+          now={pct}
+          variant={usageVariant(pct)}
+          style={{ height: 6 }}
+        />
+      ) : (
+        <div className="license-meter-hint">{uncappedHint}</div>
+      )}
+    </div>
   );
 }
 
@@ -107,8 +167,6 @@ export function AdminLicensePage() {
     void load();
   }, [load]);
 
-  // While this page is open, refresh from the license server every minute
-  // (force validate). Background panel checks stay at ~10 minutes.
   useEffect(() => {
     const id = window.setInterval(() => {
       void load();
@@ -245,342 +303,270 @@ export function AdminLicensePage() {
         : [];
 
   return (
-    <div>
-      <h1 className="h3 mb-1">License</h1>
-      <p className="text-secondary mb-3">
-        Panel license status. Without a valid license the install runs in free
-        tier: <strong>1 node</strong>, <strong>1 Minecraft server</strong>,{" "}
-        <strong>10 GB disk</strong>. Activate a license to raise those caps.
-      </p>
-
-      {error && <Alert variant="danger">{error}</Alert>}
-      {notice && <Alert variant="success">{notice}</Alert>}
-
-      {version && (
-        <Card
-          className={`mb-3 ${
-            version.belowMinimum
-              ? "border-danger"
-              : version.updateAvailable
-                ? "border-warning"
-                : "border-success"
-          }`}
-        >
-          <Card.Body>
-            <div className="d-flex flex-wrap align-items-center gap-2 mb-2">
-              <span className="fw-semibold">System version</span>
-              <Badge bg="dark" className="font-monospace">
-                v{version.current}
+    <div className="license-page">
+      <div className="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-3">
+        <div>
+          <h1 className="h4 mb-0">License</h1>
+          <p className="text-secondary small mb-0 mt-1">
+            Free tier without a key: 1 node · 1 server · 10 GB disk
+          </p>
+        </div>
+        {version && (
+          <div className="d-flex flex-wrap align-items-center gap-2 license-version-chip">
+            <span className="small text-secondary">Panel</span>
+            <Badge bg="dark" className="font-monospace">
+              v{version.current}
+            </Badge>
+            {version.upToDate && !version.belowMinimum ? (
+              <Badge bg="success">Up to date</Badge>
+            ) : version.belowMinimum ? (
+              <Badge bg="danger">Below min{version.minVersion ? ` v${version.minVersion}` : ""}</Badge>
+            ) : version.updateAvailable ? (
+              <Badge bg="warning" text="dark">
+                Update{version.latest ? ` → v${version.latest}` : ""}
               </Badge>
-              {version.upToDate && !version.belowMinimum ? (
-                <Badge bg="success">Up to date</Badge>
-              ) : version.belowMinimum ? (
-                <Badge bg="danger">Below minimum</Badge>
-              ) : version.updateAvailable ? (
-                <Badge bg="warning" text="dark">
-                  Update available
-                  {version.latest ? ` → v${version.latest}` : ""}
-                </Badge>
-              ) : (
-                <Badge bg="secondary">Channel unreachable</Badge>
-              )}
-            </div>
-            <p className="small text-secondary mb-0">
-              Channel is published on the license server
-              {version.latest ? ` (latest v${version.latest}` : ""}
-              {version.minVersion ? `, min v${version.minVersion}` : ""}
-              {version.latest ? ")" : ""}.
-              {version.notes ? ` ${version.notes}` : ""}
-            </p>
-          </Card.Body>
-        </Card>
+            ) : (
+              <Badge bg="secondary">Channel offline</Badge>
+            )}
+          </div>
+        )}
+      </div>
+
+      {error && (
+        <Alert variant="danger" className="py-2 small" dismissible onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
+      {notice && (
+        <Alert variant="success" className="py-2 small" dismissible onClose={() => setNotice(null)}>
+          {notice}
+        </Alert>
       )}
 
       {!info ? (
-        <div className="text-center py-4">
+        <div className="text-center py-5">
           <Spinner />
         </div>
       ) : (
-        <>
-          <Card className="mb-3">
-            <Card.Body>
-              <div className="d-flex flex-wrap gap-2 align-items-center mb-3">
-                <Badge bg={statusVariant}>{info.status}</Badge>
-                {info.label && <Badge bg="secondary">{info.label}</Badge>}
-                <span className="text-secondary small">
-                  Checked {new Date(info.checkedAt).toLocaleString()}
-                </span>
+        <Row className="g-3">
+          <Col lg={7}>
+            <section className="license-panel">
+              <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                <div className="d-flex flex-wrap align-items-center gap-2">
+                  <Badge bg={statusVariant}>{info.status}</Badge>
+                  {info.freeTier && (
+                    <Badge bg="warning" text="dark">
+                      Free tier
+                    </Badge>
+                  )}
+                  {info.label && <Badge bg="secondary">{info.label}</Badge>}
+                </div>
+                <div className="d-flex flex-wrap gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline-primary"
+                    disabled={busy}
+                    onClick={() => void revalidate()}
+                  >
+                    {busy ? <Spinner size="sm" /> : "Revalidate"}
+                  </Button>
+                  {info.hasKey && (
+                    <Button
+                      size="sm"
+                      variant="outline-danger"
+                      disabled={busy}
+                      onClick={() => void onRemoveKey()}
+                    >
+                      Remove
+                    </Button>
+                  )}
+                </div>
               </div>
-              <p className="mb-2">{info.message}</p>
-              <dl className="row small mb-0">
-                <dt className="col-sm-3">License server</dt>
-                <dd className="col-sm-9 font-monospace">
-                  {info.serverUrl}{" "}
-                  <span className="text-secondary">({info.serverUrlSource})</span>
-                </dd>
-                <dt className="col-sm-3">Key</dt>
-                <dd className="col-sm-9 font-monospace">
+
+              <p className="small mb-3">{info.message}</p>
+
+              <div className="license-meta-grid mb-3">
+                <Meta label="Key" mono>
                   {info.keyMasked || "—"}
-                </dd>
-                <dt className="col-sm-3">Expires</dt>
-                <dd className="col-sm-9">
+                </Meta>
+                <Meta label="Expires">
                   {info.expiresAt
                     ? new Date(info.expiresAt).toLocaleString()
                     : info.status === "valid"
                       ? "Unlimited"
                       : "—"}
-                </dd>
-                <dt className="col-sm-3">Bound IP(s)</dt>
-                <dd className="col-sm-9 font-monospace">
+                </Meta>
+                <Meta label="Bound IP" mono>
                   {boundList.length ? boundList.join(", ") : "unbound"}
-                </dd>
-                <dt className="col-sm-3">Features</dt>
-                <dd className="col-sm-9">
-                  {info.features == null ? (
-                    <span className="text-secondary">All enabled</span>
-                  ) : (
-                    <div className="d-flex flex-wrap gap-1">
-                      {FEATURE_GROUPS.map((g) => {
-                        const enabled = info.features!.includes(g.id);
-                        return (
-                          <Badge
-                            key={g.id}
-                            bg={enabled ? "success" : "danger"}
-                            className="fw-normal"
-                            title={enabled ? "Enabled on this license" : "Not included"}
-                          >
-                            {g.label}
-                          </Badge>
-                        );
-                      })}
-                    </div>
-                  )}
-                </dd>
-              </dl>
-              <div className="d-flex flex-wrap gap-2 mt-3">
-                <Button
-                  size="sm"
-                  variant="outline-primary"
-                  disabled={busy}
-                  onClick={() => void revalidate()}
-                >
-                  {busy ? <Spinner size="sm" /> : "Revalidate"}
-                </Button>
-                {info.hasKey && (
-                  <Button
-                    size="sm"
-                    variant="outline-danger"
-                    disabled={busy}
-                    onClick={() => void onRemoveKey()}
-                  >
-                    <i className="fa-solid fa-trash-can me-1" />
-                    Remove license
-                  </Button>
-                )}
+                </Meta>
+                <Meta label="Checked">
+                  {new Date(info.checkedAt).toLocaleString()}
+                </Meta>
               </div>
-            </Card.Body>
-          </Card>
 
-          <Card className="mb-3">
-            <Card.Body>
-              <Card.Title className="h6 mb-1">
-                {info.freeTier
-                  ? "Free-tier allowance vs in use"
-                  : "License allowance vs in use"}
-              </Card.Title>
-              <p className="text-secondary small mb-3">
-                {info.freeTier
-                  ? "No valid license — these free-tier caps apply until you activate one."
-                  : "What this license allows on this panel, and how much you already use across all Minecraft servers."}
-              </p>
-              <div className="row g-3">
-                <div className="col-md-3">
-                  <div className="d-flex justify-content-between small mb-1">
-                    <span>Nodes</span>
-                    <span className="font-monospace">
-                      {usage?.nodeCount ?? 0}
-                      {" / "}
-                      {info.maxNodes != null ? info.maxNodes : "∞"}
-                    </span>
-                  </div>
-                  {info.maxNodes != null ? (
-                    <ProgressBar
-                      now={nodesPct}
-                      variant={usageVariant(nodesPct)}
-                      className="mb-1"
-                      style={{ height: 8 }}
-                    />
-                  ) : (
-                    <div className="text-secondary small">Unlimited nodes</div>
-                  )}
-                </div>
-                <div className="col-md-3">
-                  <div className="d-flex justify-content-between small mb-1">
-                    <span>Servers</span>
-                    <span className="font-monospace">
-                      {usage?.serverCount ?? 0}
-                      {" / "}
-                      {info.maxServers != null ? info.maxServers : "∞"}
-                    </span>
-                  </div>
-                  {info.maxServers != null ? (
-                    <ProgressBar
-                      now={serversPct}
-                      variant={usageVariant(serversPct)}
-                      className="mb-1"
-                      style={{ height: 8 }}
-                    />
-                  ) : (
-                    <div className="text-secondary small">Unlimited servers</div>
-                  )}
-                </div>
-                <div className="col-md-3">
-                  <div className="d-flex justify-content-between small mb-1">
-                    <span>Total RAM</span>
-                    <span className="font-monospace">
-                      {formatGb(usage?.memoryUsedMb ?? 0)}
-                      {" / "}
-                      {info.maxMemoryMb != null
-                        ? formatGb(info.maxMemoryMb)
-                        : info.freeTier
-                          ? "—"
-                          : "∞"}
-                    </span>
-                  </div>
-                  {info.maxMemoryMb != null ? (
-                    <ProgressBar
-                      now={ramPct}
-                      variant={usageVariant(ramPct)}
-                      className="mb-1"
-                      style={{ height: 8 }}
-                    />
-                  ) : (
-                    <div className="text-secondary small">
-                      {info.freeTier
-                        ? "No free-tier RAM pool cap"
-                        : "Unlimited total RAM"}
-                    </div>
-                  )}
-                </div>
-                <div className="col-md-3">
-                  <div className="d-flex justify-content-between small mb-1">
-                    <span>{info.freeTier ? "Disk / server" : "Largest server"}</span>
-                    <span className="font-monospace">
-                      {info.freeTier
-                        ? `≤${(info.maxDiskMb ?? 10_240) / 1024} GB`
-                        : `${formatGb(usage?.maxServerMemoryMb ?? 0)} / ${
-                            info.maxMemoryMbPerServer != null
-                              ? `≤${formatGb(info.maxMemoryMbPerServer)}`
-                              : "∞"
-                          }`}
-                    </span>
-                  </div>
-                  {info.freeTier ? (
-                    <div className="text-secondary small">
-                      Max {(info.maxDiskMb ?? 10_240) / 1024} GB per server
-                    </div>
-                  ) : info.maxMemoryMbPerServer != null ? (
-                    <ProgressBar
-                      now={perServerPct}
-                      variant={usageVariant(perServerPct)}
-                      className="mb-1"
-                      style={{ height: 8 }}
-                    />
-                  ) : (
-                    <div className="text-secondary small">
-                      No per-server RAM cap
-                    </div>
-                  )}
-                </div>
-              </div>
-              {info.freeTier ? (
-                <Alert variant="warning" className="small mb-0 mt-3 py-2">
-                  Free tier: 1 node, 1 server, 10 GB disk. Extra or over-disk
-                  servers are stopped; start works only within these caps.
-                </Alert>
-              ) : null}
-              {!info.freeTier &&
-                info.maxServers == null &&
-                info.maxNodes == null &&
-                info.maxMemoryMb == null &&
-                info.maxMemoryMbPerServer == null && (
-                  <p className="small text-secondary mb-0 mt-3">
-                    This license has no panel quotas set (unlimited).
-                  </p>
+              <div className="mb-1 small text-secondary">Features</div>
+              <div className="d-flex flex-wrap gap-1">
+                {info.features == null ? (
+                  <span className="small text-secondary">All enabled</span>
+                ) : (
+                  FEATURE_GROUPS.map((g) => {
+                    const enabled = info.features!.includes(g.id);
+                    return (
+                      <Badge
+                        key={g.id}
+                        bg={enabled ? "success" : "secondary"}
+                        className={`fw-normal${enabled ? "" : " opacity-50"}`}
+                        title={enabled ? "Enabled" : "Not included"}
+                      >
+                        {g.label}
+                      </Badge>
+                    );
+                  })
                 )}
-              {info.maxMemoryMbPerServer != null &&
+              </div>
+            </section>
+
+            <section className="license-panel mt-3">
+              <div className="d-flex align-items-baseline justify-content-between gap-2 mb-2">
+                <h2 className="h6 mb-0">
+                  {info.freeTier ? "Free-tier usage" : "License usage"}
+                </h2>
+                <span className="small text-secondary">Allowance vs in use</span>
+              </div>
+
+              <div className="license-meters">
+                <UsageMeter
+                  label="Nodes"
+                  usedLabel={`${usage?.nodeCount ?? 0} / ${info.maxNodes != null ? info.maxNodes : "∞"}`}
+                  pct={nodesPct}
+                  capped={info.maxNodes != null}
+                  uncappedHint="Unlimited"
+                />
+                <UsageMeter
+                  label="Servers"
+                  usedLabel={`${usage?.serverCount ?? 0} / ${info.maxServers != null ? info.maxServers : "∞"}`}
+                  pct={serversPct}
+                  capped={info.maxServers != null}
+                  uncappedHint="Unlimited"
+                />
+                <UsageMeter
+                  label="Total RAM"
+                  usedLabel={`${formatGb(usage?.memoryUsedMb ?? 0)} / ${
+                    info.maxMemoryMb != null
+                      ? formatGb(info.maxMemoryMb)
+                      : info.freeTier
+                        ? "—"
+                        : "∞"
+                  }`}
+                  pct={ramPct}
+                  capped={info.maxMemoryMb != null}
+                  uncappedHint={info.freeTier ? "No RAM pool cap" : "Unlimited"}
+                />
+                <UsageMeter
+                  label={info.freeTier ? "Disk / server" : "Largest server"}
+                  usedLabel={
+                    info.freeTier
+                      ? `≤${(info.maxDiskMb ?? 10_240) / 1024} GB`
+                      : `${formatGb(usage?.maxServerMemoryMb ?? 0)} / ${
+                          info.maxMemoryMbPerServer != null
+                            ? `≤${formatGb(info.maxMemoryMbPerServer)}`
+                            : "∞"
+                        }`
+                  }
+                  pct={info.freeTier ? 0 : perServerPct}
+                  capped={!info.freeTier && info.maxMemoryMbPerServer != null}
+                  uncappedHint={
+                    info.freeTier
+                      ? `Max ${(info.maxDiskMb ?? 10_240) / 1024} GB`
+                      : "No per-server cap"
+                  }
+                />
+              </div>
+
+              {info.freeTier && (
+                <Alert variant="warning" className="small mb-0 mt-3 py-2">
+                  Extra or over-disk servers are stopped until you activate a
+                  license.
+                </Alert>
+              )}
+              {!info.freeTier &&
+                info.maxMemoryMbPerServer != null &&
                 (usage?.maxServerMemoryMb ?? 0) >
                   info.maxMemoryMbPerServer && (
                   <Alert variant="warning" className="small mb-0 mt-3 py-2">
-                    At least one server is above the per-server license cap.
-                    Lower Memory in server settings before start/restart.
+                    At least one server is above the per-server RAM cap. Lower
+                    Memory in server settings before start/restart.
                   </Alert>
                 )}
-            </Card.Body>
-          </Card>
-        </>
+            </section>
+          </Col>
+
+          <Col lg={5}>
+            <section className="license-panel">
+              <h2 className="h6 mb-2">Activate key</h2>
+              <Form onSubmit={(e) => void onSaveKey(e)}>
+                <Form.Control
+                  className="mb-2 font-monospace"
+                  size="sm"
+                  value={key}
+                  onChange={(e) => setKey(e.target.value)}
+                  placeholder="GTRX-…"
+                  disabled={busy}
+                  autoComplete="off"
+                />
+                <Button
+                  type="submit"
+                  size="sm"
+                  className="w-100"
+                  disabled={busy || !key.trim()}
+                >
+                  Save &amp; validate
+                </Button>
+              </Form>
+            </section>
+
+            <section className="license-panel mt-3">
+              <h2 className="h6 mb-1">License server</h2>
+              <p className="small text-secondary mb-2">
+                Source: <code>{info.serverUrlSource}</code>
+                {info.serverUrlEnvDefault
+                  ? ` · default ${info.serverUrlEnvDefault}`
+                  : ""}
+              </p>
+              <Form onSubmit={(e) => void onSaveServer(e)}>
+                <Form.Control
+                  className="mb-2 font-monospace"
+                  size="sm"
+                  value={serverUrl}
+                  onChange={(e) => setServerUrl(e.target.value)}
+                  placeholder="https://license.guartrix.com"
+                  disabled={busy}
+                  autoComplete="off"
+                />
+                <div className="d-flex gap-2">
+                  <Button
+                    type="submit"
+                    size="sm"
+                    className="flex-grow-1"
+                    disabled={busy || !serverUrl.trim()}
+                  >
+                    Save &amp; check
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline-secondary"
+                    disabled={busy}
+                    onClick={() => void onResetServerUrl()}
+                  >
+                    Reset
+                  </Button>
+                </div>
+              </Form>
+            </section>
+          </Col>
+        </Row>
       )}
-
-      <Card className="mb-3">
-        <Card.Body>
-          <Card.Title className="h6">License server URL</Card.Title>
-          <p className="text-secondary small mb-3">
-            Enter the license server URL from your Guartrix license (usually{" "}
-            <code>https://license.guartrix.com</code>). Use{" "}
-            <strong>Reset to default</strong> if you need to undo a custom URL
-            {info?.serverUrlEnvDefault
-              ? ` (default: ${info.serverUrlEnvDefault})`
-              : ""}
-            .
-          </p>
-          <Form onSubmit={(e) => void onSaveServer(e)}>
-            <Form.Group className="mb-3" controlId="license-server-url">
-              <Form.Label>Server URL</Form.Label>
-              <Form.Control
-                value={serverUrl}
-                onChange={(e) => setServerUrl(e.target.value)}
-                placeholder="https://license.guartrix.com"
-                disabled={busy}
-                autoComplete="off"
-              />
-            </Form.Group>
-            <div className="d-flex flex-wrap gap-2">
-              <Button type="submit" disabled={busy || !serverUrl.trim()}>
-                Save &amp; check
-              </Button>
-              <Button
-                type="button"
-                variant="outline-secondary"
-                disabled={busy}
-                onClick={() => void onResetServerUrl()}
-              >
-                Reset to default
-              </Button>
-            </div>
-          </Form>
-        </Card.Body>
-      </Card>
-
-      <Card>
-        <Card.Body>
-          <Card.Title className="h6">Change license key</Card.Title>
-          <Form onSubmit={(e) => void onSaveKey(e)}>
-            <Form.Group className="mb-3" controlId="license-key">
-              <Form.Label>License key</Form.Label>
-              <Form.Control
-                value={key}
-                onChange={(e) => setKey(e.target.value)}
-                placeholder="GTRX-…"
-                disabled={busy}
-                autoComplete="off"
-              />
-            </Form.Group>
-            <Button type="submit" disabled={busy || !key.trim()}>
-              Save &amp; validate
-            </Button>
-          </Form>
-        </Card.Body>
-      </Card>
     </div>
   );
 }
