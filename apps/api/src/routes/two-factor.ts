@@ -8,6 +8,7 @@ import {
   generateRecoveryCodes,
   generateTotpSecret,
   otpauthUrl,
+  sealTotpSecret,
   verifyTotp,
 } from "../totp.js";
 
@@ -49,7 +50,12 @@ export function registerTwoFactorGuard(app: FastifyInstance): void {
     if (!pathOnly.startsWith("/api/")) return;
     if (twoFactorExemptPath(pathOnly)) return;
     const auth = request.headers.authorization;
-    if (typeof auth === "string" && /^Bearer\s+/i.test(auth)) return;
+    if (typeof auth === "string" && /^Bearer\s+/i.test(auth)) {
+      // API keys skip per-request TOTP codes, but required roles must still
+      // have enrolled 2FA before keys can mutate (checked in resolveApiKeyAuth
+      // + key mint). Cookie sessions keep the enrollment gate below.
+      return;
+    }
     // Reads never require 2FA — skip user load on GET/HEAD/OPTIONS.
     if (!MUTATING.has(request.method)) return;
 
@@ -110,7 +116,7 @@ export function registerTwoFactorRoutes(app: FastifyInstance): void {
     await prisma.user.update({
       where: { id: row.id },
       data: {
-        totpSecret: secret,
+        totpSecret: sealTotpSecret(secret),
         totpEnabled: false,
         totpRecoveryCodes: null,
       },

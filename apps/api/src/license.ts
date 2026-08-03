@@ -107,10 +107,24 @@ async function lastLicenseOkAt(): Promise<number | null> {
 }
 
 function allowUnsigned(): boolean {
-  return (
-    process.env.LICENSE_ALLOW_UNSIGNED === "1" ||
-    process.env.LICENSE_ALLOW_UNSIGNED === "true"
-  );
+  if (
+    process.env.LICENSE_ALLOW_UNSIGNED !== "1" &&
+    process.env.LICENSE_ALLOW_UNSIGNED !== "true"
+  ) {
+    return false;
+  }
+  // Never honor the escape hatch in production builds.
+  if (
+    process.env.NODE_ENV === "production" ||
+    process.env.HTTPS_ENABLED === "true" ||
+    process.env.HTTPS_ENABLED === "1"
+  ) {
+    console.error(
+      "[license] LICENSE_ALLOW_UNSIGNED is set but ignored in production/HTTPS installs",
+    );
+    return false;
+  }
+  return true;
 }
 let cached: LicenseState | null = null;
 let cachedAt = 0;
@@ -282,16 +296,20 @@ export async function getInstallId(): Promise<string> {
 export const UNLICENSED_MAX_NODES = 1;
 export const UNLICENSED_MAX_SERVERS = 1;
 export const UNLICENSED_MAX_DISK_MB = 10_240;
+/** Soft RAM pool for free tier (8 GB total across servers). */
+export const UNLICENSED_MAX_MEMORY_MB = 8192;
 
 export function getUnlicensedFreeTier(): {
   maxNodes: number;
   maxServers: number;
   maxDiskMb: number;
+  maxMemoryMb: number;
 } {
   return {
     maxNodes: UNLICENSED_MAX_NODES,
     maxServers: UNLICENSED_MAX_SERVERS,
     maxDiskMb: UNLICENSED_MAX_DISK_MB,
+    maxMemoryMb: UNLICENSED_MAX_MEMORY_MB,
   };
 }
 
@@ -853,6 +871,12 @@ export async function assertLicensePanelQuota(
     if (!opts.extraServer && servers.length > UNLICENSED_MAX_SERVERS) {
       throw licenseQuotaError(
         `Without a valid license, this panel allows ${UNLICENSED_MAX_SERVERS} Minecraft server (currently ${servers.length}). Delete extra servers or activate a license.`,
+      );
+    }
+    const usedOther = others.reduce((sum, s) => sum + s.memoryMb, 0);
+    if (usedOther + memoryMb > UNLICENSED_MAX_MEMORY_MB) {
+      throw licenseQuotaError(
+        `Without a valid license, total RAM is limited to ${UNLICENSED_MAX_MEMORY_MB / 1024} GB (request would use ${(usedOther + memoryMb) / 1024} GB).`,
       );
     }
     return;

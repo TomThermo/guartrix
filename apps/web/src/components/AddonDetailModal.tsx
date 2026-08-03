@@ -17,6 +17,29 @@ interface Props {
 }
 
 /** Lightweight markdown-ish renderer (no extra dependency). */
+function safeHttpUrl(raw: string | undefined): string | null {
+  if (!raw) return null;
+  try {
+    const u = new URL(raw.trim());
+    if (u.protocol !== "http:" && u.protocol !== "https:") return null;
+    if (u.username || u.password) return null;
+    const host = u.hostname.toLowerCase();
+    if (
+      !host ||
+      host === "localhost" ||
+      host.endsWith(".localhost") ||
+      host.endsWith(".local") ||
+      host === "127.0.0.1" ||
+      host === "::1"
+    ) {
+      return null;
+    }
+    return u.href;
+  } catch {
+    return null;
+  }
+}
+
 function SimpleMarkdown({ text }: { text: string }) {
   const blocks = text.replace(/\r\n/g, "\n").split(/\n{2,}/);
 
@@ -30,15 +53,25 @@ function SimpleMarkdown({ text }: { text: string }) {
     while ((match = re.exec(raw))) {
       if (match.index > last) parts.push(raw.slice(last, match.index));
       if (match[1]?.startsWith("![")) {
-        parts.push(
-          <img key={key++} src={match[3]} alt={match[2]} className="addon-md-img" />,
-        );
+        const src = safeHttpUrl(match[3]);
+        if (src) {
+          parts.push(
+            <img key={key++} src={src} alt={match[2]} className="addon-md-img" />,
+          );
+        } else {
+          parts.push(match[2] || "");
+        }
       } else if (match[1]?.startsWith("[")) {
-        parts.push(
-          <a key={key++} href={match[5]} target="_blank" rel="noreferrer">
-            {match[4]}
-          </a>,
-        );
+        const href = safeHttpUrl(match[5]);
+        if (href) {
+          parts.push(
+            <a key={key++} href={href} target="_blank" rel="noopener noreferrer">
+              {match[4]}
+            </a>,
+          );
+        } else {
+          parts.push(match[4] || "");
+        }
       } else if (match[6]) {
         parts.push(<code key={key++}>{match[6]}</code>);
       } else if (match[7]) {

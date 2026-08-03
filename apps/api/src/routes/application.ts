@@ -19,6 +19,12 @@ import {
   requireAdmin,
 } from "../auth.js";
 import { assertSameOrigin } from "../csrf.js";
+import {
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
+  passwordPolicyMessage,
+  strongPasswordRefine,
+} from "../password-policy.js";
 import { prisma } from "../db.js";
 import { serverListInclude, toMcServer } from "../serialize.js";
 
@@ -55,7 +61,11 @@ const quotaLimit = z.number().int().min(0).max(100_000).nullable();
 
 const createUserSchema = z.object({
   username: z.string().trim().min(3).max(32),
-  password: z.string().min(8).max(128),
+  password: z
+    .string()
+    .min(PASSWORD_MIN_LENGTH)
+    .max(PASSWORD_MAX_LENGTH)
+    .refine(strongPasswordRefine, { message: passwordPolicyMessage() }),
   email: z.string().email().max(200).nullable().optional(),
   role: z.enum(["ADMIN", "OPERATOR", "VIEWER"]).default("OPERATOR"),
   maxServers: quotaLimit.optional(),
@@ -64,7 +74,12 @@ const createUserSchema = z.object({
 });
 
 const updateUserSchema = z.object({
-  password: z.string().min(8).max(128).optional(),
+  password: z
+    .string()
+    .min(PASSWORD_MIN_LENGTH)
+    .max(PASSWORD_MAX_LENGTH)
+    .refine(strongPasswordRefine, { message: passwordPolicyMessage() })
+    .optional(),
   role: z.enum(["ADMIN", "OPERATOR", "VIEWER"]).optional(),
   maxServers: quotaLimit.optional(),
   maxMemoryMb: quotaLimit.optional(),

@@ -21,7 +21,8 @@ async function fetchJson<T>(url: string): Promise<T> {
 }
 
 async function downloadFile(url: string, dest: string): Promise<void> {
-  const res = await fetch(url, {
+  const { fetchSafeDownload } = await import("../safe-url.js");
+  const res = await fetchSafeDownload(url, {
     headers: { "User-Agent": USER_AGENT },
   });
   if (!res.ok || !res.body) {

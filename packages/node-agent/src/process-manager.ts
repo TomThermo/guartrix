@@ -841,6 +841,8 @@ class ProcessManager extends EventEmitter {
         GUARTRIX_NETWORK,
         "--security-opt",
         "no-new-privileges:true",
+        "--cap-drop",
+        "ALL",
         "--pids-limit",
         "512",
         "--label",

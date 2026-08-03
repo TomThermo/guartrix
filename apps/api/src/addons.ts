@@ -788,9 +788,10 @@ async function resolveVersion(
 }
 
 async function downloadJar(url: string, dest: string): Promise<void> {
+  const { fetchSafeDownload } = await import("./safe-url.js");
   let res: Response;
   try {
-    res = await fetch(url, {
+    res = await fetchSafeDownload(url, {
       headers: { "User-Agent": modrinthUserAgent() },
       signal: AbortSignal.timeout(MODRINTH_TIMEOUT_MS * 5),
     });

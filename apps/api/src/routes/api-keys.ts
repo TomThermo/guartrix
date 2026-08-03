@@ -41,6 +41,14 @@ export function registerApiKeyRoutes(app: FastifyInstance): void {
     const user = await requireSessionAuth(request, reply);
     if (!user) return;
 
+    if (user.twoFactorRequired && !user.twoFactorEnabled) {
+      return reply.status(403).send({
+        error:
+          "Enable two-factor authentication under Account → Security before creating API keys.",
+        code: "TWO_FACTOR_REQUIRED",
+      });
+    }
+
     const parsed = createSchema.safeParse(request.body);
     if (!parsed.success) {
       return reply.status(400).send({ error: parsed.error.flatten() });

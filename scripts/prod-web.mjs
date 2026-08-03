@@ -811,6 +811,22 @@ function withSecurityHeaders(handler) {
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("X-Frame-Options", "DENY");
     res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+    res.setHeader(
+      "Content-Security-Policy",
+      [
+        "default-src 'self'",
+        "base-uri 'self'",
+        "frame-ancestors 'none'",
+        "object-src 'none'",
+        "img-src 'self' data: https: blob:",
+        "font-src 'self' data:",
+        "style-src 'self' 'unsafe-inline'",
+        "script-src 'self'",
+        "connect-src 'self' wss: https:",
+        "frame-src 'self' https:",
+        "form-action 'self'",
+      ].join("; "),
+    );
     if (req.socket?.encrypted) {
       res.setHeader(
         "Strict-Transport-Security",

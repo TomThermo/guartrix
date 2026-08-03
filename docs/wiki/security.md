@@ -1,5 +1,20 @@
 # Security
 
+## Cloudflare DNS token (least privilege)
+
+When using `CLOUDFLARE_API_TOKEN` for Minecraft A/SRV records and/or Let's Encrypt
+DNS-01 (`install-*-le-cert.sh`):
+
+1. Create an **API Token** (not Global API Key).
+2. Permissions: **Zone → DNS → Edit** only.
+3. Zone resources: **Include → Specific zone → your panel domain**.
+4. Do **not** grant Zone Settings, User Admin, or Account-wide DNS.
+5. Optional: use a **separate** token for certbot DNS-01 vs panel live DNS if you
+   want to rotate them independently.
+
+`CLOUDFLARE_ACCOUNT_ID` is unused by the DNS code today — leave it blank unless
+another tool on the host needs it.
+
 ## Checklist
 
 - [x] Never commit `.env`, `data/`, or `cert/*.key`
@@ -8,14 +23,16 @@
 - [x] HTTPS redirect Host pinned to `PUBLIC_HOST` (no client `Host` open redirect)
 - [x] Cleartext WebSocket on `:80` rejected when HTTPS is enabled
 - [x] Strong passwords enforced on register / reset / admin create
-- [x] Email verification before linking pending subuser invites
+- [x] Email verification before linking pending subuser invites (requires `emailVerified`)
 - [x] When `SMTP_HOST` is set: verify-before-login for non-admin accounts
 - [x] Registration quotas default to **0** until an admin grants capacity
-- [ ] `ACTIVITY_WEBHOOK_URL` / `ALERT_EMAIL` set so crashes and failed sign-ins are noticed
+- [ ] `ACTIVITY_WEBHOOK_URL` / `ALERT_EMAIL` set so crashes and failed sign-ins are noticed (optional per install)
 - [x] Consider `TWO_FACTOR_REQUIRED_ROLES=ADMIN` so panel admins must use TOTP
 - [x] Login rate limits use client IP only from **trusted proxies** (`TRUSTED_PROXIES`, default localhost)
 - [x] Watchdog posts to `ACTIVITY_WEBHOOK_URL` on panel restart / critical backoff
 - [x] Public `/download` on DNS-only host (`DOWNLOAD_PUBLIC_HOST`) to avoid Cloudflare bot challenges
+- [x] Outbound webhook / download URLs blocked from private IPs; Discord status HTTPS-only
+- [x] Refuse weak default `SESSION_SECRET` / `ADMIN_PASSWORD` unless `ALLOW_INSECURE_DEFAULTS=1`
 
 ## Built-in controls (V0.2+)
 
@@ -26,9 +43,10 @@
 | Sessions | `httpOnly` + `SameSite=Lax`; regenerate on login; purge on password reset |
 | 2FA | Optional TOTP + recovery codes; role-required via `TWO_FACTOR_REQUIRED_ROLES` — see [Accounts & quotas](accounts-and-quotas.md) |
 | Client API | Personal Bearer keys (`gt_…`), scoped permissions, per-key rate limit — see [Client API](client-api.md) |
-| Files / SFTP | Symlink jail, `O_NOFOLLOW`, sensitive `guartrix-*.json` blocked |
-| Archives | Symlinks rejected on extract |
-| Daemon | Short-lived HS256 JWTs on the wire (HMAC with node secret); raw bearer only if `DAEMON_JWT_LEGACY=true`; `serverId` sanitized; MySQL game users `remote: 172.%` |
+| Files / SFTP | Symlink jail, `O_NOFOLLOW` uploads, member-safe archive extract, sensitive `guartrix-*.json` blocked |
+| Archives | Symlinks/hardlinks rejected; zip extracted member-by-member |
+| Daemon | Short-lived HS256 JWTs on the wire (HMAC with node secret); raw bearer only if `DAEMON_JWT_LEGACY=true`; `serverId` sanitized; MySQL game users default `remote: 172.%`; containers `--cap-drop=ALL` |
+| Outbound | Webhook/download SSRF guards (`safe-url.ts`); CDN host allowlist for jars/modpacks |
 | Capacity | Shared `assertNodeCapacity` (incl. reserve) on create/PATCH |
 | Nodes | Only admins pick `nodeId` on create / clone / import |
 | Invites | No temporary password in JSON — setup link emailed; accept links are hashed tokens with a 7-day TTL |

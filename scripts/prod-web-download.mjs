@@ -15,8 +15,12 @@ const DOWNLOAD_TTL_SEC = Math.max(
 const DOWNLOAD_SIGNING_SECRET =
   process.env.DOWNLOAD_COOKIE_SECRET?.trim() ||
   process.env.SESSION_SECRET?.trim() ||
-  DOWNLOAD_PASSWORD ||
-  "guartrix-download";
+  "";
+if (!DOWNLOAD_SIGNING_SECRET) {
+  console.warn(
+    "[guartrix] DOWNLOAD_COOKIE_SECRET / SESSION_SECRET unset — /download sessions disabled until configured",
+  );
+}
 
 function downloadDir(rootDir) {
   const raw = process.env.DOWNLOAD_DIR?.trim();
@@ -28,7 +32,8 @@ function downloadEnabled() {
   return (
     process.env.DOWNLOAD_ENABLED !== "0" &&
     process.env.DOWNLOAD_ENABLED !== "false" &&
-    Boolean(DOWNLOAD_PASSWORD)
+    Boolean(DOWNLOAD_PASSWORD) &&
+    Boolean(DOWNLOAD_SIGNING_SECRET)
   );
 }
 

@@ -16,6 +16,12 @@ import { userHasServerPermission } from "../server-access.js";
 import { logActivity } from "../activity-log.js";
 import { config, serverDir } from "../config.js";
 import { prisma } from "../db.js";
+import {
+  assertSafeBrowserUrl,
+  assertSafeOutboundUrl,
+  assertSafeWebhookUrl,
+  DISCORD_WEBHOOK_HOST_SUFFIXES,
+} from "../safe-url.js";
 import { destroyServerDatabases } from "./databases.js";
 import {
   checkInstalledAddonUpdates,
@@ -719,7 +725,14 @@ export function registerServerRoutes(app: FastifyInstance): void {
     const needsSettings =
       data.name !== undefined ||
       data.properties !== undefined ||
-      data.port !== undefined;
+      data.port !== undefined ||
+      data.diskMb !== undefined ||
+      data.cpuLimit !== undefined ||
+      data.ownerAlertWebhookUrl !== undefined ||
+      data.ownerAlertEmail !== undefined ||
+      data.discordStatusWebhookUrl !== undefined ||
+      data.discordStatusEnabled !== undefined ||
+      data.bluemapUrl !== undefined;
     const needsStartup =
       data.memoryMb !== undefined ||
       data.javaPath !== undefined ||
@@ -897,6 +910,48 @@ export function registerServerRoutes(app: FastifyInstance): void {
       }
     }
 
+    let ownerAlertWebhookUrl: string | null | undefined =
+      data.ownerAlertWebhookUrl === undefined
+        ? undefined
+        : data.ownerAlertWebhookUrl === null || data.ownerAlertWebhookUrl === ""
+          ? null
+          : data.ownerAlertWebhookUrl.trim();
+    let discordStatusWebhookUrl: string | null | undefined =
+      data.discordStatusWebhookUrl === undefined
+        ? undefined
+        : data.discordStatusWebhookUrl === null ||
+            data.discordStatusWebhookUrl === ""
+          ? null
+          : data.discordStatusWebhookUrl.trim();
+    let bluemapUrl: string | null | undefined =
+      data.bluemapUrl === undefined
+        ? undefined
+        : data.bluemapUrl === null || data.bluemapUrl === ""
+          ? null
+          : data.bluemapUrl.trim();
+
+    try {
+      if (typeof ownerAlertWebhookUrl === "string") {
+        ownerAlertWebhookUrl = await assertSafeWebhookUrl(ownerAlertWebhookUrl);
+      }
+      if (typeof discordStatusWebhookUrl === "string") {
+        discordStatusWebhookUrl = await assertSafeOutboundUrl(
+          discordStatusWebhookUrl,
+          {
+            httpsOnly: true,
+            allowedHostSuffixes: DISCORD_WEBHOOK_HOST_SUFFIXES,
+          },
+        );
+      }
+      if (typeof bluemapUrl === "string") {
+        bluemapUrl = assertSafeBrowserUrl(bluemapUrl);
+      }
+    } catch (err) {
+      return reply.status(400).send({
+        error: err instanceof Error ? err.message : "Invalid URL",
+      });
+    }
+
     const updated = await prisma.server.update({
       where: { id: server.id },
       data: {
@@ -915,32 +970,16 @@ export function registerServerRoutes(app: FastifyInstance): void {
         serverJar: nextServerJar,
         autoRestart: data.autoRestart,
         startOnBoot: data.startOnBoot,
-        ownerAlertWebhookUrl:
-          data.ownerAlertWebhookUrl === undefined
-            ? undefined
-            : data.ownerAlertWebhookUrl === null || data.ownerAlertWebhookUrl === ""
-              ? null
-              : data.ownerAlertWebhookUrl.trim(),
+        ownerAlertWebhookUrl,
         ownerAlertEmail:
           data.ownerAlertEmail === undefined
             ? undefined
             : data.ownerAlertEmail === null || data.ownerAlertEmail === ""
               ? null
               : data.ownerAlertEmail.trim().toLowerCase(),
-        discordStatusWebhookUrl:
-          data.discordStatusWebhookUrl === undefined
-            ? undefined
-            : data.discordStatusWebhookUrl === null ||
-                data.discordStatusWebhookUrl === ""
-              ? null
-              : data.discordStatusWebhookUrl.trim(),
+        discordStatusWebhookUrl,
         discordStatusEnabled: data.discordStatusEnabled,
-        bluemapUrl:
-          data.bluemapUrl === undefined
-            ? undefined
-            : data.bluemapUrl === null || data.bluemapUrl === ""
-              ? null
-              : data.bluemapUrl.trim(),
+        bluemapUrl,
         ownerId: data.ownerId === undefined ? undefined : data.ownerId,
       },
       include: serverListInclude,

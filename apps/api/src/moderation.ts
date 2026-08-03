@@ -38,7 +38,7 @@ export async function listModerationEvents(
     where: {
       serverId,
       ...(opts?.playerName
-        ? { playerName: { equals: opts.playerName, mode: "insensitive" } }
+        ? { playerName: opts.playerName }
         : {}),
     },
     orderBy: { createdAt: "desc" },

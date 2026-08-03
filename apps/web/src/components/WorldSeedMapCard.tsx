@@ -288,6 +288,7 @@ export function WorldSeedMapCard({
             src={mapUrl}
             className="world-seed-map-iframe"
             loading="lazy"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
             referrerPolicy="no-referrer-when-downgrade"
             allow="fullscreen"
           />
@@ -361,9 +362,11 @@ export function WorldSeedMapCard({
             <div className="world-seed-map-embed-wrap mt-3">
               <iframe
                 title="BlueMap live map"
-                src={bluemapUrl}
+                src={/^https?:\/\//i.test(bluemapUrl.trim()) ? bluemapUrl.trim() : undefined}
                 className="world-seed-map-iframe"
                 loading="lazy"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+                referrerPolicy="no-referrer"
                 allow="fullscreen"
               />
             </div>

@@ -1,7 +1,6 @@
 import fs from "node:fs/promises";
 import fsSync from "node:fs";
 import path from "node:path";
-import { createWriteStream } from "node:fs";
 import { pipeline } from "node:stream/promises";
 import type { Readable } from "node:stream";
 import { safeExtractArchive } from "./safe-archive.js";
@@ -354,8 +353,45 @@ export async function saveUpload(
   const dest = resolveSafePath(serverId, destRel);
   // Fail fast when already at/over quota (Wings HasSpaceAvailable)
   await assertDiskSpace(serverId, 1);
-  await pipeline(stream, createWriteStream(dest.absolute, { mode: 0o600 }));
-  const st = await fs.stat(dest.absolute);
+  // Reject raced symlinks (same as writeFile): O_NOFOLLOW + replace existing file.
+  const flags =
+    fs.constants.O_WRONLY |
+    fs.constants.O_CREAT |
+    fs.constants.O_TRUNC |
+    (fs.constants.O_NOFOLLOW ?? 0);
+  let fh: Awaited<ReturnType<typeof fs.open>>;
+  try {
+    // resolveSafePath already rejects symlink path components; still use O_NOFOLLOW.
+    try {
+      const st = await fs.lstat(dest.absolute);
+      if (st.isSymbolicLink()) {
+        throw new Error("Symlinks are not allowed in server files");
+      }
+      if (st.isDirectory()) {
+        throw new Error("Upload target is a directory");
+      }
+    } catch (err) {
+      const code = (err as NodeJS.ErrnoException).code;
+      if (code !== "ENOENT") throw err;
+    }
+    fh = await fs.open(dest.absolute, flags, 0o600);
+  } catch (err) {
+    const code = (err as NodeJS.ErrnoException).code;
+    if (code === "ELOOP") {
+      throw new Error("Symlinks are not allowed in server files");
+    }
+    throw err;
+  }
+  try {
+    await pipeline(stream, fh.createWriteStream());
+  } finally {
+    await fh.close().catch(() => undefined);
+  }
+  const st = await fs.lstat(dest.absolute);
+  if (st.isSymbolicLink()) {
+    await fs.rm(dest.absolute, { force: true }).catch(() => undefined);
+    throw new Error("Symlinks are not allowed in server files");
+  }
   if (st.size > UPLOAD_MAX_BYTES) {
     await fs.rm(dest.absolute, { force: true });
     invalidateServerDataCache(serverId);

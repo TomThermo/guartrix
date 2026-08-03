@@ -37,10 +37,11 @@ export async function findSubUserForAccess(
     return { ...byUser, permissionsList: parsePermissionsJson(byUser.permissions) };
   }
 
-  // Match pending invite by email if the account has one
+  // Match pending invite by email only after the account verified that address
+  // (blocks invite hijack when open registration has no SMTP gate).
   const dbUser = await prisma.user.findUnique({ where: { id: user.id } });
   const email = dbUser?.email?.trim().toLowerCase();
-  if (!email) return null;
+  if (!email || !dbUser?.emailVerified) return null;
 
   const byEmail = await prisma.subUser.findFirst({
     where: { serverId, email },

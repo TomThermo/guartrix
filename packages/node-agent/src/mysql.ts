@@ -190,6 +190,22 @@ export async function ensureMysql(): Promise<MysqlStatus> {
       "unless-stopped",
       "--network",
       GUARTRIX_NETWORK,
+      "--security-opt",
+      "no-new-privileges:true",
+      "--cap-drop",
+      "ALL",
+      "--cap-add",
+      "CHOWN",
+      "--cap-add",
+      "DAC_OVERRIDE",
+      "--cap-add",
+      "FOWNER",
+      "--cap-add",
+      "SETGID",
+      "--cap-add",
+      "SETUID",
+      "--pids-limit",
+      "256",
       "--label",
       "guartrix=1",
       "--label",
@@ -239,7 +255,9 @@ export async function createMysqlDatabase(
   if (!password || password.length < 8) {
     throw new Error("MySQL password must be at least 8 characters");
   }
-  const remote = (input.remote ?? "%").trim() || "%";
+  // Default to Docker bridge hosts only — not '%' (world). Operators can still
+  // pass remote="%" explicitly if they need it.
+  const remote = (input.remote ?? "172.%").trim() || "172.%";
   if (remote !== "%" && !/^[a-zA-Z0-9._%-]+$/.test(remote)) {
     throw new Error("Invalid MySQL remote host pattern");
   }

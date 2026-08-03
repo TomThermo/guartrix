@@ -82,7 +82,8 @@ The license **server** is hosted separately by Guartrix (default `https://licens
 
 | Variable | Purpose |
 |----------|---------|
-| `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ZONE_ID` / `CLOUDFLARE_DOMAIN` | Auto A records for servers (optional `CLOUDFLARE_ACCOUNT_ID`) |
+| `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ZONE_ID` / `CLOUDFLARE_DOMAIN` | Auto A/SRV records (token: Zone DNS Edit on one zone — see [security.md](security.md)) |
+| `ALLOW_INSECURE_DEFAULTS` | Set `1` only for local dev — otherwise API refuses default `SESSION_SECRET` / `ADMIN_PASSWORD` |
 | `TLS_CERT_FILE` / `TLS_KEY_FILE` | Override Origin cert paths (panel behind Cloudflare) |
 | `DAEMON_TLS_CERT_FILE` / `DAEMON_TLS_KEY_FILE` | SNI cert for DNS-only `node1.*` / `DAEMON_PUBLIC_HOST` (LE by default) |
 | `DOWNLOAD_PUBLIC_HOST` | DNS-only hostname for password `/download` (e.g. `download.guartrix.com`); apex `/download` redirects here |

@@ -137,8 +137,25 @@ export async function resolveApiKeyAuth(
   if (!token || !token.startsWith(TOKEN_PREFIX)) return null;
 
   const tokenHash = hashApiKeyToken(token);
-  const row = await prisma.apiKey.findUnique({ where: { tokenHash } });
+  const row = await prisma.apiKey.findUnique({
+    where: { tokenHash },
+    include: { user: { select: { role: true, totpEnabled: true } } },
+  });
   if (!row || row.revokedAt) return null;
+
+  // Roles in TWO_FACTOR_REQUIRED_ROLES must enroll TOTP before API keys work.
+  const required = (process.env.TWO_FACTOR_REQUIRED_ROLES ?? "")
+    .split(",")
+    .map((s) => s.trim().toUpperCase())
+    .filter(Boolean);
+  if (
+    required.includes(String(row.user.role).toUpperCase()) &&
+    !row.user.totpEnabled
+  ) {
+    (request as FastifyRequest & { apiKeyRateLimited?: string }).apiKeyRateLimited =
+      "Two-factor authentication is required for this account before API keys can be used";
+    return null;
+  }
 
   const limited = checkApiKeyRate(row.id);
   if (limited) {

@@ -2,6 +2,10 @@ import { prisma } from "./db.js";
 import { processManager } from "./process-manager.js";
 import { config } from "./config.js";
 import { readServerProperties } from "./properties.js";
+import {
+  assertSafeOutboundUrl,
+  DISCORD_WEBHOOK_HOST_SUFFIXES,
+} from "./safe-url.js";
 
 const INTERVAL_MS = 60_000;
 
@@ -14,31 +18,30 @@ async function postOrEditStatus(opts: {
   messageId: string | null;
   content: object;
 }): Promise<string | null> {
-  const base = opts.webhookUrl.replace(/\?.*$/, "").replace(/\/$/, "");
-  if (!isDiscordWebhook(base)) {
-    // Generic webhook — fire-and-forget POST
-    await fetch(opts.webhookUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(opts.content),
-    });
-    return opts.messageId;
+  const safeUrl = await assertSafeOutboundUrl(opts.webhookUrl, {
+    httpsOnly: true,
+    allowedHostSuffixes: DISCORD_WEBHOOK_HOST_SUFFIXES,
+  });
+  if (!isDiscordWebhook(safeUrl)) {
+    throw new Error("Discord status requires a Discord webhook URL");
   }
+  const base = safeUrl.replace(/\?.*$/, "").replace(/\/$/, "");
 
   if (opts.messageId) {
     const res = await fetch(`${base}/messages/${opts.messageId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(opts.content),
+      redirect: "error",
     });
     if (res.ok) return opts.messageId;
-    // fall through to create if message was deleted
   }
 
   const res = await fetch(`${base}?wait=true`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(opts.content),
+    redirect: "error",
   });
   if (!res.ok) {
     throw new Error(`Discord status webhook ${res.status}`);

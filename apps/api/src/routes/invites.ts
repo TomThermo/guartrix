@@ -38,7 +38,7 @@ export function registerInviteRoutes(app: FastifyInstance): void {
       if (!isAuthenticated(request)) {
         return reply.status(401).send({ error: "Sign in to accept this invite" });
       }
-      const user = getSessionUser(request);
+      const user = await getSessionUser(request);
       if (!user) return reply.status(401).send({ error: "Unauthorized" });
 
       const raw = request.params.token?.trim();

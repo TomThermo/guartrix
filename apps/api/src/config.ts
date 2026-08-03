@@ -77,14 +77,36 @@ if (
   config.sessionSecret === "dev-session-secret-change-me" ||
   config.sessionSecret.length < 16
 ) {
-  console.warn(
-    "[guartrix] WARNING: SESSION_SECRET is weak/default — set a long random value in .env",
-  );
+  const msg =
+    "[guartrix] SESSION_SECRET is weak/default — set a long random value in .env";
+  if (
+    process.env.ALLOW_INSECURE_DEFAULTS === "1" ||
+    process.env.ALLOW_INSECURE_DEFAULTS === "true"
+  ) {
+    console.warn(msg);
+  } else {
+    console.error(msg);
+    console.error(
+      "[guartrix] Refusing to start. Set SESSION_SECRET or ALLOW_INSECURE_DEFAULTS=1 for local dev.",
+    );
+    process.exit(1);
+  }
 }
 if (config.adminPassword === "changeme") {
-  console.warn(
-    "[guartrix] WARNING: ADMIN_PASSWORD is the default — change it in .env",
-  );
+  const msg =
+    "[guartrix] ADMIN_PASSWORD is the default — change it in .env";
+  if (
+    process.env.ALLOW_INSECURE_DEFAULTS === "1" ||
+    process.env.ALLOW_INSECURE_DEFAULTS === "true"
+  ) {
+    console.warn(msg);
+  } else {
+    console.error(msg);
+    console.error(
+      "[guartrix] Refusing to start. Set ADMIN_PASSWORD or ALLOW_INSECURE_DEFAULTS=1 for local dev.",
+    );
+    process.exit(1);
+  }
 }
 
 export function serverDir(serverId: string): string {

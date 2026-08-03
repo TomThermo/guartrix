@@ -110,10 +110,10 @@ type MrpackIndex = {
 };
 
 async function downloadToFile(url: string, dest: string): Promise<void> {
-  const res = await fetch(url, {
+  const { fetchSafeDownload } = await import("./safe-url.js");
+  const res = await fetchSafeDownload(url, {
     headers: { "User-Agent": modrinthUa() },
     signal: AbortSignal.timeout(120_000),
-    redirect: "follow",
   });
   if (!res.ok || !res.body) throw new Error(`Download failed (${res.status})`);
   await pipeline(Readable.fromWeb(res.body as never), createWriteStream(dest));

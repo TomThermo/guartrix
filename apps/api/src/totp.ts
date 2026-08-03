@@ -1,4 +1,4 @@
-import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, createCipheriv, createDecipheriv, randomBytes, timingSafeEqual, scryptSync } from "node:crypto";
 
 /**
  * Minimal TOTP (RFC 6238, HMAC-SHA1, 6 digits, 30s step) — the profile every
@@ -11,6 +11,43 @@ const STEP_SECONDS = 30;
 const DIGITS = 6;
 /** Accept the previous/next step too (clock drift on phones). */
 const VERIFY_WINDOW = 1;
+const TOTP_ENC_PREFIX = "enc:v1:";
+
+function totpSealKey(): Buffer {
+  const secret =
+    process.env.SESSION_SECRET?.trim() || "dev-session-secret-change-me";
+  return scryptSync(secret, "guartrix-totp-v1", 32);
+}
+
+/** Encrypt a TOTP secret at rest (AES-256-GCM). Plain base32 still accepted on read. */
+export function sealTotpSecret(plainBase32: string): string {
+  const iv = randomBytes(12);
+  const cipher = createCipheriv("aes-256-gcm", totpSealKey(), iv);
+  const enc = Buffer.concat([
+    cipher.update(plainBase32, "utf8"),
+    cipher.final(),
+  ]);
+  const tag = cipher.getAuthTag();
+  return (
+    TOTP_ENC_PREFIX +
+    Buffer.concat([iv, tag, enc]).toString("base64url")
+  );
+}
+
+/** Decrypt sealed secrets; pass through legacy plaintext base32. */
+export function unsealTotpSecret(stored: string): string {
+  if (!stored.startsWith(TOTP_ENC_PREFIX)) return stored;
+  const raw = Buffer.from(stored.slice(TOTP_ENC_PREFIX.length), "base64url");
+  if (raw.length < 28) throw new Error("Corrupt TOTP secret");
+  const iv = raw.subarray(0, 12);
+  const tag = raw.subarray(12, 28);
+  const data = raw.subarray(28);
+  const decipher = createDecipheriv("aes-256-gcm", totpSealKey(), iv);
+  decipher.setAuthTag(tag);
+  return Buffer.concat([decipher.update(data), decipher.final()]).toString(
+    "utf8",
+  );
+}
 
 export function base32Encode(buf: Buffer): string {
   let bits = 0;
@@ -67,7 +104,13 @@ function hotp(secret: Buffer, counter: number): string {
 export function verifyTotp(secretBase32: string, code: string, now = Date.now()): boolean {
   const normalized = code.replace(/[\s-]/g, "");
   if (!/^\d{6}$/.test(normalized)) return false;
-  const secret = base32Decode(secretBase32);
+  let plain: string;
+  try {
+    plain = unsealTotpSecret(secretBase32);
+  } catch {
+    return false;
+  }
+  const secret = base32Decode(plain);
   if (secret.length === 0) return false;
   const counter = Math.floor(now / 1000 / STEP_SECONDS);
   const given = Buffer.from(normalized);
@@ -81,10 +124,11 @@ export function verifyTotp(secretBase32: string, code: string, now = Date.now())
 }
 
 export function otpauthUrl(username: string, secretBase32: string): string {
+  const plain = unsealTotpSecret(secretBase32);
   const issuer = "Guartrix";
   const label = encodeURIComponent(`${issuer}:${username}`);
   const params = new URLSearchParams({
-    secret: secretBase32,
+    secret: plain,
     issuer,
     algorithm: "SHA1",
     digits: String(DIGITS),
