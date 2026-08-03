@@ -230,6 +230,8 @@ Console sidebar **Join this server** shows address, direct IP, version, whitelis
 
 Server Properties → **General**: optional owner Discord webhook / email for crash, OOM, disk-high, offline, and backup-failed. **Discord status** keeps one channel message updated (webhook, no bot token) with online/offline and player count.
 
+**Account → Security → Push alerts**: opt-in browser / PWA notifications for the same critical events (requires operator `VAPID_*` keys). Alerts go to the **server owner** who enabled push on that device.
+
 ### Behind a proxy
 
 Server Properties → **Access**: Velocity or BungeeCord one-click helpers (sets `online-mode=false` + forwarding flags / secret). Restart required. Paper/Purpur only.
@@ -331,8 +333,9 @@ forked API worker process (not inside Fastify); require `online-mode=false`.
 The panel is a Progressive Web App: production builds register a service worker
 (`/sw.js`) that caches the app shell, so browsers offer **Install app** / Add to
 Home Screen and the UI loads instantly on revisit. There are **no push
-notifications** — alerts go via Discord/email webhooks (see
-[Activity log](activity-log.md)). Nothing to configure; a hard refresh picks up
+notifications** — alerts go via Discord/email webhooks and optional Web Push
+(see [Activity log](activity-log.md) and Account → Security). A hard refresh
+picks up the latest shell when the PWA is installed.
 new panel versions.
 
 ---

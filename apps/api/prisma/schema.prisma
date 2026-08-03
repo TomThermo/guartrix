@@ -261,9 +261,30 @@ model User {
   apiKeys      ApiKey[]
   payments     Payment[]
   appPasswords AppPassword[]
+  pushSubscriptions PushSubscription[]
   /** Mollie customer id (`cst_…`) for recurring billing. */
   mollieCustomerId String?
   billingSubscriptions BillingSubscription[]
+}
+
+/**
+ * Browser Web Push subscription (opt-in crash/disk alerts on mobile/desktop).
+ * endpointHash (sha256 hex) is unique; endpoint may be longer than MySQL index limits.
+ */
+model PushSubscription {
+  id           String   @id
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint     String   @db.Text
+  endpointHash String   @unique @db.VarChar(64)
+  p256dh       String   @db.Text
+  auth         String   @db.Text
+  /** Optional user-agent / device label for the Account UI. */
+  userAgent    String?  @db.VarChar(512)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId])
 }
 
 /**

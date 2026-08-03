@@ -24,7 +24,7 @@ API) raises quotas so they can create servers.
 
 ```bash
 MOLLIE_API_KEY=test_…
-# Optional: notify your storefront / WHMCS bridge
+# Optional: notify your storefront / billing bridge
 # BILLING_WEBHOOK_URL=https://billing.example.com/hooks/guartrix
 ```
 

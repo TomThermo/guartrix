@@ -33,6 +33,7 @@ import { startDiscordStatusWorker } from "./discord-status.js";
 import { startDiskWatch } from "./disk-watch.js";
 import { registerActivityRoutes } from "./routes/activity.js";
 import { registerAccountGdprRoutes } from "./routes/account-gdpr.js";
+import { registerAccountPushRoutes } from "./routes/account-push.js";
 import { registerTwoFactorRoutes, registerTwoFactorGuard } from "./routes/two-factor.js";
 import { registerApiKeyRoutes } from "./routes/api-keys.js";
 import { registerAppPasswordRoutes } from "./routes/app-passwords.js";
@@ -302,6 +303,7 @@ async function main() {
   registerTwoFactorRoutes(app);
   registerTwoFactorGuard(app);
   registerAccountGdprRoutes(app);
+  registerAccountPushRoutes(app);
   registerApiKeyRoutes(app);
   registerAppPasswordRoutes(app);
   registerApplicationKeyAdminRoutes(app);

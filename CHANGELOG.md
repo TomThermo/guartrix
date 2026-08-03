@@ -7,6 +7,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.45] — 2026-08-03
+
+- PWA **Web Push** opt-in for critical alerts (crash / crash-loop / disk-high / offline)
+- `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT`; Account → Security toggle
+- Service worker push + notification click; GDPR export includes push endpoints
+- Docs: drop WHMCS deeper-sync framing (Application API + billing webhooks remain)
+
 ## [1.0.44] — 2026-08-03
 
 - Modularize `@msm/shared`: thin barrel + `types/{server,auth,nodes,databases,schedules,files-stats}`

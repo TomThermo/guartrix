@@ -81,6 +81,31 @@ export const accountApi = {
       `/api/account/app-passwords/${encodeURIComponent(id)}`,
       { method: "DELETE" },
     ),
+  getPushStatus: () =>
+    request<{
+      configured: boolean;
+      publicKey: string | null;
+      subscriptionCount: number;
+    }>("/api/account/push/status"),
+  subscribePush: (body: {
+    endpoint: string;
+    keys: { p256dh: string; auth: string };
+    userAgent?: string;
+  }) =>
+    request<{ ok: boolean }>("/api/account/push/subscribe", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  unsubscribePush: (endpoint: string) =>
+    request<{ ok: boolean }>("/api/account/push/subscribe", {
+      method: "DELETE",
+      body: JSON.stringify({ endpoint }),
+    }),
+  clearPushSubscriptions: () =>
+    request<{ ok: boolean; deleted: number }>(
+      "/api/account/push/subscriptions",
+      { method: "DELETE" },
+    ),
   listUsers: () => request<AuthUser[]>("/api/users"),
   createUser: (body: CreateUserRequest) =>
     request<AuthUser>("/api/users", {

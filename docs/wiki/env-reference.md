@@ -115,6 +115,9 @@ The license **server** is hosted separately by Guartrix (default `https://licens
 | `ACTIVITY_LOG_RETENTION_DAYS` | Days of activity history to keep (default **90**, `0` = forever) |
 | `ACTIVITY_WEBHOOK_URL` | Webhook for critical events; Discord URLs get embeds, others a generic JSON POST |
 | `ALERT_EMAIL` | Address that also receives critical-event mail (needs `SMTP_*`) |
+| `VAPID_PUBLIC_KEY` | Web Push public key (Account → Security opt-in; `npx web-push generate-vapid-keys`) |
+| `VAPID_PRIVATE_KEY` | Web Push private key (keep secret) |
+| `VAPID_SUBJECT` | `mailto:` contact for VAPID (default `mailto:noreply@$PUBLIC_HOST`) |
 | `ACTIVITY_ALERT_MUTE` | Comma-separated action keys to never alert on, e.g. `auth.login-failed` |
 | `BACKUP_OFFSITE_CMD` | Optional shell command after each backup (`{path}` `{serverId}` `{backupId}` `{fileName}`) |
 | `BACKUP_ENCRYPTION` | `1` = seal new backups with AES-256-GCM (`.tar.gz.enc`) |

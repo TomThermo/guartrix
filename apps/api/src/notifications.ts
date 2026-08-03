@@ -4,11 +4,13 @@ import { config } from "./config.js";
 import { prisma } from "./db.js";
 import { sendMail } from "./mail.js";
 import { assertSafeWebhookUrl } from "./safe-url.js";
+import { sendWebPushToUsers } from "./web-push.js";
 
 /**
  * Outbound alerts for critical activity (crashes, offline nodes, security events).
  * Configure with ACTIVITY_WEBHOOK_URL (Discord-compatible) and/or ALERT_EMAIL.
  * Per-server owner webhook/email is also honored when set on the Server row.
+ * Opt-in Web Push goes to the server owner (and admins for global events).
  */
 
 /** Same action on the same target is only alerted once per window (crash loops). */
@@ -77,6 +79,27 @@ async function postWebhook(url: string, event: ActivityEventRecord): Promise<voi
   }
 }
 
+async function resolvePushUserIds(event: ActivityEventRecord): Promise<string[]> {
+  if (event.serverId) {
+    const row = await prisma.server
+      .findUnique({
+        where: { id: event.serverId },
+        select: { ownerId: true },
+      })
+      .catch(() => null);
+    return row?.ownerId ? [row.ownerId] : [];
+  }
+  // Global critical (license, etc.): notify admins who opted into push.
+  const admins = await prisma.user.findMany({
+    where: {
+      role: "ADMIN",
+      pushSubscriptions: { some: {} },
+    },
+    select: { id: true },
+  });
+  return admins.map((a) => a.id);
+}
+
 /**
  * Send alerts for a critical activity event. Never throws; failures are logged
  * so a dead webhook can't break a power action.
@@ -103,7 +126,18 @@ export async function notifyCriticalActivity(
     ownerEmail = row?.ownerAlertEmail?.trim() || null;
   }
 
-  if (!webhookUrl && !alertEmail && !ownerWebhook && !ownerEmail) return;
+  const pushUserIds = await resolvePushUserIds(event).catch(() => [] as string[]);
+  const hasPushTargets = pushUserIds.length > 0;
+
+  if (
+    !webhookUrl &&
+    !alertEmail &&
+    !ownerWebhook &&
+    !ownerEmail &&
+    !hasPushTargets
+  ) {
+    return;
+  }
 
   const key = `${event.action}:${event.serverId ?? event.userId ?? "global"}`;
   const now = Date.now();
@@ -140,6 +174,30 @@ export async function notifyCriticalActivity(
     } catch (err) {
       console.warn(
         "[guartrix] Activity alert email failed:",
+        err instanceof Error ? err.message : err,
+      );
+    }
+  }
+
+  if (hasPushTargets) {
+    const detail = activityDetail(event);
+    const body =
+      detail ||
+      (event.serverName
+        ? `${event.label} on ${event.serverName}`
+        : event.label);
+    try {
+      await sendWebPushToUsers(pushUserIds, {
+        title: eventTitle(event),
+        body: body.slice(0, 180),
+        url: event.serverId
+          ? `${config.publicBaseUrl.replace(/\/$/, "")}/servers/${event.serverId}`
+          : config.publicBaseUrl,
+        tag: key,
+      });
+    } catch (err) {
+      console.warn(
+        "[guartrix] Web push alert failed:",
         err instanceof Error ? err.message : err,
       );
     }

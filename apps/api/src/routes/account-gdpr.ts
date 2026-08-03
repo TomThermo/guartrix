@@ -48,6 +48,7 @@ export function registerAccountGdprRoutes(app: FastifyInstance): void {
       appPasswords,
       payments,
       subscriptions,
+      pushSubscriptions,
     ] = await Promise.all([
       prisma.server.findMany({
         where: { ownerId: user.id },
@@ -138,6 +139,16 @@ export function registerAccountGdprRoutes(app: FastifyInstance): void {
           createdAt: true,
           updatedAt: true,
           canceledAt: true,
+        },
+      }),
+      prisma.pushSubscription.findMany({
+        where: { userId: user.id },
+        select: {
+          id: true,
+          endpoint: true,
+          userAgent: true,
+          createdAt: true,
+          updatedAt: true,
         },
       }),
     ]);
@@ -259,6 +270,13 @@ export function registerAccountGdprRoutes(app: FastifyInstance): void {
           canceledAt: s.canceledAt?.toISOString() ?? null,
         })),
       },
+      pushSubscriptions: pushSubscriptions.map((p) => ({
+        id: p.id,
+        endpoint: p.endpoint,
+        userAgent: p.userAgent,
+        createdAt: p.createdAt.toISOString(),
+        updatedAt: p.updatedAt.toISOString(),
+      })),
     };
 
     logActivity({

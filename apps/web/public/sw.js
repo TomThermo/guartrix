@@ -1,5 +1,5 @@
-/* Guartrix app-shell service worker — offline shell only, no push. */
-const CACHE = "guartrix-shell-v1";
+/* Guartrix app-shell service worker — offline shell + Web Push alerts. */
+const CACHE = "guartrix-shell-v2";
 const SHELL = ["/", "/index.html", "/site.webmanifest"];
 
 self.addEventListener("install", (event) => {
@@ -43,6 +43,63 @@ self.addEventListener("fetch", (event) => {
         })
         .catch(() => cached);
       return cached || network;
+    }),
+  );
+});
+
+self.addEventListener("push", (event) => {
+  let title = "Guartrix";
+  let body = "New alert";
+  let url = "/";
+  let tag = "guartrix-alert";
+  try {
+    const data = event.data ? event.data.json() : null;
+    if (data && typeof data === "object") {
+      if (typeof data.title === "string" && data.title) title = data.title;
+      if (typeof data.body === "string" && data.body) body = data.body;
+      if (typeof data.url === "string" && data.url) url = data.url;
+      if (typeof data.tag === "string" && data.tag) tag = data.tag;
+    } else if (event.data) {
+      body = event.data.text();
+    }
+  } catch {
+    try {
+      body = event.data ? event.data.text() : body;
+    } catch {
+      /* ignore */
+    }
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body,
+      tag,
+      data: { url },
+      icon: "/icon-192.png",
+      badge: "/icon-192.png",
+    }),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const target =
+    event.notification.data && typeof event.notification.data.url === "string"
+      ? event.notification.data.url
+      : "/";
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+      for (const client of clients) {
+        if ("focus" in client && client.url.includes(self.location.origin)) {
+          void client.focus();
+          if ("navigate" in client && typeof client.navigate === "function") {
+            return client.navigate(target);
+          }
+          return undefined;
+        }
+      }
+      if (self.clients.openWindow) return self.clients.openWindow(target);
+      return undefined;
     }),
   );
 });

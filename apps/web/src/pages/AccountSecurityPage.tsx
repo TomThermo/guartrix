@@ -16,6 +16,13 @@ import {
   watchSystemTheme,
   type ThemePreference,
 } from "../theme";
+import {
+  getExistingPushSubscription,
+  pushSupported,
+  serializePushSubscription,
+  subscribeBrowserPush,
+  unsubscribeBrowserPush,
+} from "../push";
 
 type Step = "idle" | "setup" | "recovery" | "disable" | "regen";
 
@@ -46,6 +53,10 @@ export function AccountSecurityPage() {
   const [themePref, setThemePref] = useState<ThemePreference>(() =>
     readThemePreference(),
   );
+  const [pushConfigured, setPushConfigured] = useState(false);
+  const [pushCount, setPushCount] = useState(0);
+  const [pushLocal, setPushLocal] = useState(false);
+  const [pushBusy, setPushBusy] = useState(false);
 
   useEffect(() => {
     return watchSystemTheme(themePref);
@@ -58,12 +69,71 @@ export function AccountSecurityPage() {
     setRecoveryLeft(status.recoveryCodesRemaining);
   }, []);
 
+  const refreshPush = useCallback(async () => {
+    try {
+      const status = await api.getPushStatus();
+      setPushConfigured(status.configured);
+      setPushCount(status.subscriptionCount);
+    } catch {
+      setPushConfigured(false);
+      setPushCount(0);
+    }
+    if (pushSupported()) {
+      const sub = await getExistingPushSubscription();
+      setPushLocal(Boolean(sub));
+    } else {
+      setPushLocal(false);
+    }
+  }, []);
+
   useEffect(() => {
     setLoading(true);
-    void refresh()
+    void Promise.all([refresh(), refreshPush()])
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load"))
       .finally(() => setLoading(false));
-  }, [refresh]);
+  }, [refresh, refreshPush]);
+
+  async function enablePush() {
+    setPushBusy(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const status = await api.getPushStatus();
+      if (!status.configured || !status.publicKey) {
+        throw new Error(
+          "Push alerts are not configured on this panel (operator must set VAPID keys).",
+        );
+      }
+      const sub = await subscribeBrowserPush(status.publicKey);
+      await api.subscribePush({
+        ...serializePushSubscription(sub),
+        userAgent: navigator.userAgent.slice(0, 512),
+      });
+      setNotice("Push alerts enabled for this browser.");
+      await refreshPush();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to enable push");
+    } finally {
+      setPushBusy(false);
+    }
+  }
+
+  async function disablePush() {
+    setPushBusy(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const endpoint = await unsubscribeBrowserPush();
+      if (endpoint) await api.unsubscribePush(endpoint);
+      else await api.clearPushSubscriptions();
+      setNotice("Push alerts disabled for this browser.");
+      await refreshPush();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to disable push");
+    } finally {
+      setPushBusy(false);
+    }
+  }
 
   if (!authenticated) return <Navigate to="/login" replace />;
 
@@ -308,6 +378,58 @@ export function AccountSecurityPage() {
               />
             ))}
           </Form>
+        </Card.Body>
+      </Card>
+
+      <Card className="border-0 shadow-sm mb-4">
+        <Card.Body>
+          <h2 className="h6 mb-2">Push alerts</h2>
+          <p className="text-secondary small mb-3">
+            Opt in to browser / PWA notifications for critical events (crash,
+            crash-loop, high disk, unexpected offline). Alerts go to the server
+            owner who enabled push on this device.
+          </p>
+          {!pushSupported() ? (
+            <p className="text-secondary small mb-0">
+              This browser does not support Web Push.
+            </p>
+          ) : !pushConfigured ? (
+            <Alert variant="secondary" className="py-2 mb-0">
+              Push is not configured on this panel yet. The operator must set{" "}
+              <code>VAPID_PUBLIC_KEY</code> and <code>VAPID_PRIVATE_KEY</code>.
+            </Alert>
+          ) : (
+            <div className="d-flex flex-wrap align-items-center gap-2">
+              <span className="small text-secondary">
+                This browser:{" "}
+                <strong className={pushLocal ? "text-success" : undefined}>
+                  {pushLocal ? "enabled" : "off"}
+                </strong>
+                {pushCount > 0 && (
+                  <> · {pushCount} device{pushCount === 1 ? "" : "s"} on your account</>
+                )}
+              </span>
+              {pushLocal ? (
+                <Button
+                  size="sm"
+                  variant="outline-secondary"
+                  disabled={pushBusy}
+                  onClick={() => void disablePush()}
+                >
+                  {pushBusy ? "…" : "Disable on this device"}
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="primary"
+                  disabled={pushBusy}
+                  onClick={() => void enablePush()}
+                >
+                  {pushBusy ? "…" : "Enable push alerts"}
+                </Button>
+              )}
+            </div>
+          )}
         </Card.Body>
       </Card>
 
