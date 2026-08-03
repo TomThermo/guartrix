@@ -159,6 +159,7 @@ export const api = {
       registrationEnabled: boolean;
       passwordMinLength: number;
       passwordPolicy: string;
+      emailVerificationRequired?: boolean;
     }>("/api/auth/config"),
   login: (username: string, password: string, rememberMe = false) =>
     request<{ ok: boolean; user?: AuthUser; requiresTwoFactor?: boolean }>(
@@ -223,7 +224,12 @@ export const api = {
     password: string;
     acceptTerms: true;
   }) =>
-    request<{ ok: boolean; user: AuthUser }>("/api/auth/register", {
+    request<{
+      ok: boolean;
+      user?: AuthUser;
+      emailVerificationRequired?: boolean;
+      message?: string;
+    }>("/api/auth/register", {
       method: "POST",
       body: JSON.stringify(body),
     }),

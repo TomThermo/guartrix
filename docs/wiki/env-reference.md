@@ -85,8 +85,10 @@ The license **server** is hosted separately by Guartrix (default `https://licens
 | `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ZONE_ID` / `CLOUDFLARE_DOMAIN` | Auto A records for servers (optional `CLOUDFLARE_ACCOUNT_ID`) |
 | `TLS_CERT_FILE` / `TLS_KEY_FILE` | Override Origin cert paths (panel behind Cloudflare) |
 | `DAEMON_TLS_CERT_FILE` / `DAEMON_TLS_KEY_FILE` | SNI cert for DNS-only `node1.*` / `DAEMON_PUBLIC_HOST` (LE by default) |
-| `LETSENCRYPT_EMAIL` | Email for `scripts/install-daemon-le-cert.sh` |
-| `DOWNLOAD_PASSWORD` | Enables `https://$PUBLIC_HOST/download` (release zip gate) |
+| `DOWNLOAD_PUBLIC_HOST` | DNS-only hostname for password `/download` (e.g. `download.guartrix.com`); apex `/download` redirects here |
+| `DOWNLOAD_TLS_CERT_FILE` / `DOWNLOAD_TLS_KEY_FILE` | SNI cert for `DOWNLOAD_PUBLIC_HOST` (LE by default) |
+| `LETSENCRYPT_EMAIL` | Email for `install-daemon-le-cert.sh` / `install-download-le-cert.sh` |
+| `DOWNLOAD_PASSWORD` | Enables password gate on `/download` (release zip) |
 | `DOWNLOAD_ENABLED` | Set `0` to disable even if password is set |
 | `DOWNLOAD_DIR` | Zip publish dir (default `data/downloads`) |
 | `DOWNLOAD_SESSION_TTL_SEC` | Cookie lifetime after unlock (default 7 days) |

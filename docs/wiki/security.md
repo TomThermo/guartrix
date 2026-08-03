@@ -9,11 +9,13 @@
 - [x] Cleartext WebSocket on `:80` rejected when HTTPS is enabled
 - [x] Strong passwords enforced on register / reset / admin create
 - [x] Email verification before linking pending subuser invites
+- [x] When `SMTP_HOST` is set: verify-before-login for non-admin accounts
 - [x] Registration quotas default to **0** until an admin grants capacity
 - [ ] `ACTIVITY_WEBHOOK_URL` / `ALERT_EMAIL` set so crashes and failed sign-ins are noticed
 - [x] Consider `TWO_FACTOR_REQUIRED_ROLES=ADMIN` so panel admins must use TOTP
 - [x] Login rate limits use client IP only from **trusted proxies** (`TRUSTED_PROXIES`, default localhost)
 - [x] Watchdog posts to `ACTIVITY_WEBHOOK_URL` on panel restart / critical backoff
+- [x] Public `/download` on DNS-only host (`DOWNLOAD_PUBLIC_HOST`) to avoid Cloudflare bot challenges
 
 ## Built-in controls (V0.2+)
 

@@ -50,7 +50,8 @@ bash scripts/start.sh
 The password download gate lives in `scripts/prod-web-download.mjs` on **this**
 machine. It is **not** included in customer zips.
 
-After `npm run package:download`, open **https://guartrix.com/download** and unlock with
+After `npm run package:download`, open **https://download.guartrix.com/download**
+(or apex `/download`, which redirects when `DOWNLOAD_PUBLIC_HOST` is set) and unlock with
 `DOWNLOAD_PASSWORD` from `.env`. The page lists:
 
 | File | Contents |

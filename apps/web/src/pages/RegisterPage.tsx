@@ -14,6 +14,7 @@ export function RegisterPage() {
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [verifyFirst, setVerifyFirst] = useState(false);
   const [policy, setPolicy] = useState(
     "Password must be 12–128 characters and include uppercase, lowercase, a number, and a symbol.",
   );
@@ -44,12 +45,16 @@ export function RegisterPage() {
     }
     setBusy(true);
     try {
-      await api.register({
+      const res = await api.register({
         username: username.trim(),
         email: email.trim(),
         password,
         acceptTerms: true,
       });
+      if (res.emailVerificationRequired && !res.user) {
+        setVerifyFirst(true);
+        return;
+      }
       await refreshUser();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
@@ -64,6 +69,20 @@ export function RegisterPage() {
         <Alert variant="secondary" className="mb-0">
           Self-serve registration is currently off. Ask an admin for an invite, or{" "}
           <Link to="/login">sign in</Link>.
+        </Alert>
+      </AuthShell>
+    );
+  }
+
+  if (verifyFirst) {
+    return (
+      <AuthShell
+        title="Check your email"
+        subtitle="Confirm your address before signing in"
+      >
+        <Alert variant="success" className="mb-3">
+          We sent a verification link to <strong>{email.trim()}</strong>. Open it,
+          then <Link to="/login">sign in</Link>.
         </Alert>
       </AuthShell>
     );

@@ -80,6 +80,13 @@ const LICENSE_PUBLIC_HOST = (
  * Empty = disabled. Set explicitly — do not invent a default for every install.
  */
 const DAEMON_PUBLIC_HOST = (process.env.DAEMON_PUBLIC_HOST?.trim() || "").toLowerCase();
+/**
+ * Host for password-gated /download over public CA (DNS-only).
+ * Empty = serve /download only on the main panel host (may hit CF bot challenge).
+ */
+const DOWNLOAD_PUBLIC_HOST = (
+  process.env.DOWNLOAD_PUBLIC_HOST?.trim() || ""
+).toLowerCase();
 const DIST = path.join(rootDir, "apps/web/dist");
 const CERT_DIR = path.join(rootDir, "data", "certs");
 const ORIGIN_CERT = path.join(rootDir, "cert", "guartrix.com.crt");
@@ -135,6 +142,26 @@ const DAEMON_KEY_FILE = resolveTlsPath(
   DEFAULT_DAEMON_LE_KEY && fs.existsSync(DEFAULT_DAEMON_LE_KEY)
     ? DEFAULT_DAEMON_LE_KEY
     : path.join(CERT_DIR, "daemon.privkey.pem"),
+);
+
+/** Let's Encrypt for DNS-only download host (download.*). */
+const DEFAULT_DOWNLOAD_LE_CERT = DOWNLOAD_PUBLIC_HOST
+  ? `/etc/letsencrypt/live/${DOWNLOAD_PUBLIC_HOST}/fullchain.pem`
+  : "";
+const DEFAULT_DOWNLOAD_LE_KEY = DOWNLOAD_PUBLIC_HOST
+  ? `/etc/letsencrypt/live/${DOWNLOAD_PUBLIC_HOST}/privkey.pem`
+  : "";
+const DOWNLOAD_CERT_FILE = resolveTlsPath(
+  process.env.DOWNLOAD_TLS_CERT_FILE,
+  DEFAULT_DOWNLOAD_LE_CERT && fs.existsSync(DEFAULT_DOWNLOAD_LE_CERT)
+    ? DEFAULT_DOWNLOAD_LE_CERT
+    : path.join(CERT_DIR, "download.fullchain.pem"),
+);
+const DOWNLOAD_KEY_FILE = resolveTlsPath(
+  process.env.DOWNLOAD_TLS_KEY_FILE,
+  DEFAULT_DOWNLOAD_LE_KEY && fs.existsSync(DEFAULT_DOWNLOAD_LE_KEY)
+    ? DEFAULT_DOWNLOAD_LE_KEY
+    : path.join(CERT_DIR, "download.privkey.pem"),
 );
 
 const MIME = {
@@ -476,6 +503,18 @@ function handleRequestUnsafe(req, res) {
   }
 
   if (url === "/download" || url.startsWith("/download/")) {
+    // Prefer the DNS-only download host when configured (avoids CF bot challenges).
+    if (
+      DOWNLOAD_PUBLIC_HOST &&
+      requestHost(req) !== DOWNLOAD_PUBLIC_HOST &&
+      requestHost(req) !== "127.0.0.1" &&
+      requestHost(req) !== "localhost"
+    ) {
+      const target = `https://${DOWNLOAD_PUBLIC_HOST}${url}`;
+      res.writeHead(302, { Location: target, "Cache-Control": "no-store" });
+      res.end();
+      return;
+    }
     void loadDownloadApi().then((api) => {
       if (!api?.handleDownload) {
         res.statusCode = 404;
@@ -488,6 +527,16 @@ function handleRequestUnsafe(req, res) {
         safeJoin,
       });
     });
+    return;
+  }
+
+  // download.guartrix.com only serves /download — everything else → panel
+  if (DOWNLOAD_PUBLIC_HOST && requestHost(req) === DOWNLOAD_PUBLIC_HOST) {
+    res.writeHead(302, {
+      Location: `https://${PUBLIC_HOST}/`,
+      "Cache-Control": "no-store",
+    });
+    res.end();
     return;
   }
 
@@ -640,6 +689,23 @@ function loadTlsMaterials() {
     );
   }
 
+  if (
+    DOWNLOAD_PUBLIC_HOST &&
+    fs.existsSync(DOWNLOAD_CERT_FILE) &&
+    fs.existsSync(DOWNLOAD_KEY_FILE)
+  ) {
+    sniMap.set(
+      DOWNLOAD_PUBLIC_HOST,
+      tls.createSecureContext({
+        key: fs.readFileSync(DOWNLOAD_KEY_FILE),
+        cert: fs.readFileSync(DOWNLOAD_CERT_FILE),
+      }),
+    );
+    console.log(
+      `[guartrix] Download SNI ${DOWNLOAD_PUBLIC_HOST} → ${DOWNLOAD_CERT_FILE}`,
+    );
+  }
+
   if (sniMap.size === 0) {
     return defaultCtx;
   }
@@ -687,6 +753,11 @@ function listenWithError(server, port, label) {
         `[guartrix] Daemon host ${DAEMON_PUBLIC_HOST} → ${DAEMON_PROXY_HOST}:${DAEMON_PROXY_PORT}`,
       );
     }
+    if (DOWNLOAD_PUBLIC_HOST) {
+      console.log(
+        `[guartrix] Download host ${DOWNLOAD_PUBLIC_HOST} → /download (DNS-only)`,
+      );
+    }
     void loadDownloadApi().then((api) => {
       api?.logDownloadStatus?.(rootDir);
     });
@@ -724,7 +795,9 @@ function handleHttpRedirect(req, res) {
       ? LICENSE_PUBLIC_HOST
       : DAEMON_PUBLIC_HOST && host === DAEMON_PUBLIC_HOST
         ? DAEMON_PUBLIC_HOST
-        : PUBLIC_HOST;
+        : DOWNLOAD_PUBLIC_HOST && host === DOWNLOAD_PUBLIC_HOST
+          ? DOWNLOAD_PUBLIC_HOST
+          : PUBLIC_HOST;
   const target = `https://${redirectHost}${req.url || "/"}`;
   res.writeHead(301, {
     Location: target,

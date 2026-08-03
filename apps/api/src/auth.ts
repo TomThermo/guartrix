@@ -16,7 +16,7 @@ import { config } from "./config.js";
 import { assertSameOrigin } from "./csrf.js";
 import { prisma } from "./db.js";
 import { hostNodeName, hostPublicIp, hostTotalMemoryGb, hostTotalMemoryMb } from "./host-resources.js";
-import { sendMail } from "./mail.js";
+import { isSmtpConfigured, sendMail } from "./mail.js";
 import {
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
@@ -532,6 +532,14 @@ function clearLoginRate(request: FastifyRequest): void {
   loginAttempts.delete(clientKey(request));
 }
 
+/** When SMTP is live, non-admin accounts must verify email before a session. */
+function emailVerificationBlocksLogin(user: {
+  emailVerified: boolean;
+  role: string;
+}): boolean {
+  return isSmtpConfigured() && !user.emailVerified && user.role !== "ADMIN";
+}
+
 export function registerAuthRoutes(app: FastifyInstance): void {
   app.get("/api/auth/me", async (request) => {
     const user = await getSessionUser(request);
@@ -542,6 +550,8 @@ export function registerAuthRoutes(app: FastifyInstance): void {
     registrationEnabled: config.registrationEnabled,
     passwordMinLength: PASSWORD_MIN_LENGTH,
     passwordPolicy: passwordPolicyMessage(),
+    /** When SMTP is set, new accounts must verify email before login. */
+    emailVerificationRequired: isSmtpConfigured(),
   }));
 
   app.post<{ Body: { username?: string; password?: string; rememberMe?: boolean } }>(
@@ -581,6 +591,21 @@ export function registerAuthRoutes(app: FastifyInstance): void {
           metadata: { username, reason: user ? "wrong password" : "unknown user" },
         });
         return reply.status(401).send({ error: "Invalid credentials" });
+      }
+
+      if (emailVerificationBlocksLogin(user)) {
+        logActivity({
+          action: "auth.login-failed",
+          request,
+          user,
+          success: false,
+          metadata: { username: user.username, reason: "email not verified" },
+        });
+        return reply.status(403).send({
+          error:
+            "Verify your email before signing in. Check your inbox for the link.",
+          emailVerificationRequired: true,
+        });
       }
 
       // Password accepted but 2FA is on: park the login until the code arrives.
@@ -674,6 +699,26 @@ export function registerAuthRoutes(app: FastifyInstance): void {
           request,
           user,
           metadata: { remainingCodes: remaining.length },
+        });
+      }
+
+      if (emailVerificationBlocksLogin(user)) {
+        await request.session.destroy().catch(() => undefined);
+        logActivity({
+          action: "auth.login-failed",
+          request,
+          user,
+          success: false,
+          metadata: {
+            username: user.username,
+            reason: "email not verified",
+            twoFactor: true,
+          },
+        });
+        return reply.status(403).send({
+          error:
+            "Verify your email before signing in. Check your inbox for the link.",
+          emailVerificationRequired: true,
         });
       }
 
@@ -810,6 +855,18 @@ export function registerAuthRoutes(app: FastifyInstance): void {
       user,
       metadata: { email: emailNorm },
     });
+
+    // With SMTP: require verify before a session (open registration safety).
+    // Without SMTP: keep outbox-only UX — auto-login so operators aren't locked out.
+    if (isSmtpConfigured()) {
+      return reply.status(201).send({
+        ok: true,
+        emailVerificationRequired: true,
+        message:
+          "Account created. Check your email for a verification link before signing in.",
+      });
+    }
+
     await request.session.regenerate();
     request.session.authenticated = true;
     request.session.userId = user.id;

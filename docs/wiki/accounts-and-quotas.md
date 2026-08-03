@@ -17,6 +17,7 @@ On first API start with an empty user table, Guartrix creates `admin` using `ADM
 - Enabled when `REGISTRATION_ENABLED` is not false.
 - Strong password: 12+ chars, upper, lower, number, symbol.
 - New users must **verify email** before pending subuser invites are linked.
+- When `SMTP_HOST` is set, verification is required **before login** (no session on register). Without SMTP, accounts still get a session and mail goes to `data/mail-outbox/`.
 - Default quotas for new users: **0** servers, **0** RAM, **0** databases (`DEFAULT_MAX_*`).
 
 ![Register](assets/17-register.png)

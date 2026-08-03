@@ -11,6 +11,11 @@ export interface MailMessage {
   html?: string;
 }
 
+/** True when operators configured real SMTP (not outbox-only). */
+export function isSmtpConfigured(): boolean {
+  return Boolean(config.mail.smtpHost);
+}
+
 /**
  * Deliver panel mail. Always writes a copy under data/mail-outbox/.
  * When SMTP_HOST is set (prefer port 465 / SMTPS), also tries to send via SMTP.

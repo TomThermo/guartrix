@@ -23,6 +23,13 @@ Alternatives: `npm run prod` or `npm run build && npm run start:prod`.
 
 Binding ports &lt; 1024 needs passwordless sudo, or set `WEB_PORT=8080`.
 
+## Password downloads (DNS-only)
+
+Set `DOWNLOAD_PUBLIC_HOST=download.guartrix.com` and issue a Let's Encrypt cert
+(`sudo bash scripts/install-download-le-cert.sh`). The A record stays **DNS-only**
+(grey cloud) so customers hit origin TLS instead of a Cloudflare bot challenge.
+Apex `/download` redirects to that host when configured.
+
 ## Watchdog
 
 `scripts/start.sh` starts `scripts/monitor.sh` (~20s interval):
