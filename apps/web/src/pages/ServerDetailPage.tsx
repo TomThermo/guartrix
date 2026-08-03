@@ -9,11 +9,7 @@ import type {
 import { addonKindFor, canCreateServer, hasPermission } from "@msm/shared";
 import {
   Alert,
-  Badge,
-  Button,
   Card,
-  Dropdown,
-  Nav,
   Offcanvas,
   Spinner,
   Tab,
@@ -51,230 +47,22 @@ import { WhitelistToggleModal } from "../components/WhitelistToggleModal";
 import { KillServerModal } from "../components/KillServerModal";
 import { TransferOwnerModal } from "../components/TransferOwnerModal";
 import { TransferNodeModal } from "../components/TransferNodeModal";
-import { statusBadgeClass, typeIcon, typeLabel, copyText } from "../utils";
+import { typeLabel, copyText } from "../utils";
 import {
   OnlinePlayersProvider,
   useSharedOnlinePlayers,
 } from "../hooks/OnlinePlayersProvider";
 import { useVisibleInterval } from "../hooks/useVisibleInterval";
 
-type TabId =
-  | "settings"
-  | "seedmap"
-  | "engine"
-  | "addons"
-  | "modpacks"
-  | "files"
-  | "sftp"
-  | "console"
-  | "resources"
-  | "players"
-  | "bans"
-  | "whitelist"
-  | "backups"
-  | "activity"
-  | "logs"
-  | "tasks"
-  | "bots"
-  | "databases"
-  | "allocations"
-  | "subusers";
+import {
+  MENU_GROUPS,
+  SERVER_TABS,
+  parseTabParam,
+  type TabId,
+} from "../components/server-detail/server-tabs";
+import { ServerDetailHeader } from "../components/server-detail/ServerDetailHeader";
+import { ServerDetailSideNav } from "../components/server-detail/ServerDetailSideNav";
 
-type MenuGroupId = "service" | "game" | "management";
-
-const MENU_GROUPS: Array<{ id: MenuGroupId; label: string }> = [
-  { id: "service", label: "Manage Service" },
-  { id: "game", label: "Game" },
-  { id: "management", label: "Management" },
-];
-
-const SERVER_TABS: Array<{
-  id: TabId;
-  icon: string;
-  label: string;
-  group: MenuGroupId;
-  adminOnly?: boolean;
-  /** Any of these permissions grants tab visibility (`*` always ok). */
-  anyOf?: string[];
-}> = [
-  // Manage Service
-  {
-    id: "console",
-    icon: "fa-terminal",
-    label: "Console",
-    group: "service",
-    anyOf: [
-      "control.console",
-      "control.start",
-      "control.stop",
-      "control.restart",
-      "control.kill",
-      "allocation.read",
-    ],
-  },
-  {
-    id: "files",
-    icon: "fa-folder-open",
-    label: "File Manager",
-    group: "service",
-    anyOf: ["file.read"],
-  },
-  {
-    id: "sftp",
-    icon: "fa-network-wired",
-    label: "SFTP",
-    group: "service",
-    anyOf: ["file.sftp"],
-  },
-  {
-    id: "databases",
-    icon: "fa-database",
-    label: "Databases",
-    group: "service",
-    anyOf: ["database.read"],
-  },
-  {
-    id: "allocations",
-    icon: "fa-ethernet",
-    label: "Network",
-    group: "service",
-    anyOf: ["allocation.read"],
-  },
-  {
-    id: "backups",
-    icon: "fa-box-archive",
-    label: "Backups",
-    group: "service",
-    anyOf: ["backup.read"],
-  },
-  {
-    id: "subusers",
-    icon: "fa-user-group",
-    label: "Subusers",
-    group: "service",
-    anyOf: ["user.read", "user.create", "user.update", "user.delete"],
-  },
-  // Game
-  {
-    id: "settings",
-    icon: "fa-gear",
-    label: "Server Properties",
-    group: "game",
-    anyOf: ["settings.read", "settings.update", "startup.read", "startup.update"],
-  },
-  {
-    id: "seedmap",
-    icon: "fa-map-location-dot",
-    label: "World Map",
-    group: "game",
-    anyOf: ["settings.read", "control.console"],
-  },
-  {
-    id: "engine",
-    icon: "fa-microchip",
-    label: "Engine",
-    group: "game",
-    anyOf: ["settings.read", "settings.update"],
-  },
-  {
-    id: "addons",
-    icon: "fa-puzzle-piece",
-    label: "Plugin Management",
-    group: "game",
-    anyOf: ["addon.read"],
-  },
-  {
-    id: "modpacks",
-    icon: "fa-cubes",
-    label: "Modpacks",
-    group: "game",
-    anyOf: ["addon.read"],
-  },
-  {
-    id: "whitelist",
-    icon: "fa-user-check",
-    label: "Whitelist Manager",
-    group: "game",
-    anyOf: ["player.read", "player.update", "settings.read", "settings.update"],
-  },
-  {
-    id: "players",
-    icon: "fa-user-plus",
-    label: "Online Players",
-    group: "game",
-    anyOf: ["player.read"],
-  },
-  {
-    id: "bans",
-    icon: "fa-ban",
-    label: "Bans",
-    group: "game",
-    anyOf: ["player.read"],
-  },
-  // Management
-  {
-    id: "tasks",
-    icon: "fa-clock",
-    label: "Schedules",
-    group: "management",
-    anyOf: ["schedule.read"],
-  },
-  {
-    id: "activity",
-    icon: "fa-list-check",
-    label: "Activity Log",
-    group: "management",
-    anyOf: ["activity.read", "audit.read"],
-  },
-  {
-    id: "logs",
-    icon: "fa-magnifying-glass",
-    label: "Log Files",
-    group: "management",
-    anyOf: ["audit.read"],
-  },
-  {
-    id: "resources",
-    icon: "fa-chart-line",
-    label: "Resources",
-    group: "management",
-  },
-  {
-    id: "bots",
-    icon: "fa-robot",
-    label: "Bots",
-    group: "management",
-    adminOnly: true,
-  },
-];
-
-const TAB_IDS = new Set<string>([
-  "settings",
-  "seedmap",
-  "engine",
-  "addons",
-  "modpacks",
-  "files",
-  "sftp",
-  "console",
-  "resources",
-  "players",
-  "bans",
-  "whitelist",
-  "backups",
-  "activity",
-  "logs",
-  "tasks",
-  "bots",
-  "databases",
-  "allocations",
-  "subusers",
-]);
-
-function parseTabParam(value: string | null): TabId | null {
-  if (!value || !TAB_IDS.has(value)) return null;
-  return value as TabId;
-}
 
 export function ServerDetailPage() {
   const { id = "" } = useParams();
@@ -593,403 +381,46 @@ function ServerDetailPageInner({
   const isRunning =
     server.status === "RUNNING" || server.status === "STARTING";
 
-  function renderSideMenu(opts?: { onPick?: () => void }) {
-    return (
-      <Nav
-        className="flex-column server-side-nav-list"
-        activeKey={tab}
-        onSelect={(k) => {
-          if (!k) return;
-          changeTab(k as TabId);
-          opts?.onPick?.();
-        }}
-      >
-        <div className="server-side-nav-section">
-          <div className="server-side-nav-header">General</div>
-          <Link
-            to="/"
-            className="server-side-nav-link"
-            onClick={() => opts?.onPick?.()}
-          >
-            <i className="fa-solid fa-server" aria-hidden />
-            <span>Server list</span>
-          </Link>
-        </div>
-        {menuSections.map((section) => (
-          <div key={section.id} className="server-side-nav-section">
-            <div className="server-side-nav-header">{section.label}</div>
-            {section.items.map((t) => (
-              <Nav.Link
-                key={t.id}
-                eventKey={t.id}
-                active={tab === t.id}
-                className={`server-side-nav-link${
-                  t.id === "whitelist" ||
-                  t.id === "console" ||
-                  (t.id === "addons" && addonUpdateCount > 0)
-                    ? " has-status-badge"
-                    : ""
-                }`}
-              >
-                {t.id === "whitelist" && (
-                  <span
-                    className={`server-nav-status-badge ${whitelistOn ? "is-on" : "is-off"}`}
-                    title={whitelistOn ? "Whitelist enabled" : "Whitelist disabled"}
-                    aria-hidden
-                  >
-                    <i className={`fa-solid ${whitelistOn ? "fa-check" : "fa-xmark"}`} />
-                  </span>
-                )}
-                {t.id === "console" && (
-                  <span
-                    className={`server-nav-power-icon ${isRunning ? "is-on" : "is-off"}`}
-                    title={isRunning ? "Server running" : "Server stopped"}
-                    aria-hidden
-                  >
-                    <i className={`fa-solid ${isRunning ? "fa-play" : "fa-stop"}`} />
-                  </span>
-                )}
-                {t.id === "addons" && addonUpdateCount > 0 && (
-                  <span
-                    className="server-nav-count-badge"
-                    title={`${addonUpdateCount} update${addonUpdateCount === 1 ? "" : "s"} available`}
-                  >
-                    {addonUpdateCount > 99 ? "99+" : addonUpdateCount}
-                  </span>
-                )}
-                <i className={`fa-solid ${t.icon}`} aria-hidden />
-                <span>{t.label}</span>
-              </Nav.Link>
-            ))}
-          </div>
-        ))}
-        {isOwner && (
-          <div className="server-side-nav-section">
-            <div className="server-side-nav-header">Danger zone</div>
-            <button
-              type="button"
-              className="server-side-nav-link server-side-nav-danger"
-              disabled={busy}
-              onClick={() => {
-                opts?.onPick?.();
-                setShowDelete(true);
-              }}
-            >
-              <i className="fa-solid fa-trash" aria-hidden />
-              <span>Delete server</span>
-            </button>
-          </div>
-        )}
-      </Nav>
-    );
-  }
+  const sideNav = (opts?: { onPick?: () => void }) => (
+    <ServerDetailSideNav
+      activeTab={tab}
+      menuSections={menuSections}
+      onChangeTab={changeTab}
+      onPick={opts?.onPick}
+      whitelistOn={whitelistOn}
+      isRunning={isRunning}
+      addonUpdateCount={addonUpdateCount}
+      isOwner={isOwner}
+      busy={busy}
+      onDelete={() => setShowDelete(true)}
+    />
+  );
+
 
   return (
     <>
-      <div className="server-detail-header mb-3">
-        <div className="server-detail-title-row">
-          <Button
-            variant="outline-secondary"
-            className="server-burger-btn d-lg-none"
-            onClick={() => setMobileNavOpen(true)}
-            aria-label="Open section menu"
-          >
-            <i className="fa-solid fa-bars" aria-hidden />
-          </Button>
-          <img
-            className="server-icon-badge"
-            src={`/api/servers/${server.id}/icon?t=${server.hasIcon ? server.updatedAt : "default"}`}
-            alt=""
-            width={40}
-            height={40}
-          />
-          <div className="server-detail-title-text min-w-0">
-            <div className="server-detail-name-line">
-              <h1 className="server-detail-name text-truncate">{server.name}</h1>
-              <Button
-                size="sm"
-                variant="link"
-                className="server-detail-address p-0 text-secondary text-decoration-none text-truncate"
-                onClick={() => void copyConnect()}
-                title="Copy connect address"
-              >
-                <i className="fa-solid fa-copy" aria-hidden />
-                <span className="text-truncate">
-                  {connectInfo?.address ?? `:${server.port}`}
-                </span>
-              </Button>
-            </div>
-            <div className="server-detail-meta">
-              <span className={statusBadgeClass(server.status)}>{server.status}</span>
-              <Badge bg="secondary">
-                <i className={`fa-solid ${typeIcon(server.type)}`} aria-hidden />
-                {typeLabel(server.type)}
-              </Badge>
-              {isAdmin || server.ownerUsername ? (
-                <Badge
-                  bg={server.ownerUsername ? "dark" : "secondary"}
-                  title={isAdmin ? "Click to transfer owner" : "Owner"}
-                  role={isAdmin ? "button" : undefined}
-                  style={isAdmin ? { cursor: "pointer" } : undefined}
-                  onClick={isAdmin ? () => setShowTransfer(true) : undefined}
-                >
-                  <i className="fa-solid fa-user" aria-hidden />
-                  {server.ownerUsername ?? "Unassigned"}
-                </Badge>
-              ) : null}
-              <span className="server-detail-meta-text">
-                {[
-                  server.mcVersion,
-                  server.fabricLoaderVersion
-                    ? `loader ${server.fabricLoaderVersion}`
-                    : null,
-                  server.forgeVersion ? `forge ${server.forgeVersion}` : null,
-                  server.paperBuild ? `build ${server.paperBuild}` : null,
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </span>
-              {can("player.read") && (
-                <Badge
-                  bg="secondary"
-                  className="server-detail-meta-action"
-                  role="button"
-                  tabIndex={0}
-                  title="Online players — open Online Players"
-                  onClick={() => changeTab("players")}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      changeTab("players");
-                    }
-                  }}
-                >
-                  <i className="fa-solid fa-users" aria-hidden />
-                  {online
-                    ? `${online.playersOnline}${online.playersMax > 0 ? `/${online.playersMax}` : ""}`
-                    : server.status === "RUNNING"
-                      ? "…/…"
-                      : "0/0"}
-                </Badge>
-              )}
-              {can("settings.read") && (
-                <Badge
-                  bg={whitelistOn ? "success" : "warning"}
-                  text={whitelistOn ? undefined : "dark"}
-                  className="server-detail-meta-action"
-                  role="button"
-                  tabIndex={0}
-                  title={
-                    can("settings.update")
-                      ? "Click to change whitelist"
-                      : whitelistOn
-                        ? "Whitelist enabled"
-                        : "Whitelist disabled"
-                  }
-                  onClick={() => {
-                    if (can("settings.update")) setShowWhitelistModal(true);
-                    else changeTab("whitelist");
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      if (can("settings.update")) setShowWhitelistModal(true);
-                      else changeTab("whitelist");
-                    }
-                  }}
-                >
-                  <i
-                    className={`fa-solid ${whitelistOn ? "fa-shield-halved" : "fa-shield"}`}
-                    aria-hidden
-                  />
-                  WL {whitelistOn ? "on" : "off"}
-                </Badge>
-              )}
-              {supportsAddons && can("addon.read") && (
-                <Badge
-                  bg={addonUpdateCount > 0 ? "danger" : "secondary"}
-                  className="server-detail-meta-action"
-                  role="button"
-                  tabIndex={0}
-                  title="Open Plugin Management"
-                  onClick={() => changeTab("addons")}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      changeTab("addons");
-                    }
-                  }}
-                >
-                  <i className="fa-solid fa-puzzle-piece" aria-hidden />
-                  {addonUpdateCount > 0
-                    ? `${addonUpdateCount} update${addonUpdateCount === 1 ? "" : "s"}`
-                    : "Up to date"}
-                </Badge>
-              )}
-              {server.autoRestart && (
-                <Badge bg="info" text="dark">
-                  Auto-restart
-                </Badge>
-              )}
-            </div>
-          </div>
-          {(canClone || isAdmin || can("settings.update")) && (
-            <>
-              <div
-                className="server-toolbar d-none d-md-inline-flex btn-group btn-group-sm"
-                role="group"
-              >
-                {can("settings.update") && (
-                  <Button
-                    variant="outline-secondary"
-                    disabled={busy}
-                    title="Change Minecraft version"
-                    onClick={() => setShowVersionPicker(true)}
-                  >
-                    <i className="fa-solid fa-code-branch" />
-                    <span className="btn-label">Version</span>
-                  </Button>
-                )}
-                {can("settings.update") && (
-                  <Button
-                    variant="outline-secondary"
-                    disabled={busy}
-                    title="Change software (Paper, Fabric, …)"
-                    onClick={() => setShowChangeType(true)}
-                  >
-                    <i className="fa-solid fa-puzzle-piece" />
-                    <span className="btn-label">Software</span>
-                  </Button>
-                )}
-                {canClone && (
-                  <Button
-                    variant="outline-secondary"
-                    disabled={busy}
-                    title="Clone server"
-                    onClick={() => setShowClone(true)}
-                  >
-                    <i className="fa-solid fa-clone" />
-                    <span className="btn-label">Clone</span>
-                  </Button>
-                )}
-                {can("settings.update") && (
-                  <Button
-                    variant="outline-secondary"
-                    disabled={busy}
-                    title="Reinstall server"
-                    onClick={() => setShowReinstall(true)}
-                  >
-                    <i className="fa-solid fa-rotate" />
-                    <span className="btn-label">Reinstall</span>
-                  </Button>
-                )}
-                {isAdmin && (
-                  <Button
-                    variant="outline-secondary"
-                    disabled={busy || server.status === "TRANSFERRING"}
-                    title="Move to another node"
-                    onClick={() => setShowNodeTransfer(true)}
-                  >
-                    <i className="fa-solid fa-right-left" />
-                    <span className="btn-label">Move</span>
-                  </Button>
-                )}
-                {isAdmin && (
-                  <Button
-                    variant="outline-secondary"
-                    disabled={busy}
-                    title="Transfer owner"
-                    onClick={() => setShowTransfer(true)}
-                  >
-                    <i className="fa-solid fa-user-tag" />
-                    <span className="btn-label">Owner</span>
-                  </Button>
-                )}
-              </div>
-
-              <Dropdown
-                align="end"
-                className="server-manage-dropdown d-md-none"
-              >
-                <Dropdown.Toggle
-                  variant="outline-secondary"
-                  size="sm"
-                  id={`server-manage-${server.id}`}
-                  className="server-manage-toggle"
-                  disabled={busy}
-                >
-                  <i className="fa-solid fa-ellipsis-vertical" aria-hidden />
-                  <span>Manage</span>
-                </Dropdown.Toggle>
-                <Dropdown.Menu className="server-manage-menu">
-                  <Dropdown.Header>Server actions</Dropdown.Header>
-                  {can("settings.update") && (
-                    <Dropdown.Item
-                      as="button"
-                      disabled={busy}
-                      onClick={() => setShowVersionPicker(true)}
-                    >
-                      <i className="fa-solid fa-code-branch fa-fw me-2 text-secondary" />
-                      Change version
-                    </Dropdown.Item>
-                  )}
-                  {can("settings.update") && (
-                    <Dropdown.Item
-                      as="button"
-                      disabled={busy}
-                      onClick={() => setShowChangeType(true)}
-                    >
-                      <i className="fa-solid fa-puzzle-piece fa-fw me-2 text-secondary" />
-                      Change software
-                    </Dropdown.Item>
-                  )}
-                  {canClone && (
-                    <Dropdown.Item
-                      as="button"
-                      disabled={busy}
-                      onClick={() => setShowClone(true)}
-                    >
-                      <i className="fa-solid fa-clone fa-fw me-2 text-secondary" />
-                      Clone server
-                    </Dropdown.Item>
-                  )}
-                  {can("settings.update") && (
-                    <Dropdown.Item
-                      as="button"
-                      disabled={busy}
-                      onClick={() => setShowReinstall(true)}
-                    >
-                      <i className="fa-solid fa-rotate fa-fw me-2 text-secondary" />
-                      Reinstall
-                    </Dropdown.Item>
-                  )}
-                  {isAdmin && (
-                    <>
-                      <Dropdown.Divider />
-                      <Dropdown.Item
-                        as="button"
-                        disabled={busy || server.status === "TRANSFERRING"}
-                        onClick={() => setShowNodeTransfer(true)}
-                      >
-                        <i className="fa-solid fa-right-left fa-fw me-2 text-secondary" />
-                        Move to node
-                      </Dropdown.Item>
-                      <Dropdown.Item
-                        as="button"
-                        disabled={busy}
-                        onClick={() => setShowTransfer(true)}
-                      >
-                        <i className="fa-solid fa-user-tag fa-fw me-2 text-secondary" />
-                        Transfer owner
-                      </Dropdown.Item>
-                    </>
-                  )}
-                </Dropdown.Menu>
-              </Dropdown>
-            </>
-          )}
-        </div>
-      </div>
+      <ServerDetailHeader
+        server={server}
+        connectInfo={connectInfo}
+        online={online}
+        isAdmin={isAdmin}
+        canClone={canClone}
+        busy={busy}
+        whitelistOn={whitelistOn}
+        supportsAddons={supportsAddons}
+        addonUpdateCount={addonUpdateCount}
+        can={can}
+        onOpenMobileNav={() => setMobileNavOpen(true)}
+        onCopyConnect={() => void copyConnect()}
+        onChangeTab={changeTab}
+        onShowTransfer={() => setShowTransfer(true)}
+        onShowWhitelistModal={() => setShowWhitelistModal(true)}
+        onShowVersionPicker={() => setShowVersionPicker(true)}
+        onShowChangeType={() => setShowChangeType(true)}
+        onShowClone={() => setShowClone(true)}
+        onShowReinstall={() => setShowReinstall(true)}
+        onShowNodeTransfer={() => setShowNodeTransfer(true)}
+      />
 
       {whitelistPrompt && (
         <WhitelistStartModal
@@ -1165,7 +596,7 @@ function ServerDetailPageInner({
       <Card className="server-detail-card border-0 shadow-sm">
         <div className="server-detail-layout">
           <aside className="server-side-nav d-none d-lg-flex">
-            {renderSideMenu()}
+            {sideNav()}
           </aside>
 
           <div className="server-detail-panel">
@@ -1179,7 +610,7 @@ function ServerDetailPageInner({
                 <Offcanvas.Title>Menu</Offcanvas.Title>
               </Offcanvas.Header>
               <Offcanvas.Body className="pt-0">
-                {renderSideMenu({ onPick: () => setMobileNavOpen(false) })}
+                {sideNav({ onPick: () => setMobileNavOpen(false) })}
               </Offcanvas.Body>
             </Offcanvas>
 
