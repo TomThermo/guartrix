@@ -7,6 +7,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.43] — 2026-08-03
+
+- Schedules: Prisma `ScheduledTask` (JSON schedule/steps); one-shot import from `guartrix-scheduled-tasks.json`
+- HA sessions: `SESSION_STORE=file|redis` + `REDIS_URL`; optional `ioredis` RedisSessionStore; scaling docs (NFS)
+- Rootless Docker steps in install-nodes wiki
+- CSP: optional `CSP_REPORT_ONLY=1` Report-Only header (stricter style-src) in prod-web
+- Optional server **extra Docker mounts** (`extraMounts` JSON on Server)
+
 ## [1.0.42] — 2026-08-03
 
 - Fix: panel **Stop** / **Kill** no longer trigger auto-restart (intentional stop flag + treat Docker SIGTERM exit 143 as clean)

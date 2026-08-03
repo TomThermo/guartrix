@@ -3,6 +3,7 @@ import type {
   AuthUser,
   ConnectInfo,
   ServerDetail,
+  ServerExtraMount,
   ServerProperties,
 } from "@msm/shared";
 import {
@@ -99,6 +100,9 @@ export function ServerSettings({
   const [serverJar, setServerJar] = useState(
     server.serverJar?.trim() || DEFAULT_SERVER_JAR,
   );
+  const [extraMounts, setExtraMounts] = useState<ServerExtraMount[]>(
+    () => server.extraMounts ?? [],
+  );
   const [ownerId, setOwnerId] = useState<string>(server.ownerId ?? "");
   const [users, setUsers] = useState<AuthUser[]>([]);
   const [props, setProps] = useState<ServerProperties>({ ...server.properties });
@@ -134,6 +138,7 @@ export function ServerSettings({
           : DEFAULT_STARTUP_COMMAND),
     );
     setServerJar(server.serverJar?.trim() || DEFAULT_SERVER_JAR);
+    setExtraMounts(server.extraMounts ?? []);
     setOwnerId(server.ownerId ?? "");
     setProps({ ...server.properties });
     setHasIcon(server.hasIcon);
@@ -220,6 +225,15 @@ export function ServerSettings({
               })(),
             }
           : {}),
+        ...(settingsEditable
+          ? {
+              extraMounts: extraMounts.map((m) => ({
+                host: m.host.trim(),
+                container: m.container.trim(),
+                ...(m.readOnly ? { readOnly: true } : {}),
+              })),
+            }
+          : {}),
         ...(isAdmin ? { ownerId: ownerId || null } : {}),
       });
       onSaved(updated);
@@ -296,7 +310,7 @@ export function ServerSettings({
     category === "general" || category === "performance"
       ? settingsEditable || startupEditable
       : category === "startup"
-        ? startupEditable
+        ? startupEditable || settingsEditable
         : settingsEditable;
 
   const jarOk = isValidServerJar(serverJar.trim() || DEFAULT_SERVER_JAR);
@@ -478,6 +492,9 @@ export function ServerSettings({
                 startupCommand={startupCommand}
                 setStartupCommand={setStartupCommand}
                 startupEditable={startupEditable}
+                settingsEditable={settingsEditable}
+                extraMounts={extraMounts}
+                setExtraMounts={setExtraMounts}
                 isForgeType={isForgeType}
                 jarOk={jarOk}
                 startupPresets={startupPresets}
@@ -494,7 +511,9 @@ export function ServerSettings({
               disabled={
                 saving ||
                 !canSaveCategory ||
-                (category === "startup" && (!jarOk || !heapCheck.ok))
+                (category === "startup" &&
+                  startupEditable &&
+                  (!jarOk || !heapCheck.ok))
               }
             >
               {saving ? "Saving…" : "Save category"}

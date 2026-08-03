@@ -68,6 +68,32 @@ export interface DaemonServerConfig {
   cpuLimit?: number;
   /** All host ports to publish (primary + extras). Defaults to primary TCP. */
   ports?: DaemonPortPublish[];
+  /** Extra host→container binds (shared plugins/worlds). */
+  extraMounts?: Array<{
+    host: string;
+    container: string;
+    readOnly?: boolean;
+  }> | null;
+}
+
+function extraVolumeArgs(
+  mounts:
+    | Array<{ host: string; container: string; readOnly?: boolean }>
+    | null
+    | undefined,
+): string[] {
+  if (!mounts?.length) return [];
+  const args: string[] = [];
+  for (const m of mounts) {
+    const host = m.host?.trim();
+    const container = m.container?.trim();
+    if (!host || !container) continue;
+    if (!host.startsWith("/") || !container.startsWith("/")) continue;
+    if (container === "/data" || container.startsWith("/data/")) continue;
+    if (host.includes("..") || container.includes("..")) continue;
+    args.push("-v", m.readOnly ? `${host}:${container}:ro` : `${host}:${container}`);
+  }
+  return args;
 }
 
 export async function fixDataOwnership(dir: string): Promise<boolean> {
@@ -880,6 +906,7 @@ class ProcessManager extends EventEmitter {
         ...publishArgs,
         "-v",
         `${dir}:/data`,
+        ...extraVolumeArgs(server.extraMounts),
         "-w",
         "/data",
         "-i",

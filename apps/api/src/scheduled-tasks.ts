@@ -1,9 +1,11 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { nanoid } from "nanoid";
+import type { Prisma } from "@prisma/client";
 import type { ScheduleStep, ScheduledTask } from "@msm/shared";
 import { logActivity } from "./activity-log.js";
 import { serverDir } from "./config.js";
+import { prisma } from "./db.js";
 import { processManager } from "./process-manager.js";
 import {
   computeDailyNextRun,
@@ -12,9 +14,21 @@ import {
   parseDailyAt,
 } from "./schedule-time.js";
 
-function tasksPath(serverId: string): string {
+function tasksJsonPath(serverId: string): string {
   return path.join(serverDir(serverId), "guartrix-scheduled-tasks.json");
 }
+
+/** Timing + legacy summary fields stored in scheduleJson. */
+interface SchedulePayload {
+  mode: ScheduledTask["mode"];
+  dailyAt: string;
+  intervalHours: number;
+  weekdays: number[];
+  kind: ScheduledTask["kind"];
+  command: string;
+}
+
+const migratedServers = new Set<string>();
 
 function normalizeWeekdays(raw: unknown): number[] {
   if (!Array.isArray(raw)) return [];
@@ -157,36 +171,184 @@ function validateScheduleTiming(task: ScheduledTask): void {
   }
 }
 
-export async function listScheduledTasks(serverId: string): Promise<ScheduledTask[]> {
+function schedulePayload(task: ScheduledTask): SchedulePayload {
+  return {
+    mode: task.mode,
+    dailyAt: task.dailyAt,
+    intervalHours: task.intervalHours,
+    weekdays: task.weekdays,
+    kind: task.kind,
+    command: task.command,
+  };
+}
+
+function parseIsoDate(value: string | null | undefined): Date | null {
+  if (!value) return null;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function rowToTask(row: {
+  id: string;
+  name: string;
+  enabled: boolean;
+  scheduleJson: Prisma.JsonValue;
+  stepsJson: Prisma.JsonValue;
+  lastRunAt: Date | null;
+  lastError: string | null;
+  nextRunAt: Date | null;
+}): ScheduledTask {
+  const schedule = (row.scheduleJson ?? {}) as Partial<SchedulePayload>;
+  const rawSteps = Array.isArray(row.stepsJson)
+    ? (row.stepsJson as Partial<ScheduleStep>[])
+    : [];
+  return normalizeTask({
+    id: row.id,
+    enabled: row.enabled,
+    mode: schedule.mode,
+    dailyAt: schedule.dailyAt,
+    intervalHours: schedule.intervalHours,
+    weekdays: schedule.weekdays,
+    kind: schedule.kind,
+    command: schedule.command,
+    steps: rawSteps.map((s) => normalizeStep(s)),
+    note: row.name?.trim() || null,
+    lastRunAt: row.lastRunAt?.toISOString() ?? null,
+    lastError: row.lastError,
+  });
+}
+
+async function readJsonFileTasks(
+  serverId: string,
+): Promise<Partial<ScheduledTask>[] | null> {
   try {
-    const raw = await fs.readFile(tasksPath(serverId), "utf8");
+    const raw = await fs.readFile(tasksJsonPath(serverId), "utf8");
     const data = JSON.parse(raw) as { tasks?: Partial<ScheduledTask>[] };
-    const tasks = Array.isArray(data.tasks) ? data.tasks.map(normalizeTask) : [];
-    return tasks.sort((a, b) => (a.nextRunAt || "").localeCompare(b.nextRunAt || ""));
-  } catch {
-    return [];
+    return Array.isArray(data.tasks) ? data.tasks : [];
+  } catch (err) {
+    const code = (err as NodeJS.ErrnoException).code;
+    if (code === "ENOENT") return null;
+    console.warn(
+      `[tasks] failed reading JSON for ${serverId}:`,
+      err instanceof Error ? err.message : err,
+    );
+    return null;
   }
 }
 
-async function writeTasks(serverId: string, tasks: ScheduledTask[]): Promise<void> {
-  await fs.mkdir(serverDir(serverId), { recursive: true });
-  await fs.writeFile(
-    tasksPath(serverId),
-    JSON.stringify({ tasks }, null, 2) + "\n",
-    "utf8",
-  );
+async function renameJsonMigrated(serverId: string): Promise<void> {
+  const src = tasksJsonPath(serverId);
+  const dest = `${src}.migrated`;
+  try {
+    await fs.rename(src, dest);
+  } catch (err) {
+    const code = (err as NodeJS.ErrnoException).code;
+    if (code !== "ENOENT") {
+      console.warn(
+        `[tasks] could not rename ${src} → .migrated:`,
+        err instanceof Error ? err.message : err,
+      );
+    }
+  }
+}
+
+/**
+ * One-shot import: if the legacy JSON file exists and this server has no DB
+ * rows yet, insert tasks then rename the file to `.migrated`.
+ */
+export async function migrateScheduledTasksFromJson(
+  serverId: string,
+): Promise<number> {
+  if (migratedServers.has(serverId)) return 0;
+
+  const existing = await prisma.scheduledTask.count({ where: { serverId } });
+  if (existing > 0) {
+    migratedServers.add(serverId);
+    // DB already has rows — still rename leftover JSON so we don't re-read it.
+    const leftover = await readJsonFileTasks(serverId);
+    if (leftover !== null) await renameJsonMigrated(serverId);
+    return 0;
+  }
+
+  const rawTasks = await readJsonFileTasks(serverId);
+  if (rawTasks === null) {
+    migratedServers.add(serverId);
+    return 0;
+  }
+
+  const tasks = rawTasks.map((t) => normalizeTask(t));
+  if (tasks.length > 0) {
+    await prisma.scheduledTask.createMany({
+      data: tasks.map((task) => ({
+        id: task.id,
+        serverId,
+        name: task.note || "",
+        enabled: task.enabled,
+        scheduleJson: schedulePayload(task) as unknown as Prisma.InputJsonValue,
+        stepsJson: task.steps as unknown as Prisma.InputJsonValue,
+        lastRunAt: parseIsoDate(task.lastRunAt),
+        lastError: task.lastError,
+        nextRunAt: parseIsoDate(task.nextRunAt),
+      })),
+      skipDuplicates: true,
+    });
+  }
+
+  await renameJsonMigrated(serverId);
+  migratedServers.add(serverId);
+  return tasks.length;
+}
+
+/** Boot: import JSON schedules for every server that still has a file. */
+export async function migrateAllScheduledTasksFromJson(): Promise<number> {
+  const servers = await prisma.server.findMany({ select: { id: true } });
+  let total = 0;
+  for (const { id } of servers) {
+    try {
+      total += await migrateScheduledTasksFromJson(id);
+    } catch (err) {
+      console.warn(
+        `[tasks] JSON→DB migrate failed for ${id}:`,
+        err instanceof Error ? err.message : err,
+      );
+    }
+  }
+  return total;
+}
+
+export async function listScheduledTasks(serverId: string): Promise<ScheduledTask[]> {
+  await migrateScheduledTasksFromJson(serverId);
+  const rows = await prisma.scheduledTask.findMany({ where: { serverId } });
+  const tasks = rows.map(rowToTask);
+  return tasks.sort((a, b) => (a.nextRunAt || "").localeCompare(b.nextRunAt || ""));
+}
+
+async function upsertTaskRow(serverId: string, task: ScheduledTask): Promise<void> {
+  const data = {
+    name: task.note || "",
+    enabled: task.enabled,
+    scheduleJson: schedulePayload(task) as unknown as Prisma.InputJsonValue,
+    stepsJson: task.steps as unknown as Prisma.InputJsonValue,
+    lastRunAt: parseIsoDate(task.lastRunAt),
+    lastError: task.lastError,
+    nextRunAt: parseIsoDate(task.nextRunAt),
+  };
+  await prisma.scheduledTask.upsert({
+    where: { id: task.id },
+    create: { id: task.id, serverId, ...data },
+    update: data,
+  });
 }
 
 export async function createScheduledTask(
   serverId: string,
   input: Partial<ScheduledTask>,
 ): Promise<ScheduledTask> {
+  await migrateScheduledTasksFromJson(serverId);
   const task = normalizeTask({ ...input, enabled: input.enabled ?? true });
   validateSteps(task.steps);
   validateScheduleTiming(task);
-  const tasks = await listScheduledTasks(serverId);
-  tasks.push(task);
-  await writeTasks(serverId, tasks);
+  await upsertTaskRow(serverId, task);
   return task;
 }
 
@@ -195,22 +357,24 @@ export async function updateScheduledTask(
   taskId: string,
   patch: Partial<ScheduledTask>,
 ): Promise<ScheduledTask> {
-  const tasks = await listScheduledTasks(serverId);
-  const idx = tasks.findIndex((t) => t.id === taskId);
-  if (idx < 0) throw new Error("Task not found");
-  const next = normalizeTask({ ...tasks[idx], ...patch, id: taskId });
+  await migrateScheduledTasksFromJson(serverId);
+  const row = await prisma.scheduledTask.findFirst({
+    where: { id: taskId, serverId },
+  });
+  if (!row) throw new Error("Task not found");
+  const next = normalizeTask({ ...rowToTask(row), ...patch, id: taskId });
   validateSteps(next.steps);
   validateScheduleTiming(next);
-  tasks[idx] = next;
-  await writeTasks(serverId, tasks);
+  await upsertTaskRow(serverId, next);
   return next;
 }
 
 export async function deleteScheduledTask(serverId: string, taskId: string): Promise<void> {
-  const tasks = await listScheduledTasks(serverId);
-  const next = tasks.filter((t) => t.id !== taskId);
-  if (next.length === tasks.length) throw new Error("Task not found");
-  await writeTasks(serverId, next);
+  await migrateScheduledTasksFromJson(serverId);
+  const result = await prisma.scheduledTask.deleteMany({
+    where: { id: taskId, serverId },
+  });
+  if (result.count === 0) throw new Error("Task not found");
 }
 
 async function markTaskRun(
@@ -218,16 +382,24 @@ async function markTaskRun(
   task: ScheduledTask,
   lastError: string | null,
 ): Promise<void> {
-  const tasks = await listScheduledTasks(serverId);
-  const idx = tasks.findIndex((t) => t.id === task.id);
-  if (idx < 0) return;
-  const now = new Date().toISOString();
-  tasks[idx] = normalizeTask({
-    ...tasks[idx],
-    lastRunAt: now,
+  const now = new Date();
+  const withRun = normalizeTask({
+    ...task,
+    lastRunAt: now.toISOString(),
     lastError,
   });
-  await writeTasks(serverId, tasks);
+  await prisma.scheduledTask.updateMany({
+    where: { id: task.id, serverId },
+    data: {
+      lastRunAt: now,
+      lastError,
+      nextRunAt: parseIsoDate(withRun.nextRunAt),
+      scheduleJson: schedulePayload(withRun) as unknown as Prisma.InputJsonValue,
+      stepsJson: withRun.steps as unknown as Prisma.InputJsonValue,
+      name: withRun.note || "",
+      enabled: withRun.enabled,
+    },
+  });
 }
 
 function sleep(ms: number): Promise<void> {
@@ -348,16 +520,14 @@ export async function runDueScheduledTasks(
         await executeScheduledTask(serverId, task);
         done.push({ serverId, taskId: task.id, kind: task.kind });
       } catch (err) {
-        const tasks2 = await listScheduledTasks(serverId);
-        const idx = tasks2.findIndex((t) => t.id === task.id);
-        if (idx >= 0) {
-          tasks2[idx] = {
-            ...tasks2[idx],
-            nextRunAt: new Date(now + 15 * 60_000).toISOString(),
-            lastError: err instanceof Error ? err.message : String(err),
-          };
-          await writeTasks(serverId, tasks2);
-        }
+        const message = err instanceof Error ? err.message : String(err);
+        await prisma.scheduledTask.updateMany({
+          where: { id: task.id, serverId },
+          data: {
+            nextRunAt: new Date(now + 15 * 60_000),
+            lastError: message,
+          },
+        });
         console.error(`[tasks] failed ${serverId}/${task.id}:`, err);
       }
     }

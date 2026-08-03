@@ -43,7 +43,7 @@ export const CATEGORIES: { id: CategoryId; label: string; hint: string; icon: st
   {
     id: "startup",
     label: "Start Configuration",
-    hint: "Java version and startup command",
+    hint: "Java, startup command, and extra host mounts",
     icon: "fa-terminal",
   },
 ];

@@ -63,12 +63,29 @@ Hardening options (pick one):
 1. **Docker group** — add the daemon user to `docker`, drop the sudoers docker rule, and
    set `DOCKER_BIN=docker` (no sudo) in `data/daemon.env`. Understand that group membership
    is still effectively root via the Docker socket.
-2. **Rootless Docker** — run Engine as the daemon user (see Docker rootless docs). Best
-   isolation; some networking/publish modes differ.
+2. **Rootless Docker** — run Engine as the daemon user (best isolation; some
+   networking / publish modes differ). Concrete outline:
+   - Install rootless prerequisites (`uidmap`, `dbus-user-session`, etc.) per
+     [Docker rootless docs](https://docs.docker.com/engine/security/rootless/).
+   - As the **daemon OS user** (not root), run:
+     `dockerd-rootless-setuptool.sh install`
+     (starts a user-mode `dockerd` and systemd user unit).
+   - Point clients at the user socket, e.g.
+     `DOCKER_HOST=unix:///run/user/UID/docker.sock`
+     (`UID` = that user’s numeric id; also exported by the rootless helper).
+   - In `data/daemon.env` set `DOCKER_BIN=docker` (no `sudo`) and ensure the
+     daemon process inherits `DOCKER_HOST` (systemd `Environment=` / `EnvironmentFile=`
+     for the Guartrix daemon unit, or a wrapper).
+   - Confirm with `docker info` / daemon `/ready` as that user.
+   - **SELinux:** volume mounts often need `:z` / `:Z` (or equivalent context
+     relabel) so rootless containers can write host bind mounts; without it you
+     get “permission denied” on world files. Check audit logs if mounts fail.
 3. **Keep sudo** — tighten sudoers to only the exact `docker` binary + subcommands the
    node-agent uses (not a full shell).
 
 Checklist still expects `/health` and `/ready` (Docker reachable) after changes.
+
+Shared plugin/world dirs for **extra host mounts** should live under `/var/lib/guartrix/shared` or `/opt/guartrix/shared` on the node (or set panel `EXTRA_MOUNTS_ALLOW_PREFIX`).
 
 ## Checklist
 

@@ -13,10 +13,16 @@ interface StoredSession {
 type StoreCallback = (err?: Error) => void;
 type StoreGetCallback = (err: Error | null, session: Session | null | undefined) => void;
 
+/** Session store that can revoke all sessions for a user id. */
+export interface PanelSessionStore extends SessionStore {
+  destroySessionsForUser(userId: string): Promise<number>;
+  purgeExpired?(): Promise<void>;
+}
+
 /**
  * Disk-backed session store so logins survive API restarts (unlike MemoryStore).
  */
-export class FileSessionStore extends EventEmitter implements SessionStore {
+export class FileSessionStore extends EventEmitter implements PanelSessionStore {
   private dir: string;
   private ready: Promise<void>;
   /** Serialize writes per session id to avoid rename races. */
@@ -181,6 +187,149 @@ export class FileSessionStore extends EventEmitter implements SessionStore {
   }
 }
 
+/**
+ * Redis-backed sessions for multi-API HA (`SESSION_STORE=redis` + `REDIS_URL`).
+ * Requires optional dependency `ioredis` (`npm i ioredis` in apps/api).
+ */
+export class RedisSessionStore extends EventEmitter implements PanelSessionStore {
+  private redis: {
+    get(key: string): Promise<string | null>;
+    set(key: string, value: string, ...args: unknown[]): Promise<unknown>;
+    del(...keys: string[]): Promise<number>;
+    scanStream(opts: {
+      match: string;
+      count: number;
+    }): AsyncIterable<string[]> | NodeJS.ReadableStream;
+    quit(): Promise<string>;
+  };
+  private prefix: string;
+
+  constructor(
+    redis: RedisSessionStore["redis"],
+    prefix = "guartrix:session:",
+  ) {
+    super();
+    this.redis = redis;
+    this.prefix = prefix;
+  }
+
+  private key(sessionId: string): string {
+    const safe = sessionId.replace(/[^a-zA-Z0-9_\-]/g, "_");
+    return `${this.prefix}${safe}`;
+  }
+
+  private ttlSeconds(session: Session): number | null {
+    const cookie = session.cookie as
+      | { maxAge?: number; expires?: Date | string | boolean }
+      | undefined;
+    if (cookie?.expires instanceof Date) {
+      return Math.max(1, Math.ceil((cookie.expires.getTime() - Date.now()) / 1000));
+    }
+    if (typeof cookie?.expires === "string") {
+      const ms = new Date(cookie.expires).getTime() - Date.now();
+      return Math.max(1, Math.ceil(ms / 1000));
+    }
+    if (typeof cookie?.maxAge === "number" && cookie.maxAge > 0) {
+      return Math.max(1, Math.ceil(cookie.maxAge / 1000));
+    }
+    return null;
+  }
+
+  set(sessionId: string, session: Session, callback: StoreCallback): void {
+    void (async () => {
+      const payload: StoredSession = {
+        data: session,
+        expires: (() => {
+          const ttl = this.ttlSeconds(session);
+          return ttl != null ? Date.now() + ttl * 1000 : null;
+        })(),
+      };
+      const key = this.key(sessionId);
+      const raw = JSON.stringify(payload);
+      const ttl = this.ttlSeconds(session);
+      if (ttl != null) {
+        await this.redis.set(key, raw, "EX", ttl);
+      } else {
+        await this.redis.set(key, raw);
+      }
+    })()
+      .then(() => callback())
+      .catch((err: Error) => callback(err));
+  }
+
+  get(sessionId: string, callback: StoreGetCallback): void {
+    void this.redis
+      .get(this.key(sessionId))
+      .then((raw) => {
+        if (!raw) {
+          callback(null, null);
+          return;
+        }
+        try {
+          const stored = JSON.parse(raw) as StoredSession;
+          if (stored.expires != null && stored.expires <= Date.now()) {
+            void this.redis.del(this.key(sessionId));
+            callback(null, null);
+            return;
+          }
+          callback(null, stored.data ?? null);
+        } catch {
+          void this.redis.del(this.key(sessionId));
+          callback(null, null);
+        }
+      })
+      .catch((err: Error) => callback(err, undefined));
+  }
+
+  destroy(sessionId: string, callback: StoreCallback): void {
+    void this.redis
+      .del(this.key(sessionId))
+      .then(() => callback())
+      .catch((err: Error) => callback(err));
+  }
+
+  async destroySessionsForUser(userId: string): Promise<number> {
+    const stream = this.redis.scanStream({
+      match: `${this.prefix}*`,
+      count: 100,
+    });
+    let removed = 0;
+    const keys: string[] = [];
+
+    // ioredis scanStream is a Node Readable; support async iteration when present.
+    if (Symbol.asyncIterator in Object(stream)) {
+      for await (const batch of stream as AsyncIterable<string[]>) {
+        keys.push(...batch);
+      }
+    } else {
+      await new Promise<void>((resolve, reject) => {
+        const readable = stream as NodeJS.ReadableStream;
+        readable.on("data", (batch: string[]) => {
+          keys.push(...batch);
+        });
+        readable.on("end", () => resolve());
+        readable.on("error", reject);
+      });
+    }
+
+    for (const key of keys) {
+      try {
+        const raw = await this.redis.get(key);
+        if (!raw) continue;
+        const stored = JSON.parse(raw) as StoredSession;
+        const data = stored.data as { userId?: string };
+        if (data?.userId === userId) {
+          await this.redis.del(key);
+          removed += 1;
+        }
+      } catch {
+        // ignore corrupt keys
+      }
+    }
+    return removed;
+  }
+}
+
 // Keep sync mkdir for constructors that need the dir immediately
 export function ensureSessionDir(dir: string): void {
   fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
@@ -191,13 +340,53 @@ export function ensureSessionDir(dir: string): void {
   }
 }
 
-let activeSessionStore: FileSessionStore | null = null;
+let activeSessionStore: PanelSessionStore | null = null;
 
-export function setActiveSessionStore(store: FileSessionStore): void {
+export function setActiveSessionStore(store: PanelSessionStore): void {
   activeSessionStore = store;
 }
 
 export async function destroySessionsForUser(userId: string): Promise<void> {
   if (!activeSessionStore) return;
   await activeSessionStore.destroySessionsForUser(userId);
+}
+
+/**
+ * Prefer Redis when `SESSION_STORE=redis` and `REDIS_URL` + `ioredis` are available;
+ * otherwise FileSessionStore under `data/sessions` (NFS-shareable for multi-API).
+ */
+export async function createSessionStore(
+  sessionsDir: string,
+): Promise<PanelSessionStore> {
+  const mode = (process.env.SESSION_STORE || "file").trim().toLowerCase();
+  if (mode === "redis") {
+    const url = process.env.REDIS_URL?.trim();
+    if (!url) {
+      console.warn(
+        "[guartrix] SESSION_STORE=redis but REDIS_URL is empty — using file sessions",
+      );
+    } else {
+      try {
+        const { default: Redis } = await import("ioredis");
+        const redis = new Redis(url, {
+          maxRetriesPerRequest: 2,
+          enableReadyCheck: true,
+          lazyConnect: false,
+        });
+        redis.on("error", (err: Error) => {
+          console.warn(`[guartrix] Redis session store error: ${err.message}`);
+        });
+        console.info("[guartrix] Session store: redis");
+        return new RedisSessionStore(redis);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.warn(
+          `[guartrix] SESSION_STORE=redis but ioredis unavailable (${msg}) — using file sessions. Install with: npm i ioredis -w @msm/api`,
+        );
+      }
+    }
+  }
+
+  console.info("[guartrix] Session store: file");
+  return new FileSessionStore(sessionsDir);
 }

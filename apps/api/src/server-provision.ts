@@ -28,6 +28,8 @@ export type ProvisionServerInput = {
   cleanupOnFailure?: boolean;
   /** Optional fixed id (tests / billing). */
   id?: string;
+  /** Extra Docker binds (already validated). */
+  extraMounts?: import("@msm/shared").ServerExtraMount[] | null;
 };
 
 /** Shared failure cleanup used by create + clone. */
@@ -93,6 +95,8 @@ export async function provisionPreparedServer(input: ProvisionServerInput) {
 
   await assertPortAvailable(input.port, input.nodeId);
 
+  const { extraMountsForPrisma } = await import("./extra-mounts.js");
+
   await prisma.server.create({
     data: {
       id,
@@ -106,6 +110,9 @@ export async function provisionPreparedServer(input: ProvisionServerInput) {
       status: "CREATING",
       ownerId: input.ownerId,
       nodeId: input.nodeId,
+      ...(input.extraMounts !== undefined
+        ? { extraMounts: extraMountsForPrisma(input.extraMounts) }
+        : {}),
     },
   });
 

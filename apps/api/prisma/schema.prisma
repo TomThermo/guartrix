@@ -108,6 +108,8 @@ model Server {
   discordStatusEnabled Boolean     @default(false)
   /** Public BlueMap URL when installed (e.g. http://host:8100). */
   bluemapUrl          String?
+  /** Extra Docker binds: JSON array of { host, container, readOnly? } */
+  extraMounts         Json?
   ownerId             String?
   owner               User?        @relation(fields: [ownerId], references: [id], onDelete: SetNull)
   nodeId              String?
@@ -121,10 +123,37 @@ model Server {
   allocations         Allocation[]
   activity            ActivityEvent[]
   moderationEvents    PlayerModerationEvent[]
+  scheduledTasks      ScheduledTask[]
 
   @@unique([nodeId, port])
   @@index([ownerId])
   @@index([nodeId])
+}
+
+/**
+ * Timed schedule chains (backup / wait / restart / command).
+ * Schedule timing + steps stay JSON for API compatibility with the former
+ * per-server guartrix-scheduled-tasks.json files.
+ */
+model ScheduledTask {
+  id           String    @id
+  serverId     String
+  server       Server    @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  /** Display label (maps to API `note`; empty when unset). */
+  name         String    @default("")
+  enabled      Boolean   @default(true)
+  /** mode, dailyAt, intervalHours, weekdays, kind, command */
+  scheduleJson Json
+  /** ScheduleStep[] */
+  stepsJson    Json
+  lastRunAt    DateTime?
+  lastError    String?   @db.Text
+  nextRunAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([serverId])
+  @@index([nextRunAt, enabled])
 }
 
 /** Kick/ban/op/whitelist actions for the in-panel player history. */

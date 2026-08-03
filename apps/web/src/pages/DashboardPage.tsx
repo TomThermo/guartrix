@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type KeyboardEvent, type MouseEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import type {
   McServer,
@@ -115,9 +115,16 @@ export function DashboardPage() {
     void refreshAddonUpdates();
   }, [refresh, refreshUpdates, refreshAddonUpdates]);
 
-  useVisibleInterval(() => void refresh(), 12_000);
-  useVisibleInterval(() => void refreshUpdates(), 60_000);
-  useVisibleInterval(() => void refreshAddonUpdates(), 120_000);
+  // Single visible-tab timer: list+stats+online every 15s; server/addon update
+  // checks keep ~60s / ~120s cadence via tick counters (pause-on-hidden preserved).
+  const pollTick = useRef(0);
+  useVisibleInterval(() => {
+    pollTick.current += 1;
+    const n = pollTick.current;
+    void refresh();
+    if (n % 4 === 0) void refreshUpdates();
+    if (n % 8 === 0) void refreshAddonUpdates();
+  }, 15_000);
 
   async function openWhitelistModal(serverId: string) {
     setWhitelistModalBusy(true);

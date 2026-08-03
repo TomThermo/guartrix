@@ -9,6 +9,7 @@ import type {
 } from "@msm/shared";
 import { DEFAULT_SERVER_JAR, normalizeJavaVersion } from "@msm/shared";
 import { serverDir } from "./config.js";
+import { coerceExtraMounts } from "./extra-mounts.js";
 import { hasServerIcon } from "./server-icon.js";
 
 type ServerWithRelations = Server & {
@@ -65,6 +66,7 @@ export function toMcServer(server: ServerWithRelations): McServer {
     nodeId: server.nodeId ?? server.node?.id ?? null,
     nodeName: server.node?.name ?? null,
     subdomain: server.subdomain ?? null,
+    extraMounts: coerceExtraMounts(server.extraMounts),
     createdAt: server.createdAt.toISOString(),
     updatedAt: server.updatedAt.toISOString(),
   };

@@ -18,11 +18,12 @@ Last updated: 2026-08-03
 ### Still optional / later (P2+)
 
 - Eggs / nests (only if multi-game)
-- Extra host mounts, Redis / multi-API HA (see [scaling.md](wiki/scaling.md))
+- Redis / multi-API HA (see [scaling.md](wiki/scaling.md))
 - Schedules in Prisma, i18n, OpenAPI codegen
 
 ### Shipped recently (improvement backlog)
 
+- **Extra host mounts** (shared plugins/worlds via allowlisted Docker binds)
 - Node **location** labels, file-backed rate limits, GDPR export/delete
 - Prometheus `/metrics`, optional Sentry, Docker log rotation, scrypt hash versioning
 - Dev MySQL via `docker-compose.dev.yml`
@@ -161,12 +162,13 @@ Hardening-checklist blijft leidend: [security.md](wiki/security.md).
 | Item | Notitie |
 |------|---------|
 | Eggs / nests | Alleen nodig als multi-game; Guartrix = Minecraft-first |
-| Extra mounts | Extra host-paths in container |
+| ~~Extra mounts~~ | **Shipped** — `extraMounts` + `EXTRA_MOUNTS_ALLOW_PREFIX` |
 | Locations | Multi-region / locatie-labels op nodes |
 | Redis / HA panel | Pas nodig bij meerdere API-replica’s — zie [scaling.md](wiki/scaling.md) |
 
 ### Post-roadmap (2026-08-03)
 
+- [x] Extra host mounts (allowlisted Docker binds for shared plugins/worlds)
 - [x] Join card (address/QR) + player moderation history
 - [x] Owner alerts (disk/OOM) + Discord status webhook
 - [x] Velocity/Bungee proxy helpers + subuser invite links
@@ -214,5 +216,5 @@ Hardening-checklist blijft leidend: [security.md](wiki/security.md).
 
 Zet `ACTIVITY_WEBHOOK_URL` (+ optioneel `ALERT_EMAIL` / `SMTP_*`) voor Discord-
 alerts, en `MOLLIE_API_KEY` als je checkout live wilt. Installeer de panel-DB
-backup-timer (`sudo bash scripts/install-panel-backup-cron.sh`). Eggs / mounts /
+backup-timer (`sudo bash scripts/install-panel-backup-cron.sh`). Eggs /
 locations / Redis blijven optioneel.

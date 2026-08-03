@@ -25,6 +25,11 @@ export interface DaemonServerConfig {
   diskMb?: number;
   cpuLimit?: number;
   ports?: Array<{ port: number; protocol: "tcp" | "udp" }>;
+  extraMounts?: Array<{
+    host: string;
+    container: string;
+    readOnly?: boolean;
+  }> | null;
 }
 
 /** Chown server data dir via daemon (accepts serverId or absolute dir ending with id). */
@@ -177,8 +182,10 @@ class ProcessManagerProxy extends EventEmitter {
     javaPath?: string | null;
     startupCommand?: string | null;
     serverJar?: string | null;
+    extraMounts?: unknown;
   }): Promise<DaemonServerConfig> {
     const { listServerAllocationPorts } = await import("./allocations.js");
+    const { coerceExtraMounts } = await import("./extra-mounts.js");
     const ports = await listServerAllocationPorts(server.id);
     return {
       id: server.id,
@@ -193,6 +200,9 @@ class ProcessManagerProxy extends EventEmitter {
       startupCommand: server.startupCommand ?? null,
       serverJar: server.serverJar ?? null,
       ports,
+      extraMounts: coerceExtraMounts(
+        server.extraMounts as import("@prisma/client").Prisma.JsonValue,
+      ),
     };
   }
 

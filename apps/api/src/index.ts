@@ -18,8 +18,11 @@ import { prisma } from "./db.js";
 import { migrateLegacyBrandFiles } from "./brand-migrate.js";
 import { processManager } from "./process-manager.js";
 import { runDueBackupSchedules } from "./backups.js";
-import { runDueScheduledTasks } from "./scheduled-tasks.js";
-import { FileSessionStore, ensureSessionDir } from "./session-store.js";
+import {
+  migrateAllScheduledTasksFromJson,
+  runDueScheduledTasks,
+} from "./scheduled-tasks.js";
+import { createSessionStore, ensureSessionDir } from "./session-store.js";
 import {
   createRateLimitStore,
   setActiveRateLimitStore,
@@ -97,7 +100,7 @@ async function main() {
   await migrateLegacyBrandFiles();
   const sessionsDir = path.join(config.dataDir, "sessions");
   ensureSessionDir(sessionsDir);
-  const sessionStore = new FileSessionStore(sessionsDir);
+  const sessionStore = await createSessionStore(sessionsDir);
   const { setActiveSessionStore } = await import("./session-store.js");
   setActiveSessionStore(sessionStore);
   setActiveRateLimitStore(createRateLimitStore(config.dataDir));
@@ -131,6 +134,16 @@ async function main() {
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     logger.warn({ err: msg }, "Allocation migration skipped");
+  }
+
+  try {
+    const n = await migrateAllScheduledTasksFromJson();
+    if (n > 0) {
+      logger.info({ count: n }, "Migrated scheduled task(s) from JSON to DB");
+    }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    logger.warn({ err: msg }, "Scheduled-task JSON migration skipped");
   }
 
   // Reconcile status with reality instead of blindly marking everything
@@ -368,7 +381,7 @@ async function main() {
   const schedulerTimer = setInterval(() => {
     void (async () => {
       try {
-        await sessionStore.purgeExpired();
+        await sessionStore.purgeExpired?.();
         if (Date.now() - lastActivityPrune > 60 * 60_000) {
           lastActivityPrune = Date.now();
           const pruned = await pruneActivityLog();

@@ -1,9 +1,10 @@
 # Schedules (chains)
 
 Timed **chains** of steps on a Minecraft server: backup, wait, restart, and
-console commands. Metadata lives on the panel as
-`guartrix-scheduled-tasks.json` under the server data dir (hidden from the File
-Manager). The API tick runs due schedules about once a minute.
+console commands. Rows live in MySQL (`ScheduledTask`: timing + steps as JSON
+columns). Legacy per-server `guartrix-scheduled-tasks.json` files are imported
+once on API boot (or first read) when the DB has no rows for that server, then
+renamed to `.migrated`. The API tick runs due schedules about once a minute.
 
 ## UI
 

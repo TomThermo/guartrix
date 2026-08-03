@@ -98,6 +98,17 @@ const createSchema = z.object({
   gamemode: z.enum(["survival", "creative", "adventure", "spectator"]).optional(),
   difficulty: z.enum(["peaceful", "easy", "normal", "hard"]).optional(),
   worldPreset: z.enum(["DEFAULT", "FLAT", "VOID"]).optional(),
+  extraMounts: z
+    .array(
+      z.object({
+        host: z.string().min(1).max(512),
+        container: z.string().min(1).max(512),
+        readOnly: z.boolean().optional(),
+      }),
+    )
+    .max(8)
+    .nullable()
+    .optional(),
 });
 
 const updateSchema = z.object({
@@ -127,6 +138,17 @@ const updateSchema = z.object({
     .optional(),
   discordStatusEnabled: z.boolean().optional(),
   bluemapUrl: z.union([z.string().url().max(500), z.literal(""), z.null()]).optional(),
+  extraMounts: z
+    .array(
+      z.object({
+        host: z.string().min(1).max(512),
+        container: z.string().min(1).max(512),
+        readOnly: z.boolean().optional(),
+      }),
+    )
+    .max(8)
+    .nullable()
+    .optional(),
   ownerId: z.string().nullable().optional(),
 });
 
@@ -606,6 +628,20 @@ export function registerServerRoutes(app: FastifyInstance): void {
     }
     const data = parsed.data;
 
+    let validatedExtraMounts:
+      | import("@msm/shared").ServerExtraMount[]
+      | null
+      | undefined;
+    if (data.extraMounts !== undefined) {
+      try {
+        const { parseExtraMounts } = await import("../extra-mounts.js");
+        validatedExtraMounts = parseExtraMounts(data.extraMounts);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        return reply.status(400).send({ error: message });
+      }
+    }
+
     try {
       const { assertCanCreateServer } = await import("../quotas.js");
       await assertCanCreateServer(user, data.memoryMb, { diskMb: data.diskMb });
@@ -646,6 +682,9 @@ export function registerServerRoutes(app: FastifyInstance): void {
         nodeId,
         ensureSubdomain: true,
         cleanupOnFailure: true,
+        ...(validatedExtraMounts !== undefined
+          ? { extraMounts: validatedExtraMounts }
+          : {}),
       });
 
       const preset = data.worldPreset ?? "DEFAULT";
@@ -724,7 +763,8 @@ export function registerServerRoutes(app: FastifyInstance): void {
       data.ownerAlertEmail !== undefined ||
       data.discordStatusWebhookUrl !== undefined ||
       data.discordStatusEnabled !== undefined ||
-      data.bluemapUrl !== undefined;
+      data.bluemapUrl !== undefined ||
+      data.extraMounts !== undefined;
     const needsStartup =
       data.memoryMb !== undefined ||
       data.javaPath !== undefined ||
@@ -922,6 +962,21 @@ export function registerServerRoutes(app: FastifyInstance): void {
           ? null
           : data.bluemapUrl.trim();
 
+    let nextExtraMounts:
+      | import("@msm/shared").ServerExtraMount[]
+      | null
+      | undefined;
+    if (data.extraMounts !== undefined) {
+      try {
+        const { parseExtraMounts } = await import("../extra-mounts.js");
+        nextExtraMounts = parseExtraMounts(data.extraMounts);
+      } catch (err) {
+        return reply.status(400).send({
+          error: err instanceof Error ? err.message : "Invalid extraMounts",
+        });
+      }
+    }
+
     try {
       if (typeof ownerAlertWebhookUrl === "string") {
         ownerAlertWebhookUrl = await assertSafeWebhookUrl(ownerAlertWebhookUrl);
@@ -943,6 +998,8 @@ export function registerServerRoutes(app: FastifyInstance): void {
         error: err instanceof Error ? err.message : "Invalid URL",
       });
     }
+
+    const { extraMountsForPrisma } = await import("../extra-mounts.js");
 
     const updated = await prisma.server.update({
       where: { id: server.id },
@@ -972,6 +1029,9 @@ export function registerServerRoutes(app: FastifyInstance): void {
         discordStatusWebhookUrl,
         discordStatusEnabled: data.discordStatusEnabled,
         bluemapUrl,
+        ...(nextExtraMounts !== undefined
+          ? { extraMounts: extraMountsForPrisma(nextExtraMounts) }
+          : {}),
         ownerId: data.ownerId === undefined ? undefined : data.ownerId,
       },
       include: serverListInclude,
@@ -1061,6 +1121,7 @@ export function registerServerRoutes(app: FastifyInstance): void {
         "serverJar",
         "autoRestart",
         "startOnBoot",
+        "extraMounts",
       ] as const
     ).filter((key) => data[key] !== undefined);
 
@@ -2138,6 +2199,7 @@ export function registerServerRoutes(app: FastifyInstance): void {
           startOnBoot: false,
           ownerId: access.user.id,
           nodeId,
+          extraMounts: source.extraMounts ?? undefined,
         },
       });
 

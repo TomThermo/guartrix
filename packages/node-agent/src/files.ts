@@ -126,6 +126,7 @@ const SENSITIVE_NAMES = new Set([
   "guartrix-addons.json",
   "guartrix-resource-pack.json",
   "guartrix-scheduled-tasks.json",
+  "guartrix-scheduled-tasks.json.migrated",
   "guartrix-player-history.json",
   "guartrix-console-history.json",
   "guartrix-limits.json",

@@ -52,6 +52,9 @@ Installer: `--mysql-docker` (default) or `--mysql-external` / `--database-url`. 
 | `API_KEY_RATE_LIMIT` | Max Client API requests per minute per key (default **120**) |
 | `APPLICATION_API_RATE_LIMIT` | Max Application API (`gta_`) requests per minute per key (default **120**) |
 | `RATE_LIMIT_STORE` | `file` (default) persists counters under `data/rate-limits/`; `memory` is in-process only |
+| `SESSION_STORE` | `file` (default, `data/sessions`) or `redis` (needs `REDIS_URL` + optional `ioredis`) |
+| `REDIS_URL` | Redis URL when `SESSION_STORE=redis` (multi-API session sharing) |
+| `CSP_REPORT_ONLY` | `1` = prod-web also sends CSP Report-Only (stricter `style-src 'self'`) for violation telemetry |
 | `MOLLIE_API_KEY` | Mollie Payments API key (`test_…` / `live_…`); enables checkout |
 | `BILLING_WEBHOOK_URL` | Optional outbound JSON webhook on payment paid / provisioned / subscription events |
 | `CURSEFORGE_API_KEY` | Optional CurseForge API key for Modpacks tab search/install |
@@ -80,6 +83,7 @@ The license **server** is hosted separately by Guartrix (default `https://licens
 | `DAEMON_JWT_TTL` | Access JWT lifetime seconds (default `900`) |
 | `DAEMON_JWT_WS_TTL` | WebSocket JWT lifetime seconds (default `3600`) |
 | `DAEMON_JWT_LEGACY` | `false` (default) = JWT only; set `true` temporarily for old daemons that still send the raw token |
+| `EXTRA_MOUNTS_ALLOW_PREFIX` | Comma-separated host path prefixes allowed for server extra mounts (default `/var/lib/guartrix/shared,/opt/guartrix/shared`) |
 | `SFTP_PORT` / `SFTP_ENABLED` | Embedded SFTP per node |
 | `PANEL_URL` | URL the daemon uses for SFTP password checks |
 | `GUARTRIX_REPO_URL` | Git URL for remote install scripts |

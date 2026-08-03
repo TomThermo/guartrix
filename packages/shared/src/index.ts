@@ -57,6 +57,13 @@ export type ServerStatus =
   | "CREATING"
   | "TRANSFERRING";
 
+/** Extra Docker bind: host directory mounted into the server container. */
+export interface ServerExtraMount {
+  host: string; // absolute host path
+  container: string; // absolute container path, must start with /
+  readOnly?: boolean;
+}
+
 export interface McServer {
   id: string;
   name: string;
@@ -105,6 +112,8 @@ export interface McServer {
   nodeName: string | null;
   /** Public subdomain label (e.g. lammers → lammers.example.com), if DNS is configured. */
   subdomain: string | null;
+  /** Extra host directories bound into the container (apply on next start/restart). */
+  extraMounts?: ServerExtraMount[] | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -154,6 +163,8 @@ export interface CreateServerRequest {
   gamemode?: "survival" | "creative" | "adventure" | "spectator";
   difficulty?: "peaceful" | "easy" | "normal" | "hard";
   worldPreset?: "DEFAULT" | "FLAT" | "VOID";
+  /** Extra host directories bound into the container (max 8). */
+  extraMounts?: ServerExtraMount[] | null;
 }
 
 export interface UpdateServerRequest {
@@ -174,6 +185,8 @@ export interface UpdateServerRequest {
   discordStatusWebhookUrl?: string | null;
   discordStatusEnabled?: boolean;
   bluemapUrl?: string | null;
+  /** Extra host directories bound into the container (max 8). */
+  extraMounts?: ServerExtraMount[] | null;
   /** Admin only: reassign server ownership */
   ownerId?: string | null;
 }

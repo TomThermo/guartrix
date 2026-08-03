@@ -214,7 +214,7 @@ Invite by email with fine-grained permissions (console, files, SFTP, backups, â€
 
 ### Server Properties
 
-Edit `server.properties`, startup / Java settings (permission-scoped). The **World** category includes **world tools**: reset selected dimensions and upload a `.zip` world (server must be stopped; backup first).
+Edit `server.properties`, startup / Java settings (permission-scoped), and **extra host mounts** under Start Configuration (`settings.update`) â€” bind allowlisted host dirs into the container (apply on next restart). The **World** category includes **world tools**: reset selected dimensions and upload a `.zip` world (server must be stopped; backup first).
 
 ![Server Properties](assets/15-server-settings.png)
 

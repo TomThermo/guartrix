@@ -816,23 +816,40 @@ function withSecurityHeaders(handler) {
     // rewriting every Vite/Bootstrap stylesheet injection — leave for a
     // dedicated CSP pass. style-src-attr mirrors style-src so attribute
     // styles stay allowed while we keep script-src strict (no unsafe-inline).
-    res.setHeader(
-      "Content-Security-Policy",
-      [
-        "default-src 'self'",
-        "base-uri 'self'",
-        "frame-ancestors 'none'",
-        "object-src 'none'",
-        "img-src 'self' data: https: blob:",
-        "font-src 'self' data:",
-        "style-src 'self' 'unsafe-inline'",
-        "style-src-attr 'unsafe-inline'",
-        "script-src 'self'",
-        "connect-src 'self' wss: https:",
-        "frame-src 'self' https:",
-        "form-action 'self'",
-      ].join("; "),
-    );
+    const cspDirectives = [
+      "default-src 'self'",
+      "base-uri 'self'",
+      "frame-ancestors 'none'",
+      "object-src 'none'",
+      "img-src 'self' data: https: blob:",
+      "font-src 'self' data:",
+      "style-src 'self' 'unsafe-inline'",
+      "style-src-attr 'unsafe-inline'",
+      "script-src 'self'",
+      "connect-src 'self' wss: https:",
+      "frame-src 'self' https:",
+      "form-action 'self'",
+    ];
+    res.setHeader("Content-Security-Policy", cspDirectives.join("; "));
+    // Optional Report-Only: same policy but style-src without unsafe-inline so
+    // operators can collect violations (DevTools / reporting) without breaking
+    // Bootstrap. Set CSP_REPORT_ONLY=1 in .env.
+    if (
+      process.env.CSP_REPORT_ONLY === "1" ||
+      process.env.CSP_REPORT_ONLY === "true"
+    ) {
+      const reportOnly = cspDirectives.map((d) =>
+        d.startsWith("style-src ")
+          ? "style-src 'self'"
+          : d.startsWith("style-src-attr ")
+            ? "style-src-attr 'none'"
+            : d,
+      );
+      res.setHeader(
+        "Content-Security-Policy-Report-Only",
+        reportOnly.join("; "),
+      );
+    }
     if (req.socket?.encrypted) {
       res.setHeader(
         "Strict-Transport-Security",
