@@ -11,6 +11,7 @@ import {
   Stack,
 } from "react-bootstrap";
 import { api } from "../api";
+import { useI18n } from "../i18n/react";
 
 interface Props {
   serverId: string;
@@ -71,6 +72,7 @@ export function BotsPanel({
   onError,
   onNotice,
 }: Props) {
+  const { t } = useI18n();
   const [bots, setBots] = useState<BotInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -328,13 +330,14 @@ export function BotsPanel({
   if (loading) {
     return (
       <div className="py-4 text-center text-secondary">
-        <Spinner size="sm" className="me-2" /> Loading bots…
+        <Spinner size="sm" className="me-2" /> {t("common.loading")}…
       </div>
     );
   }
 
   return (
     <Stack gap={3}>
+      <h2 className="h5 mb-0">{t("bots.title")}</h2>
       <div>
         <p className="text-secondary mb-2">
           Admin Mineflayer bots: spawn them idle, then give orders (pathfinding +
@@ -480,7 +483,7 @@ export function BotsPanel({
         </h3>
         <ListGroup>
           {bots.length === 0 && (
-            <ListGroup.Item className="text-secondary">No bots yet</ListGroup.Item>
+            <ListGroup.Item className="text-secondary">{t("bots.empty")}</ListGroup.Item>
           )}
           {bots.map((b) => (
             <ListGroup.Item

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { McServer } from "@msm/shared";
 import { Alert, Button, Form, Spinner, Stack } from "react-bootstrap";
 import { api } from "../api";
+import { useI18n } from "../i18n/react";
 
 interface EngineField {
   id: string;
@@ -26,6 +27,7 @@ export function EngineSettingsPanel({
   onNotice,
   onError,
 }: Props) {
+  const { t } = useI18n();
   const [fields, setFields] = useState<EngineField[]>([]);
   const [supported, setSupported] = useState(false);
   const [draft, setDraft] = useState<Record<string, boolean | number | string>>({});
@@ -88,6 +90,7 @@ export function EngineSettingsPanel({
 
   return (
     <div>
+      <h2 className="h5 mb-2">{t("engine.title")}</h2>
       <p className="text-secondary small">
         Common Paper/Spigot/Purpur toggles. Advanced options: open the YAML in File
         Manager.
@@ -137,7 +140,7 @@ export function EngineSettingsPanel({
       </Stack>
       {canUpdate && (
         <Button variant="primary" disabled={saving} onClick={() => void save()}>
-          {saving ? <Spinner size="sm" /> : "Save engine settings"}
+          {saving ? <Spinner size="sm" /> : t("engine.save")}
         </Button>
       )}
     </div>

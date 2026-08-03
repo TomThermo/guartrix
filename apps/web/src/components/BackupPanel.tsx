@@ -18,6 +18,7 @@ import {
   Stack,
 } from "react-bootstrap";
 import { api } from "../api";
+import { useI18n } from "../i18n/react";
 import { formatBytes, formatWhen } from "../utils";
 import { ConfirmModal } from "./ConfirmModal";
 
@@ -49,6 +50,7 @@ export function BackupPanel({
   canRestore = true,
   canEditSchedule = true,
 }: Props) {
+  const { t } = useI18n();
   const [backups, setBackups] = useState<ServerBackup[]>([]);
   const [schedule, setSchedule] = useState<BackupSchedule | null>(null);
   const [busy, setBusy] = useState(false);
@@ -115,10 +117,10 @@ export function BackupPanel({
   useEffect(() => {
     if (uploading || downloadingId) return;
     const ms = busy ? 3000 : 30_000;
-    const t = setInterval(() => {
+    const pollTimer = setInterval(() => {
       void refresh().catch(() => undefined);
     }, ms);
-    return () => clearInterval(t);
+    return () => clearInterval(pollTimer);
   }, [refresh, uploading, downloadingId, busy]);
 
   useEffect(() => {
@@ -317,13 +319,14 @@ export function BackupPanel({
     return (
       <div className="text-center py-4 text-secondary">
         <Spinner animation="border" size="sm" className="me-2" />
-        Loading backups…
+        {t("common.loading")}…
       </div>
     );
   }
 
   return (
     <div>
+      <h2 className="h5 mb-3">{t("backups.title")}</h2>
       <Alert variant="light" className="border small">
         Backups are stored as <code>.tar.gz</code> archives (world, configs, mods/plugins). Logs and
         libraries are skipped. If the server is running, Guartrix runs <code>save-all</code> first.
@@ -343,7 +346,7 @@ export function BackupPanel({
           <Col lg={5}>
             <h3 className="h6 mb-3">
               <i className="fa-solid fa-plus me-2" />
-              Create backup now
+              {t("backups.create")}
             </h3>
             <Form.Group className="mb-3">
               <Form.Label>Note (optional)</Form.Label>
@@ -358,7 +361,7 @@ export function BackupPanel({
             <Button variant="primary" disabled={busy || uploading} onClick={() => void onCreate()}>
               {busy ? (
                 <>
-                  <Spinner size="sm" className="me-2" /> Creating…
+                  <Spinner size="sm" className="me-2" /> {t("backups.creating")}
                 </>
               ) : (
                 <>
@@ -421,13 +424,13 @@ export function BackupPanel({
                 ) : (
                   <>
                     <i className="fa-solid fa-cloud-arrow-up me-2" />
-                    Upload
+                    {t("common.upload")}
                   </>
                 )}
               </Button>
               {uploading && (
                 <Button variant="outline-secondary" onClick={onCancelUpload}>
-                  Cancel
+                  {t("common.cancel")}
                 </Button>
               )}
             </Stack>
@@ -502,7 +505,7 @@ export function BackupPanel({
             </div>
 
             <Button type="submit" variant="outline-primary" disabled={savingSchedule}>
-              {savingSchedule ? "Saving…" : "Save schedule"}
+              {savingSchedule ? t("common.saving") : t("common.save")}
             </Button>
           </Form>
           </Col>
@@ -515,7 +518,7 @@ export function BackupPanel({
       </h3>
       <ListGroup>
         {backups.length === 0 && (
-          <ListGroup.Item className="text-secondary">No backups yet</ListGroup.Item>
+          <ListGroup.Item className="text-secondary">{t("backups.empty")}</ListGroup.Item>
         )}
         {backups.map((b) => {
           const badge = triggerBadge(b.trigger);
@@ -549,7 +552,7 @@ export function BackupPanel({
               <Stack direction="horizontal" gap={2}>
                 {isDownloading ? (
                   <Button size="sm" variant="outline-secondary" onClick={onCancelDownload}>
-                    Cancel
+                    {t("common.cancel")}
                   </Button>
                 ) : (
                   <Button
@@ -559,7 +562,7 @@ export function BackupPanel({
                     onClick={() => void onDownload(b)}
                   >
                     <i className="fa-solid fa-download me-1" />
-                    Download
+                    {t("backups.download")}
                   </Button>
                 )}
                 {canRestore && (
@@ -570,12 +573,12 @@ export function BackupPanel({
                     onClick={() => onRestore(b)}
                   >
                     <i className="fa-solid fa-clock-rotate-left me-1" />
-                    Restore
+                    {t("backups.restore")}
                   </Button>
                 )}
                 {canDelete && (
                   <Button size="sm" variant="outline-danger" onClick={() => onDelete(b)}>
-                    Delete
+                    {t("backups.delete")}
                   </Button>
                 )}
               </Stack>
@@ -592,7 +595,7 @@ export function BackupPanel({
             ? `Delete backup ${deleteTarget.fileName}?`
             : ""
         }
-        confirmLabel="Delete"
+        confirmLabel={t("common.delete")}
         variant="danger"
         busy={actionBusy}
         onCancel={() => {

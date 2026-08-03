@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { Alert, Button, Container } from "react-bootstrap";
+import { t } from "./i18n/index";
 
 type Props = {
   children: ReactNode;
@@ -34,15 +35,12 @@ export class ErrorBoundary extends Component<Props, State> {
     return (
       <Container className="py-5" style={{ maxWidth: 520 }}>
         <Alert variant="danger" className="mb-3">
-          <Alert.Heading>Something went wrong</Alert.Heading>
-          <p className="mb-0">
-            This page hit an unexpected error. You can try again, or go back to
-            the dashboard.
-          </p>
+          <Alert.Heading>{t("errorBoundary.title")}</Alert.Heading>
+          <p className="mb-0">{t("errorBoundary.body")}</p>
         </Alert>
         <div className="d-flex flex-wrap gap-2">
           <Button variant="primary" onClick={this.retry}>
-            Try again
+            {t("errorBoundary.tryAgain")}
           </Button>
           <Button
             variant="outline-secondary"
@@ -50,7 +48,7 @@ export class ErrorBoundary extends Component<Props, State> {
               window.location.assign("/");
             }}
           >
-            Go to dashboard
+            {t("errorBoundary.goDashboard")}
           </Button>
         </div>
       </Container>

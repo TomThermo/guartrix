@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { LogContentResponse, LogFileInfo } from "@msm/shared";
 import { Button, Col, ListGroup, Row, Spinner } from "react-bootstrap";
 import { api } from "../api";
+import { useI18n } from "../i18n/react";
 import { formatWhen } from "../utils";
 
 interface Props {
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export function LogPanel({ serverId, onError }: Props) {
+  const { t } = useI18n();
   const [files, setFiles] = useState<LogFileInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<string | null>(null);
@@ -47,16 +49,14 @@ export function LogPanel({ serverId, onError }: Props) {
     return (
       <div className="text-center py-4 text-secondary">
         <Spinner animation="border" size="sm" className="me-2" />
-        Loading logs…
+        {t("common.loading")}…
       </div>
     );
   }
 
   return (
     <div>
-      <p className="text-secondary">
-        Server logs and crash reports. Click a file to view its contents.
-      </p>
+      <h2 className="h5 mb-2">{t("logs.title")}</h2>
       <Row className="g-3">
         <Col lg={4}>
           <div className="d-flex justify-content-between align-items-center mb-2">
@@ -71,7 +71,7 @@ export function LogPanel({ serverId, onError }: Props) {
           </div>
           <ListGroup style={{ maxHeight: 480, overflow: "auto" }}>
             {files.length === 0 && (
-              <ListGroup.Item className="text-secondary">No log files found</ListGroup.Item>
+              <ListGroup.Item className="text-secondary">{t("logs.empty")}</ListGroup.Item>
             )}
             {files.map((f) => (
               <ListGroup.Item

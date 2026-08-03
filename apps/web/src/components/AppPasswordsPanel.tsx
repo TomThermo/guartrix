@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Alert, Button, Form, ListGroup, Spinner } from "react-bootstrap";
 import { api } from "../api";
+import { useI18n } from "../i18n/react";
 
 type Row = {
   id: string;
@@ -16,6 +17,7 @@ export function AppPasswordsPanel({
 }: {
   onError?: (msg: string | null) => void;
 }) {
+  const { t } = useI18n();
   const [rows, setRows] = useState<Row[]>([]);
   const [max, setMax] = useState(10);
   const [loading, setLoading] = useState(true);
@@ -34,10 +36,12 @@ export function AppPasswordsPanel({
     setLoading(true);
     void refresh()
       .catch((err) =>
-        onError?.(err instanceof Error ? err.message : "Failed to load"),
+        onError?.(
+          err instanceof Error ? err.message : t("account.appPasswordLoadFailed"),
+        ),
       )
       .finally(() => setLoading(false));
-  }, [refresh, onError]);
+  }, [refresh, onError, t]);
 
   async function onCreate(e: FormEvent) {
     e.preventDefault();
@@ -49,25 +53,25 @@ export function AppPasswordsPanel({
       const result = await api.createAppPassword({ name: name.trim() });
       setNewToken(result.token);
       setName("");
-      setNotice("App password created — copy it now; it will not be shown again.");
+      setNotice(t("account.appPasswordCreated"));
       await refresh();
     } catch (err) {
-      onError?.(err instanceof Error ? err.message : "Create failed");
+      onError?.(err instanceof Error ? err.message : t("common.failed"));
     } finally {
       setBusy(false);
     }
   }
 
   async function onRevoke(row: Row) {
-    if (!confirm(`Revoke app password "${row.name}"?`)) return;
+    if (!confirm(t("account.appPasswordRevokeConfirm", { name: row.name }))) return;
     setBusy(true);
     onError?.(null);
     try {
       await api.revokeAppPassword(row.id);
-      setNotice("Revoked.");
+      setNotice(t("account.appPasswordRevokedNotice"));
       await refresh();
     } catch (err) {
-      onError?.(err instanceof Error ? err.message : "Revoke failed");
+      onError?.(err instanceof Error ? err.message : t("apiKeys.revokeFailed"));
     } finally {
       setBusy(false);
     }
@@ -77,7 +81,7 @@ export function AppPasswordsPanel({
     return (
       <div className="text-secondary py-3">
         <Spinner size="sm" className="me-2" />
-        Loading…
+        {t("common.loading")}…
       </div>
     );
   }
@@ -87,8 +91,7 @@ export function AppPasswordsPanel({
   return (
     <div>
       <p className="text-secondary small">
-        Use an app password instead of your panel password in FileZilla / WinSCP.
-        Username stays <code>{"{user}.{serverId}"}</code>. Max {max} active.
+        {t("account.appPasswordHelp", { max })}
       </p>
       {notice && (
         <Alert variant="success" dismissible onClose={() => setNotice(null)}>
@@ -97,7 +100,7 @@ export function AppPasswordsPanel({
       )}
       {newToken && (
         <Alert variant="warning">
-          <strong>Copy now:</strong>
+          <strong>{t("account.appPasswordCopyNow")}</strong>
           <code className="d-block mt-2 user-select-all text-break">{newToken}</code>
         </Alert>
       )}
@@ -105,7 +108,7 @@ export function AppPasswordsPanel({
         <Form.Control
           size="sm"
           className="mb-2"
-          placeholder="Label (e.g. Laptop)"
+          placeholder={t("account.appPasswordLabelPlaceholder")}
           value={name}
           onChange={(e) => setName(e.target.value)}
           required
@@ -116,12 +119,12 @@ export function AppPasswordsPanel({
           size="sm"
           disabled={busy || !name.trim() || active >= max}
         >
-          Create app password
+          {t("account.appPasswordCreate")}
         </Button>
       </Form>
       <ListGroup>
         {rows.length === 0 && (
-          <ListGroup.Item className="text-secondary">None yet</ListGroup.Item>
+          <ListGroup.Item className="text-secondary">{t("common.none")}</ListGroup.Item>
         )}
         {rows.map((row) => (
           <ListGroup.Item
@@ -132,7 +135,9 @@ export function AppPasswordsPanel({
               <div className="fw-semibold">{row.name}</div>
               <code className="small">{row.prefix}…</code>
               {row.revokedAt && (
-                <span className="small text-secondary ms-2">revoked</span>
+                <span className="small text-secondary ms-2">
+                  {t("account.appPasswordRevokedLabel")}
+                </span>
               )}
             </div>
             {!row.revokedAt && (
@@ -142,7 +147,7 @@ export function AppPasswordsPanel({
                 disabled={busy}
                 onClick={() => void onRevoke(row)}
               >
-                Revoke
+                {t("apiKeys.revoke")}
               </Button>
             )}
           </ListGroup.Item>

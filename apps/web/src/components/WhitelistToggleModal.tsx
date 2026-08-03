@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { ServerDetail } from "@msm/shared";
 import { Button, Form, Modal, Spinner } from "react-bootstrap";
 import { api } from "../api";
+import { useI18n } from "../i18n/react";
 
 interface Props {
   server: ServerDetail;
@@ -23,6 +24,7 @@ export function WhitelistToggleModal({
   onSaved,
   onError,
 }: Props) {
+  const { t } = useI18n();
   const [enabled, setEnabled] = useState(bool(server.properties["white-list"]));
   const [enforce, setEnforce] = useState(bool(server.properties["enforce-whitelist"]));
   const [saving, setSaving] = useState(false);
@@ -44,7 +46,7 @@ export function WhitelistToggleModal({
       });
       onSaved(updated);
     } catch (err) {
-      onError(err instanceof Error ? err.message : "Failed to update whitelist");
+      onError(err instanceof Error ? err.message : t("modals.whitelistUpdateFailed"));
     } finally {
       setSaving(false);
     }
@@ -57,48 +59,47 @@ export function WhitelistToggleModal({
       <Modal.Header closeButton={!locked}>
         <Modal.Title>
           <i className="fa-solid fa-user-check me-2" />
-          Whitelist
+          {t("modals.whitelistToggleTitle")}
         </Modal.Title>
       </Modal.Header>
       <Modal.Body>
         <p className="text-secondary small mb-3">
-          Control whether only listed players can join{" "}
-          <strong>{server.name}</strong>.
+          {t("modals.whitelistToggleHelp", { name: server.name })}
           {server.status === "RUNNING"
-            ? " Changes apply on the running server."
-            : " Applies on next start."}
+            ? t("modals.whitelistToggleRunning")
+            : t("modals.whitelistToggleStopped")}
         </p>
         <Form className="d-grid gap-3">
           <Form.Group>
-            <Form.Label className="small mb-1">Whitelist</Form.Label>
+            <Form.Label className="small mb-1">{t("whitelist.title")}</Form.Label>
             <Form.Select
               value={enabled}
               disabled={locked}
               onChange={(e) => setEnabled(e.target.value)}
             >
-              <option value="true">Enabled</option>
-              <option value="false">Disabled</option>
+              <option value="true">{t("common.enabled")}</option>
+              <option value="false">{t("common.disabled")}</option>
             </Form.Select>
           </Form.Group>
           <Form.Group>
-            <Form.Label className="small mb-1">Enforce whitelist</Form.Label>
+            <Form.Label className="small mb-1">{t("modals.whitelistToggleEnforce")}</Form.Label>
             <Form.Select
               value={enforce}
               disabled={locked}
               onChange={(e) => setEnforce(e.target.value)}
             >
-              <option value="true">Enabled</option>
-              <option value="false">Disabled</option>
+              <option value="true">{t("common.enabled")}</option>
+              <option value="false">{t("common.disabled")}</option>
             </Form.Select>
           </Form.Group>
         </Form>
       </Modal.Body>
       <Modal.Footer>
         <Button variant="outline-secondary" disabled={locked} onClick={onCancel}>
-          Cancel
+          {t("common.cancel")}
         </Button>
         <Button variant="primary" disabled={locked} onClick={() => void save()}>
-          {saving ? <Spinner size="sm" /> : "Save"}
+          {saving ? <Spinner size="sm" /> : t("common.save")}
         </Button>
       </Modal.Footer>
     </Modal>

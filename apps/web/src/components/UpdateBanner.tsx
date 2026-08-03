@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { McServer, ServerUpdateInfo } from "@msm/shared";
 import { Alert, Button, Spinner } from "react-bootstrap";
 import { api } from "../api";
+import { useI18n } from "../i18n/react";
 import { typeLabel } from "../utils";
 
 interface Props {
@@ -18,6 +19,7 @@ export function UpdateBanner({
   onError,
   onNotice,
 }: Props) {
+  const { t } = useI18n();
   const [info, setInfo] = useState<ServerUpdateInfo | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -47,7 +49,7 @@ export function UpdateBanner({
 
   async function apply(mcVersion: string, label: string) {
     if (running) {
-      onError("Stop the server before updating.");
+      onError(t("modals.versionStopBeforeUpdate"));
       return;
     }
     if (
@@ -67,7 +69,7 @@ export function UpdateBanner({
       setInfo(result.update);
       onNotice(`Updated successfully: ${label}`);
     } catch (err) {
-      onError(err instanceof Error ? err.message : "Update failed");
+      onError(err instanceof Error ? err.message : t("modals.versionUpdateFailed"));
       await refresh();
     } finally {
       setBusy(false);
@@ -84,13 +86,11 @@ export function UpdateBanner({
       <div>
         <div className="fw-semibold">
           <i className="fa-solid fa-arrow-up me-2" />
-          Update available
+          {t("serverDetail.updateAvailable")}
         </div>
         <div className="small mb-0">{info.message}</div>
         {running && (
-          <div className="small text-muted mt-1">
-            Stop the server to apply an update.
-          </div>
+          <div className="small text-muted mt-1">{t("modals.updateStopToApply")}</div>
         )}
       </div>
       <div className="d-flex flex-wrap gap-2">
@@ -111,7 +111,7 @@ export function UpdateBanner({
             {busy ? (
               <Spinner size="sm" />
             ) : (
-              `Update ${info.latestChannelLabel ?? "build"}`
+              t("modals.updateBuild", { label: info.latestChannelLabel ?? "build" })
             )}
           </Button>
         )}
@@ -127,7 +127,7 @@ export function UpdateBanner({
               )
             }
           >
-            Update to {info.latestMcVersion}
+            {t("modals.updateTo", { version: info.latestMcVersion })}
           </Button>
         )}
       </div>

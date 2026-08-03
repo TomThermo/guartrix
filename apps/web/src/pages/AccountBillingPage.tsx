@@ -17,6 +17,7 @@ import {
 } from "react-bootstrap";
 import { api } from "../api";
 import { useAuth } from "../auth";
+import { useI18n } from "../i18n/react";
 import { formatMoney } from "../utils";
 
 function statusBadge(status: string) {
@@ -37,6 +38,7 @@ function statusBadge(status: string) {
 
 export function AccountBillingPage() {
   const { user, refreshUser, authenticated } = useAuth();
+  const { t } = useI18n();
   const [searchParams, setSearchParams] = useSearchParams();
   const [plans, setPlans] = useState<PlanTemplateRecord[]>([]);
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
@@ -142,9 +144,9 @@ export function AccountBillingPage() {
     <div>
       <div className="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
         <div>
-          <h1 className="h3 mb-1">Billing</h1>
+          <h1 className="h3 mb-1">{t("admin.accountBillingTitle")}</h1>
           <p className="text-secondary mb-0">
-            Buy a plan to raise your server / RAM / database quotas.
+            {t("admin.accountBillingSubtitle")}
             {user && user.role !== "ADMIN" && (
               <>
                 {" "}
@@ -155,7 +157,7 @@ export function AccountBillingPage() {
           </p>
         </div>
         <Link to="/account/security" className="btn btn-sm btn-outline-secondary">
-          Security
+          {t("nav.security")}
         </Link>
       </div>
 
@@ -173,7 +175,7 @@ export function AccountBillingPage() {
       {loading ? (
         <div className="text-secondary py-4">
           <Spinner size="sm" className="me-2" />
-          Loading…
+          {t("common.loading")}…
         </div>
       ) : (
         <>
@@ -266,7 +268,7 @@ export function AccountBillingPage() {
                             disabled={busy}
                             onClick={() => void cancelSub(s)}
                           >
-                            Cancel
+                            {t("common.cancel")}
                           </Button>
                         </td>
                       </tr>

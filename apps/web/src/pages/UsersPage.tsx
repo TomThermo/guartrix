@@ -17,6 +17,7 @@ import {
 } from "react-bootstrap";
 import { api } from "../api";
 import { useAuth } from "../auth";
+import { useI18n } from "../i18n/react";
 import { ActivityPanel } from "../components/ActivityPanel";
 import { QuotasModal } from "../components/QuotasModal";
 import { RamGbSelect } from "../components/RamGbSelect";
@@ -62,6 +63,7 @@ function quotaText(u: AuthUser): string {
 
 export function UsersPage() {
   const { user: me } = useAuth();
+  const { t } = useI18n();
   const [users, setUsers] = useState<AuthUser[]>([]);
   const [hostMemoryGb, setHostMemoryGb] = useState(4);
   const [loading, setLoading] = useState(true);
@@ -91,7 +93,7 @@ export function UsersPage() {
   useEffect(() => {
     setLoading(true);
     void refresh()
-      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load users"))
+      .catch((err) => setError(err instanceof Error ? err.message : t("users.loadFailed")))
       .finally(() => setLoading(false));
   }, [refresh]);
 
@@ -192,15 +194,12 @@ export function UsersPage() {
         <div>
           <h1 className="h3 mb-1">
             <i className="fa-solid fa-users-gear me-2 text-primary" />
-            Users
+            {t("users.title")}
           </h1>
-          <p className="text-secondary mb-0">
-            Set per-user server count and total RAM (up to {hostMemoryGb} GB on this host).
-            Admins are always unlimited.
-          </p>
+          <p className="text-secondary mb-0">{t("users.subtitle")}</p>
         </div>
         <Link to="/" className="btn btn-sm btn-outline-secondary">
-          Back
+          {t("common.back")}
         </Link>
       </div>
 
@@ -219,10 +218,10 @@ export function UsersPage() {
         <Col lg={5}>
           <Card className="border-0 shadow-sm">
             <Card.Body>
-              <h2 className="h6 mb-3">Create user</h2>
+              <h2 className="h6 mb-3">{t("users.createUser")}</h2>
               <Form onSubmit={(e) => void onCreate(e)}>
                 <Form.Group className="mb-3" controlId="new-username">
-                  <Form.Label>Username</Form.Label>
+                  <Form.Label>{t("users.username")}</Form.Label>
                   <Form.Control
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
@@ -234,7 +233,7 @@ export function UsersPage() {
                   />
                 </Form.Group>
                 <Form.Group className="mb-3" controlId="new-password">
-                  <Form.Label>Password</Form.Label>
+                  <Form.Label>{t("users.password")}</Form.Label>
                   <Form.Control
                     type="password"
                     value={password}
@@ -247,7 +246,7 @@ export function UsersPage() {
                   </Form.Text>
                 </Form.Group>
                 <Form.Group className="mb-3" controlId="new-role">
-                  <Form.Label>Role</Form.Label>
+                  <Form.Label>{t("users.role")}</Form.Label>
                   <Form.Select
                     value={role}
                     onChange={(e) => setRole(e.target.value as UserRole)}
@@ -264,7 +263,7 @@ export function UsersPage() {
                 {role !== "ADMIN" && (
                   <>
                     <Form.Group className="mb-3" controlId="new-max-servers">
-                      <Form.Label>Max servers</Form.Label>
+                      <Form.Label>{t("users.maxServers")}</Form.Label>
                       <Form.Control
                         type="number"
                         min={0}
@@ -276,13 +275,13 @@ export function UsersPage() {
                         className="mt-2"
                         type="checkbox"
                         id="unlimited-servers"
-                        label="Unlimited servers"
+                        label={t("users.unlimitedServers")}
                         checked={unlimitedServers}
                         onChange={(e) => setUnlimitedServers(e.target.checked)}
                       />
                     </Form.Group>
                     <Form.Group className="mb-3" controlId="new-max-ram">
-                      <Form.Label>Max total RAM</Form.Label>
+                      <Form.Label>{t("users.maxRam")}</Form.Label>
                       <RamGbSelect
                         id="new-max-ram"
                         valueGb={maxMemoryGb}
@@ -294,7 +293,7 @@ export function UsersPage() {
                         className="mt-2"
                         type="checkbox"
                         id="unlimited-ram"
-                        label="Unlimited RAM"
+                        label={t("users.unlimitedRam")}
                         checked={unlimitedRam}
                         onChange={(e) => setUnlimitedRam(e.target.checked)}
                       />
@@ -303,7 +302,7 @@ export function UsersPage() {
                       </Form.Text>
                     </Form.Group>
                     <Form.Group className="mb-3" controlId="new-max-databases">
-                      <Form.Label>Max databases</Form.Label>
+                      <Form.Label>{t("users.maxDatabases")}</Form.Label>
                       <Form.Control
                         type="number"
                         min={0}
@@ -315,7 +314,7 @@ export function UsersPage() {
                         className="mt-2"
                         type="checkbox"
                         id="unlimited-databases"
-                        label="Unlimited databases"
+                        label={t("users.unlimitedDatabases")}
                         checked={unlimitedDatabases}
                         onChange={(e) => setUnlimitedDatabases(e.target.checked)}
                       />
@@ -327,7 +326,7 @@ export function UsersPage() {
                 )}
 
                 <Button type="submit" variant="primary" disabled={busy}>
-                  {busy ? "Creating…" : "Create user"}
+                  {busy ? t("users.creating") : t("users.createUser")}
                 </Button>
               </Form>
             </Card.Body>
@@ -337,7 +336,7 @@ export function UsersPage() {
         <Col lg={7}>
           <Card className="border-0 shadow-sm">
             <Card.Body>
-              <h2 className="h6 mb-3">Accounts ({users.length})</h2>
+              <h2 className="h6 mb-3">{t("users.accounts", { count: users.length })}</h2>
               <ListGroup>
                 {users.map((u) => (
                   <ListGroup.Item
@@ -380,7 +379,7 @@ export function UsersPage() {
                           variant="outline-secondary"
                           onClick={() => setQuotaUser(u)}
                         >
-                          Quotas
+                          {t("users.quotas")}
                         </Button>
                       )}
                       <Button
@@ -388,7 +387,7 @@ export function UsersPage() {
                         variant="outline-secondary"
                         onClick={() => setActivityUser(u)}
                       >
-                        Activity
+                        {t("users.activity")}
                       </Button>
                       {u.twoFactorEnabled && (
                         <Button
@@ -396,7 +395,7 @@ export function UsersPage() {
                           variant="outline-warning"
                           onClick={() => void onResetTwoFactor(u)}
                         >
-                          Reset 2FA
+                          {t("users.reset2fa")}
                         </Button>
                       )}
                       <Button
@@ -405,7 +404,7 @@ export function UsersPage() {
                         disabled={me?.id === u.id}
                         onClick={() => void onDelete(u)}
                       >
-                        Delete
+                        {t("users.delete")}
                       </Button>
                     </Stack>
                   </ListGroup.Item>
@@ -437,7 +436,9 @@ export function UsersPage() {
           scrollable
         >
           <Modal.Header closeButton>
-            <Modal.Title>Activity — {activityUser.username}</Modal.Title>
+            <Modal.Title>
+              {t("users.activityTitle", { username: activityUser.username })}
+            </Modal.Title>
           </Modal.Header>
           <Modal.Body>
             <ActivityPanel

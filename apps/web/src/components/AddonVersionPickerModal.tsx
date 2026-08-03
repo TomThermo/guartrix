@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { AddonVersionInfo } from "@msm/shared";
 import { Badge, Button, Form, ListGroup, Modal, Spinner } from "react-bootstrap";
 import { api } from "../api";
+import { useI18n } from "../i18n/react";
 import { formatBytes } from "../utils";
 
 interface Props {
@@ -41,6 +42,7 @@ export function AddonVersionPickerModal({
   onInstall,
   onError,
 }: Props) {
+  const { t } = useI18n();
   const [allVersions, setAllVersions] = useState<AddonVersionInfo[]>([]);
   const [gameVersions, setGameVersions] = useState<string[]>([]);
   const [filterMc, setFilterMc] = useState(mcVersion);
@@ -75,7 +77,7 @@ export function AddonVersionPickerModal({
       })
       .catch((err) => {
         if (!cancelled) {
-          onError(err instanceof Error ? err.message : "Failed to load versions");
+          onError(err instanceof Error ? err.message : t("addons.loadingVersions"));
           onClose();
         }
       })
@@ -85,7 +87,7 @@ export function AddonVersionPickerModal({
     return () => {
       cancelled = true;
     };
-  }, [serverId, projectId, mcVersion, onClose, onError]);
+  }, [serverId, projectId, mcVersion, onClose, onError, t]);
 
   const filtered = useMemo(() => {
     if (!filterMc) return allVersions;
@@ -104,7 +106,8 @@ export function AddonVersionPickerModal({
     setSelectedId(filtered[0]!.versionId);
   }, [filtered, currentVersionId]);
 
-  const actionLabel = mode === "change" ? "Switch to selected" : "Install selected";
+  const actionLabel =
+    mode === "change" ? t("addons.switchSelected") : t("addons.installSelected");
 
   return (
     <Modal show onHide={installing ? undefined : onClose} centered scrollable>
@@ -118,13 +121,13 @@ export function AddonVersionPickerModal({
             </span>
           )}
           <span className="text-truncate">
-            {mode === "change" ? "Change version" : "Install"} — {title}
+            {mode === "change" ? t("addons.changeVersionTitle") : t("addons.installTitle")} — {title}
           </span>
         </Modal.Title>
       </Modal.Header>
       <Modal.Body>
         <Form.Group className="mb-3" controlId="addon-mc-filter">
-          <Form.Label className="small text-secondary mb-1">Minecraft version</Form.Label>
+          <Form.Label className="small text-secondary mb-1">{t("addons.minecraftVersion")}</Form.Label>
           <Form.Select
             size="sm"
             value={filterMc}
@@ -134,26 +137,26 @@ export function AddonVersionPickerModal({
             {gameVersions.map((gv) => (
               <option key={gv} value={gv}>
                 {gv}
-                {gv === mcVersion ? " (server)" : ""}
+                {gv === mcVersion ? t("addons.serverSuffix") : ""}
               </option>
             ))}
           </Form.Select>
           <Form.Text muted>
-            Newest build for the selected Minecraft version is marked{" "}
-            <Badge bg="primary">Latest</Badge>.
+            {t("addons.latestHint")}{" "}
+            <Badge bg="primary">{t("addons.latest")}</Badge>.
           </Form.Text>
         </Form.Group>
 
         {loading && (
           <div className="text-center py-4 text-secondary">
             <Spinner animation="border" size="sm" className="me-2" />
-            Loading versions…
+            {t("addons.loadingVersions")}
           </div>
         )}
 
         {!loading && filtered.length === 0 && (
           <div className="text-secondary small">
-            No builds for Minecraft {filterMc} with this loader.
+            {t("addons.noBuildsFor", { version: filterMc })}
           </div>
         )}
 
@@ -180,12 +183,12 @@ export function AddonVersionPickerModal({
                             bg={selected ? "light" : "primary"}
                             text={selected ? "dark" : undefined}
                           >
-                            Latest
+                            {t("addons.latest")}
                           </Badge>
                         )}
                         {isCurrent && (
                           <Badge bg={selected ? "light" : "secondary"} text={selected ? "dark" : undefined}>
-                            Current
+                            {t("addons.current")}
                           </Badge>
                         )}
                         <Badge bg={channelBadge(v.releaseChannel)}>{v.releaseChannel}</Badge>
@@ -205,7 +208,7 @@ export function AddonVersionPickerModal({
       </Modal.Body>
       <Modal.Footer>
         <Button variant="outline-secondary" disabled={installing} onClick={onClose}>
-          Cancel
+          {t("common.cancel")}
         </Button>
         <Button
           variant="primary"
@@ -219,7 +222,7 @@ export function AddonVersionPickerModal({
           {installing ? (
             <>
               <Spinner size="sm" className="me-2" />
-              {mode === "change" ? "Switching…" : "Installing…"}
+              {mode === "change" ? t("addons.switching") : t("addons.installing")}
             </>
           ) : (
             <>

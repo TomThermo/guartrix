@@ -3,6 +3,7 @@ import type { AdminStatusResponse, StatusContainer, StatusNode } from "@msm/shar
 import { Link } from "react-router-dom";
 import { Alert, Badge, Button, Card, Col, Row, Spinner, Table } from "react-bootstrap";
 import { api } from "../api";
+import { useI18n } from "../i18n/react";
 import { SystemLogsPanel } from "../components/SystemLogsPanel";
 import { copyText, formatGb, statusVariant } from "../utils";
 
@@ -415,6 +416,7 @@ function NodeCard({ node }: { node: StatusNode }) {
 }
 
 export function StatusLinePage() {
+  const { t } = useI18n();
   const [data, setData] = useState<AdminStatusResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -470,10 +472,9 @@ export function StatusLinePage() {
     <div>
       <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
         <div>
-          <h1 className="h3 mb-1">Statusline</h1>
+          <h1 className="h3 mb-1">{t("admin.statusTitle")}</h1>
           <p className="text-secondary mb-0 small">
-            Overview of the panel (web + API) and all daemons with their Minecraft servers.
-            Refreshes every {Math.round(REFRESH_MS / 1000)}s.
+            {t("admin.statusSubtitle")} Refreshes every {Math.round(REFRESH_MS / 1000)}s.
           </p>
         </div>
         <div className="d-flex align-items-center gap-2">
@@ -484,7 +485,7 @@ export function StatusLinePage() {
           )}
           <Button size="sm" variant="outline-secondary" onClick={() => void refresh(true)}>
             <i className="fa-solid fa-rotate me-1" />
-            Refresh
+            {t("common.refresh")}
           </Button>
         </div>
       </div>
@@ -546,7 +547,7 @@ export function StatusLinePage() {
                     v{panel.version.current}
                   </span>
                   {panel.version.upToDate && !panel.version.belowMinimum ? (
-                    <Badge bg="success">Up to date</Badge>
+                    <Badge bg="success">{t("common.upToDate")}</Badge>
                   ) : panel.version.belowMinimum ? (
                     <Badge bg="danger">Below minimum</Badge>
                   ) : panel.version.updateAvailable ? (

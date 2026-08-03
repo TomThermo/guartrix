@@ -12,6 +12,7 @@ import {
   Stack,
 } from "react-bootstrap";
 import { api } from "../api";
+import { useI18n } from "../i18n/react";
 import { PlayerHead } from "./PlayerHead";
 
 interface Props {
@@ -34,6 +35,7 @@ export function BansPanel({
   onNotice,
   canUpdate = true,
 }: Props) {
+  const { t } = useI18n();
   const [bans, setBans] = useState<BansResponse | null>(null);
   const [busy, setBusy] = useState(false);
   const [playerName, setPlayerName] = useState("");
@@ -191,13 +193,14 @@ export function BansPanel({
     return (
       <div className="text-center py-4 text-secondary">
         <Spinner animation="border" size="sm" className="me-2" />
-        Loading bans…
+        {t("common.loading")}…
       </div>
     );
   }
 
   return (
     <div>
+      <h2 className="h5 mb-3">{t("bans.title")}</h2>
       <Alert variant="light" className="border small">
         Manage player and IP bans. Removals and edits update{" "}
         <code>banned-players.json</code> / <code>banned-ips.json</code>
@@ -218,7 +221,7 @@ export function BansPanel({
                 size="sm"
                 value={playerName}
                 onChange={(e) => setPlayerName(e.target.value)}
-                placeholder="Minecraft username"
+                placeholder={t("bans.player")}
                 maxLength={16}
                 required
                 disabled={busy}
@@ -229,7 +232,7 @@ export function BansPanel({
                 size="sm"
                 value={playerReason}
                 onChange={(e) => setPlayerReason(e.target.value)}
-                placeholder="Reason"
+                placeholder={t("bans.reason")}
                 maxLength={200}
                 disabled={busy}
               />
@@ -245,7 +248,7 @@ export function BansPanel({
 
       <ListGroup className="mb-4">
         {bans.players.length === 0 && (
-          <ListGroup.Item className="text-secondary">No player bans</ListGroup.Item>
+          <ListGroup.Item className="text-secondary">{t("bans.empty")}</ListGroup.Item>
         )}
         {bans.players.map((ban) => (
           <ListGroup.Item
@@ -268,7 +271,7 @@ export function BansPanel({
                   Edit
                 </Button>
                 <Button size="sm" variant="outline-danger" disabled={busy} onClick={() => void removePlayer(ban.name)}>
-                  Unban
+                  {t("bans.unban")}
                 </Button>
               </Stack>
             )}
@@ -298,7 +301,7 @@ export function BansPanel({
                 size="sm"
                 value={ipReason}
                 onChange={(e) => setIpReason(e.target.value)}
-                placeholder="Reason"
+                placeholder={t("bans.reason")}
                 maxLength={200}
                 disabled={busy}
               />
@@ -314,7 +317,7 @@ export function BansPanel({
 
       <ListGroup>
         {bans.ips.length === 0 && (
-          <ListGroup.Item className="text-secondary">No IP bans</ListGroup.Item>
+          <ListGroup.Item className="text-secondary">{t("bans.empty")}</ListGroup.Item>
         )}
         {bans.ips.map((ban) => (
           <ListGroup.Item
@@ -334,7 +337,7 @@ export function BansPanel({
                   Edit
                 </Button>
                 <Button size="sm" variant="outline-danger" disabled={busy} onClick={() => void removeIp(ban.ip)}>
-                  Unban
+                  {t("bans.unban")}
                 </Button>
               </Stack>
             )}
@@ -368,7 +371,7 @@ export function BansPanel({
               />
             </Form.Group>
             <Button variant="primary" type="submit" disabled={busy}>
-              {busy ? "Saving…" : "Save ban"}
+              {busy ? t("common.saving") : t("common.save")}
             </Button>
           </Form>
         </Modal.Body>

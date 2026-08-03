@@ -1,13 +1,16 @@
 import { Link } from "react-router-dom";
 import { Container } from "react-bootstrap";
+import { useI18n } from "../i18n/react";
 
 export function PrivacyPage() {
+  const { t } = useI18n();
+
   return (
     <Container className="py-5" style={{ maxWidth: 720 }}>
       <p className="mb-2">
-        <Link to="/login">← Back</Link>
+        <Link to="/login">← {t("legal.back")}</Link>
       </p>
-      <h1 className="h3 mb-3">Privacy Policy</h1>
+      <h1 className="h3 mb-3">{t("legal.privacyTitle")}</h1>
       <p className="text-secondary small">Last updated: August 3, 2026</p>
       <p>
         This policy describes what Guartrix collects when you use the panel at guartrix.com.

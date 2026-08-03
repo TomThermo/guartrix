@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { AuthUser } from "@msm/shared";
 import { Alert, Button, Form, Modal, Spinner } from "react-bootstrap";
 import { api } from "../api";
+import { useI18n } from "../i18n/react";
 import { RamGbSelect } from "./RamGbSelect";
 
 interface Props {
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export function QuotasModal({ user, hostMemoryGb, onCancel, onSaved }: Props) {
+  const { t } = useI18n();
   const defaultGb = useMemo(() => {
     if (user.maxMemoryMb == null) return Math.min(4, hostMemoryGb);
     return Math.min(
@@ -52,7 +54,7 @@ export function QuotasModal({ user, hostMemoryGb, onCancel, onSaved }: Props) {
       });
       onSaved(updated);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Update failed");
+      setError(err instanceof Error ? err.message : t("common.failed"));
     } finally {
       setSaving(false);
     }
@@ -63,13 +65,13 @@ export function QuotasModal({ user, hostMemoryGb, onCancel, onSaved }: Props) {
       <Modal.Header closeButton={!saving}>
         <Modal.Title>
           <i className="fa-solid fa-sliders me-2 text-primary" />
-          Quotas — {user.username}
+          {t("modals.quotasTitle", { username: user.username })}
         </Modal.Title>
       </Modal.Header>
       <Modal.Body>
         {error && <Alert variant="danger">{error}</Alert>}
         <Form.Group className="mb-3" controlId="quota-max-servers">
-          <Form.Label>Max servers</Form.Label>
+          <Form.Label>{t("users.maxServers")}</Form.Label>
           <Form.Control
             type="number"
             min={0}
@@ -81,14 +83,14 @@ export function QuotasModal({ user, hostMemoryGb, onCancel, onSaved }: Props) {
             className="mt-2"
             type="checkbox"
             id="quota-unlimited-servers"
-            label="Unlimited servers"
+            label={t("users.unlimitedServers")}
             checked={unlimitedServers}
             disabled={saving}
             onChange={(e) => setUnlimitedServers(e.target.checked)}
           />
         </Form.Group>
         <Form.Group className="mb-3" controlId="quota-max-ram">
-          <Form.Label>Max total RAM</Form.Label>
+          <Form.Label>{t("users.maxRam")}</Form.Label>
           <RamGbSelect
             id="quota-max-ram"
             valueGb={maxMemoryGb}
@@ -100,17 +102,17 @@ export function QuotasModal({ user, hostMemoryGb, onCancel, onSaved }: Props) {
             className="mt-2"
             type="checkbox"
             id="quota-unlimited-ram"
-            label="Unlimited RAM"
+            label={t("users.unlimitedRam")}
             checked={unlimitedRam}
             disabled={saving}
             onChange={(e) => setUnlimitedRam(e.target.checked)}
           />
           <Form.Text className="text-secondary">
-            Shared across all of this user&apos;s servers (host has {hostMemoryGb} GB).
+            {t("modals.quotasRamHelp", { gb: hostMemoryGb })}
           </Form.Text>
         </Form.Group>
         <Form.Group className="mb-0" controlId="quota-max-databases">
-          <Form.Label>Max databases</Form.Label>
+          <Form.Label>{t("users.maxDatabases")}</Form.Label>
           <Form.Control
             type="number"
             min={0}
@@ -122,28 +124,26 @@ export function QuotasModal({ user, hostMemoryGb, onCancel, onSaved }: Props) {
             className="mt-2"
             type="checkbox"
             id="quota-unlimited-databases"
-            label="Unlimited databases"
+            label={t("users.unlimitedDatabases")}
             checked={unlimitedDatabases}
             disabled={saving}
             onChange={(e) => setUnlimitedDatabases(e.target.checked)}
           />
-          <Form.Text className="text-secondary">
-            Shared across all of this user&apos;s servers (default 3).
-          </Form.Text>
+          <Form.Text className="text-secondary">{t("modals.quotasDbHelp")}</Form.Text>
         </Form.Group>
       </Modal.Body>
       <Modal.Footer>
         <Button variant="outline-secondary" onClick={onCancel} disabled={saving}>
-          Cancel
+          {t("common.cancel")}
         </Button>
         <Button variant="primary" onClick={() => void onSave()} disabled={saving}>
           {saving ? (
             <>
               <Spinner size="sm" animation="border" className="me-2" />
-              Saving…
+              {t("common.saving")}
             </>
           ) : (
-            "Save quotas"
+            t("modals.quotasSave")
           )}
         </Button>
       </Modal.Footer>

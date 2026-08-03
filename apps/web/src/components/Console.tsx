@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent, type UIEvent } from "react
 import type { ConsoleMessage, ServerStats, ServerStatus } from "@msm/shared";
 import { Button, Form, InputGroup, Stack } from "react-bootstrap";
 import { api } from "../api";
+import { useI18n } from "../i18n/react";
 
 interface Props {
   serverId: string;
@@ -80,6 +81,7 @@ export function Console({
   canSend = true,
   panelNotices = [],
 }: Props) {
+  const { t } = useI18n();
   const [lines, setLines] = useState<string[]>([]);
   const [command, setCommand] = useState("");
   const [favorites, setFavorites] = useState<string[]>([]);
@@ -300,7 +302,7 @@ export function Console({
             <Form.Control
               value={command}
               onChange={(e) => setCommand(e.target.value)}
-              placeholder="Console command…"
+              placeholder={t("console.placeholder")}
               disabled={!connected}
               autoComplete="off"
               spellCheck={false}
@@ -316,7 +318,7 @@ export function Console({
               <i className="fa-regular fa-star" />
             </Button>
             <Button type="submit" variant="primary" disabled={!connected}>
-              Send
+              {t("console.send")}
             </Button>
           </InputGroup>
         </Form>

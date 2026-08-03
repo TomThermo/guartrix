@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { Button, Form, Modal, Spinner } from "react-bootstrap";
+import { useI18n } from "../i18n/react";
 
 interface Props {
   show: boolean;
@@ -20,12 +21,15 @@ export function PromptModal({
   label,
   defaultValue = "",
   placeholder,
-  confirmLabel = "OK",
-  cancelLabel = "Cancel",
+  confirmLabel,
+  cancelLabel,
   busy = false,
   onConfirm,
   onCancel,
 }: Props) {
+  const { t } = useI18n();
+  const resolvedConfirm = confirmLabel ?? t("common.confirm");
+  const resolvedCancel = cancelLabel ?? t("common.cancel");
   const titleId = useId();
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -34,11 +38,11 @@ export function PromptModal({
   useEffect(() => {
     if (!show) return;
     setValue(defaultValue);
-    const t = window.setTimeout(() => {
+    const timer = window.setTimeout(() => {
       inputRef.current?.focus();
       inputRef.current?.select();
     }, 50);
-    return () => window.clearTimeout(t);
+    return () => window.clearTimeout(timer);
   }, [show, defaultValue]);
 
   function onSubmit(e: FormEvent) {
@@ -75,10 +79,10 @@ export function PromptModal({
         </Modal.Body>
         <Modal.Footer>
           <Button variant="outline-secondary" disabled={busy} onClick={onCancel}>
-            {cancelLabel}
+            {resolvedCancel}
           </Button>
           <Button type="submit" variant="primary" disabled={busy}>
-            {busy ? <Spinner size="sm" /> : confirmLabel}
+            {busy ? <Spinner size="sm" /> : resolvedConfirm}
           </Button>
         </Modal.Footer>
       </Form>

@@ -18,6 +18,7 @@ import {
 } from "react-bootstrap";
 import { api } from "../api";
 import { useAuth } from "../auth";
+import { useI18n } from "../i18n/react";
 import { MemorySelect } from "../components/MemorySelect";
 import { typeIcon, typeLabel, formatGb } from "../utils";
 
@@ -26,6 +27,7 @@ type Mode = "create" | "import";
 export function CreateServerPage() {
   const navigate = useNavigate();
   const { user, refreshUser } = useAuth();
+  const { t } = useI18n();
   const [mode, setMode] = useState<Mode>("create");
   const [name, setName] = useState("");
   const [type, setType] = useState<ServerType>("PAPER");
@@ -117,7 +119,7 @@ export function CreateServerPage() {
       })
       .catch((err) => {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Failed to load versions");
+          setError(err instanceof Error ? err.message : t("createServer.versionsFailed"));
           setVersions([]);
         }
       })
@@ -168,7 +170,7 @@ export function CreateServerPage() {
       await refreshUser().catch(() => undefined);
       navigate(`/servers/${server.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Create failed");
+      setError(err instanceof Error ? err.message : t("createServer.createFailed"));
     } finally {
       setBusy(false);
     }
@@ -177,7 +179,7 @@ export function CreateServerPage() {
   async function onImport(e: FormEvent) {
     e.preventDefault();
     if (!archive) {
-      setError("Choose an archive to import (.zip or .tar.gz)");
+      setError(t("createServer.chooseArchive"));
       return;
     }
     if (!nodeRamOk) {
@@ -205,7 +207,7 @@ export function CreateServerPage() {
       await refreshUser().catch(() => undefined);
       navigate(`/servers/${server.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Import failed");
+      setError(err instanceof Error ? err.message : t("createServer.importFailed"));
     } finally {
       setBusy(false);
     }
@@ -214,25 +216,25 @@ export function CreateServerPage() {
   const metaFields = (
     <>
       <Form.Group className="mb-3" controlId="name">
-        <Form.Label>Name</Form.Label>
+        <Form.Label>{t("createServer.name")}</Form.Label>
         <Form.Control
           value={name}
           onChange={(e) => setName(e.target.value)}
           required
           maxLength={64}
-          placeholder="Survival world"
+          placeholder={t("createServer.namePlaceholder")}
         />
       </Form.Group>
 
       <Form.Group className="mb-3" controlId="node">
-        <Form.Label>Node</Form.Label>
+        <Form.Label>{t("createServer.node")}</Form.Label>
         <Form.Select
           value={nodeId}
           onChange={(e) => setNodeId(e.target.value)}
           required={nodes.length > 0}
           disabled={nodes.length === 0}
         >
-          {nodes.length === 0 && <option value="">No nodes available</option>}
+          {nodes.length === 0 && <option value="">{t("createServer.noNodes")}</option>}
           {nodes.map((n, idx) => {
             const free = n.memoryUsableMb ?? n.memoryAvailableMb;
             const recommended =
@@ -277,7 +279,7 @@ export function CreateServerPage() {
       </Form.Group>
 
       <Form.Group className="mb-3">
-        <Form.Label>Type</Form.Label>
+        <Form.Label>{t("createServer.type")}</Form.Label>
         <div className="type-picker d-flex flex-wrap gap-2">
           {ALL_SERVER_TYPES.map((t) => (
             <Button
@@ -296,14 +298,14 @@ export function CreateServerPage() {
       </Form.Group>
 
       <Form.Group className="mb-3" controlId="version">
-        <Form.Label>Minecraft version</Form.Label>
+        <Form.Label>{t("createServer.version")}</Form.Label>
         <Form.Select
           value={mcVersion}
           onChange={(e) => setMcVersion(e.target.value)}
           disabled={loadingVersions || versions.length === 0}
           required
         >
-          {loadingVersions && <option>Loading…</option>}
+          {loadingVersions && <option>{t("common.loading")}…</option>}
           {versions.map((v) => (
             <option key={v} value={v}>
               {v}
@@ -316,26 +318,28 @@ export function CreateServerPage() {
         <Row className="g-3 mb-3">
           <Col md={6}>
             <Form.Group controlId="world-preset">
-              <Form.Label>World preset</Form.Label>
+              <Form.Label>{t("createServer.worldPreset")}</Form.Label>
               <Form.Select
                 value={worldPreset}
                 onChange={(e) =>
                   setWorldPreset(e.target.value as "DEFAULT" | "FLAT" | "VOID")
                 }
               >
-                <option value="DEFAULT">Default</option>
-                <option value="FLAT">Superflat</option>
-                <option value="VOID">Void</option>
+                <option value="DEFAULT">{t("createServer.presetDefault")}</option>
+                <option value="FLAT">{t("createServer.presetFlat")}</option>
+                <option value="VOID">{t("createServer.presetVoid")}</option>
               </Form.Select>
             </Form.Group>
           </Col>
           <Col md={6}>
             <Form.Group controlId="seed">
-              <Form.Label>Seed (optional)</Form.Label>
+              <Form.Label>
+                {t("createServer.seed")} ({t("common.optional")})
+              </Form.Label>
               <Form.Control
                 value={seed}
                 onChange={(e) => setSeed(e.target.value)}
-                placeholder="Random if empty"
+                placeholder={t("createServer.seedPlaceholder")}
                 maxLength={128}
               />
             </Form.Group>
@@ -387,7 +391,7 @@ export function CreateServerPage() {
         </Col>
         <Col md={6}>
           <Form.Group controlId="memory">
-            <Form.Label>Memory</Form.Label>
+            <Form.Label>{t("createServer.memory")}</Form.Label>
             <MemorySelect
               valueMb={memoryMb}
               onChangeMb={setMemoryMb}
@@ -427,7 +431,7 @@ export function CreateServerPage() {
       <Row className="g-3 mb-3">
         <Col md={6}>
           <Form.Group controlId="disk">
-            <Form.Label>Disk limit</Form.Label>
+            <Form.Label>{t("createServer.disk")}</Form.Label>
             <MemorySelect valueMb={diskMb} onChangeMb={setDiskMb} required />
             <Form.Text className="text-secondary">
               Max storage for this server. Uploads are blocked and a running server
@@ -442,7 +446,7 @@ export function CreateServerPage() {
               value={cpuLimit}
               onChange={(e) => setCpuLimit(Number(e.target.value))}
             >
-              <option value={0}>Unlimited</option>
+              <option value={0}>{t("createServer.unlimited")}</option>
               <option value={50}>0.5 core (50%)</option>
               <option value={100}>1 core (100%)</option>
               <option value={200}>2 cores (200%)</option>
@@ -468,14 +472,12 @@ export function CreateServerPage() {
         <div>
           <h1 className="h3 mb-1">
             <i className="fa-solid fa-plus me-2 text-primary" />
-            New server
+            {t("createServer.title")}
           </h1>
-          <p className="text-secondary mb-0">
-            Download a jar or import an existing world archive.
-          </p>
+          <p className="text-secondary mb-0">{t("createServer.subtitle")}</p>
         </div>
         <Link to="/" className="btn btn-sm btn-outline-secondary">
-          Cancel
+          {t("common.cancel")}
         </Link>
       </div>
 
@@ -489,10 +491,10 @@ export function CreateServerPage() {
         <Card.Header className="bg-transparent">
           <Nav variant="tabs" activeKey={mode} onSelect={(k) => k && setMode(k as Mode)}>
             <Nav.Item>
-              <Nav.Link eventKey="create">Create new</Nav.Link>
+              <Nav.Link eventKey="create">{t("createServer.modeCreate")}</Nav.Link>
             </Nav.Item>
             <Nav.Item>
-              <Nav.Link eventKey="import">Import archive</Nav.Link>
+              <Nav.Link eventKey="import">{t("createServer.modeImport")}</Nav.Link>
             </Nav.Item>
           </Nav>
         </Card.Header>
@@ -509,13 +511,13 @@ export function CreateServerPage() {
                   <>
                     <Spinner size="sm" className="me-2" />
                     {type === "FORGE" || type === "NEOFORGE"
-                      ? "Installing (may take a minute)…"
-                      : "Downloading jar & creating…"}
+                      ? t("createServer.installing")
+                      : t("createServer.creating")}
                   </>
                 ) : (
                   <>
                     <i className="fa-solid fa-download me-2" />
-                    Create server
+                    {t("createServer.create")}
                   </>
                 )}
               </Button>
@@ -548,12 +550,12 @@ export function CreateServerPage() {
                 {busy ? (
                   <>
                     <Spinner size="sm" className="me-2" />
-                    Importing…
+                    {t("createServer.importBusy")}
                   </>
                 ) : (
                   <>
                     <i className="fa-solid fa-file-import me-2" />
-                    Import server
+                    {t("createServer.import")}
                   </>
                 )}
               </Button>

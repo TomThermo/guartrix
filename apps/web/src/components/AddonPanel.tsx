@@ -20,6 +20,7 @@ import {
   Stack,
 } from "react-bootstrap";
 import { api } from "../api";
+import { useI18n } from "../i18n/react";
 import { formatCount } from "../utils";
 import { AddonDetailModal } from "./AddonDetailModal";
 import { AddonVersionPickerModal } from "./AddonVersionPickerModal";
@@ -52,6 +53,7 @@ export function AddonPanel({
   canUpdate = true,
   onUpdateCountChange,
 }: Props) {
+  const { t } = useI18n();
   const kind = addonKindFor(serverType);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<string>("");
@@ -325,7 +327,6 @@ export function AddonPanel({
 
   const updateCount = Object.values(updates).filter((u) => u.available).length;
   const installedIds = new Set(installed.map((a) => a.projectId));
-  const label = kind === "plugin" ? "Plugins" : "Mods";
   const canLoadMore = hits.length < totalHits;
 
   if (!kind) {
@@ -338,6 +339,7 @@ export function AddonPanel({
 
   return (
     <div>
+      <h2 className="h5 mb-3">{t("addons.title")}</h2>
       <Alert variant="light" className="border small">
         Browse Modrinth for <strong>{serverType}</strong> builds compatible with Minecraft{" "}
         <strong>{mcVersion}</strong>. Files go into{" "}
@@ -407,7 +409,7 @@ export function AddonPanel({
       <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
         <h3 className="h6 mb-0">
           <i className="fa-solid fa-box-archive me-2" />
-          Installed ({installed.length})
+          {t("addons.installed")} ({installed.length})
           {checkingUpdates && (
             <span className="small text-secondary fw-normal ms-2">
               <Spinner size="sm" className="me-1" />
@@ -465,10 +467,7 @@ export function AddonPanel({
         </div>
       </div>
       {installed.length === 0 ? (
-        <div className="text-secondary small mb-4">
-          No {label.toLowerCase()} in the panel list yet. Upload jars via Files/SFTP, then
-          use <strong>Sync from disk</strong>.
-        </div>
+        <div className="text-secondary small mb-4">{t("addons.empty")}</div>
       ) : (
         <Row className="g-2 mb-4 installed-addons-grid">
           {installed.map((a) => {
@@ -605,7 +604,7 @@ export function AddonPanel({
               size="sm"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder={`Search ${label.toLowerCase()}…`}
+              placeholder={t("addons.search")}
             />
           </Col>
           <Col md={4}>
@@ -624,7 +623,7 @@ export function AddonPanel({
           </Col>
           <Col md="auto">
             <Button size="sm" variant="primary" type="submit" disabled={searching}>
-              {searching ? <Spinner size="sm" /> : "Search"}
+              {searching ? <Spinner size="sm" /> : t("common.search")}
             </Button>
           </Col>
         </Row>
@@ -643,7 +642,7 @@ export function AddonPanel({
           variant={category === "" ? "primary" : "outline-secondary"}
           onClick={() => setCategory("")}
         >
-          All
+          {t("common.all")}
         </Button>
         {categories.map((cat) => (
           <Button
@@ -660,7 +659,7 @@ export function AddonPanel({
       <ListGroup className="mb-3">
         {hits.length === 0 && !searching && (
           <ListGroup.Item className="text-secondary">
-            No compatible {label.toLowerCase()} found
+            {t("addons.empty")}
           </ListGroup.Item>
         )}
         {hits.map((h) => (
@@ -719,10 +718,10 @@ export function AddonPanel({
                 }}
               >
                 {installedIds.has(h.projectId)
-                  ? "Installed"
+                  ? t("addons.installed")
                   : busyId === h.projectId
-                    ? "Installing…"
-                    : "Install"}
+                    ? t("common.creating")
+                    : t("addons.install")}
               </Button>
             )}
           </ListGroup.Item>

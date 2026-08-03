@@ -9,6 +9,7 @@ import {
   Table,
 } from "react-bootstrap";
 import { api } from "../api";
+import { useI18n } from "../i18n/react";
 
 interface Props {
   nodeId: string;
@@ -23,6 +24,7 @@ export function NodePortPoolPanel({
   onError,
   onNotice,
 }: Props) {
+  const { t } = useI18n();
   const [allocations, setAllocations] = useState<PortAllocation[]>([]);
   const [assigned, setAssigned] = useState(0);
   const [free, setFree] = useState(0);
@@ -44,17 +46,17 @@ export function NodePortPoolPanel({
     setLoading(true);
     void refresh()
       .catch((err) =>
-        onError(err instanceof Error ? err.message : "Failed to load port pool"),
+        onError(err instanceof Error ? err.message : t("admin.loadPortPoolFailed")),
       )
       .finally(() => setLoading(false));
-  }, [refresh, onError]);
+  }, [refresh, onError, t]);
 
   async function onCreateRange(e: FormEvent) {
     e.preventDefault();
     const start = Number(portStart);
     const end = Number(portEnd);
     if (!Number.isFinite(start) || !Number.isFinite(end)) {
-      onError("Enter valid port numbers");
+      onError(t("admin.validPorts"));
       return;
     }
     setBusy(true);
@@ -74,12 +76,17 @@ export function NodePortPoolPanel({
         });
       }
       onNotice(
-        `Created ${result.created} free allocation(s) on ${nodeName}` +
-          (result.skipped ? ` (${result.skipped} already existed)` : ""),
+        t("admin.createRangeNotice", {
+          created: result.created,
+          node: nodeName,
+          skipped: result.skipped
+            ? t("admin.createRangeSkipped", { skipped: result.skipped })
+            : "",
+        }),
       );
       await refresh();
     } catch (err) {
-      onError(err instanceof Error ? err.message : "Could not create range");
+      onError(err instanceof Error ? err.message : t("admin.createRangeFailed"));
     } finally {
       setBusy(false);
     }
@@ -87,18 +94,27 @@ export function NodePortPoolPanel({
 
   async function onDelete(a: PortAllocation) {
     if (a.serverId) {
-      onError("Unassign from the server first");
+      onError(t("admin.unassignFirst"));
       return;
     }
-    if (!confirm(`Delete free pool entry ${a.port}/${a.protocol}?`)) return;
+    if (
+      !confirm(
+        t("admin.deletePoolConfirm", {
+          port: a.port,
+          protocol: a.protocol,
+        }),
+      )
+    ) {
+      return;
+    }
     setBusy(true);
     onError(null);
     try {
       await api.adminDeleteNodeAllocation(nodeId, a.id);
-      onNotice("Pool entry deleted.");
+      onNotice(t("admin.poolEntryDeleted"));
       await refresh();
     } catch (err) {
-      onError(err instanceof Error ? err.message : "Delete failed");
+      onError(err instanceof Error ? err.message : t("common.failed"));
     } finally {
       setBusy(false);
     }
@@ -108,7 +124,7 @@ export function NodePortPoolPanel({
     return (
       <div className="text-secondary small py-2">
         <Spinner size="sm" className="me-2" />
-        Loading port pool…
+        {t("admin.loadingPortPool")}
       </div>
     );
   }
@@ -116,16 +132,20 @@ export function NodePortPoolPanel({
   return (
     <div className="mt-3 border-top pt-3">
       <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
-        <strong className="small">Port pool</strong>
+        <strong className="small">{t("admin.portPool")}</strong>
         <span className="small text-secondary">
-          {free} free · {assigned} assigned · {allocations.length} total
+          {t("admin.portPoolStats", {
+            free,
+            assigned,
+            total: allocations.length,
+          })}
         </span>
       </div>
 
       <Form onSubmit={(e) => void onCreateRange(e)} className="mb-3">
         <Stack direction="horizontal" gap={2} className="flex-wrap align-items-end">
           <Form.Group>
-            <Form.Label className="small mb-0">From</Form.Label>
+            <Form.Label className="small mb-0">{t("admin.portFrom")}</Form.Label>
             <Form.Control
               size="sm"
               type="number"
@@ -136,7 +156,7 @@ export function NodePortPoolPanel({
             />
           </Form.Group>
           <Form.Group>
-            <Form.Label className="small mb-0">To</Form.Label>
+            <Form.Label className="small mb-0">{t("admin.portTo")}</Form.Label>
             <Form.Control
               size="sm"
               type="number"
@@ -147,7 +167,7 @@ export function NodePortPoolPanel({
             />
           </Form.Group>
           <Form.Group>
-            <Form.Label className="small mb-0">Protocol</Form.Label>
+            <Form.Label className="small mb-0">{t("admin.protocol")}</Form.Label>
             <Form.Select
               size="sm"
               value={protocol}
@@ -163,27 +183,27 @@ export function NodePortPoolPanel({
             <Form.Check
               type="checkbox"
               className="small"
-              label="Also UDP"
+              label={t("admin.alsoUdp")}
               checked={alsoUdp}
               onChange={(e) => setAlsoUdp(e.target.checked)}
             />
           )}
           <Button type="submit" size="sm" variant="outline-primary" disabled={busy}>
-            Add range
+            {t("admin.addRange")}
           </Button>
         </Stack>
       </Form>
 
       {allocations.length === 0 ? (
-        <p className="small text-secondary mb-0">No pool entries yet.</p>
+        <p className="small text-secondary mb-0">{t("admin.noPoolEntries")}</p>
       ) : (
         <div className="table-responsive" style={{ maxHeight: "14rem" }}>
           <Table size="sm" hover className="mb-0 align-middle">
             <thead>
               <tr className="text-secondary">
-                <th>Port</th>
-                <th>Proto</th>
-                <th>Status</th>
+                <th>{t("admin.portCol")}</th>
+                <th>{t("admin.protoCol")}</th>
+                <th>{t("admin.statusCol")}</th>
                 <th />
               </tr>
             </thead>
@@ -196,9 +216,11 @@ export function NodePortPoolPanel({
                   <td>{a.protocol.toUpperCase()}</td>
                   <td>
                     {a.serverId ? (
-                      <Badge bg="secondary">{a.serverName ?? "assigned"}</Badge>
+                      <Badge bg="secondary">
+                        {a.serverName ?? t("admin.assignedStatus")}
+                      </Badge>
                     ) : (
-                      <Badge bg="success">free</Badge>
+                      <Badge bg="success">{t("admin.freeStatus")}</Badge>
                     )}
                   </td>
                   <td className="text-end">
@@ -209,7 +231,7 @@ export function NodePortPoolPanel({
                         disabled={busy}
                         onClick={() => void onDelete(a)}
                       >
-                        Delete
+                        {t("common.delete")}
                       </Button>
                     )}
                   </td>

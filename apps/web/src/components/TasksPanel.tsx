@@ -11,6 +11,7 @@ import {
   Stack,
 } from "react-bootstrap";
 import { api } from "../api";
+import { useI18n } from "../i18n/react";
 import { formatWhen } from "../utils";
 import { ConfirmModal } from "./ConfirmModal";
 
@@ -62,6 +63,7 @@ export function TasksPanel({
   canUpdate = true,
   canDelete = true,
 }: Props) {
+  const { t } = useI18n();
   const [tasks, setTasks] = useState<ScheduledTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -212,17 +214,14 @@ export function TasksPanel({
     return (
       <div className="text-center py-4 text-secondary">
         <Spinner animation="border" size="sm" className="me-2" />
-        Loading schedules…
+        {t("common.loading")}…
       </div>
     );
   }
 
   return (
     <div>
-      <p className="text-secondary">
-        Chain steps (backup → wait → restart → command) on a daily, weekly, or interval schedule.
-        Times use the panel host timezone.
-      </p>
+      <h2 className="h5 mb-3">{t("schedules.title")}</h2>
 
       <Row className="g-4 mb-4">
         {canCreate && (
@@ -439,7 +438,7 @@ export function TasksPanel({
               </Form.Group>
 
               <Button type="submit" variant="primary" disabled={busy}>
-                {busy ? "Creating…" : "Create schedule"}
+                {busy ? t("common.creating") : t("schedules.create")}
               </Button>
             </Form>
           </Col>
@@ -452,35 +451,35 @@ export function TasksPanel({
           </h3>
           <ListGroup>
             {tasks.length === 0 && (
-              <ListGroup.Item className="text-secondary">No schedules yet</ListGroup.Item>
+              <ListGroup.Item className="text-secondary">{t("schedules.empty")}</ListGroup.Item>
             )}
-            {tasks.map((t) => (
+            {tasks.map((task) => (
               <ListGroup.Item
-                key={t.id}
+                key={task.id}
                 className="d-flex justify-content-between align-items-start gap-3 flex-wrap"
               >
                 <div className="min-w-0">
                   <div className="fw-semibold font-monospace small text-break">
-                    {describeSteps(t.steps?.length ? t.steps : [{ kind: t.kind === "restart" ? "restart" : "command", command: t.command }])}
+                    {describeSteps(task.steps?.length ? task.steps : [{ kind: task.kind === "restart" ? "restart" : "command", command: task.command }])}
                   </div>
                   <div className="small text-secondary">
-                    {t.mode === "weekly"
+                    {task.mode === "weekly"
                       ? `Weekly ${["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-                          .filter((_, i) => (t.weekdays || []).includes(i))
-                          .join(", ")} at ${t.dailyAt}`
-                      : t.mode === "daily"
-                        ? `Daily at ${t.dailyAt}`
-                        : `Every ${t.intervalHours}h`}
-                    {t.note ? ` · ${t.note}` : ""}
+                          .filter((_, i) => (task.weekdays || []).includes(i))
+                          .join(", ")} at ${task.dailyAt}`
+                      : task.mode === "daily"
+                        ? `Daily at ${task.dailyAt}`
+                        : `Every ${task.intervalHours}h`}
+                    {task.note ? ` · ${task.note}` : ""}
                   </div>
                   <div className="small text-secondary">
-                    Last: {formatWhen(t.lastRunAt)} · Next: {formatWhen(t.nextRunAt)}
+                    Last: {formatWhen(task.lastRunAt)} · Next: {formatWhen(task.nextRunAt)}
                   </div>
-                  {t.lastError && (
-                    <div className="small text-danger mt-1">{t.lastError}</div>
+                  {task.lastError && (
+                    <div className="small text-danger mt-1">{task.lastError}</div>
                   )}
-                  <Badge bg={t.enabled ? "success" : "secondary"} className="mt-1">
-                    {t.enabled ? "Enabled" : "Disabled"}
+                  <Badge bg={task.enabled ? "success" : "secondary"} className="mt-1">
+                    {task.enabled ? t("common.enabled") : t("common.disabled")}
                   </Badge>
                 </div>
                 {(canUpdate || canDelete) && (
@@ -490,7 +489,7 @@ export function TasksPanel({
                         size="sm"
                         variant="outline-primary"
                         disabled={busy}
-                        onClick={() => onRunNow(t)}
+                        onClick={() => onRunNow(task)}
                       >
                         Run now
                       </Button>
@@ -499,18 +498,18 @@ export function TasksPanel({
                       <Button
                         size="sm"
                         variant="outline-secondary"
-                        onClick={() => void toggleEnabled(t)}
+                        onClick={() => void toggleEnabled(task)}
                       >
-                        {t.enabled ? "Disable" : "Enable"}
+                        {task.enabled ? t("common.disable") : t("common.enable")}
                       </Button>
                     )}
                     {canDelete && (
                       <Button
                         size="sm"
                         variant="outline-danger"
-                        onClick={() => onDelete(t)}
+                        onClick={() => onDelete(task)}
                       >
-                        Delete
+                        {t("common.delete")}
                       </Button>
                     )}
                   </Stack>
@@ -538,7 +537,7 @@ export function TasksPanel({
         show={Boolean(deleteTarget)}
         title="Delete schedule?"
         body="Delete this schedule?"
-        confirmLabel="Delete"
+        confirmLabel={t("common.delete")}
         variant="danger"
         busy={dialogBusy}
         onCancel={() => {

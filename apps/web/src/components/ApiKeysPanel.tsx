@@ -11,9 +11,11 @@ import {
   Spinner,
 } from "react-bootstrap";
 import { api } from "../api";
+import { useI18n } from "../i18n/react";
 import { copyText } from "../utils";
 
 export function ApiKeysPanel({ onError }: { onError?: (msg: string | null) => void }) {
+  const { t } = useI18n();
   const [keys, setKeys] = useState<ApiKeyRecord[]>([]);
   const [maxKeys, setMaxKeys] = useState(10);
   const [servers, setServers] = useState<McServer[]>([]);
@@ -42,10 +44,10 @@ export function ApiKeysPanel({ onError }: { onError?: (msg: string | null) => vo
     setLoading(true);
     void refresh()
       .catch((err) =>
-        onError?.(err instanceof Error ? err.message : "Failed to load API keys"),
+        onError?.(err instanceof Error ? err.message : t("apiKeys.loadFailed")),
       )
       .finally(() => setLoading(false));
-  }, [refresh, onError]);
+  }, [refresh, onError, t]);
 
   const activeCount = keys.filter((k) => !k.revokedAt).length;
 
@@ -62,7 +64,7 @@ export function ApiKeysPanel({ onError }: { onError?: (msg: string | null) => vo
           ? customPerms
           : [...(presetMeta?.permissions ?? ["*"])];
       if (preset === "custom" && permissions.length === 0) {
-        onError?.("Select at least one permission");
+        onError?.(t("apiKeys.selectPermission"));
         setBusy(false);
         return;
       }
@@ -74,10 +76,10 @@ export function ApiKeysPanel({ onError }: { onError?: (msg: string | null) => vo
       setNewToken(result.token);
       setName("");
       setCreating(false);
-      setNotice("API key created — copy the token now; it will not be shown again.");
+      setNotice(t("apiKeys.createdNotice"));
       await refresh();
     } catch (err) {
-      onError?.(err instanceof Error ? err.message : "Create failed");
+      onError?.(err instanceof Error ? err.message : t("apiKeys.createFailed"));
     } finally {
       setBusy(false);
     }
@@ -86,7 +88,7 @@ export function ApiKeysPanel({ onError }: { onError?: (msg: string | null) => vo
   async function onRevoke(key: ApiKeyRecord) {
     if (
       !confirm(
-        `Revoke API key "${key.name}" (${key.prefix}…)? Scripts using it will stop working immediately.`,
+        t("apiKeys.revokeConfirm", { name: key.name, prefix: key.prefix }),
       )
     ) {
       return;
@@ -95,10 +97,10 @@ export function ApiKeysPanel({ onError }: { onError?: (msg: string | null) => vo
     onError?.(null);
     try {
       await api.revokeApiKey(key.id);
-      setNotice(`Revoked ${key.name}.`);
+      setNotice(t("apiKeys.revokedNotice", { name: key.name }));
       await refresh();
     } catch (err) {
-      onError?.(err instanceof Error ? err.message : "Revoke failed");
+      onError?.(err instanceof Error ? err.message : t("apiKeys.revokeFailed"));
     } finally {
       setBusy(false);
     }
@@ -107,7 +109,7 @@ export function ApiKeysPanel({ onError }: { onError?: (msg: string | null) => vo
   function copyToken() {
     if (!newToken) return;
     void copyText(newToken).then(
-      () => setNotice("Token copied to clipboard."),
+      () => setNotice(t("apiKeys.tokenCopied")),
       () => undefined,
     );
   }
@@ -133,10 +135,9 @@ export function ApiKeysPanel({ onError }: { onError?: (msg: string | null) => vo
       <Card.Body>
         <div className="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
           <div>
-            <h2 className="h6 mb-1">API keys</h2>
+            <h2 className="h6 mb-1">{t("apiKeys.title")}</h2>
             <p className="text-secondary small mb-0">
-              Bearer tokens for scripts and automation. Same server permissions as
-              subusers. {activeCount}/{maxKeys} active.
+              {t("apiKeys.subtitle", { active: activeCount, max: maxKeys })}
             </p>
           </div>
           {!creating && activeCount < maxKeys && (
@@ -150,7 +151,7 @@ export function ApiKeysPanel({ onError }: { onError?: (msg: string | null) => vo
               }}
             >
               <i className="fa-solid fa-plus me-1" />
-              New key
+              {t("apiKeys.newKey")}
             </Button>
           )}
         </div>
@@ -168,10 +169,10 @@ export function ApiKeysPanel({ onError }: { onError?: (msg: string | null) => vo
 
         {newToken && (
           <Alert variant="warning" className="small">
-            <div className="fw-semibold mb-2">Copy this token now</div>
+            <div className="fw-semibold mb-2">{t("apiKeys.copyTokenNow")}</div>
             <code className="user-select-all d-block text-break mb-2">{newToken}</code>
             <Button size="sm" variant="outline-secondary" onClick={copyToken}>
-              Copy token
+              {t("apiKeys.copyToken")}
             </Button>
           </Alert>
         )}
@@ -179,7 +180,7 @@ export function ApiKeysPanel({ onError }: { onError?: (msg: string | null) => vo
         {creating && (
           <Form onSubmit={onCreate} className="border rounded p-3 mb-3">
             <Form.Group className="mb-3" controlId="key-name">
-              <Form.Label>Name</Form.Label>
+              <Form.Label>{t("common.name")}</Form.Label>
               <Form.Control
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -190,7 +191,7 @@ export function ApiKeysPanel({ onError }: { onError?: (msg: string | null) => vo
               />
             </Form.Group>
             <Form.Group className="mb-3" controlId="key-preset">
-              <Form.Label>Permissions</Form.Label>
+              <Form.Label>{t("apiKeys.permissions")}</Form.Label>
               <Form.Select
                 value={preset}
                 onChange={(e) => {
@@ -203,11 +204,11 @@ export function ApiKeysPanel({ onError }: { onError?: (msg: string | null) => vo
                     {p.label}
                   </option>
                 ))}
-                <option value="custom">Custom…</option>
+                <option value="custom">{t("apiKeys.custom")}</option>
               </Form.Select>
               <Form.Text className="text-secondary">
                 {preset === "custom"
-                  ? "Pick individual scopes below."
+                  ? t("apiKeys.customHelp")
                   : API_KEY_PRESETS.find((p) => p.id === preset)?.description}
               </Form.Text>
             </Form.Group>
@@ -244,14 +245,14 @@ export function ApiKeysPanel({ onError }: { onError?: (msg: string | null) => vo
               className="mb-2"
               type="checkbox"
               id="restrict-servers"
-              label="Limit to specific servers"
+              label={t("apiKeys.limitServers")}
               checked={restrictServers}
               onChange={(e) => setRestrictServers(e.target.checked)}
             />
             {restrictServers && (
               <div className="mb-3 small border rounded p-2" style={{ maxHeight: 160, overflow: "auto" }}>
                 {servers.length === 0 ? (
-                  <span className="text-secondary">No servers available.</span>
+                  <span className="text-secondary">{t("apiKeys.noServers")}</span>
                 ) : (
                   servers.map((s) => (
                     <Form.Check
@@ -276,7 +277,7 @@ export function ApiKeysPanel({ onError }: { onError?: (msg: string | null) => vo
                   (restrictServers && selectedServers.length === 0)
                 }
               >
-                {busy ? "Creating…" : "Create key"}
+                {busy ? t("common.creating") : t("apiKeys.createKey")}
               </Button>
               <Button
                 type="button"
@@ -284,14 +285,14 @@ export function ApiKeysPanel({ onError }: { onError?: (msg: string | null) => vo
                 disabled={busy}
                 onClick={() => setCreating(false)}
               >
-                Cancel
+                {t("common.cancel")}
               </Button>
             </div>
           </Form>
         )}
 
         {keys.length === 0 ? (
-          <p className="text-secondary small mb-0">No API keys yet.</p>
+          <p className="text-secondary small mb-0">{t("apiKeys.empty")}</p>
         ) : (
           <ListGroup variant="flush">
             {keys.map((k) => (
@@ -303,23 +304,31 @@ export function ApiKeysPanel({ onError }: { onError?: (msg: string | null) => vo
                   <div className="fw-semibold">
                     {k.name}{" "}
                     {k.revokedAt ? (
-                      <Badge bg="secondary">Revoked</Badge>
+                      <Badge bg="secondary">{t("apiKeys.revoked")}</Badge>
                     ) : (
-                      <Badge bg="success">Active</Badge>
+                      <Badge bg="success">{t("apiKeys.active")}</Badge>
                     )}
                   </div>
                   <div className="small text-secondary font-monospace">{k.prefix}…</div>
                   <div className="small text-secondary">
                     {k.permissions.includes("*")
-                      ? "Full access"
-                      : `${k.permissions.length} permission${k.permissions.length === 1 ? "" : "s"}`}
+                      ? t("apiKeys.fullAccess")
+                      : k.permissions.length === 1
+                        ? t("apiKeys.permissionOne", { count: k.permissions.length })
+                        : t("apiKeys.permissionMany", { count: k.permissions.length })}
                     {k.serverIds
-                      ? ` · ${k.serverIds.length} server${k.serverIds.length === 1 ? "" : "s"}`
-                      : " · all servers"}
+                      ? k.serverIds.length === 1
+                        ? ` · ${t("apiKeys.serverOne", { count: k.serverIds.length })}`
+                        : ` · ${t("apiKeys.serverMany", { count: k.serverIds.length })}`
+                      : ` · ${t("apiKeys.allServers")}`}
                     {" · "}
-                    created {new Date(k.createdAt).toLocaleDateString()}
+                    {t("apiKeys.created", {
+                      date: new Date(k.createdAt).toLocaleDateString(),
+                    })}
                     {k.lastUsedAt &&
-                      ` · last used ${new Date(k.lastUsedAt).toLocaleString()}`}
+                      ` · ${t("apiKeys.lastUsed", {
+                        date: new Date(k.lastUsedAt).toLocaleString(),
+                      })}`}
                   </div>
                 </div>
                 {!k.revokedAt && (
@@ -329,7 +338,7 @@ export function ApiKeysPanel({ onError }: { onError?: (msg: string | null) => vo
                     disabled={busy}
                     onClick={() => void onRevoke(k)}
                   >
-                    Revoke
+                    {t("apiKeys.revoke")}
                   </Button>
                 )}
               </ListGroup.Item>

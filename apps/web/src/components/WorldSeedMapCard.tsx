@@ -9,6 +9,7 @@ import {
   Stack,
 } from "react-bootstrap";
 import { api } from "../api";
+import { useI18n } from "../i18n/react";
 
 interface SeedInfo {
   seed: string | null;
@@ -80,6 +81,7 @@ export function WorldSeedMapCard({
   onNotice,
   onError,
 }: Props) {
+  const { t } = useI18n();
   const [info, setInfo] = useState<SeedInfo | null>(null);
   const [busy, setBusy] = useState(false);
   const [iframeKey, setIframeKey] = useState(0);
@@ -177,7 +179,7 @@ export function WorldSeedMapCard({
     <Alert variant="light" className="border mt-3 mb-0 world-seed-map-card">
       <div className="fw-semibold mb-2">
         <i className="fa-solid fa-map-location-dot me-2" />
-        World seed map
+        {t("seedmap.title")}
       </div>
       <p className="small text-secondary mb-2">
         Interactive biome &amp; structure map via{" "}
@@ -355,7 +357,7 @@ export function WorldSeedMapCard({
               disabled={bluemapBusy}
               onClick={() => void saveBlueMapUrl()}
             >
-              Save URL
+              {t("common.save")}
             </Button>
           </Stack>
           {bluemapUrl && (

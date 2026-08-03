@@ -11,6 +11,7 @@ import {
   Table,
 } from "react-bootstrap";
 import { api } from "../api";
+import { useI18n } from "../i18n/react";
 
 interface Props {
   serverId: string;
@@ -35,6 +36,7 @@ export function AllocationsPanel({
   onNotice,
   onPrimaryChanged,
 }: Props) {
+  const { t } = useI18n();
   const [allocations, setAllocations] = useState<PortAllocation[]>([]);
   const [free, setFree] = useState<PortAllocation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -194,7 +196,7 @@ export function AllocationsPanel({
     return (
       <div className="p-4 text-center text-secondary">
         <Spinner animation="border" size="sm" className="me-2" />
-        Loading allocations…
+        {t("common.loading")}…
       </div>
     );
   }
@@ -202,7 +204,7 @@ export function AllocationsPanel({
   return (
     <div className="databases-panel">
       <header className="databases-panel-header">
-        <h2 className="databases-panel-title">Network / Allocations</h2>
+        <h2 className="databases-panel-title">{t("allocations.title")}</h2>
         <p className="databases-panel-lead mb-0">
           IP and port bindings for this server. Primary is the game port; extras
           are additional ports players or services can use.
@@ -241,16 +243,16 @@ export function AllocationsPanel({
           <section className="databases-section h-100">
             <h3 className="databases-section-title">Assigned</h3>
             {allocations.length === 0 ? (
-              <p className="databases-empty mb-0">No allocations yet.</p>
+              <p className="databases-empty mb-0">{t("allocations.empty")}</p>
             ) : (
               <div className="table-responsive">
                 <Table hover size="sm" className="align-middle mb-0 databases-table">
                   <thead>
                     <tr>
-                      <th>IP</th>
-                      <th>Port</th>
+                      <th>{t("allocations.ip")}</th>
+                      <th>{t("allocations.port")}</th>
                       <th>Protocol</th>
-                      <th>Notes</th>
+                      <th>{t("allocations.notes")}</th>
                       <th />
                     </tr>
                   </thead>
@@ -264,7 +266,7 @@ export function AllocationsPanel({
                           <code>{a.port}</code>{" "}
                           {a.isPrimary && (
                             <Badge bg="primary" className="ms-1">
-                              Primary
+                              {t("allocations.primary")}
                             </Badge>
                           )}
                         </td>

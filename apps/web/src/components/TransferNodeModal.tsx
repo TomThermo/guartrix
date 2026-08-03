@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { DaemonNode, McServer, TransferJobStatus } from "@msm/shared";
 import { Alert, Button, Form, Modal, ProgressBar, Spinner } from "react-bootstrap";
 import { api } from "../api";
+import { useI18n } from "../i18n/react";
 
 interface Props {
   server: McServer;
@@ -16,6 +17,7 @@ export function TransferNodeModal({
   onCancel,
   onTransferred,
 }: Props) {
+  const { t } = useI18n();
   const [nodes, setNodes] = useState<DaemonNode[]>([]);
   const [nodeId, setNodeId] = useState("");
   const [port, setPort] = useState(String(server.port));
@@ -36,7 +38,7 @@ export function TransferNodeModal({
         setNodeId(others[0]?.id ?? "");
       })
       .catch((err) =>
-        setError(err instanceof Error ? err.message : "Failed to load nodes"),
+        setError(err instanceof Error ? err.message : t("modals.transferNodeFailed")),
       )
       .finally(() => setLoading(false));
   }, [server.id, server.nodeId, server.port]);
@@ -55,14 +57,13 @@ export function TransferNodeModal({
             if (r.transfer.ok) {
               onTransferred(r.server);
             } else {
-              setError(r.transfer.error ?? "Transfer failed");
+              setError(r.transfer.error ?? t("modals.transferNodeFailed"));
               onTransferred(r.server);
             }
           } else if (
             r.server.status !== "TRANSFERRING" &&
             !r.transfer
           ) {
-            // Job map expired but status settled.
             setRunning(false);
             onTransferred(r.server);
           }
@@ -79,12 +80,12 @@ export function TransferNodeModal({
     setError(null);
     setJob(null);
     if (!nodeId) {
-      setError("Pick a destination node");
+      setError(t("modals.transferNodePick"));
       return;
     }
     const portNum = Number(port);
     if (!Number.isFinite(portNum) || portNum < 1024 || portNum > 65535) {
-      setError("Port must be between 1024 and 65535");
+      setError(t("modals.transferNodePortInvalid"));
       return;
     }
     setRunning(true);
@@ -98,7 +99,7 @@ export function TransferNodeModal({
       onTransferred(result.server);
     } catch (err) {
       setRunning(false);
-      setError(err instanceof Error ? err.message : "Transfer failed");
+      setError(err instanceof Error ? err.message : t("modals.transferNodeFailed"));
     }
   }
 
@@ -114,7 +115,7 @@ export function TransferNodeModal({
       <Modal.Header closeButton={!running}>
         <Modal.Title>
           <i className="fa-solid fa-server me-2" />
-          Move to another node
+          {t("modals.transferNodeTitle")}
         </Modal.Title>
       </Modal.Header>
       <Modal.Body>
@@ -124,10 +125,10 @@ export function TransferNodeModal({
           </Alert>
         )}
         <p className="small text-secondary">
-          Moves <strong>{server.name}</strong> from{" "}
-          <strong>{server.nodeName ?? "current node"}</strong> to another node.
-          The server must be stopped. Extra ports move with it if free on the
-          destination. Databases are copied to the destination.
+          {t("modals.transferNodeHelp", {
+            name: server.name,
+            node: server.nodeName ?? t("common.node"),
+          })}
         </p>
 
         {loading ? (
@@ -136,12 +137,12 @@ export function TransferNodeModal({
           </div>
         ) : nodes.length === 0 ? (
           <Alert variant="warning" className="py-2 mb-0">
-            No other nodes available. Add a remote node under System first.
+            {t("modals.transferNodeNoNodes")}
           </Alert>
         ) : (
           <>
             <Form.Group className="mb-3" controlId="transfer-node">
-              <Form.Label>Destination node</Form.Label>
+              <Form.Label>{t("modals.transferNodeDestination")}</Form.Label>
               <Form.Select
                 value={nodeId}
                 disabled={running || busy}
@@ -155,7 +156,7 @@ export function TransferNodeModal({
               </Form.Select>
             </Form.Group>
             <Form.Group className="mb-3" controlId="transfer-port">
-              <Form.Label>Primary port</Form.Label>
+              <Form.Label>{t("modals.transferNodePrimaryPort")}</Form.Label>
               <Form.Control
                 type="number"
                 min={1024}
@@ -165,14 +166,14 @@ export function TransferNodeModal({
                 onChange={(e) => setPort(e.target.value)}
               />
               <Form.Text className="text-secondary">
-                Keep the current port if it is free on the destination.
+                {t("modals.transferNodePortHelp")}
               </Form.Text>
             </Form.Group>
             <Form.Check
               className="mb-3"
               type="checkbox"
               id="transfer-start"
-              label="Start the server after a successful move"
+              label={t("modals.transferNodeStartAfter")}
               checked={startAfter}
               disabled={running || busy}
               onChange={(e) => setStartAfter(e.target.checked)}
@@ -186,9 +187,9 @@ export function TransferNodeModal({
               <span>
                 {job?.done
                   ? job.ok
-                    ? "Transfer complete"
-                    : "Transfer failed"
-                  : job?.detail || job?.step || "Starting…"}
+                    ? t("modals.transferNodeComplete")
+                    : t("modals.transferNodeFailed")
+                  : job?.detail || job?.step || t("modals.transferNodeStarting")}
               </span>
               <span className="text-secondary">{progress}%</span>
             </div>
@@ -233,7 +234,7 @@ export function TransferNodeModal({
           onClick={onCancel}
           disabled={running}
         >
-          {job?.done ? "Close" : "Cancel"}
+          {job?.done ? t("common.close") : t("common.cancel")}
         </Button>
         {!job?.done && (
           <Button
@@ -243,12 +244,12 @@ export function TransferNodeModal({
           >
             {running ? (
               <>
-                <Spinner size="sm" className="me-2" /> Moving…
+                <Spinner size="sm" className="me-2" /> {t("modals.transferNodeMoving")}
               </>
             ) : (
               <>
                 <i className="fa-solid fa-right-left me-1" />
-                Move server
+                {t("modals.transferNodeMove")}
               </>
             )}
           </Button>

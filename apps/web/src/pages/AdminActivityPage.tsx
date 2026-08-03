@@ -2,8 +2,10 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Alert, Card } from "react-bootstrap";
 import { ActivityPanel } from "../components/ActivityPanel";
+import { useI18n } from "../i18n/react";
 
 export function AdminActivityPage() {
+  const { t } = useI18n();
   const [error, setError] = useState<string | null>(null);
 
   return (
@@ -12,14 +14,12 @@ export function AdminActivityPage() {
         <div>
           <h1 className="h3 mb-1">
             <i className="fa-solid fa-list-check me-2 text-primary" />
-            Activity
+            {t("admin.activityTitle")}
           </h1>
-          <p className="text-secondary mb-0">
-            Every recorded action across all servers, accounts and nodes.
-          </p>
+          <p className="text-secondary mb-0">{t("admin.activitySubtitle")}</p>
         </div>
         <Link to="/" className="btn btn-sm btn-outline-secondary">
-          Back
+          {t("common.back")}
         </Link>
       </div>
 

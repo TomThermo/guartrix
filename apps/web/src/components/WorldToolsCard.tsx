@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { McServer } from "@msm/shared";
 import { Alert, Button, Form, Spinner, Stack } from "react-bootstrap";
 import { api } from "../api";
+import { useI18n } from "../i18n/react";
 
 interface Props {
   server: McServer;
@@ -16,6 +17,7 @@ export function WorldToolsCard({
   onNotice,
   onError,
 }: Props) {
+  const { t } = useI18n();
   const [dims, setDims] = useState({
     overworld: true,
     nether: true,
@@ -36,12 +38,15 @@ export function WorldToolsCard({
       .filter(([, on]) => on)
       .map(([k]) => k);
     if (!dimensions.length) {
-      onError("Select at least one dimension to reset.");
+      onError(t("worldTools.selectDimension"));
       return;
     }
     if (
       !confirm(
-        `Reset world dimensions (${dimensions.join(", ")}) for ${server.name}?\n\nA backup will be created. This cannot be undone except via restore.`,
+        t("worldTools.resetConfirm", {
+          dimensions: dimensions.join(", "),
+          name: server.name,
+        }),
       )
     ) {
       return;
@@ -55,10 +60,13 @@ export function WorldToolsCard({
         regenerate: true,
       });
       onNotice(
-        `World reset: removed ${result.deleted.join(", ") || "nothing"} (${result.levelName}). Start the server to regenerate.`,
+        t("worldTools.resetNotice", {
+          deleted: result.deleted.join(", ") || "nothing",
+          levelName: result.levelName,
+        }),
       );
     } catch (err) {
-      onError(err instanceof Error ? err.message : "World reset failed");
+      onError(err instanceof Error ? err.message : t("worldTools.resetFailed"));
     } finally {
       setBusy(false);
     }
@@ -68,7 +76,7 @@ export function WorldToolsCard({
     if (!file) return;
     if (
       !confirm(
-        `Replace the current world with "${file.name}"?\n\nA backup will be created. Server must be stopped.`,
+        t("worldTools.importConfirm", { file: file.name }),
       )
     ) {
       return;
@@ -78,9 +86,9 @@ export function WorldToolsCard({
     onNotice(null);
     try {
       const result = await api.importWorld(server.id, file);
-      onNotice(`World imported into "${result.levelName}".`);
+      onNotice(t("worldTools.importNotice", { levelName: result.levelName }));
     } catch (err) {
-      onError(err instanceof Error ? err.message : "World import failed");
+      onError(err instanceof Error ? err.message : t("worldTools.importFailed"));
     } finally {
       setImportBusy(false);
     }
@@ -92,14 +100,11 @@ export function WorldToolsCard({
     <Alert variant="light" className="border mt-3 mb-0">
       <div className="fw-semibold mb-2">
         <i className="fa-solid fa-earth-americas me-2" />
-        World tools
+        {t("worldTools.title")}
       </div>
-      <p className="small text-secondary mb-2">
-        Reset dimensions or upload a <code>.zip</code> world. Server must be
-        stopped; a backup runs first.
-      </p>
+      <p className="small text-secondary mb-2">{t("worldTools.help")}</p>
       {running && (
-        <div className="small text-muted mb-2">Stop the server to use world tools.</div>
+        <div className="small text-muted mb-2">{t("worldTools.stopFirst")}</div>
       )}
       <Stack direction="horizontal" gap={3} className="flex-wrap mb-2">
         {(["overworld", "nether", "end"] as const).map((d) => (
@@ -121,7 +126,7 @@ export function WorldToolsCard({
           disabled={busy || running}
           onClick={() => void reset()}
         >
-          {busy ? <Spinner size="sm" /> : "Reset selected"}
+          {busy ? <Spinner size="sm" /> : t("worldTools.resetSelected")}
         </Button>
         <Form.Control
           type="file"

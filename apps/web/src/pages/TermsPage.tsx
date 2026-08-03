@@ -1,13 +1,16 @@
 import { Link } from "react-router-dom";
 import { Container } from "react-bootstrap";
+import { useI18n } from "../i18n/react";
 
 export function TermsPage() {
+  const { t } = useI18n();
+
   return (
     <Container className="py-5" style={{ maxWidth: 720 }}>
       <p className="mb-2">
-        <Link to="/login">← Back</Link>
+        <Link to="/login">← {t("legal.back")}</Link>
       </p>
-      <h1 className="h3 mb-3">Terms of Service</h1>
+      <h1 className="h3 mb-3">{t("legal.termsTitle")}</h1>
       <p className="text-secondary small">Last updated: July 28, 2026</p>
       <p>
         By creating a Guartrix account or using the panel, you agree to these terms.

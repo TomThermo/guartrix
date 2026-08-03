@@ -11,6 +11,7 @@ import {
   Table,
 } from "react-bootstrap";
 import { api } from "../api";
+import { useI18n } from "../i18n/react";
 
 interface Props {
   server: McServer;
@@ -27,6 +28,7 @@ export function ModpackPanel({
   onNotice,
   onError,
 }: Props) {
+  const { t } = useI18n();
   const [source, setSource] = useState<Source>("modrinth");
   const [query, setQuery] = useState("");
   const [hits, setHits] = useState<Array<Record<string, unknown>>>([]);
@@ -120,6 +122,7 @@ export function ModpackPanel({
 
   return (
     <div>
+      <h2 className="h5 mb-3">{t("modpacks.title")}</h2>
       <p className="text-secondary small">
         Browse and install server-side modpacks. Stop the server first; a backup
         runs automatically.
@@ -135,7 +138,7 @@ export function ModpackPanel({
         </Form.Select>
         <Form.Control
           style={{ maxWidth: 260 }}
-          placeholder="Search packs…"
+          placeholder={t("modpacks.search")}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => {
@@ -147,7 +150,7 @@ export function ModpackPanel({
           disabled={loading}
           onClick={() => void search()}
         >
-          {loading ? <Spinner size="sm" /> : "Search"}
+          {loading ? <Spinner size="sm" /> : t("common.search")}
         </Button>
       </Stack>
 
@@ -159,7 +162,7 @@ export function ModpackPanel({
       )}
 
       {hits.length === 0 && !loading ? (
-        <div className="text-secondary small">No modpacks found.</div>
+        <div className="text-secondary small">{t("modpacks.empty")}</div>
       ) : (
         <Table responsive hover size="sm" className="align-middle">
           <thead>
@@ -192,7 +195,7 @@ export function ModpackPanel({
                       disabled={!canUpdate || !!installing}
                       onClick={() => void installHit(hit)}
                     >
-                      {installing === title ? <Spinner size="sm" /> : "Install"}
+                      {installing === title ? <Spinner size="sm" /> : t("modpacks.install")}
                     </Button>
                   </td>
                 </tr>

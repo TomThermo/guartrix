@@ -17,6 +17,7 @@ import {
   Spinner,
 } from "react-bootstrap";
 import { api } from "../api";
+import { useI18n } from "../i18n/react";
 
 interface LicenseInfo {
   valid: boolean;
@@ -140,6 +141,7 @@ function UsageMeter({
 }
 
 export function AdminLicensePage() {
+  const { t } = useI18n();
   const [info, setInfo] = useState<LicenseInfo | null>(null);
   const [version, setVersion] = useState<PanelVersionStatus | null>(null);
   const [key, setKey] = useState("");
@@ -306,10 +308,8 @@ export function AdminLicensePage() {
     <div className="license-page">
       <div className="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-3">
         <div>
-          <h1 className="h4 mb-0">License</h1>
-          <p className="text-secondary small mb-0 mt-1">
-            Free tier without a key: 1 node · 1 server · 10 GB disk
-          </p>
+          <h1 className="h4 mb-0">{t("admin.licenseTitle")}</h1>
+          <p className="text-secondary small mb-0 mt-1">{t("admin.licenseSubtitle")}</p>
         </div>
         {version && (
           <div className="d-flex flex-wrap align-items-center gap-2 license-version-chip">
@@ -318,7 +318,7 @@ export function AdminLicensePage() {
               v{version.current}
             </Badge>
             {version.upToDate && !version.belowMinimum ? (
-              <Badge bg="success">Up to date</Badge>
+              <Badge bg="success">{t("common.upToDate")}</Badge>
             ) : version.belowMinimum ? (
               <Badge bg="danger">Below min{version.minVersion ? ` v${version.minVersion}` : ""}</Badge>
             ) : version.updateAvailable ? (
@@ -377,7 +377,7 @@ export function AdminLicensePage() {
                       disabled={busy}
                       onClick={() => void onRemoveKey()}
                     >
-                      Remove
+                      {t("common.remove")}
                     </Button>
                   )}
                 </div>
@@ -393,7 +393,7 @@ export function AdminLicensePage() {
                   {info.expiresAt
                     ? new Date(info.expiresAt).toLocaleString()
                     : info.status === "valid"
-                      ? "Unlimited"
+                      ? t("common.unlimited")
                       : "—"}
                 </Meta>
                 <Meta label="Bound IP" mono>
@@ -440,14 +440,14 @@ export function AdminLicensePage() {
                   usedLabel={`${usage?.nodeCount ?? 0} / ${info.maxNodes != null ? info.maxNodes : "∞"}`}
                   pct={nodesPct}
                   capped={info.maxNodes != null}
-                  uncappedHint="Unlimited"
+                  uncappedHint={t("common.unlimited")}
                 />
                 <UsageMeter
                   label="Servers"
                   usedLabel={`${usage?.serverCount ?? 0} / ${info.maxServers != null ? info.maxServers : "∞"}`}
                   pct={serversPct}
                   capped={info.maxServers != null}
-                  uncappedHint="Unlimited"
+                  uncappedHint={t("common.unlimited")}
                 />
                 <UsageMeter
                   label="Total RAM"
@@ -460,7 +460,7 @@ export function AdminLicensePage() {
                   }`}
                   pct={ramPct}
                   capped={info.maxMemoryMb != null}
-                  uncappedHint={info.freeTier ? "No RAM pool cap" : "Unlimited"}
+                  uncappedHint={info.freeTier ? "No RAM pool cap" : t("common.unlimited")}
                 />
                 <UsageMeter
                   label={info.freeTier ? "Disk / server" : "Largest server"}

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { McServer } from "@msm/shared";
 import { Alert, Button, Form, Modal, Spinner } from "react-bootstrap";
 import { api } from "../api";
+import { useI18n } from "../i18n/react";
 
 interface Props {
   show: boolean;
@@ -20,6 +21,7 @@ export function VersionPickerModal({
   onError,
   onNotice,
 }: Props) {
+  const { t } = useI18n();
   const [busy, setBusy] = useState(false);
   const [versions, setVersions] = useState<string[]>([]);
   const [pickVersion, setPickVersion] = useState(server.mcVersion);
@@ -54,7 +56,7 @@ export function VersionPickerModal({
 
   async function apply() {
     if (running) {
-      onError("Stop the server before updating.");
+      onError(t("modals.versionStopBeforeUpdate"));
       return;
     }
     if (!pickVersion || pickVersion === server.mcVersion) return;
@@ -83,7 +85,7 @@ export function VersionPickerModal({
       );
       onHide();
     } catch (err) {
-      onError(err instanceof Error ? err.message : "Update failed");
+      onError(err instanceof Error ? err.message : t("modals.versionUpdateFailed"));
     } finally {
       setBusy(false);
     }
@@ -94,17 +96,17 @@ export function VersionPickerModal({
       <Modal.Header closeButton={!busy}>
         <Modal.Title className="h5 mb-0">
           <i className="fa-solid fa-code-branch me-2" />
-          Minecraft version
+          {t("modals.versionTitle")}
         </Modal.Title>
       </Modal.Header>
       <Modal.Body>
         {running && (
           <Alert variant="warning" className="small py-2">
-            Stop the server before changing version.
+            {t("modals.versionStopFirst")}
           </Alert>
         )}
         <Form.Group controlId="modal-pick-mc-version">
-          <Form.Label>Version</Form.Label>
+          <Form.Label>{t("common.version")}</Form.Label>
           <Form.Select
             value={pickVersion}
             disabled={busy || running || versions.length === 0}
@@ -117,13 +119,13 @@ export function VersionPickerModal({
             ))}
           </Form.Select>
           <Form.Text muted>
-            Current: {server.mcVersion}. A backup is created before applying.
+            {t("modals.versionCurrent", { version: server.mcVersion })}
           </Form.Text>
         </Form.Group>
       </Modal.Body>
       <Modal.Footer>
         <Button variant="outline-secondary" disabled={busy} onClick={onHide}>
-          Cancel
+          {t("common.cancel")}
         </Button>
         <Button
           variant="primary"
@@ -136,7 +138,7 @@ export function VersionPickerModal({
           }
           onClick={() => void apply()}
         >
-          {busy ? <Spinner size="sm" /> : "Apply version"}
+          {busy ? <Spinner size="sm" /> : t("modals.versionApply")}
         </Button>
       </Modal.Footer>
     </Modal>

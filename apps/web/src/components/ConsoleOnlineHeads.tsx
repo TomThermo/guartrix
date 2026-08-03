@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { OnlinePlayer } from "@msm/shared";
 import { Spinner } from "react-bootstrap";
 import { useSharedOnlinePlayers } from "../hooks/OnlinePlayersProvider";
+import { useI18n } from "../i18n/react";
 import { PlayerActionModal } from "./PlayerActionModal";
 import { PlayerHead } from "./PlayerHead";
 
@@ -20,6 +21,7 @@ export function ConsoleOnlineHeads({
   onError,
   onNotice,
 }: Props) {
+  const { t } = useI18n();
   const shared = useSharedOnlinePlayers();
   const [selected, setSelected] = useState<OnlinePlayer | null>(null);
 
@@ -34,16 +36,16 @@ export function ConsoleOnlineHeads({
           <i className="fa-solid fa-users" aria-hidden />
           <span>
             {active ? players.length : 0}
-            {max > 0 ? ` / ${max}` : ""} online
+            {max > 0 ? ` / ${max}` : ""} {t("console.online")}
           </span>
         </div>
         <div className="console-online-heads">
           {loading && players.length === 0 ? (
             <Spinner animation="border" size="sm" className="text-secondary" />
           ) : !active ? (
-            <span className="console-online-empty">Server stopped</span>
+            <span className="console-online-empty">{t("console.serverStopped")}</span>
           ) : players.length === 0 ? (
-            <span className="console-online-empty">Nobody online</span>
+            <span className="console-online-empty">{t("console.nobodyOnline")}</span>
           ) : (
             players.map((p) => (
               <button
@@ -51,7 +53,9 @@ export function ConsoleOnlineHeads({
                 type="button"
                 className="console-online-head-btn"
                 data-tooltip={p.name}
-                aria-label={canUpdate ? `${p.name} — manage` : p.name}
+                aria-label={
+                  canUpdate ? t("console.managePlayer", { name: p.name }) : p.name
+                }
                 disabled={!canUpdate}
                 onClick={() => canUpdate && setSelected(p)}
               >

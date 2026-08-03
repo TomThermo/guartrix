@@ -92,7 +92,7 @@ The web UI uses a tiny custom i18n layer (no i18next):
 - React: wrap with `I18nProvider` / `useI18n()` from `apps/web/src/i18n/react.tsx` (wired in `main.tsx`). Changing locale updates `document.documentElement.lang`.
 - Language picker: Account → Security.
 
-Only key chrome is migrated so far (nav/shell, login, dashboard hero/empty). Add keys to both locale files, then call `t("section.key")` where needed. Prefer `{name}` placeholders via `t(key, { name })`.
+UI chrome across pages, server tabs/panels, and modals is keyed in both locale files. Call `t("section.key")` where needed; prefer `{name}` placeholders via `t(key, { name })`. Legal page bodies stay English; Minecraft property/permission technical labels often stay English too. When adding strings: update **both** `en.ts` and `nl.ts`, then wire `useI18n()` / `t()`.
 
 ## Workspace tips
 

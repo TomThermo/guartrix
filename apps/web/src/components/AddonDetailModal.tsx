@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import type { AddonProjectDetails } from "@msm/shared";
 import { Badge, Button, Carousel, Modal, Spinner, Stack } from "react-bootstrap";
 import { api } from "../api";
+import { useI18n } from "../i18n/react";
 import { formatCount, formatWhen } from "../utils";
 
 interface Props {
@@ -145,6 +146,7 @@ export function AddonDetailModal({
   onUninstall,
   onError,
 }: Props) {
+  const { t } = useI18n();
   const [project, setProject] = useState<AddonProjectDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [galleryIndex, setGalleryIndex] = useState(0);
@@ -162,7 +164,7 @@ export function AddonDetailModal({
       })
       .catch((err) => {
         if (!cancelled) {
-          onError(err instanceof Error ? err.message : "Failed to load mod details");
+          onError(err instanceof Error ? err.message : t("addons.loadDetailsFailed"));
           onClose();
         }
       })
@@ -172,7 +174,7 @@ export function AddonDetailModal({
     return () => {
       cancelled = true;
     };
-  }, [serverId, projectId, onClose, onError]);
+  }, [serverId, projectId, onClose, onError, t]);
 
   return (
     <Modal show onHide={onClose} size="xl" centered scrollable fullscreen="sm-down">
@@ -191,7 +193,7 @@ export function AddonDetailModal({
               <i className="fa-solid fa-puzzle-piece text-secondary" />
             </span>
           )}
-          <span className="text-truncate">{project?.title ?? "Loading…"}</span>
+          <span className="text-truncate">{project?.title ?? `${t("common.loading")}…`}</span>
         </Modal.Title>
       </Modal.Header>
 
@@ -215,20 +217,20 @@ export function AddonDetailModal({
                 <i className="fa-solid fa-heart me-1" />
                 {formatCount(project.follows)}
               </Badge>
-              <Badge bg="secondary">Client: {project.clientSide}</Badge>
-              <Badge bg="secondary">Server: {project.serverSide}</Badge>
+              <Badge bg="secondary">{t("addons.clientSide", { side: project.clientSide })}</Badge>
+              <Badge bg="secondary">{t("addons.serverSide", { side: project.serverSide })}</Badge>
               {project.license && <Badge bg="secondary">License: {project.license}</Badge>}
             </div>
 
             {project.authors.length > 0 && (
               <div className="small text-secondary mb-2">
-                By {project.authors.join(", ")}
+                {t("addons.byAuthors", { authors: project.authors.join(", ") })}
               </div>
             )}
 
             <div className="small text-secondary mb-3">
-              Published {formatWhen(project.publishedAt)} · Updated{" "}
-              {formatWhen(project.updatedAt)}
+              {t("addons.published", { date: formatWhen(project.publishedAt) })} ·{" "}
+              {t("addons.updated", { date: formatWhen(project.updatedAt) })}
             </div>
 
             {project.categories.length > 0 && (
@@ -265,7 +267,7 @@ export function AddonDetailModal({
               </div>
             )}
 
-            <h3 className="h6">About</h3>
+            <h3 className="h6">{t("addons.about")}</h3>
             <SimpleMarkdown text={project.body} />
 
             <Stack direction="horizontal" gap={2} className="flex-wrap mt-3">
@@ -285,7 +287,7 @@ export function AddonDetailModal({
                   target="_blank"
                   rel="noreferrer"
                 >
-                  Source
+                  {t("addons.source")}
                 </a>
               )}
               {project.issuesUrl && (
@@ -295,7 +297,7 @@ export function AddonDetailModal({
                   target="_blank"
                   rel="noreferrer"
                 >
-                  Issues
+                  {t("addons.issues")}
                 </a>
               )}
               {project.wikiUrl && (
@@ -305,7 +307,7 @@ export function AddonDetailModal({
                   target="_blank"
                   rel="noreferrer"
                 >
-                  Wiki
+                  {t("addons.wiki")}
                 </a>
               )}
               {project.discordUrl && (
@@ -325,7 +327,7 @@ export function AddonDetailModal({
 
       <Modal.Footer>
         <Button variant="outline-secondary" onClick={onClose}>
-          Close
+          {t("common.close")}
         </Button>
         {canUpdate &&
           (installed ? (
@@ -337,14 +339,14 @@ export function AddonDetailModal({
                   project && onInstall(project.projectId, project.title, project.iconUrl)
                 }
               >
-                Change version…
+                {t("addons.changeVersion")}
               </Button>
               <Button
                 variant="outline-danger"
                 disabled={installing || !project}
                 onClick={() => project && onUninstall?.(project.projectId)}
               >
-                {installing ? "Removing…" : "Remove"}
+                {installing ? t("addons.removing") : t("common.remove")}
               </Button>
             </>
           ) : (
@@ -355,7 +357,7 @@ export function AddonDetailModal({
                 project && onInstall(project.projectId, project.title, project.iconUrl)
               }
             >
-              {installing ? "Working…" : "Choose version…"}
+              {installing ? t("addons.working") : t("addons.chooseVersion")}
             </Button>
           ))}
       </Modal.Footer>

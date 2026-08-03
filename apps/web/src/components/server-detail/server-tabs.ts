@@ -24,16 +24,18 @@ export type TabId =
 
 export type MenuGroupId = "service" | "game" | "management";
 
-export const MENU_GROUPS: Array<{ id: MenuGroupId; label: string }> = [
-  { id: "service", label: "Manage Service" },
-  { id: "game", label: "Game" },
-  { id: "management", label: "Management" },
+/** i18n key under `tabs.*` for menu group headers. */
+export const MENU_GROUPS: Array<{ id: MenuGroupId; labelKey: string }> = [
+  { id: "service", labelKey: "tabs.service" },
+  { id: "game", labelKey: "tabs.game" },
+  { id: "management", labelKey: "tabs.management" },
 ];
 
 export const SERVER_TABS: Array<{
   id: TabId;
   icon: string;
-  label: string;
+  /** i18n key under `tabs.*` */
+  labelKey: string;
   group: MenuGroupId;
   adminOnly?: boolean;
   /** Any of these permissions grants tab visibility (`*` always ok). */
@@ -43,7 +45,7 @@ export const SERVER_TABS: Array<{
   {
     id: "console",
     icon: "fa-terminal",
-    label: "Console",
+    labelKey: "tabs.console",
     group: "service",
     anyOf: [
       "control.console",
@@ -57,42 +59,42 @@ export const SERVER_TABS: Array<{
   {
     id: "files",
     icon: "fa-folder-open",
-    label: "File Manager",
+    labelKey: "tabs.files",
     group: "service",
     anyOf: ["file.read"],
   },
   {
     id: "sftp",
     icon: "fa-network-wired",
-    label: "SFTP",
+    labelKey: "tabs.sftp",
     group: "service",
     anyOf: ["file.sftp"],
   },
   {
     id: "databases",
     icon: "fa-database",
-    label: "Databases",
+    labelKey: "tabs.databases",
     group: "service",
     anyOf: ["database.read"],
   },
   {
     id: "allocations",
     icon: "fa-ethernet",
-    label: "Network",
+    labelKey: "tabs.allocations",
     group: "service",
     anyOf: ["allocation.read"],
   },
   {
     id: "backups",
     icon: "fa-box-archive",
-    label: "Backups",
+    labelKey: "tabs.backups",
     group: "service",
     anyOf: ["backup.read"],
   },
   {
     id: "subusers",
     icon: "fa-user-group",
-    label: "Subusers",
+    labelKey: "tabs.subusers",
     group: "service",
     anyOf: ["user.read", "user.create", "user.update", "user.delete"],
   },
@@ -100,56 +102,56 @@ export const SERVER_TABS: Array<{
   {
     id: "settings",
     icon: "fa-gear",
-    label: "Server Properties",
+    labelKey: "tabs.settings",
     group: "game",
     anyOf: ["settings.read", "settings.update", "startup.read", "startup.update"],
   },
   {
     id: "seedmap",
     icon: "fa-map-location-dot",
-    label: "World Map",
+    labelKey: "tabs.seedmap",
     group: "game",
     anyOf: ["settings.read", "control.console"],
   },
   {
     id: "engine",
     icon: "fa-microchip",
-    label: "Engine",
+    labelKey: "tabs.engine",
     group: "game",
     anyOf: ["settings.read", "settings.update"],
   },
   {
     id: "addons",
     icon: "fa-puzzle-piece",
-    label: "Plugin Management",
+    labelKey: "tabs.addons",
     group: "game",
     anyOf: ["addon.read"],
   },
   {
     id: "modpacks",
     icon: "fa-cubes",
-    label: "Modpacks",
+    labelKey: "tabs.modpacks",
     group: "game",
     anyOf: ["addon.read"],
   },
   {
     id: "whitelist",
     icon: "fa-user-check",
-    label: "Whitelist Manager",
+    labelKey: "tabs.whitelist",
     group: "game",
     anyOf: ["player.read", "player.update", "settings.read", "settings.update"],
   },
   {
     id: "players",
     icon: "fa-user-plus",
-    label: "Online Players",
+    labelKey: "tabs.players",
     group: "game",
     anyOf: ["player.read"],
   },
   {
     id: "bans",
     icon: "fa-ban",
-    label: "Bans",
+    labelKey: "tabs.bans",
     group: "game",
     anyOf: ["player.read"],
   },
@@ -157,34 +159,34 @@ export const SERVER_TABS: Array<{
   {
     id: "tasks",
     icon: "fa-clock",
-    label: "Schedules",
+    labelKey: "tabs.tasks",
     group: "management",
     anyOf: ["schedule.read"],
   },
   {
     id: "activity",
     icon: "fa-list-check",
-    label: "Activity Log",
+    labelKey: "tabs.activity",
     group: "management",
     anyOf: ["activity.read", "audit.read"],
   },
   {
     id: "logs",
     icon: "fa-magnifying-glass",
-    label: "Log Files",
+    labelKey: "tabs.logs",
     group: "management",
     anyOf: ["audit.read"],
   },
   {
     id: "resources",
     icon: "fa-chart-line",
-    label: "Resources",
+    labelKey: "tabs.resources",
     group: "management",
   },
   {
     id: "bots",
     icon: "fa-robot",
-    label: "Bots",
+    labelKey: "tabs.bots",
     group: "management",
     adminOnly: true,
   },

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Alert, Button, Card, Spinner } from "react-bootstrap";
 import type { ConnectInfo } from "@msm/shared";
 import { api } from "../api";
+import { useI18n } from "../i18n/react";
 import { copyText } from "../utils";
 
 interface Props {
@@ -14,10 +15,12 @@ function CopyRow({
   label,
   value,
   onCopy,
+  copyLabel,
 }: {
   label: string;
   value: string;
   onCopy: () => void;
+  copyLabel: string;
 }) {
   return (
     <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 py-2 border-bottom">
@@ -27,13 +30,14 @@ function CopyRow({
       </div>
       <Button size="sm" variant="outline-secondary" onClick={onCopy}>
         <i className="fa-solid fa-copy me-1" />
-        Copy
+        {copyLabel}
       </Button>
     </div>
   );
 }
 
 export function SftpPanel({ serverId, onError, onNotice }: Props) {
+  const { t } = useI18n();
   const [info, setInfo] = useState<ConnectInfo | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -71,7 +75,7 @@ export function SftpPanel({ serverId, onError, onNotice }: Props) {
     return (
       <div className="text-center py-5">
         <Spinner animation="border" size="sm" className="me-2" />
-        Loading SFTP details…
+        {t("common.loading")}…
       </div>
     );
   }
@@ -92,30 +96,29 @@ export function SftpPanel({ serverId, onError, onNotice }: Props) {
   return (
     <>
       <div className="mb-3">
-        <h2 className="h5 mb-1">SFTP Configuration</h2>
-        <p className="text-secondary small mb-0">
-          Account details for SFTP connections to this server&apos;s files. Use{" "}
-          <strong>SFTP</strong> in your client — not FTP or FTPS. The password is your
-          Guartrix panel password.
-        </p>
+        <h2 className="h5 mb-1">{t("sftp.title")}</h2>
+        <p className="text-secondary small mb-0">{t("sftp.help")}</p>
       </div>
 
       <Card className="border">
         <Card.Body>
           <CopyRow
-            label="Host"
+            label={t("sftp.host")}
             value={`sftp://${host}`}
-            onCopy={() => void copy(host, "Host")}
+            onCopy={() => void copy(host, t("sftp.host"))}
+            copyLabel={t("common.copy")}
           />
           <CopyRow
-            label="Port"
+            label={t("sftp.port")}
             value={port}
-            onCopy={() => void copy(port, "Port")}
+            onCopy={() => void copy(port, t("sftp.port"))}
+            copyLabel={t("common.copy")}
           />
           <CopyRow
-            label="Username"
+            label={t("sftp.username")}
             value={username}
-            onCopy={() => void copy(username, "Username")}
+            onCopy={() => void copy(username, t("sftp.username"))}
+            copyLabel={t("common.copy")}
           />
           <div className="py-2">
             <div className="small text-secondary">Password</div>

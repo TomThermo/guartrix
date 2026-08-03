@@ -16,6 +16,7 @@ import {
   Stack,
 } from "react-bootstrap";
 import { api } from "../api";
+import { useI18n } from "../i18n/react";
 
 interface Props {
   serverId: string;
@@ -33,6 +34,7 @@ export function SubUsersPanel({
   onError,
   onNotice,
 }: Props) {
+  const { t } = useI18n();
   const [subusers, setSubusers] = useState<ServerSubUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -209,7 +211,7 @@ export function SubUsersPanel({
     return (
       <div className="text-center text-secondary py-4">
         <Spinner animation="border" size="sm" className="me-2" />
-        Loading subusers…
+        {t("common.loading")}…
       </div>
     );
   }
@@ -217,7 +219,7 @@ export function SubUsersPanel({
   return (
     <div className="subusers-panel">
       <header className="mb-3">
-        <h2 className="h5 mb-1">Subusers</h2>
+        <h2 className="h5 mb-1">{t("subusers.title")}</h2>
         <p className="text-secondary small mb-0">
           Manage co-users for this server. Invite by email and assign fine-grained permissions.
         </p>
@@ -228,7 +230,7 @@ export function SubUsersPanel({
           <section className="databases-section h-100">
             <h3 className="databases-section-title">Current subusers</h3>
             {subusers.length === 0 ? (
-              <p className="text-secondary small mb-0">No subusers yet.</p>
+              <p className="text-secondary small mb-0">{t("subusers.empty")}</p>
             ) : (
               <ListGroup variant="flush">
                 {subusers.map((s) => (
@@ -359,11 +361,7 @@ export function SubUsersPanel({
 
                 <Stack direction="horizontal" gap={2}>
                   <Button type="submit" variant="primary" disabled={busy}>
-                    {busy
-                      ? "Saving…"
-                      : editingId
-                        ? "Save permissions"
-                        : "Invite subuser"}
+                    {busy ? t("common.saving") : editingId ? t("common.save") : t("subusers.invite")}
                   </Button>
                   {editingId && (
                     <Button
@@ -372,7 +370,7 @@ export function SubUsersPanel({
                       disabled={busy}
                       onClick={resetForm}
                     >
-                      Cancel
+                      {t("common.cancel")}
                     </Button>
                   )}
                 </Stack>

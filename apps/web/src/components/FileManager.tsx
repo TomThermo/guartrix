@@ -11,6 +11,7 @@ import {
   Table,
 } from "react-bootstrap";
 import { api } from "../api";
+import { useI18n } from "../i18n/react";
 import { useVisibleInterval } from "../hooks/useVisibleInterval";
 import { formatBytes } from "../utils";
 import { ConfirmModal } from "./ConfirmModal";
@@ -86,6 +87,7 @@ export function FileManager({
   canDownload = true,
   canArchive = true,
 }: Props) {
+  const { t } = useI18n();
   const [cwd, setCwd] = useState(".");
   const [entries, setEntries] = useState<FileEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -104,7 +106,7 @@ export function FileManager({
       kind: "confirm",
       title: "Discard changes?",
       body: "Discard unsaved changes?",
-      confirmLabel: "Discard",
+      confirmLabel: t("files.discard"),
       variant: "warning",
       onYes,
     });
@@ -273,7 +275,7 @@ export function FileManager({
       kind: "confirm",
       title: "Delete?",
       body: `Delete ${label}?`,
-      confirmLabel: "Delete",
+      confirmLabel: t("common.delete"),
       variant: "danger",
       onYes: async () => {
         setBusy(true);
@@ -298,7 +300,7 @@ export function FileManager({
     if (!canUpdate) return;
     setDialog({
       kind: "prompt",
-      title: "Rename",
+      title: t("files.rename"),
       label: "New name",
       defaultValue: entry.name,
       confirmLabel: "Rename",
@@ -386,7 +388,7 @@ export function FileManager({
       title: "Create archive",
       label: "Archive file name (.zip or .tar.gz)",
       defaultValue: defaultName,
-      confirmLabel: "Create",
+      confirmLabel: t("common.create"),
       onYes: async (name) => {
         if (!name?.trim()) return;
         const destination = joinPath(cwd === "." || !cwd ? "." : cwd, name.trim());
@@ -428,7 +430,7 @@ export function FileManager({
         kind: "confirm",
         title: "Delete temporary archive?",
         body: "Download started. Delete the temporary archive from the server?",
-        confirmLabel: "Delete",
+        confirmLabel: t("common.delete"),
         variant: "warning",
         onYes: async () => {
           setBusy(true);
@@ -455,6 +457,7 @@ export function FileManager({
 
   return (
     <div>
+      <h2 className="h5 mb-3">{t("files.title")}</h2>
       {disk && (
         <DiskUsageCard disk={disk} limitMb={diskMb} compact />
       )}
@@ -542,7 +545,7 @@ export function FileManager({
             <Form onSubmit={(e) => void onMkdir(e)} className="file-mkdir">
               <InputGroup size="sm">
                 <Form.Control
-                  placeholder="New folder"
+                  placeholder={t("files.newFolder")}
                   value={newFolder}
                   onChange={(e) => setNewFolder(e.target.value)}
                   disabled={busy}
@@ -562,7 +565,7 @@ export function FileManager({
                 onClick={() => fileInputRef.current?.click()}
               >
                 <i className="fa-solid fa-upload me-1" />
-                Upload
+                {t("files.upload")}
               </Button>
               <input
                 ref={fileInputRef}
@@ -580,7 +583,7 @@ export function FileManager({
           {loading ? (
             <div className="text-secondary py-3">
               <Spinner size="sm" className="me-2" />
-              Loading…
+              {t("common.loading")}…
             </div>
           ) : (
             <div className="table-responsive border rounded surface">
@@ -598,9 +601,9 @@ export function FileManager({
                         />
                       )}
                     </th>
-                    <th>Name</th>
-                    <th>Size</th>
-                    <th>Modified</th>
+                    <th>{t("common.name")}</th>
+                    <th>{t("files.size")}</th>
+                    <th>{t("files.modified")}</th>
                     <th />
                   </tr>
                 </thead>
@@ -661,7 +664,7 @@ export function FileManager({
                               disabled={busy}
                               onClick={() => void onDownload(entry)}
                             >
-                              Download
+                              {t("files.download")}
                             </Button>
                           )}
                           {canArchive && entry.type === "file" && isArchiveName(entry.name) && (
@@ -681,7 +684,7 @@ export function FileManager({
                               disabled={busy}
                               onClick={() => void onRename(entry)}
                             >
-                              Rename
+                              {t("files.rename")}
                             </Button>
                           )}
                           {canDelete && (
@@ -691,7 +694,7 @@ export function FileManager({
                               disabled={busy}
                               onClick={() => void onDelete(entry)}
                             >
-                              Delete
+                              {t("files.delete")}
                             </Button>
                           )}
                         </Stack>
@@ -701,7 +704,7 @@ export function FileManager({
                   {!entries.length && (
                     <tr>
                       <td colSpan={colSpan} className="text-secondary">
-                        This folder is empty.
+                        {t("files.empty")}
                       </td>
                     </tr>
                   )}
@@ -743,7 +746,7 @@ export function FileManager({
                       disabled={busy || !editDirty}
                       onClick={() => void saveFile()}
                     >
-                      Save
+                      {t("files.save")}
                     </Button>
                   )}
                 </Stack>

@@ -4,9 +4,11 @@ import { Alert, Button, Form, Spinner } from "react-bootstrap";
 import { api } from "../api";
 import { useAuth } from "../auth";
 import { AuthShell } from "../components/AuthShell";
+import { useI18n } from "../i18n/react";
 
 export function RegisterPage() {
   const { authenticated, refreshUser } = useAuth();
+  const { t } = useI18n();
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -15,9 +17,7 @@ export function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [verifyFirst, setVerifyFirst] = useState(false);
-  const [policy, setPolicy] = useState(
-    "Password must be 12–128 characters and include uppercase, lowercase, a number, and a symbol.",
-  );
+  const [policy, setPolicy] = useState<string | null>(null);
   const [enabled, setEnabled] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -36,11 +36,11 @@ export function RegisterPage() {
     e.preventDefault();
     setError(null);
     if (password !== confirm) {
-      setError("Passwords do not match");
+      setError(t("auth.passwordsMismatch"));
       return;
     }
     if (!acceptTerms) {
-      setError("You must accept the Terms of Service");
+      setError(t("auth.mustAcceptTerms"));
       return;
     }
     setBusy(true);
@@ -57,7 +57,7 @@ export function RegisterPage() {
       }
       await refreshUser();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Registration failed");
+      setError(err instanceof Error ? err.message : t("auth.registrationFailed"));
     } finally {
       setBusy(false);
     }
@@ -65,10 +65,13 @@ export function RegisterPage() {
 
   if (enabled === false) {
     return (
-      <AuthShell title="Registration closed" subtitle="New accounts are disabled">
+      <AuthShell
+        title={t("auth.registrationClosed")}
+        subtitle={t("auth.registrationClosedSubtitle")}
+      >
         <Alert variant="secondary" className="mb-0">
-          Self-serve registration is currently off. Ask an admin for an invite, or{" "}
-          <Link to="/login">sign in</Link>.
+          {t("auth.registrationClosedBody")}{" "}
+          <Link to="/login">{t("auth.signIn")}</Link>.
         </Alert>
       </AuthShell>
     );
@@ -77,12 +80,12 @@ export function RegisterPage() {
   if (verifyFirst) {
     return (
       <AuthShell
-        title="Check your email"
-        subtitle="Confirm your address before signing in"
+        title={t("auth.checkEmailTitle")}
+        subtitle={t("auth.checkEmailSubtitle")}
       >
         <Alert variant="success" className="mb-3">
-          We sent a verification link to <strong>{email.trim()}</strong>. Open it,
-          then <Link to="/login">sign in</Link>.
+          {t("auth.checkEmailBody", { email: email.trim() })}{" "}
+          <Link to="/login">{t("auth.signIn")}</Link>.
         </Alert>
       </AuthShell>
     );
@@ -90,8 +93,8 @@ export function RegisterPage() {
 
   return (
     <AuthShell
-      title="Create account"
-      subtitle="Sign up now — buy a server plan when you're ready"
+      title={t("auth.registerTitle")}
+      subtitle={t("auth.registerSubtitle")}
     >
       {error && (
         <Alert variant="danger" className="py-2">
@@ -100,7 +103,7 @@ export function RegisterPage() {
       )}
       <Form onSubmit={onSubmit}>
         <Form.Group className="mb-3" controlId="reg-username">
-          <Form.Label>Username</Form.Label>
+          <Form.Label>{t("auth.username")}</Form.Label>
           <Form.Control
             type="text"
             value={username}
@@ -114,7 +117,7 @@ export function RegisterPage() {
           />
         </Form.Group>
         <Form.Group className="mb-3" controlId="reg-email">
-          <Form.Label>Email</Form.Label>
+          <Form.Label>{t("auth.email")}</Form.Label>
           <Form.Control
             type="email"
             value={email}
@@ -124,7 +127,7 @@ export function RegisterPage() {
           />
         </Form.Group>
         <Form.Group className="mb-3" controlId="reg-password">
-          <Form.Label>Password</Form.Label>
+          <Form.Label>{t("auth.password")}</Form.Label>
           <Form.Control
             type="password"
             value={password}
@@ -133,10 +136,12 @@ export function RegisterPage() {
             required
             minLength={12}
           />
-          <Form.Text className="text-secondary">{policy}</Form.Text>
+          <Form.Text className="text-secondary">
+            {policy ?? t("auth.passwordPolicyDefault")}
+          </Form.Text>
         </Form.Group>
         <Form.Group className="mb-3" controlId="reg-confirm">
-          <Form.Label>Confirm password</Form.Label>
+          <Form.Label>{t("auth.confirmPassword")}</Form.Label>
           <Form.Control
             type="password"
             value={confirm}
@@ -154,26 +159,28 @@ export function RegisterPage() {
           onChange={(e) => setAcceptTerms(e.target.checked)}
           label={
             <span>
-              I agree to the <Link to="/terms">Terms of Service</Link> and{" "}
-              <Link to="/privacy">Privacy Policy</Link>
+              {t("auth.agreeTermsPrefix")}{" "}
+              <Link to="/terms">{t("auth.termsOfService")}</Link> {t("auth.and")}{" "}
+              <Link to="/privacy">{t("auth.privacyPolicy")}</Link>
             </span>
           }
         />
         <Button type="submit" variant="primary" className="w-100" disabled={busy || enabled === null}>
           {busy ? (
             <>
-              <Spinner size="sm" className="me-2" /> Creating account…
+              <Spinner size="sm" className="me-2" /> {t("auth.creatingAccount")}
             </>
           ) : (
             <>
               <i className="fa-solid fa-user-plus me-2" />
-              Create account
+              {t("auth.registerTitle")}
             </>
           )}
         </Button>
       </Form>
       <div className="mt-3 small">
-        Already have an account? <Link to="/login">Sign in</Link>
+        {t("auth.alreadyHaveAccount")}{" "}
+        <Link to="/login">{t("auth.signIn")}</Link>
       </div>
     </AuthShell>
   );

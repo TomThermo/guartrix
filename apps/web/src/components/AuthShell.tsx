@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import type { ReactNode } from "react";
 import { Card, Col, Container, Row } from "react-bootstrap";
+import { useI18n } from "../i18n/react";
 
 export function AuthShell({
   title,
@@ -13,6 +14,8 @@ export function AuthShell({
   children: ReactNode;
   footer?: ReactNode;
 }) {
+  const { t } = useI18n();
+
   return (
     <Container className="min-vh-100 d-flex align-items-center py-4">
       <Row className="justify-content-center w-100">
@@ -36,11 +39,11 @@ export function AuthShell({
           </Card>
           <div className="text-center mt-3 small text-secondary">
             <Link to="/terms" className="link-secondary">
-              Terms
+              {t("nav.terms")}
             </Link>
             <span className="mx-2">·</span>
             <Link to="/privacy" className="link-secondary">
-              Privacy
+              {t("nav.privacy")}
             </Link>
           </div>
         </Col>

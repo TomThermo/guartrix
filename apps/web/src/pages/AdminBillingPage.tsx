@@ -20,6 +20,7 @@ import {
 } from "react-bootstrap";
 import { api } from "../api";
 import { useAuth } from "../auth";
+import { useI18n } from "../i18n/react";
 import { formatMoney } from "../utils";
 
 const emptyPlan = {
@@ -43,6 +44,7 @@ const emptyPlan = {
 
 export function AdminBillingPage() {
   const { user, authenticated } = useAuth();
+  const { t } = useI18n();
   const [plans, setPlans] = useState<PlanTemplateRecord[]>([]);
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
   const [keys, setKeys] = useState<ApplicationApiKeyRecord[]>([]);
@@ -167,11 +169,8 @@ export function AdminBillingPage() {
 
   return (
     <div>
-      <h1 className="h3 mb-1">Billing & Application API</h1>
-      <p className="text-secondary mb-3">
-        Plan templates, Mollie payments, and machine keys (`gta_…`) for external billing
-        panels.
-      </p>
+      <h1 className="h3 mb-1">{t("admin.billingTitle")}</h1>
+      <p className="text-secondary mb-3">{t("admin.billingSubtitle")}</p>
 
       {error && (
         <Alert variant="danger" dismissible onClose={() => setError(null)}>
@@ -193,7 +192,7 @@ export function AdminBillingPage() {
       {loading ? (
         <div className="text-secondary py-4">
           <Spinner size="sm" className="me-2" />
-          Loading…
+          {t("common.loading")}…
         </div>
       ) : (
         <Row className="g-4">
@@ -218,7 +217,7 @@ export function AdminBillingPage() {
                   />
                 </Col>
                 <Col sm={6}>
-                  <Form.Label className="small">Name</Form.Label>
+                  <Form.Label className="small">{t("common.name")}</Form.Label>
                   <Form.Control
                     size="sm"
                     value={planForm.name}
@@ -382,7 +381,7 @@ export function AdminBillingPage() {
                 </Col>
               </Row>
               <Button type="submit" size="sm" className="mt-3" disabled={busy}>
-                Create plan
+                {t("common.create")} plan
               </Button>
             </Form>
 
@@ -404,7 +403,7 @@ export function AdminBillingPage() {
                       {plan.autoCreateServer ? " · auto-server" : ""}
                     </div>
                     <Badge bg={plan.enabled ? "success" : "secondary"} className="mt-1">
-                      {plan.enabled ? "Enabled" : "Disabled"}
+                      {plan.enabled ? t("common.enabled") : t("common.disabled")}
                     </Badge>
                   </div>
                   <Stack direction="horizontal" gap={2}>
@@ -414,7 +413,7 @@ export function AdminBillingPage() {
                       disabled={busy}
                       onClick={() => void togglePlan(plan)}
                     >
-                      {plan.enabled ? "Disable" : "Enable"}
+                      {plan.enabled ? t("common.disable") : t("common.enable")}
                     </Button>
                     <Button
                       size="sm"
@@ -422,7 +421,7 @@ export function AdminBillingPage() {
                       disabled={busy}
                       onClick={() => void deletePlan(plan)}
                     >
-                      Delete
+                      {t("common.delete")}
                     </Button>
                   </Stack>
                 </ListGroup.Item>
@@ -437,7 +436,7 @@ export function AdminBillingPage() {
             <h2 className="h5 mb-3">Application API keys</h2>
             <Form onSubmit={(e) => void onCreateKey(e)} className="border rounded p-3 mb-3 bg-body-tertiary">
               <Form.Group className="mb-2">
-                <Form.Label className="small">Name</Form.Label>
+                <Form.Label className="small">{t("common.name")}</Form.Label>
                 <Form.Control
                   size="sm"
                   value={keyName}
@@ -465,7 +464,7 @@ export function AdminBillingPage() {
                 size="sm"
                 disabled={busy || !keyName.trim() || keys.filter((k) => !k.revokedAt).length >= maxKeys}
               >
-                Create key
+                {t("common.create")} key
               </Button>
             </Form>
             <ListGroup className="mb-4">

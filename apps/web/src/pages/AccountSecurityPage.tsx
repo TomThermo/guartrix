@@ -89,7 +89,9 @@ export function AccountSecurityPage() {
   useEffect(() => {
     setLoading(true);
     void Promise.all([refresh(), refreshPush()])
-      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load"))
+      .catch((err) =>
+        setError(err instanceof Error ? err.message : t("common.requestFailed")),
+      )
       .finally(() => setLoading(false));
   }, [refresh, refreshPush]);
 
@@ -100,9 +102,7 @@ export function AccountSecurityPage() {
     try {
       const status = await api.getPushStatus();
       if (!status.configured || !status.publicKey) {
-        throw new Error(
-          "Push alerts are not configured on this panel (operator must set VAPID keys).",
-        );
+        throw new Error(t("account.pushNotConfigured"));
       }
       const sub = await subscribeBrowserPush(status.publicKey);
       await api.subscribePush({
@@ -112,7 +112,7 @@ export function AccountSecurityPage() {
       setNotice("Push alerts enabled for this browser.");
       await refreshPush();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to enable push");
+      setError(err instanceof Error ? err.message : t("common.requestFailed"));
     } finally {
       setPushBusy(false);
     }
@@ -129,7 +129,7 @@ export function AccountSecurityPage() {
       setNotice("Push alerts disabled for this browser.");
       await refreshPush();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to disable push");
+      setError(err instanceof Error ? err.message : t("common.requestFailed"));
     } finally {
       setPushBusy(false);
     }
@@ -149,7 +149,7 @@ export function AccountSecurityPage() {
       setCode("");
       setStep("setup");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Setup failed");
+      setError(err instanceof Error ? err.message : t("common.requestFailed"));
     } finally {
       setBusy(false);
     }
@@ -168,7 +168,7 @@ export function AccountSecurityPage() {
       await refreshUser();
       setNotice("Two-factor authentication is now on.");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Invalid code");
+      setError(err instanceof Error ? err.message : t("auth.invalidCode"));
     } finally {
       setBusy(false);
     }
@@ -184,7 +184,7 @@ export function AccountSecurityPage() {
       setOtpauth("");
       setCode("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Cancel failed");
+      setError(err instanceof Error ? err.message : t("common.requestFailed"));
     } finally {
       setBusy(false);
     }
@@ -203,7 +203,7 @@ export function AccountSecurityPage() {
       await refresh();
       await refreshUser();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Disable failed");
+      setError(err instanceof Error ? err.message : t("common.requestFailed"));
     } finally {
       setBusy(false);
     }
@@ -222,7 +222,7 @@ export function AccountSecurityPage() {
       setNotice("New recovery codes generated — save them now.");
       await refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Regenerate failed");
+      setError(err instanceof Error ? err.message : t("common.requestFailed"));
     } finally {
       setBusy(false);
     }
@@ -243,7 +243,7 @@ export function AccountSecurityPage() {
       await api.exportAccountData();
       setNotice("Account data download started.");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Export failed");
+      setError(err instanceof Error ? err.message : t("common.requestFailed"));
     } finally {
       setExportBusy(false);
     }
@@ -255,7 +255,7 @@ export function AccountSecurityPage() {
       return;
     }
     if (!deletePassword) {
-      setError("Password is required.");
+      setError(`${t("common.required")}: ${t("common.password")}`);
       return;
     }
     setDeleteBusy(true);
@@ -266,7 +266,7 @@ export function AccountSecurityPage() {
       await logout();
       navigate("/login", { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Delete failed");
+      setError(err instanceof Error ? err.message : t("common.requestFailed"));
     } finally {
       setDeleteBusy(false);
     }
@@ -286,11 +286,10 @@ export function AccountSecurityPage() {
         <div>
           <h1 className="h3 mb-1">
             <i className="fa-solid fa-shield-halved me-2 text-primary" />
-            Account security
+            {t("account.title")}
           </h1>
           <p className="text-secondary mb-0">
-            Two-factor authentication (TOTP) for {user?.username}. SFTP keeps using
-            your panel password.
+            {t("account.subtitle", { username: user?.username ?? "" })}
           </p>
         </div>
         <Link to="/" className="btn btn-sm btn-outline-secondary">
@@ -317,10 +316,7 @@ export function AccountSecurityPage() {
       </Card>
 
       {required && !enabled && (
-        <Alert variant="warning">
-          <strong>Required for your role.</strong> Enable two-factor authentication
-          before you can change servers, users, or other settings.
-        </Alert>
+        <Alert variant="warning">{t("account.requiredRole")}</Alert>
       )}
 
       {error && (
@@ -383,30 +379,28 @@ export function AccountSecurityPage() {
 
       <Card className="border-0 shadow-sm mb-4">
         <Card.Body>
-          <h2 className="h6 mb-2">Push alerts</h2>
-          <p className="text-secondary small mb-3">
-            Opt in to browser / PWA notifications for critical events (crash,
-            crash-loop, high disk, unexpected offline). Alerts go to the server
-            owner who enabled push on this device.
-          </p>
+          <h2 className="h6 mb-2">{t("account.pushTitle")}</h2>
+          <p className="text-secondary small mb-3">{t("account.pushHelp")}</p>
           {!pushSupported() ? (
-            <p className="text-secondary small mb-0">
-              This browser does not support Web Push.
-            </p>
+            <p className="text-secondary small mb-0">{t("account.pushUnsupported")}</p>
           ) : !pushConfigured ? (
             <Alert variant="secondary" className="py-2 mb-0">
-              Push is not configured on this panel yet. The operator must set{" "}
-              <code>VAPID_PUBLIC_KEY</code> and <code>VAPID_PRIVATE_KEY</code>.
+              {t("account.pushNotConfigured")}
             </Alert>
           ) : (
             <div className="d-flex flex-wrap align-items-center gap-2">
               <span className="small text-secondary">
-                This browser:{" "}
+                {t("account.pushThisBrowser")}{" "}
                 <strong className={pushLocal ? "text-success" : undefined}>
-                  {pushLocal ? "enabled" : "off"}
+                  {pushLocal ? t("account.pushEnabled") : t("account.pushOff")}
                 </strong>
                 {pushCount > 0 && (
-                  <> · {pushCount} device{pushCount === 1 ? "" : "s"} on your account</>
+                  <>
+                    {" "}
+                    {pushCount === 1
+                      ? t("account.pushDevices", { count: pushCount })
+                      : t("account.pushDevicesPlural", { count: pushCount })}
+                  </>
                 )}
               </span>
               {pushLocal ? (
@@ -416,7 +410,7 @@ export function AccountSecurityPage() {
                   disabled={pushBusy}
                   onClick={() => void disablePush()}
                 >
-                  {pushBusy ? "…" : "Disable on this device"}
+                  {pushBusy ? t("common.waiting") : t("account.pushDisable")}
                 </Button>
               ) : (
                 <Button
@@ -425,7 +419,7 @@ export function AccountSecurityPage() {
                   disabled={pushBusy}
                   onClick={() => void enablePush()}
                 >
-                  {pushBusy ? "…" : "Enable push alerts"}
+                  {pushBusy ? t("common.waiting") : t("account.pushEnable")}
                 </Button>
               )}
             </div>
@@ -435,23 +429,27 @@ export function AccountSecurityPage() {
 
       <Card className="border-0 shadow-sm mb-4">
         <Card.Body>
-          <h2 className="h6 mb-3">Authenticator app</h2>
+          <h2 className="h6 mb-3">{t("account.totpTitle")}</h2>
           <p className="text-secondary small mb-3">
-            Status:{" "}
+            {t("account.totpStatus")}{" "}
             {enabled ? (
-              <span className="text-success fw-semibold">Enabled</span>
+              <span className="text-success fw-semibold">{t("common.enabled")}</span>
             ) : (
-              <span className="text-secondary fw-semibold">Off</span>
+              <span className="text-secondary fw-semibold">{t("common.off")}</span>
             )}
-            {required && " · required for your role"}
+            {required && t("account.totpRequiredRole")}
             {enabled && recoveryLeft > 0 && (
-              <> · {recoveryLeft} recovery code{recoveryLeft === 1 ? "" : "s"} left</>
+              <>
+                {recoveryLeft === 1
+                  ? t("account.totpRecoveryLeft", { count: recoveryLeft })
+                  : t("account.totpRecoveryLeftPlural", { count: recoveryLeft })}
+              </>
             )}
           </p>
 
           {step === "idle" && !enabled && (
             <Button variant="primary" disabled={busy} onClick={() => void startSetup()}>
-              {busy ? "Starting…" : "Enable two-factor"}
+              {busy ? t("account.totpStarting") : t("account.totpEnable")}
             </Button>
           )}
 
@@ -467,7 +465,7 @@ export function AccountSecurityPage() {
                   setError(null);
                 }}
               >
-                New recovery codes
+                {t("account.totpNewRecovery")}
               </Button>
               {!required && (
                 <Button
@@ -480,7 +478,7 @@ export function AccountSecurityPage() {
                     setError(null);
                   }}
                 >
-                  Disable
+                  {t("account.totpDisable")}
                 </Button>
               )}
             </div>
@@ -489,27 +487,29 @@ export function AccountSecurityPage() {
           {step === "setup" && (
             <div>
               <ol className="small text-secondary mb-3 ps-3">
-                <li>Open Google Authenticator, Authy, 1Password, or similar.</li>
-                <li>Scan the QR code below (or type the secret manually).</li>
-                <li>Enter the 6-digit code your app shows to confirm.</li>
+                <li>{t("account.totpStep1")}</li>
+                <li>{t("account.totpStep2")}</li>
+                <li>{t("account.totpStep3")}</li>
               </ol>
               <div className="d-flex flex-column flex-sm-row align-items-center gap-3 mb-3">
                 <TotpQr value={otpauth} size={208} />
                 <div className="w-100">
-                  <div className="small text-secondary mb-1">Manual entry secret</div>
+                  <div className="small text-secondary mb-1">
+                    {t("account.totpManualSecret")}
+                  </div>
                   <div className="bg-dark text-light rounded p-3 font-monospace text-center user-select-all">
                     {secretGrouped}
                   </div>
                   <div className="mt-2 small">
                     <a href={otpauth} className="link-primary">
-                      Open in authenticator app
+                      {t("account.totpOpenApp")}
                     </a>
                   </div>
                 </div>
               </div>
               <Form onSubmit={confirmEnable}>
                 <Form.Group className="mb-3" controlId="enable-code">
-                  <Form.Label>Confirm with a 6-digit code</Form.Label>
+                  <Form.Label>{t("account.totpConfirmCode")}</Form.Label>
                   <Form.Control
                     type="text"
                     inputMode="numeric"
@@ -522,7 +522,7 @@ export function AccountSecurityPage() {
                 </Form.Group>
                 <div className="d-flex flex-wrap gap-2">
                   <Button type="submit" variant="primary" disabled={busy}>
-                    {busy ? "Verifying…" : "Confirm & enable"}
+                    {busy ? t("auth.verifying") : t("account.totpConfirmEnable")}
                   </Button>
                   <Button
                     type="button"
@@ -530,7 +530,7 @@ export function AccountSecurityPage() {
                     disabled={busy}
                     onClick={() => void cancelSetup()}
                   >
-                    Cancel
+                    {t("common.cancel")}
                   </Button>
                 </div>
               </Form>
@@ -540,7 +540,7 @@ export function AccountSecurityPage() {
           {step === "disable" && (
             <Form onSubmit={onDisable}>
               <Form.Group className="mb-3" controlId="disable-password">
-                <Form.Label>Password</Form.Label>
+                <Form.Label>{t("common.password")}</Form.Label>
                 <Form.Control
                   type="password"
                   autoComplete="current-password"
@@ -550,7 +550,7 @@ export function AccountSecurityPage() {
                 />
               </Form.Group>
               <Form.Group className="mb-3" controlId="disable-code">
-                <Form.Label>Authenticator code</Form.Label>
+                <Form.Label>{t("account.totpAuthenticatorCode")}</Form.Label>
                 <Form.Control
                   type="text"
                   inputMode="numeric"
@@ -562,14 +562,14 @@ export function AccountSecurityPage() {
               </Form.Group>
               <div className="d-flex flex-wrap gap-2">
                 <Button type="submit" variant="danger" disabled={busy}>
-                  {busy ? "Disabling…" : "Disable two-factor"}
+                  {busy ? t("account.totpDisabling") : t("account.totpDisableConfirm")}
                 </Button>
                 <Button
                   type="button"
                   variant="outline-secondary"
                   onClick={() => setStep("idle")}
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </Button>
               </div>
             </Form>
@@ -577,11 +577,9 @@ export function AccountSecurityPage() {
 
           {step === "regen" && (
             <Form onSubmit={onRegen}>
-              <p className="small text-secondary">
-                Old recovery codes stop working as soon as you generate new ones.
-              </p>
+              <p className="small text-secondary">{t("account.totpRegenHelp")}</p>
               <Form.Group className="mb-3" controlId="regen-password">
-                <Form.Label>Password</Form.Label>
+                <Form.Label>{t("common.password")}</Form.Label>
                 <Form.Control
                   type="password"
                   autoComplete="current-password"
@@ -591,7 +589,7 @@ export function AccountSecurityPage() {
                 />
               </Form.Group>
               <Form.Group className="mb-3" controlId="regen-code">
-                <Form.Label>Authenticator code</Form.Label>
+                <Form.Label>{t("account.totpAuthenticatorCode")}</Form.Label>
                 <Form.Control
                   type="text"
                   inputMode="numeric"
@@ -603,14 +601,14 @@ export function AccountSecurityPage() {
               </Form.Group>
               <div className="d-flex flex-wrap gap-2">
                 <Button type="submit" variant="primary" disabled={busy}>
-                  {busy ? "Generating…" : "Generate new codes"}
+                  {busy ? t("account.totpGenerating") : t("account.totpGenerateCodes")}
                 </Button>
                 <Button
                   type="button"
                   variant="outline-secondary"
                   onClick={() => setStep("idle")}
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </Button>
               </div>
             </Form>
@@ -619,8 +617,7 @@ export function AccountSecurityPage() {
           {step === "recovery" && recoveryCodes && (
             <div>
               <Alert variant="warning" className="small">
-                Save these recovery codes somewhere safe. Each works once. They will
-                not be shown again.
+                {t("account.totpSaveCodes")}
               </Alert>
               <ListGroup className="mb-3 font-monospace">
                 {recoveryCodes.map((c) => (
@@ -629,7 +626,7 @@ export function AccountSecurityPage() {
               </ListGroup>
               <div className="d-flex flex-wrap gap-2">
                 <Button variant="outline-secondary" size="sm" onClick={copyCodes}>
-                  Copy all
+                  {t("account.totpCopyAll")}
                 </Button>
                 <Button
                   variant="primary"
@@ -639,7 +636,7 @@ export function AccountSecurityPage() {
                     setStep("idle");
                   }}
                 >
-                  Done
+                  {t("common.done")}
                 </Button>
               </div>
             </div>
@@ -649,7 +646,7 @@ export function AccountSecurityPage() {
 
       <Card className="mb-4">
         <Card.Body>
-          <Card.Title className="h5">SFTP app passwords</Card.Title>
+          <Card.Title className="h5">{t("account.sftpAppPasswords")}</Card.Title>
           <AppPasswordsPanel onError={setError} />
         </Card.Body>
       </Card>
@@ -658,18 +655,15 @@ export function AccountSecurityPage() {
 
       <Card className="mb-4">
         <Card.Body>
-          <Card.Title className="h5">Your data</Card.Title>
-          <p className="small text-secondary mb-3">
-            Download a copy of your account data, or permanently delete your
-            account. Deleting signs you out immediately.
-          </p>
+          <Card.Title className="h5">{t("account.yourData")}</Card.Title>
+          <p className="small text-secondary mb-3">{t("account.yourDataHelp")}</p>
           <div className="d-flex flex-wrap gap-2 mb-3">
             <Button
               variant="outline-primary"
               disabled={busy || exportBusy}
               onClick={() => void onExportData()}
             >
-              {exportBusy ? "Preparing…" : "Export data"}
+              {exportBusy ? t("account.exportPreparing") : t("account.exportData")}
             </Button>
             <Button
               variant="outline-danger"
@@ -680,7 +674,7 @@ export function AccountSecurityPage() {
                 setShowDelete(true);
               }}
             >
-              Delete account
+              {t("account.deleteAccount")}
             </Button>
           </div>
         </Card.Body>
@@ -688,9 +682,9 @@ export function AccountSecurityPage() {
 
       <ConfirmModal
         show={showDelete}
-        title="Delete your account?"
+        title={t("account.deleteAccountTitle")}
         variant="danger"
-        confirmLabel="Delete account"
+        confirmLabel={t("account.deleteAccount")}
         busy={deleteBusy}
         onCancel={() => {
           if (!deleteBusy) setShowDelete(false);
@@ -698,14 +692,9 @@ export function AccountSecurityPage() {
         onConfirm={() => void onDeleteAccount()}
         body={
           <div>
-            <p className="mb-3">
-              This permanently removes your account, API keys, and billing
-              records. Owned servers are reassigned to another admin when
-              possible. Type <strong>DELETE</strong> and enter your password to
-              confirm.
-            </p>
+            <p className="mb-3">{t("account.deleteAccountBody")}</p>
             <Form.Group className="mb-3" controlId="delete-confirm">
-              <Form.Label>Confirmation</Form.Label>
+              <Form.Label>{t("account.deleteConfirmation")}</Form.Label>
               <Form.Control
                 value={deleteConfirm}
                 onChange={(e) => setDeleteConfirm(e.target.value)}
@@ -715,7 +704,7 @@ export function AccountSecurityPage() {
               />
             </Form.Group>
             <Form.Group controlId="delete-password">
-              <Form.Label>Password</Form.Label>
+              <Form.Label>{t("common.password")}</Form.Label>
               <Form.Control
                 type="password"
                 autoComplete="current-password"

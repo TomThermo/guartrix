@@ -12,6 +12,7 @@ import {
   Stack,
 } from "react-bootstrap";
 import { api } from "../api";
+import { useI18n } from "../i18n/react";
 import { copyText } from "../utils";
 
 type Step = "howto" | "details" | "install" | "done";
@@ -33,6 +34,7 @@ type Props = {
 };
 
 export function AddNodeModal({ existingNode, onClose, onChanged }: Props) {
+  const { t } = useI18n();
   const [step, setStep] = useState<Step>(existingNode ? "install" : "howto");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -220,12 +222,12 @@ export function AddNodeModal({ existingNode, onClose, onChanged }: Props) {
   const canClose = !busy;
   const title =
     step === "howto"
-      ? "Add node"
+      ? t("admin.addNode")
       : step === "details"
         ? "New node"
         : step === "install"
           ? `Install daemon — ${nodeLabel || "node"}`
-          : "Done";
+          : t("common.done");
 
   return (
     <Modal
@@ -549,10 +551,10 @@ export function AddNodeModal({ existingNode, onClose, onChanged }: Props) {
         {step === "howto" && (
           <>
             <Button variant="outline-secondary" onClick={onClose}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button variant="primary" onClick={() => setStep("details")}>
-              Continue
+              {t("common.next")}
             </Button>
           </>
         )}
@@ -563,7 +565,7 @@ export function AddNodeModal({ existingNode, onClose, onChanged }: Props) {
               disabled={busy}
               onClick={() => setStep("howto")}
             >
-              Back
+              {t("common.back")}
             </Button>
             <Button
               type="submit"
@@ -583,22 +585,22 @@ export function AddNodeModal({ existingNode, onClose, onChanged }: Props) {
                 onClick={() => setStep("details")}
                 disabled={busy}
               >
-                Back
+                {t("common.back")}
               </Button>
             )}
             <Button variant="outline-secondary" disabled={busy} onClick={onClose}>
-              Install later
+              {t("common.cancel")}
             </Button>
             {installOk && (
               <Button variant="primary" onClick={() => setStep("done")}>
-                Finish
+                {t("common.done")}
               </Button>
             )}
           </>
         )}
         {step === "done" && (
           <Button variant="primary" onClick={onClose}>
-            Close
+            {t("common.close")}
           </Button>
         )}
       </Modal.Footer>

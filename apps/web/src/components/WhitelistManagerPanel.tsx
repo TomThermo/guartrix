@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import type { PlayersResponse, ServerDetail, ServerProperties } from "@msm/shared";
 import { Button, Form } from "react-bootstrap";
 import { api } from "../api";
+import { useI18n } from "../i18n/react";
 import { PlayerHead } from "./PlayerHead";
 
 interface Props {
@@ -24,6 +25,7 @@ export function WhitelistManagerPanel({
   onNotice,
   canUpdate = true,
 }: Props) {
+  const { t } = useI18n();
   const [players, setPlayers] = useState<PlayersResponse>(server.players);
   const [props, setProps] = useState<ServerProperties>({ ...server.properties });
   const [wlName, setWlName] = useState("");
@@ -124,7 +126,7 @@ export function WhitelistManagerPanel({
   return (
     <div className="whitelist-manager">
       <header className="wl-page-header">
-        <h2 className="wl-page-title">Whitelist Manager</h2>
+        <h2 className="wl-page-title">{t("whitelist.title")}</h2>
         <p className="wl-page-desc">
           Control who can join and who has operator rights.
           {server.status === "RUNNING"
@@ -145,8 +147,8 @@ export function WhitelistManagerPanel({
                 setProps((prev) => ({ ...prev, "white-list": e.target.value }))
               }
             >
-              <option value="true">Enabled</option>
-              <option value="false">Disabled</option>
+              <option value="true">{t("whitelist.enabled")}</option>
+              <option value="false">{t("whitelist.disabled")}</option>
             </Form.Select>
           </div>
           <div className="wl-settings-item">
@@ -161,14 +163,14 @@ export function WhitelistManagerPanel({
                 }))
               }
             >
-              <option value="true">Enabled</option>
-              <option value="false">Disabled</option>
+              <option value="true">{t("whitelist.enabled")}</option>
+              <option value="false">{t("whitelist.disabled")}</option>
             </Form.Select>
           </div>
           {canUpdate && (
             <div className="wl-settings-action">
               <Button type="submit" variant="primary" disabled={savingFlags}>
-                {savingFlags ? "Saving…" : "Save"}
+                {savingFlags ? t("common.saving") : t("common.save")}
               </Button>
             </div>
           )}
@@ -182,7 +184,7 @@ export function WhitelistManagerPanel({
             <Form.Control
               value={wlName}
               onChange={(e) => setWlName(e.target.value)}
-              placeholder="Minecraft username"
+              placeholder={t("whitelist.player")}
               maxLength={16}
               required
             />
@@ -192,7 +194,7 @@ export function WhitelistManagerPanel({
           </Form>
         )}
         {players.whitelist.length === 0 ? (
-          <p className="wl-empty">No whitelisted players</p>
+          <p className="wl-empty">{t("whitelist.empty")}</p>
         ) : (
           <div className="wl-player-grid">
             {players.whitelist.map((p) => (
@@ -223,7 +225,7 @@ export function WhitelistManagerPanel({
             <Form.Control
               value={opName}
               onChange={(e) => setOpName(e.target.value)}
-              placeholder="Minecraft username"
+              placeholder={t("whitelist.player")}
               maxLength={16}
               required
             />

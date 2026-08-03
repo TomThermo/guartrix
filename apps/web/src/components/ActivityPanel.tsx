@@ -10,6 +10,7 @@ import {
 import { Badge, Button, Col, Form, Row, Spinner, Table } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import { api } from "../api";
+import { useI18n } from "../i18n/react";
 import { formatWhen } from "../utils";
 
 interface Props {
@@ -28,6 +29,7 @@ export function ActivityPanel({
   showServer = false,
   onError,
 }: Props) {
+  const { t } = useI18n();
   const [events, setEvents] = useState<ActivityEventRecord[]>([]);
   const [total, setTotal] = useState(0);
   const [retentionDays, setRetentionDays] = useState(0);
@@ -157,7 +159,7 @@ export function ActivityPanel({
     <div className="databases-panel">
       <header className="databases-panel-header d-flex justify-content-between align-items-start flex-wrap gap-2">
         <div>
-          <h2 className="databases-panel-title">Activity</h2>
+          <h2 className="databases-panel-title">{t("activity.title")}</h2>
           <p className="databases-panel-lead mb-0">
             Who started, stopped or changed what
             {serverId ? " on this server" : userId ? " for this user" : " across the panel"}.
@@ -222,7 +224,7 @@ export function ActivityPanel({
             </Form.Select>
           </Col>
           <Col xs={12} md={4}>
-            <Form.Label className="small text-secondary mb-1">Search</Form.Label>
+            <Form.Label className="small text-secondary mb-1">{t("common.search")}</Form.Label>
             <Form.Control
               size="sm"
               value={search}
@@ -255,10 +257,10 @@ export function ActivityPanel({
       {loading ? (
         <div className="p-4 text-center text-secondary">
           <Spinner animation="border" size="sm" className="me-2" />
-          Loading activity…
+          {t("common.loading")}…
         </div>
       ) : events.length === 0 ? (
-        <p className="databases-empty mb-0">No activity recorded yet.</p>
+        <p className="databases-empty mb-0">{t("activity.empty")}</p>
       ) : (
         <div className="table-responsive">
           <Table hover size="sm" className="align-middle mb-0 databases-table">

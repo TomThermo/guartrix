@@ -5,6 +5,7 @@ import type {
   ServerPermission,
 } from "@msm/shared";
 import { Badge, Button, Dropdown } from "react-bootstrap";
+import { useI18n } from "../../i18n/react";
 import { statusBadgeClass, typeIcon, typeLabel } from "../../utils";
 import type { TabId } from "./server-tabs";
 
@@ -53,6 +54,8 @@ export function ServerDetailHeader({
   onShowReinstall: () => void;
   onShowNodeTransfer: () => void;
 }) {
+  const { t } = useI18n();
+
   return (
     <div className="server-detail-header mb-3">
       <div className="server-detail-title-row">
@@ -60,7 +63,7 @@ export function ServerDetailHeader({
           variant="outline-secondary"
           className="server-burger-btn d-lg-none"
           onClick={onOpenMobileNav}
-          aria-label="Open section menu"
+          aria-label={t("serverDetail.openMenu")}
         >
           <i className="fa-solid fa-bars" aria-hidden />
         </Button>
@@ -79,7 +82,7 @@ export function ServerDetailHeader({
               variant="link"
               className="server-detail-address p-0 text-secondary text-decoration-none text-truncate"
               onClick={onCopyConnect}
-              title="Copy connect address"
+              title={t("serverDetail.copyAddress")}
             >
               <i className="fa-solid fa-copy" aria-hidden />
               <span className="text-truncate">
@@ -96,13 +99,15 @@ export function ServerDetailHeader({
             {isAdmin || server.ownerUsername ? (
               <Badge
                 bg={server.ownerUsername ? "dark" : "secondary"}
-                title={isAdmin ? "Click to transfer owner" : "Owner"}
+                title={
+                  isAdmin ? t("serverDetail.transferOwner") : t("serverDetail.owner")
+                }
                 role={isAdmin ? "button" : undefined}
                 style={isAdmin ? { cursor: "pointer" } : undefined}
                 onClick={isAdmin ? onShowTransfer : undefined}
               >
                 <i className="fa-solid fa-user" aria-hidden />
-                {server.ownerUsername ?? "Unassigned"}
+                {server.ownerUsername ?? t("serverDetail.unassigned")}
               </Badge>
             ) : null}
             <span className="server-detail-meta-text">
@@ -123,7 +128,7 @@ export function ServerDetailHeader({
                 className="server-detail-meta-action"
                 role="button"
                 tabIndex={0}
-                title="Online players — open Online Players"
+                title={t("serverDetail.onlinePlayersTitle")}
                 onClick={() => onChangeTab("players")}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
@@ -149,10 +154,10 @@ export function ServerDetailHeader({
                 tabIndex={0}
                 title={
                   can("settings.update")
-                    ? "Click to change whitelist"
+                    ? t("serverDetail.clickWhitelist")
                     : whitelistOn
-                      ? "Whitelist enabled"
-                      : "Whitelist disabled"
+                      ? t("serverDetail.whitelistEnabled")
+                      : t("serverDetail.whitelistDisabled")
                 }
                 onClick={() => {
                   if (can("settings.update")) onShowWhitelistModal();
@@ -170,7 +175,7 @@ export function ServerDetailHeader({
                   className={`fa-solid ${whitelistOn ? "fa-shield-halved" : "fa-shield"}`}
                   aria-hidden
                 />
-                WL {whitelistOn ? "on" : "off"}
+                {whitelistOn ? t("serverDetail.wlOn") : t("serverDetail.wlOff")}
               </Badge>
             )}
             {supportsAddons && can("addon.read") && (
@@ -179,7 +184,7 @@ export function ServerDetailHeader({
                 className="server-detail-meta-action"
                 role="button"
                 tabIndex={0}
-                title="Open Plugin Management"
+                title={t("serverDetail.openAddons")}
                 onClick={() => onChangeTab("addons")}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
@@ -190,13 +195,15 @@ export function ServerDetailHeader({
               >
                 <i className="fa-solid fa-puzzle-piece" aria-hidden />
                 {addonUpdateCount > 0
-                  ? `${addonUpdateCount} update${addonUpdateCount === 1 ? "" : "s"}`
-                  : "Up to date"}
+                  ? addonUpdateCount === 1
+                    ? t("common.updateOne", { count: addonUpdateCount })
+                    : t("common.updateMany", { count: addonUpdateCount })
+                  : t("serverDetail.upToDate")}
               </Badge>
             )}
             {server.autoRestart && (
               <Badge bg="info" text="dark">
-                Auto-restart
+                {t("serverDetail.autoRestart")}
               </Badge>
             )}
           </div>
@@ -211,66 +218,66 @@ export function ServerDetailHeader({
                 <Button
                   variant="outline-secondary"
                   disabled={busy}
-                  title="Change Minecraft version"
+                  title={t("serverDetail.changeVersionTitle")}
                   onClick={onShowVersionPicker}
                 >
                   <i className="fa-solid fa-code-branch" />
-                  <span className="btn-label">Version</span>
+                  <span className="btn-label">{t("serverDetail.version")}</span>
                 </Button>
               )}
               {can("settings.update") && (
                 <Button
                   variant="outline-secondary"
                   disabled={busy}
-                  title="Change software (Paper, Fabric, …)"
+                  title={t("serverDetail.changeSoftwareTitle")}
                   onClick={onShowChangeType}
                 >
                   <i className="fa-solid fa-puzzle-piece" />
-                  <span className="btn-label">Software</span>
+                  <span className="btn-label">{t("serverDetail.software")}</span>
                 </Button>
               )}
               {canClone && (
                 <Button
                   variant="outline-secondary"
                   disabled={busy}
-                  title="Clone server"
+                  title={t("serverDetail.cloneServer")}
                   onClick={onShowClone}
                 >
                   <i className="fa-solid fa-clone" />
-                  <span className="btn-label">Clone</span>
+                  <span className="btn-label">{t("serverDetail.clone")}</span>
                 </Button>
               )}
               {can("settings.update") && (
                 <Button
                   variant="outline-secondary"
                   disabled={busy}
-                  title="Reinstall server"
+                  title={t("serverDetail.reinstallTitle")}
                   onClick={onShowReinstall}
                 >
                   <i className="fa-solid fa-rotate" />
-                  <span className="btn-label">Reinstall</span>
+                  <span className="btn-label">{t("serverDetail.reinstall")}</span>
                 </Button>
               )}
               {isAdmin && (
                 <Button
                   variant="outline-secondary"
                   disabled={busy || server.status === "TRANSFERRING"}
-                  title="Move to another node"
+                  title={t("serverDetail.moveTitle")}
                   onClick={onShowNodeTransfer}
                 >
                   <i className="fa-solid fa-right-left" />
-                  <span className="btn-label">Move</span>
+                  <span className="btn-label">{t("serverDetail.move")}</span>
                 </Button>
               )}
               {isAdmin && (
                 <Button
                   variant="outline-secondary"
                   disabled={busy}
-                  title="Transfer owner"
+                  title={t("serverDetail.transferOwnerAction")}
                   onClick={onShowTransfer}
                 >
                   <i className="fa-solid fa-user-tag" />
-                  <span className="btn-label">Owner</span>
+                  <span className="btn-label">{t("serverDetail.owner")}</span>
                 </Button>
               )}
             </div>
@@ -287,10 +294,10 @@ export function ServerDetailHeader({
                 disabled={busy}
               >
                 <i className="fa-solid fa-ellipsis-vertical" aria-hidden />
-                <span>Manage</span>
+                <span>{t("serverDetail.manage")}</span>
               </Dropdown.Toggle>
               <Dropdown.Menu className="server-manage-menu">
-                <Dropdown.Header>Server actions</Dropdown.Header>
+                <Dropdown.Header>{t("serverDetail.serverActions")}</Dropdown.Header>
                 {can("settings.update") && (
                   <Dropdown.Item
                     as="button"
@@ -298,7 +305,7 @@ export function ServerDetailHeader({
                     onClick={onShowVersionPicker}
                   >
                     <i className="fa-solid fa-code-branch fa-fw me-2 text-secondary" />
-                    Change version
+                    {t("serverDetail.changeVersion")}
                   </Dropdown.Item>
                 )}
                 {can("settings.update") && (
@@ -308,7 +315,7 @@ export function ServerDetailHeader({
                     onClick={onShowChangeType}
                   >
                     <i className="fa-solid fa-puzzle-piece fa-fw me-2 text-secondary" />
-                    Change software
+                    {t("serverDetail.changeSoftware")}
                   </Dropdown.Item>
                 )}
                 {canClone && (
@@ -318,7 +325,7 @@ export function ServerDetailHeader({
                     onClick={onShowClone}
                   >
                     <i className="fa-solid fa-clone fa-fw me-2 text-secondary" />
-                    Clone server
+                    {t("serverDetail.cloneServer")}
                   </Dropdown.Item>
                 )}
                 {can("settings.update") && (
@@ -328,7 +335,7 @@ export function ServerDetailHeader({
                     onClick={onShowReinstall}
                   >
                     <i className="fa-solid fa-rotate fa-fw me-2 text-secondary" />
-                    Reinstall
+                    {t("serverDetail.reinstall")}
                   </Dropdown.Item>
                 )}
                 {isAdmin && (
@@ -340,7 +347,7 @@ export function ServerDetailHeader({
                       onClick={onShowNodeTransfer}
                     >
                       <i className="fa-solid fa-right-left fa-fw me-2 text-secondary" />
-                      Move to node
+                      {t("serverDetail.moveToNode")}
                     </Dropdown.Item>
                     <Dropdown.Item
                       as="button"
@@ -348,7 +355,7 @@ export function ServerDetailHeader({
                       onClick={onShowTransfer}
                     >
                       <i className="fa-solid fa-user-tag fa-fw me-2 text-secondary" />
-                      Transfer owner
+                      {t("serverDetail.transferOwnerAction")}
                     </Dropdown.Item>
                   </>
                 )}

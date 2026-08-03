@@ -8,6 +8,7 @@ import type {
 } from "@msm/shared";
 import { Button, Col, Row } from "react-bootstrap";
 import { api } from "../api";
+import { useI18n } from "../i18n/react";
 import { Console } from "./Console";
 import { ConsoleOnlineHeads } from "./ConsoleOnlineHeads";
 import {
@@ -127,6 +128,7 @@ export function ServerConsoleLayout({
   onNotice,
   consoleNotices = [],
 }: Props) {
+  const { t } = useI18n();
   const allowStart = canStart ?? canWrite ?? false;
   const allowStop = canStop ?? canWrite ?? false;
   const allowKill = canKill ?? false;
@@ -270,7 +272,7 @@ export function ServerConsoleLayout({
                     onClick={onStart}
                   >
                     <i className="fa-solid fa-play me-1" />
-                    Start
+                    {t("common.start")}
                   </Button>
                 )}
                 {allowStop && (
@@ -282,7 +284,7 @@ export function ServerConsoleLayout({
                     onClick={onStop}
                   >
                     <i className="fa-solid fa-stop me-1" />
-                    Stop
+                    {t("common.stop")}
                   </Button>
                 )}
                 {allowKill && (
@@ -295,7 +297,7 @@ export function ServerConsoleLayout({
                     onClick={() => onKill?.()}
                   >
                     <i className="fa-solid fa-skull-crossbones me-1" />
-                    Kill
+                    {t("common.kill")}
                   </Button>
                 )}
                 {allowRestart && (
@@ -307,7 +309,7 @@ export function ServerConsoleLayout({
                     onClick={onRestart}
                   >
                     <i className="fa-solid fa-rotate-right me-1" />
-                    Restart
+                    {t("common.restart")}
                   </Button>
                 )}
               </div>
@@ -324,7 +326,7 @@ export function ServerConsoleLayout({
       <Col xs={12} md={6}>
         <div className="chart-matrix-card">
           <MatrixChart
-            title="RAM"
+            title={t("resources.ram")}
             points={memPoints}
             max={memMax}
             unit=" MB"
@@ -339,7 +341,7 @@ export function ServerConsoleLayout({
       <Col xs={12} md={6}>
         <div className="chart-matrix-card">
           <MatrixChart
-            title="CPU"
+            title={t("resources.cpu")}
             points={cpuPoints}
             max={100}
             unit="%"
@@ -354,7 +356,7 @@ export function ServerConsoleLayout({
       <Col xs={12} md={6}>
         <div className="chart-matrix-card">
           <MatrixChart
-            title="Net ↓"
+            title={t("resources.network")}
             points={rxPoints}
             max={netMax}
             unit={netMax >= 1024 ? " MiB/s" : " KiB/s"}
@@ -368,7 +370,7 @@ export function ServerConsoleLayout({
       <Col xs={12} md={6}>
         <div className="chart-matrix-card">
           <MatrixChart
-            title="Net ↑"
+            title={t("resources.network")}
             points={txPoints}
             max={netMax}
             unit={netMax >= 1024 ? " MiB/s" : " KiB/s"}

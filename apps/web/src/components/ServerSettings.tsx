@@ -26,6 +26,7 @@ import {
   Row,
 } from "react-bootstrap";
 import { api } from "../api";
+import { useI18n } from "../i18n/react";
 import { useAuth } from "../auth";
 import { copyText } from "../utils";
 import { CATEGORIES, type CategoryId } from "./server-settings/settings-fields";
@@ -53,6 +54,7 @@ export function ServerSettings({
   canUpdateSettings = true,
   canUpdateStartup = true,
 }: Props) {
+  const { t } = useI18n();
   const { user } = useAuth();
   const isAdmin = user?.role === "ADMIN";
   const settingsEditable = canUpdateSettings;
@@ -306,6 +308,7 @@ export function ServerSettings({
   }
 
   const activeCategory = CATEGORIES.find((c) => c.id === category) ?? CATEGORIES[0];
+  const settingsLabel = (id: CategoryId) => t(`settings.${id}`);
   const canSaveCategory =
     category === "general" || category === "performance"
       ? settingsEditable || startupEditable
@@ -341,7 +344,7 @@ export function ServerSettings({
                 <span className="d-flex align-items-center gap-2 min-w-0">
                   <i className="fa-solid fa-bars" aria-hidden />
                   <i className={`fa-solid ${activeCategory.icon}`} aria-hidden />
-                  <span className="text-truncate">{activeCategory.label}</span>
+                  <span className="text-truncate">{settingsLabel(activeCategory.id)}</span>
                 </span>
               </Dropdown.Toggle>
               <Dropdown.Menu className="w-100">
@@ -354,7 +357,7 @@ export function ServerSettings({
                     <div className="d-flex align-items-start gap-2">
                       <i className={`fa-solid ${c.icon} mt-1`} />
                       <div className="min-w-0">
-                        <div className="fw-semibold">{c.label}</div>
+                        <div className="fw-semibold">{settingsLabel(c.id)}</div>
                         <div className="small text-secondary text-wrap">{c.hint}</div>
                       </div>
                     </div>
@@ -373,7 +376,7 @@ export function ServerSettings({
               >
                 <div className="fw-semibold">
                   <i className={`fa-solid ${c.icon} me-2`} />
-                  {c.label}
+                  {settingsLabel(c.id)}
                 </div>
                 <div className="small opacity-75 settings-nav-hint">{c.hint}</div>
               </Nav.Link>
@@ -384,7 +387,7 @@ export function ServerSettings({
 
       <Col xs={12} lg={9}>
         <div className="mb-3 d-none d-lg-block">
-          <h2 className="h5 mb-1">{activeCategory.label}</h2>
+          <h2 className="h5 mb-1">{settingsLabel(activeCategory.id)}</h2>
           <p className="text-secondary small mb-0">{activeCategory.hint}</p>
         </div>
         <div className="mb-3 d-lg-none">
@@ -516,7 +519,7 @@ export function ServerSettings({
                   (!jarOk || !heapCheck.ok))
               }
             >
-              {saving ? "Saving…" : "Save category"}
+              {saving ? t("settings.saving") : t("settings.save")}
             </Button>
           </Form>
       </Col>

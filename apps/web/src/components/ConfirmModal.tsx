@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, type ReactNode } from "react";
 import { Button, Modal, Spinner } from "react-bootstrap";
+import { useI18n } from "../i18n/react";
 
 export type ConfirmVariant = "danger" | "primary" | "warning";
 
@@ -22,8 +23,8 @@ export function ConfirmModal({
   show,
   title,
   body,
-  confirmLabel = "Confirm",
-  cancelLabel = "Cancel",
+  confirmLabel,
+  cancelLabel,
   secondaryLabel,
   variant = "primary",
   busy = false,
@@ -31,13 +32,16 @@ export function ConfirmModal({
   onSecondary,
   onCancel,
 }: Props) {
+  const { t } = useI18n();
+  const resolvedConfirm = confirmLabel ?? t("modals.confirm");
+  const resolvedCancel = cancelLabel ?? t("common.cancel");
   const titleId = useId();
   const confirmRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!show || busy) return;
-    const t = window.setTimeout(() => confirmRef.current?.focus(), 50);
-    return () => window.clearTimeout(t);
+    const timer = window.setTimeout(() => confirmRef.current?.focus(), 50);
+    return () => window.clearTimeout(timer);
   }, [show, busy]);
 
   return (
@@ -55,7 +59,7 @@ export function ConfirmModal({
       <Modal.Body>{typeof body === "string" ? <p className="mb-0">{body}</p> : body}</Modal.Body>
       <Modal.Footer className="flex-wrap gap-2">
         <Button variant="outline-secondary" disabled={busy} onClick={onCancel}>
-          {cancelLabel}
+          {resolvedCancel}
         </Button>
         {secondaryLabel && onSecondary && (
           <Button variant="outline-primary" disabled={busy} onClick={onSecondary}>
@@ -63,7 +67,7 @@ export function ConfirmModal({
           </Button>
         )}
         <Button ref={confirmRef} variant={variant} disabled={busy} onClick={onConfirm}>
-          {busy ? <Spinner size="sm" /> : confirmLabel}
+          {busy ? <Spinner size="sm" /> : resolvedConfirm}
         </Button>
       </Modal.Footer>
     </Modal>

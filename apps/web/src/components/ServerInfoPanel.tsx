@@ -9,6 +9,7 @@ import type {
 import { Spinner } from "react-bootstrap";
 import { api } from "../api";
 import { useSharedOnlinePlayers } from "../hooks/OnlinePlayersProvider";
+import { useI18n } from "../i18n/react";
 import { copyText } from "../utils";
 import { JoinCard } from "./JoinCard";
 
@@ -25,11 +26,13 @@ function InfoRow({
   value,
   mono,
   onCopy,
+  copyTitle,
 }: {
   label: string;
   value: string;
   mono?: boolean;
   onCopy?: () => void;
+  copyTitle: string;
 }) {
   return (
     <div className="server-info-row">
@@ -40,7 +43,7 @@ function InfoRow({
           <button
             type="button"
             className="server-info-copy"
-            title="Copy"
+            title={copyTitle}
             onClick={() => void onCopy()}
           >
             <i className="fa-solid fa-copy" />
@@ -57,6 +60,7 @@ export function ServerInfoPanel({
   system: _system,
   liveStats,
 }: Props) {
+  const { t } = useI18n();
   const [stats, setStats] = useState<ServerStats | null>(null);
   const [disk, setDisk] = useState<DiskUsageBreakdown | null>(null);
   const sharedOnline = useSharedOnlinePlayers();
@@ -135,8 +139,8 @@ export function ServerInfoPanel({
     <aside className="server-info-panel">
       <div className="server-info-title">
         <i className="fa-solid fa-circle-info me-2" />
-        Information
-        {copied && <span className="server-info-copied">Copied</span>}
+        {t("serverInfo.title")}
+        {copied && <span className="server-info-copied">{t("serverInfo.copied")}</span>}
       </div>
       <JoinCard
         server={server}
@@ -148,22 +152,28 @@ export function ServerInfoPanel({
           }
         }}
       />
-      <InfoRow label="Time left" value="Unlimited" />
       <InfoRow
-        label="Server ID"
+        label={t("serverInfo.timeLeft")}
+        value={t("common.unlimited")}
+        copyTitle={t("common.copy")}
+      />
+      <InfoRow
+        label={t("serverInfo.serverId")}
         value={server.id}
         mono
-        onCopy={() => void copy("Server ID", server.id)}
+        copyTitle={t("common.copy")}
+        onCopy={() => void copy(t("serverInfo.serverId"), server.id)}
       />
-      <InfoRow label="RAM" value={ramLabel} />
-      <InfoRow label="CPU" value={`${cpuPercent.toFixed(1)}%`} />
-      <InfoRow label="Storage" value={diskUsed} />
-      <InfoRow label="Players" value={playersLabel} />
+      <InfoRow label={t("resources.ram")} value={ramLabel} copyTitle={t("common.copy")} />
+      <InfoRow label={t("resources.cpu")} value={`${cpuPercent.toFixed(1)}%`} copyTitle={t("common.copy")} />
+      <InfoRow label={t("serverInfo.storage")} value={diskUsed} copyTitle={t("common.copy")} />
+      <InfoRow label={t("serverInfo.players")} value={playersLabel} copyTitle={t("common.copy")} />
       <InfoRow
-        label="Version"
+        label={t("common.version")}
         value={versionParts.filter(Boolean).join(" · ") || "—"}
+        copyTitle={t("common.copy")}
       />
-      <InfoRow label="Node" value={server.nodeName ?? "—"} />
+      <InfoRow label={t("common.node")} value={server.nodeName ?? "—"} copyTitle={t("common.copy")} />
       {!stats && !disk && (
         <div className="text-center py-2">
           <Spinner size="sm" animation="border" className="text-secondary" />

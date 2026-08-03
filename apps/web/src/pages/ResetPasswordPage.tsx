@@ -3,8 +3,10 @@ import { Link, useSearchParams } from "react-router-dom";
 import { Alert, Button, Form, Spinner } from "react-bootstrap";
 import { api } from "../api";
 import { AuthShell } from "../components/AuthShell";
+import { useI18n } from "../i18n/react";
 
 export function ResetPasswordPage() {
+  const { t } = useI18n();
   const [params] = useSearchParams();
   const token = useMemo(() => params.get("token")?.trim() || "", [params]);
   const [password, setPassword] = useState("");
@@ -17,11 +19,11 @@ export function ResetPasswordPage() {
     e.preventDefault();
     setError(null);
     if (!token) {
-      setError("Missing reset token. Use the link from your email.");
+      setError(t("auth.missingResetToken"));
       return;
     }
     if (password !== confirm) {
-      setError("Passwords do not match");
+      setError(t("auth.passwordsMismatch"));
       return;
     }
     setBusy(true);
@@ -31,14 +33,14 @@ export function ResetPasswordPage() {
       setPassword("");
       setConfirm("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Reset failed");
+      setError(err instanceof Error ? err.message : t("auth.resetFailed"));
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <AuthShell title="Set new password" subtitle="Choose a strong password">
+    <AuthShell title={t("auth.resetTitle")} subtitle={t("auth.resetSubtitle")}>
       {error && (
         <Alert variant="danger" className="py-2">
           {error}
@@ -46,18 +48,18 @@ export function ResetPasswordPage() {
       )}
       {notice && (
         <Alert variant="success" className="py-2">
-          {notice} <Link to="/login">Sign in</Link>
+          {notice} <Link to="/login">{t("auth.signIn")}</Link>
         </Alert>
       )}
       {!notice && (
         <Form onSubmit={onSubmit}>
           {!token && (
             <Alert variant="warning" className="py-2">
-              This page needs a valid token from your reset email.
+              {t("auth.tokenRequiredAlert")}
             </Alert>
           )}
           <Form.Group className="mb-3" controlId="reset-password">
-            <Form.Label>New password</Form.Label>
+            <Form.Label>{t("auth.newPassword")}</Form.Label>
             <Form.Control
               type="password"
               value={password}
@@ -67,12 +69,10 @@ export function ResetPasswordPage() {
               minLength={12}
               autoFocus
             />
-            <Form.Text className="text-secondary">
-              At least 12 characters with upper, lower, number, and symbol.
-            </Form.Text>
+            <Form.Text className="text-secondary">{t("auth.passwordHint")}</Form.Text>
           </Form.Group>
           <Form.Group className="mb-3" controlId="reset-confirm">
-            <Form.Label>Confirm password</Form.Label>
+            <Form.Label>{t("auth.confirmPassword")}</Form.Label>
             <Form.Control
               type="password"
               value={confirm}
@@ -85,16 +85,16 @@ export function ResetPasswordPage() {
           <Button type="submit" variant="primary" className="w-100" disabled={busy || !token}>
             {busy ? (
               <>
-                <Spinner size="sm" className="me-2" /> Updating…
+                <Spinner size="sm" className="me-2" /> {t("common.updating")}
               </>
             ) : (
-              "Update password"
+              t("auth.updatePassword")
             )}
           </Button>
         </Form>
       )}
       <div className="mt-3 small">
-        <Link to="/login">Back to sign in</Link>
+        <Link to="/login">{t("auth.backToSignInShort")}</Link>
       </div>
     </AuthShell>
   );

@@ -14,6 +14,7 @@ import {
   Stack,
 } from "react-bootstrap";
 import { api } from "../api";
+import { useI18n } from "../i18n/react";
 import { AddNodeModal } from "../components/AddNodeModal";
 import { NodePortPoolPanel } from "../components/NodePortPoolPanel";
 import { copyText, formatGb } from "../utils";
@@ -65,6 +66,7 @@ function parseDaemonPublicUrl(raw: string): {
 }
 
 export function SystemSettingsPage() {
+  const { t } = useI18n();
   const [nodes, setNodes] = useState<DaemonNode[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -218,11 +220,8 @@ export function SystemSettingsPage() {
     <div>
       <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
         <div>
-          <h1 className="h3 mb-1">System</h1>
-          <p className="text-secondary mb-0 small">
-            Daemon nodes: one daemon per machine. The panel sends
-            power/console/files to the correct node via token.
-          </p>
+          <h1 className="h3 mb-1">{t("admin.systemTitle")}</h1>
+          <p className="text-secondary mb-0 small">{t("admin.systemSubtitle")}</p>
         </div>
         <Stack direction="horizontal" gap={2} className="flex-wrap">
           <Button
@@ -233,10 +232,10 @@ export function SystemSettingsPage() {
             }}
           >
             <i className="fa-solid fa-plus me-2" />
-            Add node
+            {t("admin.addNode")}
           </Button>
           <Link to="/users" className="btn btn-sm btn-outline-secondary">
-            Users
+            {t("nav.users")}
           </Link>
         </Stack>
       </div>
@@ -261,7 +260,7 @@ export function SystemSettingsPage() {
               variant="outline-dark"
               onClick={() => void copyText(newToken)}
             >
-              Copy token
+              {t("common.copy")} token
             </Button>
           </div>
         </Alert>
@@ -294,13 +293,13 @@ export function SystemSettingsPage() {
                           disabled={busyId === node.id || !editName.trim()}
                           onClick={() => void onRename(node.id)}
                         >
-                          Save
+                          {t("common.save")}
                         </Button>
                         <Button
                           variant="outline-secondary"
                           onClick={() => setEditingId(null)}
                         >
-                          Cancel
+                          {t("common.cancel")}
                         </Button>
                       </InputGroup>
                     ) : (
@@ -342,13 +341,13 @@ export function SystemSettingsPage() {
                             disabled={busyId === node.id || !editUrl.trim()}
                             onClick={() => void onSaveUrl(node.id)}
                           >
-                            Save
+                            {t("common.save")}
                           </Button>
                           <Button
                             variant="outline-secondary"
                             onClick={() => setEditingUrlId(null)}
                           >
-                            Cancel
+                            {t("common.cancel")}
                           </Button>
                         </InputGroup>
                       ) : (
@@ -398,13 +397,13 @@ export function SystemSettingsPage() {
                           disabled={busyId === node.id}
                           onClick={() => void onSaveLocation(node.id)}
                         >
-                          Save
+                          {t("common.save")}
                         </Button>
                         <Button
                           variant="outline-secondary"
                           onClick={() => setEditingLocationId(null)}
                         >
-                          Cancel
+                          {t("common.cancel")}
                         </Button>
                       </InputGroup>
                     ) : (
@@ -517,7 +516,7 @@ export function SystemSettingsPage() {
                       disabled={busyId === node.id}
                       onClick={() => void onDelete(node.id)}
                     >
-                      Delete
+                      {t("common.delete")}
                     </Button>
                   )}
                 </Stack>
@@ -561,7 +560,7 @@ export function SystemSettingsPage() {
             }}
           >
             <i className="fa-solid fa-plus me-2" />
-            Add node
+            {t("admin.addNode")}
           </Button>
         </Card.Body>
       </Card>

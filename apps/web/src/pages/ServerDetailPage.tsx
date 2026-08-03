@@ -16,6 +16,7 @@ import {
 } from "react-bootstrap";
 import { api, ApiError } from "../api";
 import { useAuth } from "../auth";
+import { useI18n } from "../i18n/react";
 import { ActivityPanel } from "../components/ActivityPanel";
 import { AddonPanel } from "../components/AddonPanel";
 import { BackupPanel } from "../components/BackupPanel";
@@ -87,6 +88,7 @@ function ServerDetailPageInner({
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const { user, refreshUser } = useAuth();
+  const { t } = useI18n();
   const [server, setServer] = useState<ServerDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -360,21 +362,25 @@ function ServerDetailPageInner({
       server.type === "FORGE" ||
       server.type === "NEOFORGE");
 
-  const visibleTabs = SERVER_TABS.filter((t) => {
-    if (t.adminOnly && !isAdmin) return false;
-    if (t.id === "addons" && !supportsAddons) return false;
-    if (t.id === "engine" && !supportsEngine) return false;
-    if (t.id === "modpacks" && !supportsModpacks) return false;
-    if (!t.anyOf || t.anyOf.length === 0) return true;
+  const visibleTabs = SERVER_TABS.filter((tabDef) => {
+    if (tabDef.adminOnly && !isAdmin) return false;
+    if (tabDef.id === "addons" && !supportsAddons) return false;
+    if (tabDef.id === "engine" && !supportsEngine) return false;
+    if (tabDef.id === "modpacks" && !supportsModpacks) return false;
+    if (!tabDef.anyOf || tabDef.anyOf.length === 0) return true;
     // Respect effective permissions (license feature ceiling already applied).
     // Do not bypass for owners — owners without a feature must not see that tab.
-    return t.anyOf.some((p) => hasPermission(perms, p as "control.console"));
-  }).map((t) =>
-    t.id === "addons" ? { ...t, label: "Plugin Management" } : t,
-  );
+    return tabDef.anyOf.some((p) => hasPermission(perms, p as "control.console"));
+  });
   const menuSections = MENU_GROUPS.map((group) => ({
-    ...group,
-    items: visibleTabs.filter((t) => t.group === group.id),
+    id: group.id,
+    label: t(group.labelKey),
+    items: visibleTabs
+      .filter((tabDef) => tabDef.group === group.id)
+      .map((tabDef) => ({
+        ...tabDef,
+        label: t(tabDef.labelKey),
+      })),
   })).filter((section) => section.items.length > 0);
   const whitelistOn =
     server.whitelistEnabled || server.properties?.["white-list"] === "true";

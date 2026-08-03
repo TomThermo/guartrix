@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type UIEvent } from "react";
 import type { ConsoleMessage, StatusNode } from "@msm/shared";
 import { Badge, Button } from "react-bootstrap";
+import { useI18n } from "../i18n/react";
 import { Console } from "./Console";
 
 export type SystemLogSource =
@@ -11,14 +12,17 @@ export type SystemLogSource =
   | "mysql"
   | `mc:${string}`;
 
-const SYSTEM_TABS: Array<{ id: Exclude<SystemLogSource, `mc:${string}`>; label: string; icon: string }> =
-  [
-    { id: "daemon", label: "Daemon", icon: "fa-microchip" },
-    { id: "api", label: "API-server", icon: "fa-server" },
-    { id: "web", label: "Webserver", icon: "fa-globe" },
-    { id: "monitor", label: "Watchdog", icon: "fa-heart-pulse" },
-    { id: "mysql", label: "MySQL", icon: "fa-database" },
-  ];
+const SYSTEM_TABS: Array<{
+  id: Exclude<SystemLogSource, `mc:${string}`>;
+  labelKey: string;
+  icon: string;
+}> = [
+  { id: "daemon", labelKey: "admin.logDaemon", icon: "fa-microchip" },
+  { id: "api", labelKey: "admin.logApi", icon: "fa-server" },
+  { id: "web", labelKey: "admin.logWeb", icon: "fa-globe" },
+  { id: "monitor", labelKey: "admin.logMonitor", icon: "fa-heart-pulse" },
+  { id: "mysql", labelKey: "admin.logMysql", icon: "fa-database" },
+];
 
 const BOTTOM_THRESHOLD_PX = 48;
 
@@ -26,7 +30,15 @@ function isNearBottom(el: HTMLElement, threshold = BOTTOM_THRESHOLD_PX): boolean
   return el.scrollHeight - el.scrollTop - el.clientHeight <= threshold;
 }
 
-function LiveFileConsole({ source }: { source: Exclude<SystemLogSource, `mc:${string}`> }) {
+function LiveFileConsole({
+  source,
+  connectingLabel,
+  emptyLabel,
+}: {
+  source: Exclude<SystemLogSource, `mc:${string}`>;
+  connectingLabel: string;
+  emptyLabel: string;
+}) {
   const [lines, setLines] = useState<string[]>([]);
   const [connected, setConnected] = useState(false);
   const outputRef = useRef<HTMLDivElement>(null);
@@ -85,9 +97,9 @@ function LiveFileConsole({ source }: { source: Exclude<SystemLogSource, `mc:${st
         className="console-output font-monospace small"
         onScroll={onOutputScroll}
       >
-        {!connected && <div className="text-warning">Connecting…</div>}
+        {!connected && <div className="text-warning">{connectingLabel}</div>}
         {connected && lines.length === 0 && (
-          <div className="text-secondary">No log lines yet.</div>
+          <div className="text-secondary">{emptyLabel}</div>
         )}
         {lines.map((line, i) => (
           <div key={`${i}-${line.slice(0, 32)}`}>{line}</div>
@@ -102,6 +114,7 @@ interface Props {
 }
 
 export function SystemLogsPanel({ nodes }: Props) {
+  const { t } = useI18n();
   const mcServers = useMemo(() => {
     const out: Array<{ id: string; name: string; nodeName: string }> = [];
     for (const node of nodes) {
@@ -132,13 +145,11 @@ export function SystemLogsPanel({ nodes }: Props) {
     <div className="status-logs mt-4">
       <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
         <div>
-          <h2 className="h5 mb-0">Live logs</h2>
-          <p className="text-secondary small mb-0">
-            Live logs: web server, API server, daemon, watchdog, MySQL, and Minecraft consoles.
-          </p>
+          <h2 className="h5 mb-0">{t("admin.liveLogs")}</h2>
+          <p className="text-secondary small mb-0">{t("admin.liveLogsSubtitle")}</p>
         </div>
         <Badge bg={source.startsWith("mc:") ? "success" : "secondary"}>
-          {source.startsWith("mc:") ? "Minecraft console" : "System log"}
+          {source.startsWith("mc:") ? t("admin.minecraftConsole") : t("admin.systemLog")}
         </Badge>
       </div>
 
@@ -151,7 +162,7 @@ export function SystemLogsPanel({ nodes }: Props) {
             onClick={() => setSource(tab.id)}
           >
             <i className={`fa-solid ${tab.icon} me-1`} />
-            {tab.label}
+            {t(tab.labelKey)}
           </Button>
         ))}
         {mcServers.map((s) => {
@@ -162,7 +173,7 @@ export function SystemLogsPanel({ nodes }: Props) {
               size="sm"
               variant={source === id ? "primary" : "outline-secondary"}
               onClick={() => setSource(id)}
-              title={`Node: ${s.nodeName}`}
+              title={t("admin.nodeLabel", { name: s.nodeName })}
             >
               <i className="fa-solid fa-cube me-1" />
               {s.name}
@@ -176,6 +187,8 @@ export function SystemLogsPanel({ nodes }: Props) {
       ) : (
         <LiveFileConsole
           source={source as Exclude<SystemLogSource, `mc:${string}`>}
+          connectingLabel={t("admin.connecting")}
+          emptyLabel={t("admin.noLogLines")}
         />
       )}
     </div>

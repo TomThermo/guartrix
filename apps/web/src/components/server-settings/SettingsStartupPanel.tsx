@@ -11,6 +11,7 @@ import {
   type JavaVersion,
 } from "@msm/shared";
 import { Alert, Button, Col, Form, Row } from "react-bootstrap";
+import { useI18n } from "../../i18n/react";
 import { Field } from "./settings-fields";
 
 const MAX_MOUNTS = 8;
@@ -52,6 +53,7 @@ export function SettingsStartupPanel({
   heapCheck: StartupHeapCheck;
   memoryMb: number;
 }) {
+  const { t } = useI18n();
   function updateMount(index: number, patch: Partial<ServerExtraMount>) {
     setExtraMounts(
       extraMounts.map((m, i) => (i === index ? { ...m, ...patch } : m)),
@@ -165,7 +167,7 @@ export function SettingsStartupPanel({
                 : isForgeType
                   ? "Presets for Forge/NeoForge: Default or Modded G1GC → user_jvm_args.txt."
                   : "Click a preset to fill the command, then Save."}{" "}
-          Click to fill, then Save.
+          Click to fill, then {t("settings.save").toLowerCase()}.
         </div>
         <div className="d-flex flex-wrap gap-2 mb-3">
           {startupPresets.map((preset) => (

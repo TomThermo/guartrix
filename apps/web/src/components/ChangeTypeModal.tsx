@@ -7,6 +7,7 @@ import {
 } from "@msm/shared";
 import { Alert, Button, Form, Modal, Spinner } from "react-bootstrap";
 import { api } from "../api";
+import { useI18n } from "../i18n/react";
 import { typeLabel } from "../utils";
 
 interface Props {
@@ -29,6 +30,7 @@ export function ChangeTypeModal({
   onCancel,
   onDone,
 }: Props) {
+  const { t } = useI18n();
   const [type, setType] = useState<ServerType>(server.type);
   const [mcVersion, setMcVersion] = useState(server.mcVersion);
   const [versions, setVersions] = useState<string[]>([]);
@@ -56,7 +58,7 @@ export function ChangeTypeModal({
       })
       .catch((err) => {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Failed to load versions");
+          setError(err instanceof Error ? err.message : t("createServer.versionsFailed"));
           setVersions([]);
         }
       })
@@ -75,7 +77,7 @@ export function ChangeTypeModal({
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     if (!mcVersion) {
-      setError("Choose a Minecraft version.");
+      setError(t("modals.changeTypeVersionRequired"));
       return;
     }
     setRunning(true);
@@ -88,7 +90,7 @@ export function ChangeTypeModal({
       });
       onDone(next);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Change type failed");
+      setError(err instanceof Error ? err.message : t("modals.changeTypeFailed"));
       setRunning(false);
     }
   }
@@ -101,13 +103,12 @@ export function ChangeTypeModal({
         <Modal.Header closeButton={!locked}>
           <Modal.Title>
             <i className="fa-solid fa-shuffle me-2" />
-            Change software
+            {t("modals.changeTypeTitle")}
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <p className="text-secondary small">
-            Switch loader for <strong>{server.name}</strong>. World is kept. A
-            backup is created automatically. Server must be stopped.
+            {t("modals.changeTypeHelp", { name: server.name })}
           </p>
           {error && (
             <Alert variant="danger" className="py-2">
@@ -115,21 +116,21 @@ export function ChangeTypeModal({
             </Alert>
           )}
           <Form.Group className="mb-3" controlId="change-type">
-            <Form.Label>Software</Form.Label>
+            <Form.Label>{t("modals.changeTypeSoftware")}</Form.Label>
             <Form.Select
               value={type}
               disabled={locked}
               onChange={(e) => setType(e.target.value as ServerType)}
             >
-              {ALL_SERVER_TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {typeLabel(t)}
+              {ALL_SERVER_TYPES.map((st) => (
+                <option key={st} value={st}>
+                  {typeLabel(st)}
                 </option>
               ))}
             </Form.Select>
           </Form.Group>
           <Form.Group className="mb-3" controlId="change-version">
-            <Form.Label>Minecraft version</Form.Label>
+            <Form.Label>{t("common.version")}</Form.Label>
             <Form.Select
               value={mcVersion}
               disabled={locked || loadingVersions || versions.length === 0}
@@ -146,27 +147,27 @@ export function ChangeTypeModal({
             type="switch"
             id="change-wipe-addons"
             className="mb-2"
-            label="Wipe plugins / mods"
+            label={t("modals.changeTypeWipeAddons")}
             checked={wipeAddons || mustWipe}
             disabled={locked || mustWipe}
             onChange={(e) => setWipeAddons(e.target.checked)}
           />
           {mustWipe && (
             <Alert variant="warning" className="py-2 small mb-0">
-              Switching between plugins and mods requires wiping the addon folder.
+              {t("modals.changeTypeWipeRequired")}
             </Alert>
           )}
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" disabled={locked} onClick={onCancel}>
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button
             variant="primary"
             type="submit"
             disabled={locked || type === server.type}
           >
-            {running ? <Spinner size="sm" /> : "Change software"}
+            {running ? <Spinner size="sm" /> : t("modals.changeTypeConfirm")}
           </Button>
         </Modal.Footer>
       </Form>

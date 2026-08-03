@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { DiskUsageBreakdown } from "@msm/shared";
 import { Card, Col, Row } from "react-bootstrap";
+import { useI18n } from "../i18n/react";
 import { formatBytes, formatGb } from "../utils";
 
 interface Props {
@@ -23,6 +24,7 @@ export function DiskUsageCard({
   compact = false,
   className,
 }: Props) {
+  const { t } = useI18n();
   const [hoverKey, setHoverKey] = useState<DiskPartKey | null>(null);
   const total = Math.max(disk.totalBytes, 1);
   const limitBytes =
@@ -34,37 +36,36 @@ export function DiskUsageCard({
   const limitLabel =
     limitMb && limitMb > 0 ? formatGb(limitMb) : null;
 
-  const parts: Array<{
-    key: DiskPartKey;
-    label: string;
-    bytes: number;
-    display: string;
-  }> = [
-    {
-      key: "world",
-      label: "World",
-      bytes: disk.worldBytes,
-      display: disk.worldLabel,
-    },
-    {
-      key: "mods",
-      label: "Mods / plugins",
-      bytes: disk.modsPluginsBytes,
-      display: disk.modsPluginsLabel,
-    },
-    {
-      key: "backups",
-      label: "Backups",
-      bytes: disk.backupsBytes,
-      display: disk.backupsLabel,
-    },
-    {
-      key: "other",
-      label: "Other",
-      bytes: disk.otherBytes,
-      display: disk.otherLabel,
-    },
-  ];
+  const parts = useMemo(
+    () =>
+      [
+        {
+          key: "world" as const,
+          label: t("resources.world"),
+          bytes: disk.worldBytes,
+          display: disk.worldLabel,
+        },
+        {
+          key: "mods" as const,
+          label: t("resources.modsPlugins"),
+          bytes: disk.modsPluginsBytes,
+          display: disk.modsPluginsLabel,
+        },
+        {
+          key: "backups" as const,
+          label: t("resources.backups"),
+          bytes: disk.backupsBytes,
+          display: disk.backupsLabel,
+        },
+        {
+          key: "other" as const,
+          label: t("resources.other"),
+          bytes: disk.otherBytes,
+          display: disk.otherLabel,
+        },
+      ],
+    [disk, t],
+  );
 
   function keyAtBarX(clientX: number, target: HTMLElement): DiskPartKey | null {
     const rect = target.getBoundingClientRect();
@@ -87,7 +88,7 @@ export function DiskUsageCard({
     >
       <Card.Body className={compact ? "py-2 px-3" : undefined}>
         <div className="d-flex justify-content-between align-items-baseline mb-2 flex-wrap gap-1">
-          <div className="text-muted small">Disk usage</div>
+          <div className="text-muted small">{t("resources.diskUsage")}</div>
           <strong className={over ? "text-danger" : undefined}>
             {disk.totalLabel}
             {limitLabel ? (
@@ -96,20 +97,20 @@ export function DiskUsageCard({
             {freeBytes != null ? (
               <span className="text-muted fw-normal">
                 {" "}
-                · {formatBytes(freeBytes)} free
+                · {t("resources.freeRemaining", { amount: formatBytes(freeBytes) })}
               </span>
             ) : null}
           </strong>
         </div>
         {over && (
           <div className="text-danger small mb-2">
-            Disk quota reached — uploads blocked; running servers will be stopped.
+            {t("resources.quotaReached")}
           </div>
         )}
         <div
           className={`disk-usage-bar ${compact ? "mb-2" : "mb-3"}`}
           role="img"
-          aria-label="Disk usage breakdown"
+          aria-label={t("resources.breakdownAria")}
           onMouseMove={(e) =>
             setHoverKey(keyAtBarX(e.clientX, e.currentTarget))
           }

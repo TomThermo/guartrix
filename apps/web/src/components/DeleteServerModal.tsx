@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Alert, Button, Form, Modal, Spinner } from "react-bootstrap";
 import { api } from "../api";
+import { useI18n } from "../i18n/react";
 
 interface Props {
   serverId: string;
@@ -15,6 +16,7 @@ export function DeleteServerModal({
   onCancel,
   onDeleted,
 }: Props) {
+  const { t } = useI18n();
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -22,7 +24,7 @@ export function DeleteServerModal({
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     if (!password.trim()) {
-      setError("Enter your account password to confirm.");
+      setError(t("modals.deleteServerPasswordRequired"));
       return;
     }
     setBusy(true);
@@ -31,7 +33,7 @@ export function DeleteServerModal({
       await api.deleteServer(serverId, password);
       onDeleted();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Delete failed");
+      setError(err instanceof Error ? err.message : t("modals.deleteServerFailed"));
       setBusy(false);
     }
   }
@@ -42,16 +44,14 @@ export function DeleteServerModal({
         <Modal.Header closeButton={!busy}>
           <Modal.Title className="text-danger">
             <i className="fa-solid fa-triangle-exclamation me-2" />
-            Delete server
+            {t("modals.deleteServerTitle")}
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <Alert variant="danger" className="mb-3">
-            <strong>This cannot be undone.</strong>
+            <strong>{t("modals.deleteServerIrreversible")}</strong>
             <div className="mt-2 small mb-0">
-              Deleting <strong>{serverName}</strong> permanently removes the world,
-              files, databases, and backups for this server. It will no longer appear
-              in your panel.
+              {t("modals.deleteServerBody", { name: serverName })}
             </div>
           </Alert>
           {error && (
@@ -60,35 +60,33 @@ export function DeleteServerModal({
             </Alert>
           )}
           <Form.Group controlId="delete-server-password">
-            <Form.Label>Confirm with your password</Form.Label>
+            <Form.Label>{t("modals.deleteServerPasswordLabel")}</Form.Label>
             <Form.Control
               type="password"
               autoComplete="current-password"
               value={password}
               disabled={busy}
               autoFocus
-              placeholder="Account password"
+              placeholder={t("modals.deleteServerPasswordPlaceholder")}
               onChange={(e) => setPassword(e.target.value)}
             />
-            <Form.Text muted>
-              Enter the password for your Guartrix account to verify this action.
-            </Form.Text>
+            <Form.Text muted>{t("modals.deleteServerPasswordHelp")}</Form.Text>
           </Form.Group>
         </Modal.Body>
         <Modal.Footer>
           <Button variant="outline-secondary" disabled={busy} onClick={onCancel}>
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button type="submit" variant="danger" disabled={busy || !password.trim()}>
             {busy ? (
               <>
                 <Spinner size="sm" className="me-2" />
-                Deleting…
+                {t("common.deleting")}
               </>
             ) : (
               <>
                 <i className="fa-solid fa-trash me-1" />
-                Delete permanently
+                {t("modals.deleteServerConfirm")}
               </>
             )}
           </Button>

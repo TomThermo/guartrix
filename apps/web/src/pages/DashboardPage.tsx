@@ -28,31 +28,31 @@ function stopRowNav(e: MouseEvent | KeyboardEvent) {
   e.stopPropagation();
 }
 
-function statusLabel(status: McServer["status"]): string {
-  switch (status) {
-    case "RUNNING":
-      return "Online";
-    case "STARTING":
-      return "Starting";
-    case "STOPPING":
-      return "Stopping";
-    case "CREATING":
-      return "Creating";
-    case "TRANSFERRING":
-      return "Moving";
-    case "ERROR":
-      return "Error";
-    default:
-      return "Offline";
-  }
-}
-
 type StatusFilter = "all" | "online" | "offline" | "busy" | "error";
 
 export function DashboardPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { t } = useI18n();
+
+  function statusLabel(status: McServer["status"]): string {
+    switch (status) {
+      case "RUNNING":
+        return t("dashboard.online");
+      case "STARTING":
+        return "Starting";
+      case "STOPPING":
+        return "Stopping";
+      case "CREATING":
+        return "Creating";
+      case "TRANSFERRING":
+        return "Moving";
+      case "ERROR":
+        return t("dashboard.error");
+      default:
+        return t("dashboard.offline");
+    }
+  }
   const canWrite = user?.role !== "VIEWER";
   const canCreate = canCreateServer(user);
   const isAdmin = user?.role === "ADMIN";
@@ -273,7 +273,10 @@ export function DashboardPage() {
         user?.maxServers != null &&
         user.maxServers > 0 && (
         <Alert variant="secondary">
-          Server limit reached ({user.serverCount ?? 0}/{user.maxServers}).
+          {t("dashboard.serverLimit", {
+            count: user.serverCount ?? 0,
+            max: user.maxServers,
+          })}
         </Alert>
       )}
       {whitelistPrompt && (
@@ -340,33 +343,39 @@ export function DashboardPage() {
         <>
           <Row className="g-2 mb-3 align-items-end">
             <Col md={4}>
-              <Form.Label className="small text-secondary mb-1">Search</Form.Label>
+              <Form.Label className="small text-secondary mb-1">
+                {t("dashboard.search")}
+              </Form.Label>
               <Form.Control
                 value={query}
-                placeholder="Name, owner, node, port…"
+                placeholder={t("dashboard.searchPlaceholder")}
                 onChange={(e) => setQuery(e.target.value)}
               />
             </Col>
             <Col xs={6} md={2}>
-              <Form.Label className="small text-secondary mb-1">Status</Form.Label>
+              <Form.Label className="small text-secondary mb-1">
+                {t("dashboard.status")}
+              </Form.Label>
               <Form.Select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
               >
-                <option value="all">All</option>
-                <option value="online">Online</option>
-                <option value="offline">Offline</option>
-                <option value="busy">Busy</option>
-                <option value="error">Error</option>
+                <option value="all">{t("dashboard.allStatuses")}</option>
+                <option value="online">{t("dashboard.online")}</option>
+                <option value="offline">{t("dashboard.offline")}</option>
+                <option value="busy">{t("dashboard.busy")}</option>
+                <option value="error">{t("dashboard.error")}</option>
               </Form.Select>
             </Col>
             <Col xs={6} md={3}>
-              <Form.Label className="small text-secondary mb-1">Node</Form.Label>
+              <Form.Label className="small text-secondary mb-1">
+                {t("dashboard.node")}
+              </Form.Label>
               <Form.Select
                 value={nodeFilter}
                 onChange={(e) => setNodeFilter(e.target.value)}
               >
-                <option value="all">All nodes</option>
+                <option value="all">{t("dashboard.allNodes")}</option>
                 {nodeOptions.map(([id, name]) => (
                   <option key={id} value={id}>
                     {name}
@@ -375,15 +384,17 @@ export function DashboardPage() {
               </Form.Select>
             </Col>
             <Col xs={6} md={2}>
-              <Form.Label className="small text-secondary mb-1">Type</Form.Label>
+              <Form.Label className="small text-secondary mb-1">
+                {t("dashboard.type")}
+              </Form.Label>
               <Form.Select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
               >
-                <option value="all">All types</option>
-                {typeOptions.map((t) => (
-                  <option key={t} value={t}>
-                    {typeLabel(t)}
+                <option value="all">{t("dashboard.allTypes")}</option>
+                {typeOptions.map((typeId) => (
+                  <option key={typeId} value={typeId}>
+                    {typeLabel(typeId)}
                   </option>
                 ))}
               </Form.Select>
@@ -395,7 +406,7 @@ export function DashboardPage() {
             </Col>
           </Row>
           {filtered.length === 0 ? (
-            <Alert variant="secondary">No servers match these filters.</Alert>
+            <Alert variant="secondary">{t("dashboard.noMatch")}</Alert>
           ) : (
         <div className="server-list">
           {filtered.map((s) => {
@@ -456,15 +467,15 @@ export function DashboardPage() {
                         {statusLabel(s.status)}
                       </span>
                       {s.autoRestart && (
-                        <span className="server-update-pill" title="Auto-restart enabled">
+                        <span className="server-update-pill" title={t("dashboard.autoRestartTitle")}>
                           <i className="fa-solid fa-rotate" />
-                          Auto-restart
+                          {t("dashboard.autoRestart")}
                         </span>
                       )}
                       {update?.available && (
                         <span className="server-update-pill">
                           <i className="fa-solid fa-arrow-up" />
-                          Update
+                          {t("dashboard.update")}
                         </span>
                       )}
                     </div>
@@ -490,10 +501,10 @@ export function DashboardPage() {
                           <Badge
                             bg={s.ownerUsername ? "dark" : "secondary"}
                             className="server-owner-badge"
-                            title="Click actions → transfer to change owner"
+                            title={t("dashboard.transferOwnerHint")}
                           >
                             <i className="fa-solid fa-user me-1" />
-                            {s.ownerUsername ?? "Unassigned"}
+                            {s.ownerUsername ?? t("dashboard.unassigned")}
                           </Badge>
                         </>
                       )}
@@ -503,7 +514,7 @@ export function DashboardPage() {
                       <button
                         type="button"
                         className="server-row-chip"
-                        title="Open Resources"
+                        title={t("dashboard.openResources")}
                         onClick={(e) => {
                           stopRowNav(e);
                           navigate(`/servers/${s.id}?tab=resources`);
@@ -520,7 +531,7 @@ export function DashboardPage() {
                           <button
                             type="button"
                             className="server-row-chip"
-                            title="Online players"
+                            title={t("dashboard.onlinePlayers")}
                             onClick={(e) => {
                               stopRowNav(e);
                               navigate(`/servers/${s.id}?tab=players`);
@@ -540,7 +551,7 @@ export function DashboardPage() {
                           <button
                             type="button"
                             className={`server-row-chip ${s.whitelistEnabled ? "is-on" : "is-warn"}`}
-                            title="Change whitelist"
+                            title={t("dashboard.changeWhitelist")}
                             disabled={
                               whitelistModalBusy ||
                               !hasPermission(s.permissions, "settings.update")
@@ -555,7 +566,9 @@ export function DashboardPage() {
                               className={`fa-solid ${s.whitelistEnabled ? "fa-shield-halved" : "fa-shield"}`}
                               aria-hidden
                             />
-                            Whitelist {s.whitelistEnabled ? "on" : "off"}
+                            {s.whitelistEnabled
+                              ? t("dashboard.whitelistOn")
+                              : t("dashboard.whitelistOff")}
                           </button>
                         </>
                       )}
@@ -570,7 +583,7 @@ export function DashboardPage() {
                             className={`server-row-chip ${
                               (addonUpdates?.available ?? 0) > 0 ? "is-danger" : ""
                             }`}
-                            title="Open Plugin Management"
+                            title={t("dashboard.openAddons")}
                             onClick={(e) => {
                               stopRowNav(e);
                               navigate(`/servers/${s.id}?tab=addons`);
@@ -578,12 +591,12 @@ export function DashboardPage() {
                           >
                             <i className="fa-solid fa-puzzle-piece" aria-hidden />
                             {(addonUpdates?.available ?? 0) > 0
-                              ? `${addonUpdates!.available} update${
-                                  addonUpdates!.available === 1 ? "" : "s"
-                                }`
+                              ? (addonUpdates!.available === 1
+                                  ? t("common.updateOne", { count: addonUpdates!.available })
+                                  : t("common.updateMany", { count: addonUpdates!.available }))
                               : addonUpdates
-                                ? "Up to date"
-                                : "Updates…"}
+                                ? t("common.upToDate")
+                                : t("common.updatesEllipsis")}
                           </button>
                         </>
                       )}
@@ -600,7 +613,7 @@ export function DashboardPage() {
                       <div className="server-metrics">
                         <div className="server-metric">
                           <div className="server-metric-top">
-                            <span>CPU</span>
+                            <span>{t("resources.cpu")}</span>
                             <strong>{Math.min(100, stats.cpuPercent).toFixed(1)}%</strong>
                           </div>
                           <div className="server-meter">
@@ -609,7 +622,7 @@ export function DashboardPage() {
                         </div>
                         <div className="server-metric">
                           <div className="server-metric-top">
-                            <span>RAM</span>
+                            <span>{t("resources.ram")}</span>
                             <strong>
                               {stats.memoryUsedLabel}
                               <span className="text-secondary"> / {stats.memoryLimitLabel}</span>
@@ -644,7 +657,7 @@ export function DashboardPage() {
                         disabled={
                           busyId === s.id || s.status === "RUNNING" || s.status === "STARTING"
                         }
-                        title="Start"
+                        title={t("dashboard.start")}
                         onClick={() => requestStart(s)}
                       >
                         <i className="fa-solid fa-play" />
@@ -654,7 +667,7 @@ export function DashboardPage() {
                         variant="outline-secondary"
                         className="server-action-btn"
                         disabled={busyId === s.id || s.status === "STOPPED"}
-                        title="Stop"
+                        title={t("dashboard.stop")}
                         onClick={() => void act(s.id, "stop")}
                       >
                         <i className="fa-solid fa-stop" />
@@ -664,7 +677,7 @@ export function DashboardPage() {
                         variant="outline-secondary"
                         className="server-action-btn"
                         disabled={busyId === s.id}
-                        title="Restart"
+                        title={t("dashboard.restart")}
                         onClick={() => void act(s.id, "restart")}
                       >
                         <i className="fa-solid fa-rotate-right" />
@@ -676,7 +689,7 @@ export function DashboardPage() {
                       size="sm"
                       variant="outline-secondary"
                       className="server-action-btn"
-                      title="Transfer owner"
+                      title={t("dashboard.transferOwner")}
                       onClick={() => setTransferServer(s)}
                     >
                       <i className="fa-solid fa-user-tag" />
@@ -685,7 +698,7 @@ export function DashboardPage() {
                   <Link
                     to={`/servers/${s.id}`}
                     className="btn btn-sm btn-outline-secondary server-action-btn"
-                    title="Open"
+                    title={t("dashboard.open")}
                     onClick={(e) => e.stopPropagation()}
                   >
                     <i className="fa-solid fa-arrow-right" />

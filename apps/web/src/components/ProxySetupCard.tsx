@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { McServer } from "@msm/shared";
 import { Alert, Button, Form, ListGroup, Spinner, Stack } from "react-bootstrap";
 import { api } from "../api";
+import { useI18n } from "../i18n/react";
 
 interface Props {
   server: McServer;
@@ -18,6 +19,7 @@ export function ProxySetupCard({
   onError,
   onApplied,
 }: Props) {
+  const { t } = useI18n();
   const [busy, setBusy] = useState(false);
   const [setup, setSetup] = useState<Awaited<
     ReturnType<typeof api.getProxySetup>
@@ -40,12 +42,12 @@ export function ProxySetupCard({
       setSetup(next);
       onNotice(
         mode === "none"
-          ? "Proxy mode cleared (online-mode restored)."
-          : `Configured for ${mode}. Restart the server to apply.`,
+          ? t("proxy.clearedNotice")
+          : t("proxy.configuredNotice", { mode }),
       );
       onApplied?.();
     } catch (err) {
-      onError(err instanceof Error ? err.message : "Proxy setup failed");
+      onError(err instanceof Error ? err.message : t("proxy.setupFailed"));
     } finally {
       setBusy(false);
     }
@@ -55,7 +57,7 @@ export function ProxySetupCard({
     return (
       <Alert variant="light" className="border mb-3">
         <Spinner size="sm" className="me-2" />
-        Loading proxy helpers…
+        {t("proxy.loading")}
       </Alert>
     );
   }
@@ -65,13 +67,9 @@ export function ProxySetupCard({
       <Alert variant="light" className="border mb-3">
         <div className="fw-semibold mb-1">
           <i className="fa-solid fa-network-wired me-2" />
-          Behind a proxy
+          {t("proxy.unsupportedTitle")}
         </div>
-        <p className="small text-secondary mb-0">
-          Velocity / Bungee helpers are available for Paper and Purpur. Set{" "}
-          <code>online-mode=false</code> manually if you use a proxy with other
-          loaders.
-        </p>
+        <p className="small text-secondary mb-0">{t("proxy.unsupportedBody")}</p>
       </Alert>
     );
   }
@@ -80,13 +78,9 @@ export function ProxySetupCard({
     <Alert variant="light" className="border mb-3">
       <div className="fw-semibold mb-1">
         <i className="fa-solid fa-network-wired me-2" />
-        Behind a proxy (Velocity / BungeeCord)
+        {t("proxy.title")}
       </div>
-      <p className="small text-secondary mb-2">
-        Applies <code>online-mode=false</code> and the correct forwarding flags.
-        Put the same secret in your Velocity <code>forwarding.secret</code>.
-        Restart after applying.
-      </p>
+      <p className="small text-secondary mb-2">{t("proxy.help")}</p>
       <Stack direction="horizontal" gap={2} className="flex-wrap mb-3">
         <Button
           size="sm"
@@ -110,7 +104,7 @@ export function ProxySetupCard({
           disabled={disabled || busy}
           onClick={() => void apply("none")}
         >
-          Disable proxy mode
+          {t("proxy.disableMode")}
         </Button>
       </Stack>
       <ListGroup variant="flush" className="small mb-2">
@@ -125,7 +119,7 @@ export function ProxySetupCard({
       </ListGroup>
       {setup.mode === "velocity" && setup.velocitySecret && (
         <Form.Group>
-          <Form.Label className="small mb-1">Velocity forwarding secret</Form.Label>
+          <Form.Label className="small mb-1">{t("proxy.velocitySecret")}</Form.Label>
           <Form.Control
             size="sm"
             readOnly

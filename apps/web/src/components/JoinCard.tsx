@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { ConnectInfo, McServer } from "@msm/shared";
 import { Badge, Button, Stack } from "react-bootstrap";
+import { useI18n } from "../i18n/react";
 import { TotpQr } from "./TotpQr";
 import { copyText } from "../utils";
 
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export function JoinCard({ server, connect, compact, onNotice }: Props) {
+  const { t } = useI18n();
   const [showQr, setShowQr] = useState(false);
   const address = connect?.address ?? `:${server.port}`;
   const directIp =
@@ -29,7 +31,7 @@ export function JoinCard({ server, connect, compact, onNotice }: Props) {
   async function copy(label: string, text: string) {
     try {
       await copyText(text);
-      onNotice?.(`${label} copied.`);
+      onNotice?.(t("joinCard.copied", { label }));
     } catch {
       onNotice?.(null);
     }
@@ -39,7 +41,7 @@ export function JoinCard({ server, connect, compact, onNotice }: Props) {
     return (
       <Stack direction="horizontal" gap={2} className="flex-wrap align-items-center">
         <Badge bg={whitelist ? "warning" : "secondary"} text={whitelist ? "dark" : undefined}>
-          WL {whitelist ? "on" : "off"}
+          {whitelist ? t("serverDetail.wlOn") : t("serverDetail.wlOff")}
         </Badge>
         <Badge bg="dark">
           {server.status === "RUNNING" ? `${playersOnline}/${playersMax}` : `—/${playersMax}`}
@@ -48,10 +50,10 @@ export function JoinCard({ server, connect, compact, onNotice }: Props) {
         <Button
           size="sm"
           variant="outline-secondary"
-          onClick={() => void copy("Address", address)}
+          onClick={() => void copy(t("joinCard.address"), address)}
         >
           <i className="fa-solid fa-copy me-1" />
-          Join
+          {t("joinCard.join")}
         </Button>
       </Stack>
     );
@@ -61,41 +63,41 @@ export function JoinCard({ server, connect, compact, onNotice }: Props) {
     <div className="join-card border rounded p-3 mb-3">
       <div className="fw-semibold mb-2">
         <i className="fa-solid fa-gamepad me-2" />
-        Join this server
+        {t("joinCard.title")}
       </div>
       <div className="small text-secondary mb-2">
-        Share address, version, and whitelist status with players.
+        {t("joinCard.subtitle")}
       </div>
       <dl className="row small mb-2 join-card-dl">
-        <dt className="col-4 text-secondary">Address</dt>
+        <dt className="col-4 text-secondary">{t("joinCard.address")}</dt>
         <dd className="col-8 font-monospace text-break mb-1">
           {address}{" "}
           <button
             type="button"
             className="btn btn-link btn-sm p-0 align-baseline"
-            onClick={() => void copy("Address", address)}
+            onClick={() => void copy(t("joinCard.address"), address)}
           >
-            Copy
+            {t("common.copy")}
           </button>
         </dd>
-        <dt className="col-4 text-secondary">Direct IP</dt>
+        <dt className="col-4 text-secondary">{t("joinCard.directIp")}</dt>
         <dd className="col-8 font-monospace text-break mb-1">
           {directIp}{" "}
           <button
             type="button"
             className="btn btn-link btn-sm p-0 align-baseline"
-            onClick={() => void copy("Direct IP", directIp)}
+            onClick={() => void copy(t("joinCard.directIp"), directIp)}
           >
-            Copy
+            {t("common.copy")}
           </button>
         </dd>
-        <dt className="col-4 text-secondary">Whitelist</dt>
-        <dd className="col-8 mb-1">{whitelist ? "On" : "Off"}</dd>
+        <dt className="col-4 text-secondary">{t("joinCard.whitelist")}</dt>
+        <dd className="col-8 mb-1">{whitelist ? t("common.on") : t("common.off")}</dd>
       </dl>
       <Stack direction="horizontal" gap={2} className="flex-wrap">
-        <Button size="sm" variant="primary" onClick={() => void copy("Address", address)}>
+        <Button size="sm" variant="primary" onClick={() => void copy(t("joinCard.address"), address)}>
           <i className="fa-solid fa-copy me-1" />
-          Copy address
+          {t("joinCard.copyAddress")}
         </Button>
         <Button
           size="sm"
@@ -103,7 +105,7 @@ export function JoinCard({ server, connect, compact, onNotice }: Props) {
           onClick={() => setShowQr((v) => !v)}
         >
           <i className="fa-solid fa-qrcode me-1" />
-          {showQr ? "Hide QR" : "Show QR"}
+          {showQr ? t("joinCard.hideQr") : t("joinCard.showQr")}
         </Button>
       </Stack>
       {showQr && (

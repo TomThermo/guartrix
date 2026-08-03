@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { OnlinePlayer, PlayerHistoryEntry } from "@msm/shared";
 import { Badge, Card, ListGroup, Spinner } from "react-bootstrap";
 import { useSharedOnlinePlayers } from "../hooks/OnlinePlayersProvider";
+import { useI18n } from "../i18n/react";
 import { formatWhen } from "../utils";
 import { PlayerActionModal } from "./PlayerActionModal";
 import { PlayerHead } from "./PlayerHead";
@@ -21,6 +22,7 @@ export function OnlinePlayers({
   onNotice,
   canUpdate = true,
 }: Props) {
+  const { t } = useI18n();
   const shared = useSharedOnlinePlayers();
   const data = shared?.data ?? null;
   const refresh = shared?.refresh ?? (async () => undefined);
@@ -46,7 +48,7 @@ export function OnlinePlayers({
     return (
       <div className="text-center py-4 text-secondary">
         <Spinner animation="border" size="sm" className="me-2" />
-        Checking players…
+        {t("common.loading")}…
       </div>
     );
   }
@@ -63,6 +65,7 @@ export function OnlinePlayers({
 
   return (
     <div>
+      <h2 className="h5 mb-3">{t("players.title")}</h2>
       <div className="d-flex justify-content-between align-items-center mb-3">
         <strong>
           <i className="fa-solid fa-users me-2 text-success" />
@@ -81,7 +84,7 @@ export function OnlinePlayers({
       )}
 
       {active && data.players.length === 0 ? (
-        <p className="text-secondary small">Nobody is online right now.</p>
+        <p className="text-secondary small">{t("players.empty")}</p>
       ) : active ? (
         <ListGroup className="mb-4">
           {data.players.map((p) => (

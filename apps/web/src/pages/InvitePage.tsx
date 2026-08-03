@@ -4,10 +4,12 @@ import { Alert, Button, Spinner } from "react-bootstrap";
 import { api } from "../api";
 import { useAuth } from "../auth";
 import { AuthShell } from "../components/AuthShell";
+import { useI18n } from "../i18n/react";
 
 export function InvitePage() {
   const { token = "" } = useParams();
   const { user } = useAuth();
+  const { t } = useI18n();
   const navigate = useNavigate();
   const [info, setInfo] = useState<{
     email: string;
@@ -25,9 +27,9 @@ export function InvitePage() {
       .getInvite(token)
       .then(setInfo)
       .catch((err) =>
-        setError(err instanceof Error ? err.message : "Invite not found"),
+        setError(err instanceof Error ? err.message : t("auth.inviteNotFound")),
       );
-  }, [token]);
+  }, [token, t]);
 
   async function accept() {
     if (!token) return;
@@ -37,14 +39,14 @@ export function InvitePage() {
       const res = await api.acceptInvite(token);
       navigate(`/servers/${res.serverId}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not accept invite");
+      setError(err instanceof Error ? err.message : t("auth.inviteAcceptFailed"));
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <AuthShell title="Server invite" subtitle="Accept access to a Minecraft server">
+    <AuthShell title={t("auth.inviteTitle")} subtitle={t("auth.inviteSubtitle")}>
       {!info && !error && (
         <div className="text-center py-4">
           <Spinner />
@@ -54,10 +56,14 @@ export function InvitePage() {
       {info && (
         <>
           <p className="mb-2">
-            Join <strong>{info.serverName}</strong> as{" "}
-            <strong>{info.email}</strong>
+            {t("auth.inviteJoin", {
+              server: info.serverName,
+              email: info.email,
+            })}
             {info.expiresAt
-              ? ` · expires ${new Date(info.expiresAt).toLocaleString()}`
+              ? ` ${t("auth.inviteExpires", {
+                  when: new Date(info.expiresAt).toLocaleString(),
+                })}`
               : ""}
           </p>
           {!user ? (
@@ -66,18 +72,18 @@ export function InvitePage() {
                 className="btn btn-primary"
                 to={`/login?next=/invite/${encodeURIComponent(token)}`}
               >
-                Sign in to accept
+                {t("auth.signInToAccept")}
               </Link>
               <Link
                 className="btn btn-outline-secondary"
                 to={`/register?next=/invite/${encodeURIComponent(token)}`}
               >
-                Create account
+                {t("auth.createAccount")}
               </Link>
             </div>
           ) : (
             <Button variant="primary" disabled={busy} onClick={() => void accept()}>
-              {busy ? <Spinner size="sm" /> : "Accept invite"}
+              {busy ? <Spinner size="sm" /> : t("auth.acceptInvite")}
             </Button>
           )}
         </>

@@ -13,6 +13,7 @@ import {
   Table,
 } from "react-bootstrap";
 import { api } from "../api";
+import { useI18n } from "../i18n/react";
 import { copyText } from "../utils";
 
 interface Props {
@@ -30,6 +31,7 @@ export function DatabasesPanel({
   onError,
   onNotice,
 }: Props) {
+  const { t } = useI18n();
   const [databases, setDatabases] = useState<ServerDatabase[]>([]);
   const [prefix, setPrefix] = useState(() => databaseNamePrefix(serverId));
   const [used, setUsed] = useState(0);
@@ -105,7 +107,7 @@ export function DatabasesPanel({
     return (
       <div className="p-4 text-center text-secondary">
         <Spinner animation="border" size="sm" className="me-2" />
-        Loading databases…
+        {t("common.loading")}…
       </div>
     );
   }
@@ -113,7 +115,7 @@ export function DatabasesPanel({
   return (
     <div className="databases-panel">
       <header className="databases-panel-header">
-        <h2 className="databases-panel-title">Databases</h2>
+        <h2 className="databases-panel-title">{t("databases.title")}</h2>
         <p className="databases-panel-lead mb-0">
           All databases available for this server.
         </p>
@@ -125,7 +127,7 @@ export function DatabasesPanel({
             <h3 className="databases-section-title">Your databases</h3>
             {databases.length === 0 ? (
               <p className="databases-empty mb-0">
-                There are no databases listed for this server.
+                {t("databases.empty")}
               </p>
             ) : (
               <div className="table-responsive">
@@ -216,7 +218,7 @@ export function DatabasesPanel({
                               disabled={busy}
                               onClick={() => void onDelete(db)}
                             >
-                              Delete
+                              {t("databases.delete")}
                             </Button>
                           )}
                         </td>
@@ -232,7 +234,7 @@ export function DatabasesPanel({
         {canCreate && (
           <Col xs={12} lg={3}>
             <section className="databases-section databases-create h-100">
-              <h3 className="databases-section-title">Create New Database</h3>
+              <h3 className="databases-section-title">{t("databases.create")}</h3>
               <Form onSubmit={onCreate} className="databases-create-form">
                 <Form.Group className="mb-3">
                   <Form.Label>Database</Form.Label>
@@ -272,7 +274,7 @@ export function DatabasesPanel({
                   className="w-100"
                   disabled={busy || atLimit}
                 >
-                  {busy ? "Creating…" : "Create Database"}
+                  {busy ? t("common.creating") : t("databases.create")}
                 </Button>
               </Form>
             </section>

@@ -12,6 +12,7 @@ import {
   Stack,
 } from "react-bootstrap";
 import { api } from "../api";
+import { useI18n } from "../i18n/react";
 import { PlayerHead } from "./PlayerHead";
 
 export const DEFAULT_GIVE_ITEMS = [
@@ -83,6 +84,7 @@ export function PlayerActionModal({
   onNotice,
   onDone,
 }: Props) {
+  const { t } = useI18n();
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState<"actions" | "history">("actions");
   const [history, setHistory] = useState<PlayerModerationEvent[]>([]);
@@ -153,7 +155,7 @@ export function PlayerActionModal({
           <div>
             <div>{player.name}</div>
             <Badge bg={online ? "success" : "secondary"} className="fw-normal">
-              {online ? "Online" : "Offline"}
+              {online ? t("common.online") : t("common.offline")}
             </Badge>
           </div>
         </Modal.Title>
@@ -209,7 +211,7 @@ export function PlayerActionModal({
         <h6>Moderation</h6>
         <Stack direction="horizontal" gap={2} className="flex-wrap mb-2">
           <Button size="sm" variant="outline-secondary" disabled={busy || !can("kick")} onClick={() => void run("kick", { reason })}>
-            Kick
+            {t("players.kick")}
           </Button>
           <Button
             size="sm"
@@ -220,7 +222,7 @@ export function PlayerActionModal({
               void run("ban", { reason });
             }}
           >
-            Ban
+            {t("players.ban")}
           </Button>
           <Button size="sm" variant="outline-secondary" disabled={busy || !can("pardon")} onClick={() => void run("pardon")}>
             Unban
@@ -260,10 +262,10 @@ export function PlayerActionModal({
         <h6>Permissions</h6>
         <Stack direction="horizontal" gap={2} className="flex-wrap mb-3">
           <Button size="sm" variant="primary" disabled={busy || !can("op")} onClick={() => void run("op")}>
-            Make OP
+            {t("players.op")}
           </Button>
           <Button size="sm" variant="outline-secondary" disabled={busy || !can("deop")} onClick={() => void run("deop")}>
-            Deop
+            {t("players.deop")}
           </Button>
           <Button size="sm" variant="outline-secondary" disabled={busy || !can("whitelist_add")} onClick={() => void run("whitelist_add")}>
             Whitelist
