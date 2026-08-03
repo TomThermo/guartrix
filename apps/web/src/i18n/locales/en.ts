@@ -1,0 +1,91 @@
+/** English UI messages — nested keys accessed as `nav.account`, `common.save`, etc. */
+export const en = {
+  nav: {
+    brandTagline: "Minecraft Server Manager",
+    newServer: "New server",
+    admin: "Admin",
+    panel: "Panel",
+    status: "Status",
+    system: "System",
+    license: "License",
+    licenseIssue: "License issue",
+    attention: "Attention",
+    activity: "Activity",
+    panelBilling: "Panel billing",
+    users: "Users",
+    account: "Account",
+    billing: "Billing",
+    security: "Security",
+    signOut: "Sign out",
+    twoFactorRequired: "Two-factor setup required",
+    dashboard: "Dashboard",
+    servers: "Servers",
+    nodes: "Nodes",
+    terms: "Terms",
+    privacy: "Privacy",
+  },
+  common: {
+    save: "Save",
+    cancel: "Cancel",
+    delete: "Delete",
+    start: "Start",
+    stop: "Stop",
+    loading: "Loading",
+    error: "Error",
+    create: "Create",
+  },
+  dashboard: {
+    title: "Servers",
+    subtitle: "Your Minecraft servers at a glance.",
+    newServer: "New server",
+    emptyTitle: "No servers yet",
+    emptyBlurb:
+      "Create a Vanilla, Paper, Purpur, Fabric, Quilt, Forge or NeoForge server.",
+    createServer: "Create server",
+  },
+  auth: {
+    signInTitle: "Guartrix",
+    signInSubtitle: "Sign in to manage servers",
+    username: "Username",
+    password: "Password",
+    email: "Email",
+    rememberMe: "Remember me (stay signed in for 30 days)",
+    signIn: "Sign in",
+    signingIn: "Signing in…",
+    forgotPassword: "Forgot password?",
+    createAccount: "Create an account",
+    registerTitle: "Create account",
+    registerSubtitle: "Register to manage Minecraft servers",
+    loginFailed: "Login failed",
+    twoFactorTitle: "Two-factor",
+    twoFactorSubtitle: "Enter the code from your authenticator app",
+    authCode: "Authentication code",
+    recoveryHint: "Or use a one-time recovery code if you lost your device.",
+    verify: "Verify",
+    verifying: "Verifying…",
+    backToSignIn: "← Back to sign in",
+    invalidCode: "Invalid code",
+  },
+  account: {
+    language: "Language",
+    languageHelp: "Choose the panel language for this browser.",
+    languageEn: "English",
+    languageNl: "Nederlands",
+    appearance: "Appearance",
+    appearanceHelp:
+      "Choose dark, light, or follow your system preference. Saved in this browser only.",
+    themeDark: "Dark",
+    themeDarkHint: "Default moss panel look",
+    themeLight: "Light",
+    themeLightHint: "Neutral slate surfaces",
+    themeSystem: "System",
+    themeSystemHint: "Match OS light / dark setting",
+  },
+};
+
+/** Deep string map — locale catalogs share this shape without literal-string locking. */
+export type Messages = {
+  [K in keyof typeof en]: {
+    [P in keyof (typeof en)[K]]: string;
+  };
+};

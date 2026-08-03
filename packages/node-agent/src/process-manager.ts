@@ -25,7 +25,10 @@ import {
   removeContainer,
   resolveContainerName,
 } from "./docker.js";
-import { ensureGuartrixNetwork, GUARTRIX_NETWORK } from "./mysql.js";
+import {
+  connectContainerToSharedNetwork,
+  resolveGameNetwork,
+} from "./mysql.js";
 import { getDiskUsageCached, invalidateDiskUsage } from "./disk-usage.js";
 import { resourceMonitor } from "./resource-monitor.js";
 import {
@@ -865,7 +868,8 @@ class ProcessManager extends EventEmitter {
     this.daemonSay(serverId, "Starting server container.");
     await this.emitStartupBanner(serverId, javaCmd);
 
-    await ensureGuartrixNetwork();
+    const { primary: gameNetwork, attachSharedDb } =
+      await resolveGameNetwork(serverId);
 
     // Detached run: the container outlives the daemon. Console I/O goes through
     // `docker attach --sig-proxy=false` so a panel restart never kills Minecraft.
@@ -881,7 +885,7 @@ class ProcessManager extends EventEmitter {
         "--user",
         `${uid}:${gid}`,
         "--network",
-        GUARTRIX_NETWORK,
+        gameNetwork,
         "--security-opt",
         "no-new-privileges:true",
         "--cap-drop",
@@ -915,6 +919,18 @@ class ProcessManager extends EventEmitter {
       ],
       { timeout: 60_000 },
     );
+
+    if (attachSharedDb) {
+      try {
+        await connectContainerToSharedNetwork(name);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        this.daemonSay(
+          serverId,
+          `WARN: could not attach shared DB network (${message}); game MySQL may be unreachable.`,
+        );
+      }
+    }
 
     try {
       await this.attachToContainer(serverId, name, { waitForDone: true });

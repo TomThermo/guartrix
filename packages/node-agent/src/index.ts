@@ -103,6 +103,11 @@ export {
 export {
   ensureMysql,
   ensureGuartrixNetwork,
+  dockerNetworkMode,
+  serverNetworkName,
+  ensureServerNetwork,
+  resolveGameNetwork,
+  connectContainerToSharedNetwork,
   getMysqlStatus,
   createMysqlDatabase,
   deleteMysqlDatabase,

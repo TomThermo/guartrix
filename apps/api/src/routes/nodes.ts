@@ -287,6 +287,7 @@ export function registerNodeRoutes(app: FastifyInstance): void {
         `DAEMON_JWT_WS_TTL=3600`,
         `DAEMON_JWT_LEGACY=false`,
         `DOCKER_IMAGE=${process.env.DOCKER_IMAGE ?? "eclipse-temurin:25-jre-jammy"}`,
+        `DOCKER_NETWORK_MODE=${(process.env.DOCKER_NETWORK_MODE ?? "shared").trim() || "shared"}`,
         `MANAGE_FIREWALL=true`,
         "",
       ].join("\n");

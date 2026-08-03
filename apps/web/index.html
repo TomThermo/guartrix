@@ -5,6 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="dark light" />
     <meta name="theme-color" content="#1a1d23" />
+    <script>
+      (function () {
+        try {
+          var p = localStorage.getItem("guartrix.theme") || "dark";
+          var t =
+            p === "system"
+              ? window.matchMedia("(prefers-color-scheme: light)").matches
+                ? "light"
+                : "dark"
+              : p === "light"
+                ? "light"
+                : "dark";
+          document.documentElement.setAttribute("data-bs-theme", t);
+          var meta = document.querySelector('meta[name="theme-color"]');
+          if (meta) meta.setAttribute("content", t === "light" ? "#e8ece9" : "#1a1d23");
+        } catch (e) {}
+      })();
+    </script>
     <meta name="application-name" content="Guartrix" />
     <meta
       name="description"

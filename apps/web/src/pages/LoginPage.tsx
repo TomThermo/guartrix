@@ -4,6 +4,7 @@ import { Alert, Button, Form, Spinner } from "react-bootstrap";
 import { api } from "../api";
 import { useAuth } from "../auth";
 import { AuthShell } from "../components/AuthShell";
+import { useI18n } from "../i18n/react";
 
 const REMEMBER_KEY = "guartrix.rememberMe";
 const USERNAME_KEY = "guartrix.lastUsername";
@@ -24,6 +25,7 @@ function readMigrated(key: string, legacyKey: string): string | null {
 
 export function LoginPage() {
   const { login, loginTwoFactor, authenticated, pendingTwoFactor } = useAuth();
+  const { t } = useI18n();
   const [username, setUsername] = useState(
     () => readMigrated(USERNAME_KEY, LEGACY_USERNAME_KEY) || "",
   );
@@ -68,7 +70,7 @@ export function LoginPage() {
         setPassword("");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed");
+      setError(err instanceof Error ? err.message : t("auth.loginFailed"));
     } finally {
       setBusy(false);
     }
@@ -81,7 +83,7 @@ export function LoginPage() {
     try {
       await loginTwoFactor(code.trim());
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Invalid code");
+      setError(err instanceof Error ? err.message : t("auth.invalidCode"));
     } finally {
       setBusy(false);
     }
@@ -90,8 +92,8 @@ export function LoginPage() {
   if (needsTwoFactor) {
     return (
       <AuthShell
-        title="Two-factor"
-        subtitle="Enter the code from your authenticator app"
+        title={t("auth.twoFactorTitle")}
+        subtitle={t("auth.twoFactorSubtitle")}
       >
         {error && (
           <Alert variant="danger" className="py-2">
@@ -100,7 +102,7 @@ export function LoginPage() {
         )}
         <Form onSubmit={onSubmitCode}>
           <Form.Group className="mb-3" controlId="totp-code">
-            <Form.Label>Authentication code</Form.Label>
+            <Form.Label>{t("auth.authCode")}</Form.Label>
             <Form.Control
               type="text"
               inputMode="numeric"
@@ -112,18 +114,18 @@ export function LoginPage() {
               autoFocus
             />
             <Form.Text className="text-secondary">
-              Or use a one-time recovery code if you lost your device.
+              {t("auth.recoveryHint")}
             </Form.Text>
           </Form.Group>
           <Button type="submit" variant="primary" className="w-100" disabled={busy}>
             {busy ? (
               <>
-                <Spinner size="sm" className="me-2" /> Verifying…
+                <Spinner size="sm" className="me-2" /> {t("auth.verifying")}
               </>
             ) : (
               <>
                 <i className="fa-solid fa-shield-halved me-2" />
-                Verify
+                {t("auth.verify")}
               </>
             )}
           </Button>
@@ -138,7 +140,7 @@ export function LoginPage() {
               setError(null);
             }}
           >
-            ← Back to sign in
+            {t("auth.backToSignIn")}
           </button>
         </div>
       </AuthShell>
@@ -146,7 +148,7 @@ export function LoginPage() {
   }
 
   return (
-    <AuthShell title="Guartrix" subtitle="Sign in to manage servers">
+    <AuthShell title={t("auth.signInTitle")} subtitle={t("auth.signInSubtitle")}>
       {error && (
         <Alert variant="danger" className="py-2">
           {error}
@@ -154,7 +156,7 @@ export function LoginPage() {
       )}
       <Form onSubmit={onSubmitPassword}>
         <Form.Group className="mb-3" controlId="username">
-          <Form.Label>Username</Form.Label>
+          <Form.Label>{t("auth.username")}</Form.Label>
           <Form.Control
             type="text"
             value={username}
@@ -165,7 +167,7 @@ export function LoginPage() {
           />
         </Form.Group>
         <Form.Group className="mb-3" controlId="password">
-          <Form.Label>Password</Form.Label>
+          <Form.Label>{t("auth.password")}</Form.Label>
           <Form.Control
             type="password"
             value={password}
@@ -178,26 +180,28 @@ export function LoginPage() {
           className="mb-3"
           type="checkbox"
           id="remember-me"
-          label="Remember me (stay signed in for 30 days)"
+          label={t("auth.rememberMe")}
           checked={rememberMe}
           onChange={(e) => setRememberMe(e.target.checked)}
         />
         <Button type="submit" variant="primary" className="w-100" disabled={busy}>
           {busy ? (
             <>
-              <Spinner size="sm" className="me-2" /> Signing in…
+              <Spinner size="sm" className="me-2" /> {t("auth.signingIn")}
             </>
           ) : (
             <>
               <i className="fa-solid fa-right-to-bracket me-2" />
-              Sign in
+              {t("auth.signIn")}
             </>
           )}
         </Button>
       </Form>
       <div className="d-flex justify-content-between flex-wrap gap-2 mt-3 small">
-        <Link to="/forgot-password">Forgot password?</Link>
-        {registrationEnabled && <Link to="/register">Create an account</Link>}
+        <Link to="/forgot-password">{t("auth.forgotPassword")}</Link>
+        {registrationEnabled && (
+          <Link to="/register">{t("auth.createAccount")}</Link>
+        )}
       </div>
     </AuthShell>
   );

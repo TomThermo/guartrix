@@ -3,16 +3,25 @@ import { Link, Navigate, useNavigate } from "react-router-dom";
 import { Alert, Button, Card, Form, ListGroup, Spinner } from "react-bootstrap";
 import { api } from "../api";
 import { useAuth } from "../auth";
+import { useI18n } from "../i18n/react";
+import type { Locale } from "../i18n";
 import { TotpQr } from "../components/TotpQr";
 import { ApiKeysPanel } from "../components/ApiKeysPanel";
 import { AppPasswordsPanel } from "../components/AppPasswordsPanel";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { copyText } from "../utils";
+import {
+  readThemePreference,
+  setThemePreference,
+  watchSystemTheme,
+  type ThemePreference,
+} from "../theme";
 
 type Step = "idle" | "setup" | "recovery" | "disable" | "regen";
 
 export function AccountSecurityPage() {
   const { user, refreshUser, authenticated, logout } = useAuth();
+  const { t, locale, setLocale } = useI18n();
   const navigate = useNavigate();
   const [enabled, setEnabled] = useState(false);
   const [required, setRequired] = useState(false);
@@ -34,6 +43,13 @@ export function AccountSecurityPage() {
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [deletePassword, setDeletePassword] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [themePref, setThemePref] = useState<ThemePreference>(() =>
+    readThemePreference(),
+  );
+
+  useEffect(() => {
+    return watchSystemTheme(themePref);
+  }, [themePref]);
 
   const refresh = useCallback(async () => {
     const status = await api.getTwoFactor();
@@ -209,9 +225,26 @@ export function AccountSecurityPage() {
         </div>
         <Link to="/" className="btn btn-sm btn-outline-secondary">
           <i className="fa-solid fa-arrow-left me-1" />
-          Dashboard
+          {t("nav.dashboard")}
         </Link>
       </div>
+
+      <Card className="border-0 shadow-sm mb-4">
+        <Card.Body>
+          <h2 className="h6 mb-2">{t("account.language")}</h2>
+          <p className="text-secondary small mb-3">{t("account.languageHelp")}</p>
+          <Form.Group controlId="account-language" className="mb-0" style={{ maxWidth: 280 }}>
+            <Form.Select
+              value={locale}
+              aria-label={t("account.language")}
+              onChange={(e) => setLocale(e.target.value as Locale)}
+            >
+              <option value="en">{t("account.languageEn")}</option>
+              <option value="nl">{t("account.languageNl")}</option>
+            </Form.Select>
+          </Form.Group>
+        </Card.Body>
+      </Card>
 
       {required && !enabled && (
         <Alert variant="warning">
@@ -230,6 +263,53 @@ export function AccountSecurityPage() {
           {notice}
         </Alert>
       )}
+
+      <Card className="border-0 shadow-sm mb-4">
+        <Card.Body>
+          <h2 className="h6 mb-3">{t("account.appearance")}</h2>
+          <p className="text-secondary small mb-3">{t("account.appearanceHelp")}</p>
+          <Form>
+            {(
+              [
+                {
+                  value: "dark" as const,
+                  label: t("account.themeDark"),
+                  hint: t("account.themeDarkHint"),
+                },
+                {
+                  value: "light" as const,
+                  label: t("account.themeLight"),
+                  hint: t("account.themeLightHint"),
+                },
+                {
+                  value: "system" as const,
+                  label: t("account.themeSystem"),
+                  hint: t("account.themeSystemHint"),
+                },
+              ]
+            ).map((opt) => (
+              <Form.Check
+                key={opt.value}
+                type="radio"
+                id={`theme-${opt.value}`}
+                name="guartrix-theme"
+                className="mb-2"
+                label={
+                  <span>
+                    {opt.label}
+                    <span className="text-secondary small ms-2">{opt.hint}</span>
+                  </span>
+                }
+                checked={themePref === opt.value}
+                onChange={() => {
+                  setThemePref(opt.value);
+                  setThemePreference(opt.value);
+                }}
+              />
+            ))}
+          </Form>
+        </Card.Body>
+      </Card>
 
       <Card className="border-0 shadow-sm mb-4">
         <Card.Body>

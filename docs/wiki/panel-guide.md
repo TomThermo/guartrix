@@ -32,7 +32,7 @@ Request a reset link by email. Without SMTP, messages land in `data/mail-outbox/
 
 ### Two-factor (Security)
 
-Navbar → **Security** — enable TOTP by scanning the QR code (or typing the secret) into an authenticator app, then save the one-time recovery codes. When 2FA is on, sign-in asks for a code after the password. Admins can reset a user's 2FA from **Users**.
+Navbar → **Security** — enable TOTP by scanning the QR code (or typing the secret) into an authenticator app, then save the one-time recovery codes. When 2FA is on, sign-in asks for a code after the password. Admins can reset a user's 2FA from **Users**. The same page has an **Appearance** control for dark / light / system theme (stored in this browser as `guartrix.theme`).
 
 Same page: **API keys** for scripts (`Authorization: Bearer gt_…`). Create with a permission preset or custom scopes, copy the token once, revoke anytime. **SFTP app passwords** (`gtap_…`) let FileZilla/WinSCP authenticate without the panel password.
 
@@ -162,7 +162,7 @@ More on moving servers: [Move between nodes](node-transfer.md)
 
 ### Console (live)
 
-WebSocket console: live logs, send commands, power controls, address / RAM / CPU / storage / players. Below the console, **history charts** show roughly the last hour of CPU / RAM / network from the API's in-memory ring buffer.
+WebSocket console: live logs, send commands, power controls, address / RAM / CPU / storage / players. Below the console, **history charts** show roughly the last hour of CPU / RAM / network from the API ring buffer (persisted under `data/stats-history/` so samples survive panel restarts).
 
 ![Console](assets/08-server-console.png)
 

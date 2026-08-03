@@ -82,6 +82,18 @@ E2E_BASE_URL=http://127.0.0.1:80 \
 ```
 
 Health probes: `/api/health` (liveness) vs `/api/ready` (DB + local daemon). Daemon: `/health` vs `/ready` (Docker). Watchdog checks both.
+
+## i18n
+
+The web UI uses a tiny custom i18n layer (no i18next):
+
+- Catalogs: `apps/web/src/i18n/locales/en.ts` and `nl.ts` (nested objects)
+- Core API: `apps/web/src/i18n/index.ts` — `t(key)`, `getLocale()`, `setLocale()`, persisted in `localStorage` key `guartrix.locale` (default from `navigator.language`: `nl*` → `nl`, else `en`)
+- React: wrap with `I18nProvider` / `useI18n()` from `apps/web/src/i18n/react.tsx` (wired in `main.tsx`). Changing locale updates `document.documentElement.lang`.
+- Language picker: Account → Security.
+
+Only key chrome is migrated so far (nav/shell, login, dashboard hero/empty). Add keys to both locale files, then call `t("section.key")` where needed. Prefer `{name}` placeholders via `t(key, { name })`.
+
 ## Workspace tips
 
 - Shared types: `packages/shared` — rebuild when changing exports (`npm run build -w @msm/shared`).

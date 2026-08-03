@@ -13,6 +13,7 @@ import {
 import { api } from "./api";
 import { useAuth } from "./auth";
 import { ErrorBoundary } from "./ErrorBoundary";
+import { useI18n } from "./i18n/react";
 
 const LoginPage = lazy(() =>
   import("./pages/LoginPage").then((m) => ({ default: m.LoginPage })),
@@ -102,6 +103,7 @@ function PageFallback() {
 
 function Shell({ children }: { children: ReactNode }) {
   const { logout, user } = useAuth();
+  const { t } = useI18n();
   const location = useLocation();
   const isAdmin = user?.role === "ADMIN";
   const showCreate = canCreateServer(user);
@@ -199,7 +201,7 @@ function Shell({ children }: { children: ReactNode }) {
             <span className="min-w-0">
               <strong>Guartrix</strong>
               <small className="d-none d-sm-block text-secondary brand-tagline">
-                Minecraft Server Manager
+                {t("nav.brandTagline")}
               </small>
             </span>
           </Navbar.Brand>
@@ -213,7 +215,7 @@ function Shell({ children }: { children: ReactNode }) {
                   onClick={closeNav}
                 >
                   <i className="fa-solid fa-plus me-1" />
-                  New server
+                  {t("nav.newServer")}
                 </Link>
               )}
 
@@ -226,20 +228,23 @@ function Shell({ children }: { children: ReactNode }) {
                     className="app-nav-dropdown-toggle"
                   >
                     <i className="fa-solid fa-screwdriver-wrench me-1" />
-                    Admin
+                    {t("nav.admin")}
                     {!licenseOk && (
-                      <span className="app-nav-alert-dot" title="License issue" />
+                      <span
+                        className="app-nav-alert-dot"
+                        title={t("nav.licenseIssue")}
+                      />
                     )}
                   </Dropdown.Toggle>
                   <Dropdown.Menu className="app-nav-dropdown-menu">
-                    <Dropdown.Header>Panel</Dropdown.Header>
+                    <Dropdown.Header>{t("nav.panel")}</Dropdown.Header>
                     <Dropdown.Item
                       as={Link}
                       to="/statusline"
                       onClick={closeNav}
                     >
                       <i className="fa-solid fa-heart-pulse fa-fw me-2 text-secondary" />
-                      Status
+                      {t("nav.status")}
                     </Dropdown.Item>
                     <Dropdown.Item
                       as={Link}
@@ -247,7 +252,7 @@ function Shell({ children }: { children: ReactNode }) {
                       onClick={closeNav}
                     >
                       <i className="fa-solid fa-server fa-fw me-2 text-secondary" />
-                      System
+                      {t("nav.system")}
                     </Dropdown.Item>
                     <Dropdown.Item
                       as={Link}
@@ -256,10 +261,10 @@ function Shell({ children }: { children: ReactNode }) {
                       className={!licenseOk ? "text-danger" : undefined}
                     >
                       <i className="fa-solid fa-key fa-fw me-2 text-secondary" />
-                      License
+                      {t("nav.license")}
                       {!licenseOk && (
                         <Badge bg="danger" className="ms-2">
-                          Attention
+                          {t("nav.attention")}
                         </Badge>
                       )}
                     </Dropdown.Item>
@@ -269,7 +274,7 @@ function Shell({ children }: { children: ReactNode }) {
                       onClick={closeNav}
                     >
                       <i className="fa-solid fa-list-check fa-fw me-2 text-secondary" />
-                      Activity
+                      {t("nav.activity")}
                     </Dropdown.Item>
                     <Dropdown.Item
                       as={Link}
@@ -277,12 +282,12 @@ function Shell({ children }: { children: ReactNode }) {
                       onClick={closeNav}
                     >
                       <i className="fa-solid fa-file-invoice-dollar fa-fw me-2 text-secondary" />
-                      Panel billing
+                      {t("nav.panelBilling")}
                     </Dropdown.Item>
                     <Dropdown.Divider />
                     <Dropdown.Item as={Link} to="/users" onClick={closeNav}>
                       <i className="fa-solid fa-users-gear fa-fw me-2 text-secondary" />
-                      Users
+                      {t("nav.users")}
                     </Dropdown.Item>
                   </Dropdown.Menu>
                 </Dropdown>
@@ -307,19 +312,19 @@ function Shell({ children }: { children: ReactNode }) {
                     {needsTwoFactor && (
                       <span
                         className="app-nav-alert-dot"
-                        title="Two-factor setup required"
+                        title={t("nav.twoFactorRequired")}
                       />
                     )}
                   </Dropdown.Toggle>
                   <Dropdown.Menu className="app-nav-dropdown-menu">
-                    <Dropdown.Header>Account</Dropdown.Header>
+                    <Dropdown.Header>{t("nav.account")}</Dropdown.Header>
                     <Dropdown.Item
                       as={Link}
                       to="/account/billing"
                       onClick={closeNav}
                     >
                       <i className="fa-solid fa-credit-card fa-fw me-2 text-secondary" />
-                      Billing
+                      {t("nav.billing")}
                     </Dropdown.Item>
                     <Dropdown.Item
                       as={Link}
@@ -328,7 +333,7 @@ function Shell({ children }: { children: ReactNode }) {
                       className={needsTwoFactor ? "text-warning" : undefined}
                     >
                       <i className="fa-solid fa-shield-halved fa-fw me-2 text-secondary" />
-                      Security
+                      {t("nav.security")}
                       {needsTwoFactor && (
                         <Badge bg="warning" text="dark" className="ms-2">
                           2FA
@@ -345,7 +350,7 @@ function Shell({ children }: { children: ReactNode }) {
                       }}
                     >
                       <i className="fa-solid fa-right-from-bracket fa-fw me-2" />
-                      Sign out
+                      {t("nav.signOut")}
                     </Dropdown.Item>
                   </Dropdown.Menu>
                 </Dropdown>
@@ -391,9 +396,9 @@ function Shell({ children }: { children: ReactNode }) {
           <div className="main-footer-copy">
             Copyright © 2026 · Powered by <strong>Guartrix</strong>.
             {" · "}
-            <Link to="/terms">Terms</Link>
+            <Link to="/terms">{t("nav.terms")}</Link>
             {" · "}
-            <Link to="/privacy">Privacy</Link>
+            <Link to="/privacy">{t("nav.privacy")}</Link>
           </div>
         </Container>
       </footer>

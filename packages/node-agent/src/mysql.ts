@@ -125,6 +125,64 @@ export async function ensureGuartrixNetwork(): Promise<void> {
   }
 }
 
+/** `shared` = current flat `guartrix` bridge; `per_server` = isolated game network + shared DB attach. */
+export function dockerNetworkMode(): "shared" | "per_server" {
+  const raw = (process.env.DOCKER_NETWORK_MODE ?? "shared").trim().toLowerCase();
+  return raw === "per_server" ? "per_server" : "shared";
+}
+
+/** Docker network name for a game server when DOCKER_NETWORK_MODE=per_server. */
+export function serverNetworkName(serverId: string): string {
+  const short =
+    serverId.replace(/[^a-zA-Z0-9]/g, "").slice(0, 12).toLowerCase() || "unknown";
+  return `guartrix-s-${short}`;
+}
+
+export async function ensureServerNetwork(serverId: string): Promise<string> {
+  const name = serverNetworkName(serverId);
+  try {
+    await docker(["network", "inspect", name], { timeout: 10_000 });
+  } catch {
+    await docker(["network", "create", "--label", "guartrix=1", name], {
+      timeout: 15_000,
+    });
+  }
+  return name;
+}
+
+/**
+ * Resolve the primary Docker network for a game container.
+ * Always ensures the shared `guartrix` bridge exists (MySQL lives there).
+ */
+export async function resolveGameNetwork(serverId: string): Promise<{
+  primary: string;
+  attachSharedDb: boolean;
+}> {
+  await ensureGuartrixNetwork();
+  if (dockerNetworkMode() === "per_server") {
+    const primary = await ensureServerNetwork(serverId);
+    return { primary, attachSharedDb: true };
+  }
+  return { primary: GUARTRIX_NETWORK, attachSharedDb: false };
+}
+
+/** Attach a running container to the shared MySQL bridge (idempotent). */
+export async function connectContainerToSharedNetwork(
+  containerName: string,
+): Promise<void> {
+  await ensureGuartrixNetwork();
+  try {
+    await docker(["network", "connect", GUARTRIX_NETWORK, containerName], {
+      timeout: 15_000,
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    // Already attached
+    if (/already (exists|connected)|endpoint with name/i.test(msg)) return;
+    throw err;
+  }
+}
+
 async function mysqlNeedsRecreate(): Promise<boolean> {
   try {
     const { stdout } = await docker(

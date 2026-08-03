@@ -416,6 +416,12 @@ async function main() {
     clearInterval(schedulerTimer);
     stopDaemonEventBridge();
     app.log.info("Shutting down — stopping bots (Minecraft stays with daemon)…");
+    try {
+      const { flushStatsHistory } = await import("./stats-history.js");
+      await flushStatsHistory();
+    } catch {
+      // ignore persist errors on shutdown
+    }
     await botManager.stopAll();
     await app.close();
     await prisma.$disconnect();

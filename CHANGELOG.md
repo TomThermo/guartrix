@@ -7,6 +7,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.44] — 2026-08-03
+
+- Modularize `@msm/shared`: thin barrel + `types/{server,auth,nodes,databases,schedules,files-stats}`
+- i18n EN/NL foundation (`apps/web/src/i18n`); language picker on Account → Security
+- Persist console stats history across API restarts (`data/stats-history/`)
+- Web: light / system theme preference (`guartrix.theme`, Account → Security)
+- Daemon: optional `DOCKER_NETWORK_MODE=per_server` (per-server bridges + shared MySQL attach)
+- OpenAPI `info.version` → **1.0.44**
+
 ## [1.0.43] — 2026-08-03
 
 - Schedules: Prisma `ScheduledTask` (JSON schedule/steps); one-shot import from `guartrix-scheduled-tasks.json`

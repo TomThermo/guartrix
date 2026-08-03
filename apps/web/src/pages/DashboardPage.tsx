@@ -11,6 +11,7 @@ import { addonKindFor, canCreateServer, hasPermission } from "@msm/shared";
 import { Alert, Badge, Button, Card, Col, Form, Row, Spinner } from "react-bootstrap";
 import { api, ApiError } from "../api";
 import { useAuth } from "../auth";
+import { useI18n } from "../i18n/react";
 import { useVisibleInterval } from "../hooks/useVisibleInterval";
 import { TransferOwnerModal } from "../components/TransferOwnerModal";
 import { WhitelistStartModal } from "../components/WhitelistStartModal";
@@ -51,6 +52,7 @@ type StatusFilter = "all" | "online" | "offline" | "busy" | "error";
 export function DashboardPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useI18n();
   const canWrite = user?.role !== "VIEWER";
   const canCreate = canCreateServer(user);
   const isAdmin = user?.role === "ADMIN";
@@ -248,14 +250,14 @@ export function DashboardPage() {
         <div>
           <h1 className="h3 mb-1">
             <i className="fa-solid fa-server me-2 text-primary" />
-            Servers
+            {t("dashboard.title")}
           </h1>
-          <p className="text-secondary mb-0">Your Minecraft servers at a glance.</p>
+          <p className="text-secondary mb-0">{t("dashboard.subtitle")}</p>
         </div>
         {canCreate && (
           <Link to="/servers/new" className="btn btn-primary page-action-btn">
             <i className="fa-solid fa-plus me-2" />
-            New server
+            {t("dashboard.newServer")}
           </Link>
         )}
       </div>
@@ -325,13 +327,11 @@ export function DashboardPage() {
         <Card className="border-0 shadow-sm text-center py-5">
           <Card.Body>
             <i className="fa-solid fa-cube fa-2x text-secondary mb-3" />
-            <h2 className="h5">No servers yet</h2>
-            <p className="text-secondary">
-              Create a Vanilla, Paper, Purpur, Fabric, Quilt, Forge or NeoForge server.
-            </p>
+            <h2 className="h5">{t("dashboard.emptyTitle")}</h2>
+            <p className="text-secondary">{t("dashboard.emptyBlurb")}</p>
             {canCreate && (
               <Link to="/servers/new" className="btn btn-primary">
-                Create server
+                {t("dashboard.createServer")}
               </Link>
             )}
           </Card.Body>

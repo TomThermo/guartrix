@@ -85,6 +85,14 @@ Hardening options (pick one):
 
 Checklist still expects `/health` and `/ready` (Docker reachable) after changes.
 
+## Docker networks
+
+Default `DOCKER_NETWORK_MODE=shared` puts every game container on the flat `guartrix`
+bridge (same as MySQL). Set `DOCKER_NETWORK_MODE=per_server` in `data/daemon.env` to
+give each server its own `guartrix-s-<id>` network; the daemon still attaches the
+container to the shared bridge so game MySQL DNS (`guartrix-mysql`) keeps working.
+Restart the daemon (and recreate running game containers) after changing the mode.
+
 Shared plugin/world dirs for **extra host mounts** should live under `/var/lib/guartrix/shared` or `/opt/guartrix/shared` on the node (or set panel `EXTRA_MOUNTS_ALLOW_PREFIX`).
 
 ## Checklist

@@ -48,7 +48,7 @@ another tool on the host needs it.
 | Client API | Personal Bearer keys (`gt_…`), scoped permissions, per-key rate limit — see [Client API](client-api.md) |
 | Files / SFTP | Symlink jail, `O_NOFOLLOW` uploads, member-safe archive extract, sensitive `guartrix-*.json` blocked |
 | Archives | Symlinks/hardlinks rejected; zip extracted member-by-member |
-| Daemon | Short-lived HS256 JWTs on the wire (HMAC with node secret); raw bearer only if `DAEMON_JWT_LEGACY=true`; `serverId` sanitized; MySQL game users default `remote: 172.%`; containers `--cap-drop=ALL` |
+| Daemon | Short-lived HS256 JWTs on the wire (HMAC with node secret); raw bearer only if `DAEMON_JWT_LEGACY=true`; `serverId` sanitized; MySQL game users default `remote: 172.%`; containers `--cap-drop=ALL`; optional `DOCKER_NETWORK_MODE=per_server` for per-server bridges (still attaches to shared `guartrix` for game MySQL) |
 | Outbound | Webhook/download SSRF guards (`safe-url.ts`); CDN host allowlist for jars/modpacks |
 | Capacity | Shared `assertNodeCapacity` (incl. reserve) on create/PATCH |
 | Nodes | Only admins pick `nodeId` on create / clone / import |

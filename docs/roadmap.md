@@ -27,6 +27,7 @@ Last updated: 2026-08-03
 - Node **location** labels, file-backed rate limits, GDPR export/delete
 - Prometheus `/metrics`, optional Sentry, Docker log rotation, scrypt hash versioning
 - Dev MySQL via `docker-compose.dev.yml`
+- Stats history persist (`data/stats-history/`), light/system theme, `DOCKER_NETWORK_MODE=per_server` foundation
 
 ### Next ops actions
 
@@ -191,6 +192,9 @@ Hardening-checklist blijft leidend: [security.md](wiki/security.md).
 - [x] Dashboard zoek / status / node / type filters
 - [x] File Manager uploads gestreamd, limiet 2 GiB
 - [x] Netwerk-grafieken + API ring-buffer stats history (~1u)
+- [x] Stats history persist across API restarts (`data/stats-history/`)
+- [x] Light / system theme preference (localStorage)
+- [x] `DOCKER_NETWORK_MODE=per_server` foundation (per-server bridges + shared MySQL attach)
 - [x] Node transfer zonder panel-unpack (één tar.gz stream)
 - [x] Panel DB backup script + install-timer docs; `DAEMON_JWT_TTL` typo gefixt
 
