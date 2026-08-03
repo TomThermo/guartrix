@@ -14,7 +14,7 @@ jobs:
       # prisma generate / schema parse only — no live DB in this job
       DATABASE_URL: mysql://ci:ci@127.0.0.1:3306/ci
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v4
         with:
