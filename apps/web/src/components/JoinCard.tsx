@@ -89,16 +89,8 @@ export function JoinCard({ server, connect, compact, onNotice }: Props) {
             Copy
           </button>
         </dd>
-        <dt className="col-4 text-secondary">Version</dt>
-        <dd className="col-8 mb-1">{version}</dd>
         <dt className="col-4 text-secondary">Whitelist</dt>
         <dd className="col-8 mb-1">{whitelist ? "On" : "Off"}</dd>
-        <dt className="col-4 text-secondary">Players</dt>
-        <dd className="col-8 mb-1">
-          {server.status === "RUNNING" || server.status === "STARTING"
-            ? `${playersOnline} / ${playersMax}`
-            : `— / ${playersMax}`}
-        </dd>
       </dl>
       <Stack direction="horizontal" gap={2} className="flex-wrap">
         <Button size="sm" variant="primary" onClick={() => void copy("Address", address)}>

@@ -6,7 +6,7 @@ import type {
   ServerStats,
   SystemInfo,
 } from "@msm/shared";
-import { Button, Spinner } from "react-bootstrap";
+import { Spinner } from "react-bootstrap";
 import { api } from "../api";
 import { useSharedOnlinePlayers } from "../hooks/OnlinePlayersProvider";
 import { copyText } from "../utils";
@@ -51,14 +51,10 @@ function InfoRow({
   );
 }
 
-function isIpv4(host: string): boolean {
-  return /^\d{1,3}(\.\d{1,3}){3}$/.test(host);
-}
-
 export function ServerInfoPanel({
   server,
   connect,
-  system,
+  system: _system,
   liveStats,
 }: Props) {
   const [stats, setStats] = useState<ServerStats | null>(null);
@@ -112,18 +108,6 @@ export function ServerInfoPanel({
     }
   }
 
-
-  const host = connect?.host ?? "—";
-  const port = connect?.port ?? server.port;
-  const address = connect?.address ?? `${host}:${port}`;
-  const directIp = connect?.directIp
-    ? `${connect.directIp}:${port}`
-    : isIpv4(host)
-      ? address
-      : system?.publicIp
-        ? `${system.publicIp}:${port}`
-        : address;
-
   const ramUsedMb = stats?.running
     ? Math.round(stats.memoryUsedBytes / (1024 * 1024))
     : 0;
@@ -143,7 +127,8 @@ export function ServerInfoPanel({
 
   const versionParts = [server.mcVersion];
   if (server.paperBuild) versionParts.push(`build ${server.paperBuild}`);
-  if (server.fabricLoaderVersion) versionParts.push(`loader ${server.fabricLoaderVersion}`);
+  if (server.fabricLoaderVersion)
+    versionParts.push(`loader ${server.fabricLoaderVersion}`);
   if (server.forgeVersion) versionParts.push(server.forgeVersion);
 
   return (
@@ -153,15 +138,17 @@ export function ServerInfoPanel({
         Information
         {copied && <span className="server-info-copied">Copied</span>}
       </div>
-      <JoinCard server={server} connect={connect} />
-      <InfoRow label="Time left" value="Unlimited" />
-      <InfoRow label="Address" value={address} mono onCopy={() => void copy("Address", address)} />
-      <InfoRow
-        label="Direct IP"
-        value={directIp}
-        mono
-        onCopy={() => void copy("Direct IP", directIp)}
+      <JoinCard
+        server={server}
+        connect={connect}
+        onNotice={(msg) => {
+          if (msg) {
+            setCopied("ok");
+            setTimeout(() => setCopied(null), 1500);
+          }
+        }}
       />
+      <InfoRow label="Time left" value="Unlimited" />
       <InfoRow
         label="Server ID"
         value={server.id}
@@ -172,22 +159,16 @@ export function ServerInfoPanel({
       <InfoRow label="CPU" value={`${cpuPercent.toFixed(1)}%`} />
       <InfoRow label="Storage" value={diskUsed} />
       <InfoRow label="Players" value={playersLabel} />
-      <InfoRow label="Version" value={versionParts.filter(Boolean).join(" · ") || "—"} />
+      <InfoRow
+        label="Version"
+        value={versionParts.filter(Boolean).join(" · ") || "—"}
+      />
       <InfoRow label="Node" value={server.nodeName ?? "—"} />
       {!stats && !disk && (
         <div className="text-center py-2">
           <Spinner size="sm" animation="border" className="text-secondary" />
         </div>
       )}
-      <Button
-        size="sm"
-        variant="outline-secondary"
-        className="w-100 mt-2"
-        onClick={() => void copy("Address", address)}
-      >
-        <i className="fa-solid fa-copy me-2" />
-        Copy address
-      </Button>
     </aside>
   );
 }

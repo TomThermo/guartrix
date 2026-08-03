@@ -103,6 +103,16 @@ function Shell({ children }: { children: ReactNode }) {
   const closeNav = () => setNavOpen(false);
   const [licenseOk, setLicenseOk] = useState(true);
   const [licenseMsg, setLicenseMsg] = useState("");
+  const [licenseBannerDismissed, setLicenseBannerDismissed] = useState(() => {
+    try {
+      const until = Number(
+        localStorage.getItem("guartrix.licenseBannerDismissedUntil") || "0",
+      );
+      return Number.isFinite(until) && until > Date.now();
+    } catch {
+      return false;
+    }
+  });
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -114,6 +124,15 @@ function Shell({ children }: { children: ReactNode }) {
           if (cancelled) return;
           setLicenseOk(s.valid);
           setLicenseMsg(s.message || s.status);
+          // New valid license clears any dismiss; invalid stays dismissed until expiry.
+          if (s.valid) {
+            try {
+              localStorage.removeItem("guartrix.licenseBannerDismissedUntil");
+            } catch {
+              /* ignore */
+            }
+            setLicenseBannerDismissed(false);
+          }
         })
         .catch(() => {
           /* ignore transient errors — avoid false admin banners */
@@ -137,6 +156,19 @@ function Shell({ children }: { children: ReactNode }) {
       window.removeEventListener("guartrix:license-changed", onLicenseChanged);
     };
   }, [isAdmin, licenseOk, location.pathname]);
+
+  function dismissLicenseBanner() {
+    const until = Date.now() + 24 * 60 * 60 * 1000;
+    try {
+      localStorage.setItem(
+        "guartrix.licenseBannerDismissedUntil",
+        String(until),
+      );
+    } catch {
+      /* ignore */
+    }
+    setLicenseBannerDismissed(true);
+  }
 
   return (
     <div className="app-shell">
@@ -263,14 +295,24 @@ function Shell({ children }: { children: ReactNode }) {
         </Container>
       </Navbar>
       <Container className="app-main">
-        {isAdmin && !licenseOk && (
-          <Alert variant="danger" className="mt-3 mb-0">
-            <strong>License issue.</strong> {licenseMsg || "License is not valid."}{" "}
-            Free tier applies: 1 node, 1 server, 10 GB disk. Servers beyond those
-            caps are stopped.{" "}
+        {isAdmin && !licenseOk && !licenseBannerDismissed && (
+          <Alert
+            variant="danger"
+            className="mt-3 mb-0"
+            dismissible
+            onClose={dismissLicenseBanner}
+          >
+            <strong>License issue.</strong>{" "}
+            {licenseMsg || "License is not valid."}
+            {licenseMsg && !/[.!?]$/.test(licenseMsg.trim()) ? "." : ""} Free
+            tier applies: 1 node, 1 server, 10 GB disk. Servers beyond those caps
+            are stopped.{" "}
             <Link to="/admin/license" className="alert-link">
               Manage license
             </Link>
+            <div className="small mt-1 opacity-75">
+              Dismiss hides this banner for 24 hours on this browser.
+            </div>
           </Alert>
         )}
         {needsTwoFactor && location.pathname !== "/account/security" && (
