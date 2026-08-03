@@ -13,7 +13,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 - HA sessions: `SESSION_STORE=file|redis` + `REDIS_URL`; optional `ioredis` RedisSessionStore; scaling docs (NFS)
 - Rootless Docker steps in install-nodes wiki
 - CSP: optional `CSP_REPORT_ONLY=1` Report-Only header (stricter style-src) in prod-web
-- Optional server **extra Docker mounts** (`extraMounts` JSON on Server)
+- Optional server **extra Docker mounts** (`extraMounts` JSON on Server; allowlisted host prefixes)
+- Web: split hand-rolled `api.ts` into `apps/web/src/api/*` domain modules
+- Dashboard: single 15s visible-tab poll (list/stats/online + staggered update checks)
+- OpenAPI `info.version` synced to product **1.0.43**
 
 ## [1.0.42] — 2026-08-03
 
