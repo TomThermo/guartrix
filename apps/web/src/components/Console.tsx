@@ -25,23 +25,32 @@ function isPlayersListLine(line: string): boolean {
 
 type DaemonTone = "info" | "progress" | "ok" | "error";
 
+/** Optional Minecraft-style `[HH:MM:SS]` prefix from the daemon. */
+const CONSOLE_CLOCK = /^\[\d{1,2}:\d{2}:\d{2}\]\s*/;
+
+function stripConsoleClock(line: string): string {
+  return line.replace(CONSOLE_CLOCK, "");
+}
+
 function daemonConsoleTone(line: string): DaemonTone | null {
-  if (/^\[error\]/i.test(line)) return "error";
+  const body = stripConsoleClock(line);
+  if (/^\[error\]/i.test(body)) return "error";
   if (
-    /^container@guartrix~/i.test(line) ||
-    /^openjdk version/i.test(line) ||
-    /^OpenJDK /i.test(line)
+    /^container@guartrix~/i.test(body) ||
+    /^openjdk version/i.test(body) ||
+    /^OpenJDK /i.test(body)
   ) {
     return "info";
   }
-  if (!/^\[Guartrix Daemon\]/i.test(line)) return null;
+  if (!/^\[Guartrix Daemon\]/i.test(body)) return null;
 
-  const msg = line.replace(/^\[Guartrix Daemon\]\s*/i, "");
+  const msg = body.replace(/^\[Guartrix Daemon\]\s*/i, "");
   if (/^ERROR:/i.test(msg)) return "error";
   if (
     /^Completed rebuild process/i.test(msg) ||
     /^Running server preflight/i.test(msg) ||
-    /^Starting server container/i.test(msg)
+    /^Starting server container/i.test(msg) ||
+    /^Console reattached/i.test(msg)
   ) {
     return "ok";
   }
@@ -52,7 +61,8 @@ function daemonConsoleTone(line: string): DaemonTone | null {
     /^Checking size of server data directory/i.test(msg) ||
     /^Disk Usage:/i.test(msg) ||
     /^Ensuring correct ownership of files/i.test(msg) ||
-    /^Force-killing Docker container/i.test(msg)
+    /^Force-killing Docker container/i.test(msg) ||
+    /^Reattaching to running container/i.test(msg)
   ) {
     return "progress";
   }
