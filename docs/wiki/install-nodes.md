@@ -52,9 +52,26 @@ Open firewall ports on the node:
 
 The installer can auto-open ports when `MANAGE_FIREWALL=true`.
 
+## Docker access (least privilege)
+
+The daemon talks to Docker via `sudo -n docker` by default (passwordless sudo for the
+install user). That is root-equivalent on the host if the daemon process is compromised.
+
+Hardening options (pick one):
+
+1. **Docker group** — add the daemon user to `docker`, drop the sudoers docker rule, and
+   set `DOCKER_BIN=docker` (no sudo) in `data/daemon.env`. Understand that group membership
+   is still effectively root via the Docker socket.
+2. **Rootless Docker** — run Engine as the daemon user (see Docker rootless docs). Best
+   isolation; some networking/publish modes differ.
+3. **Keep sudo** — tighten sudoers to only the exact `docker` binary + subcommands the
+   node-agent uses (not a full shell).
+
+Checklist still expects `/health` and `/ready` (Docker reachable) after changes.
+
 ## Checklist
 
-- [ ] Panel can HTTP reach `HOST:8081/health`
+- [ ] Panel can HTTP reach `HOST:8081/health` and `/ready`
 - [ ] Node shows **ONLINE** after Test connection
 - [ ] SFTP host resolves (optional Cloudflare DNS for `sftpHostname`)
 - [ ] New servers land on the intended node

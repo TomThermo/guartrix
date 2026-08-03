@@ -21,9 +21,11 @@ import {
   sealDatabasePassword,
   unsealDatabasePassword,
 } from "./db-password.js";
+import { config } from "./config.js";
 import { assertNodeCapacity } from "./nodes.js";
 import { processManager } from "./process-manager.js";
 import { updateServerProperties } from "./properties.js";
+import { logger } from "./logger.js";
 
 const STEPS = [
   "Validate",
@@ -42,6 +44,83 @@ type Job = TransferJobStatus & {
 };
 
 const jobs = new Map<string, Job>();
+
+function transferJobDir(): string {
+  return path.join(config.dataDir, "transfers");
+}
+
+function transferJobPath(serverId: string): string {
+  return path.join(transferJobDir(), `${serverId}.json`);
+}
+
+async function persistTransferJob(job: Job): Promise<void> {
+  try {
+    await fs.mkdir(transferJobDir(), { recursive: true });
+    const tmp = `${transferJobPath(job.serverId)}.tmp`;
+    await fs.writeFile(tmp, JSON.stringify(job), "utf8");
+    await fs.rename(tmp, transferJobPath(job.serverId));
+  } catch {
+    // Persistence must never break a live transfer.
+  }
+}
+
+async function clearPersistedTransferJob(serverId: string): Promise<void> {
+  await fs.unlink(transferJobPath(serverId)).catch(() => undefined);
+}
+
+function jobFromDisk(raw: unknown): Job | null {
+  if (!raw || typeof raw !== "object") return null;
+  const j = raw as Partial<Job>;
+  if (typeof j.serverId !== "string" || typeof j.step !== "string") return null;
+  return {
+    serverId: j.serverId,
+    step: j.step,
+    steps: Array.isArray(j.steps) ? (j.steps as string[]) : [...STEPS],
+    stepIndex: typeof j.stepIndex === "number" ? j.stepIndex : 0,
+    error: typeof j.error === "string" ? j.error : null,
+    done: Boolean(j.done),
+    ok: Boolean(j.ok),
+    percent: typeof j.percent === "number" ? j.percent : 0,
+    detail: typeof j.detail === "string" ? j.detail : null,
+    bytesTransferred:
+      typeof j.bytesTransferred === "number" ? j.bytesTransferred : null,
+    bytesTotal: typeof j.bytesTotal === "number" ? j.bytesTotal : null,
+    fromNodeId: typeof j.fromNodeId === "string" ? j.fromNodeId : "",
+    toNodeId: typeof j.toNodeId === "string" ? j.toNodeId : "",
+    startAfter: Boolean(j.startAfter),
+    actor: j.actor ?? null,
+  };
+}
+
+/** Restore incomplete transfer UI state after an API restart (no auto-resume). */
+export async function hydrateTransferJobsFromDisk(): Promise<void> {
+  let names: string[] = [];
+  try {
+    names = await fs.readdir(transferJobDir());
+  } catch {
+    return;
+  }
+  for (const name of names) {
+    if (!name.endsWith(".json")) continue;
+    try {
+      const raw = JSON.parse(
+        await fs.readFile(path.join(transferJobDir(), name), "utf8"),
+      ) as unknown;
+      const job = jobFromDisk(raw);
+      if (!job || jobs.has(job.serverId)) continue;
+      if (!job.done) {
+        job.error =
+          job.error ??
+          "API restarted during transfer — progress restored; re-run move if needed.";
+        job.done = true;
+        job.ok = false;
+      }
+      jobs.set(job.serverId, job);
+    } catch {
+      // ignore corrupt files
+    }
+  }
+}
 
 export function getTransferJob(serverId: string): TransferJobStatus | null {
   const job = jobs.get(serverId);
@@ -82,6 +161,7 @@ function setStep(job: Job, stepIndex: number, detail: string | null = null): voi
   job.step = STEPS[stepIndex] ?? "Working";
   job.detail = detail;
   job.percent = STEP_PERCENT[Math.min(stepIndex, STEP_PERCENT.length - 1)] ?? 0;
+  void persistTransferJob(job);
 }
 
 function setChunkProgress(
@@ -99,8 +179,9 @@ function setChunkProgress(
   job.step = STEPS[stepIndex] ?? "Working";
   job.detail = detail;
   job.percent = Math.round(start + (end - start) * f);
-  if (bytesTransferred != null) job.bytesTransferred = bytesTransferred;
-  if (bytesTotal != null) job.bytesTotal = bytesTotal;
+  if (bytesTransferred !== undefined) job.bytesTransferred = bytesTransferred;
+  if (bytesTotal !== undefined) job.bytesTotal = bytesTotal;
+  void persistTransferJob(job);
 }
 
 async function setServerProgress(
@@ -224,6 +305,7 @@ export async function startServerTransfer(
     actor: input.actor ?? null,
   };
   jobs.set(server.id, job);
+  void persistTransferJob(job);
 
   await setServerProgress(server.id, "TRANSFERRING", "Transfer: starting…");
 
@@ -233,7 +315,7 @@ export async function startServerTransfer(
     subdomain: server.subdomain,
     name: server.name,
   }).catch((err) => {
-    console.error(`[transfer] unexpected failure for ${server.id}:`, err);
+    logger.error({ err, serverId: server.id }, "transfer unexpected failure");
   });
 
   return getTransferJob(server.id)!;
@@ -421,9 +503,9 @@ async function runTransfer(
     }
 
     await daemonWipeServerOnNode(serverId, fromNodeId).catch((err) => {
-      console.warn(
-        `[transfer] wipe on source node failed for ${serverId}:`,
-        err instanceof Error ? err.message : err,
+      logger.warn(
+        { err, serverId },
+        "transfer wipe on source node failed",
       );
     });
 
@@ -434,6 +516,7 @@ async function runTransfer(
     job.done = true;
     job.ok = true;
     job.step = "Done";
+    void persistTransferJob(job);
 
     if (job.actor) {
       const updated = await prisma.server.findUnique({ where: { id: serverId } });
@@ -457,10 +540,7 @@ async function runTransfer(
         const { startServerIfLicensed } = await import("./license.js");
         await startServerIfLicensed(serverId);
       } catch (err) {
-        console.warn(
-          `[transfer] startAfter failed for ${serverId}:`,
-          err instanceof Error ? err.message : err,
-        );
+        logger.warn({ err, serverId }, "transfer startAfter failed");
       }
     }
   } catch (err) {
@@ -468,6 +548,7 @@ async function runTransfer(
     job.error = message;
     job.done = true;
     job.ok = false;
+    void persistTransferJob(job);
 
     if (job.actor) {
       logActivity({
@@ -502,7 +583,10 @@ async function runTransfer(
     // Keep job status around for a bit so the UI can poll the result.
     setTimeout(() => {
       const current = jobs.get(serverId);
-      if (current?.done) jobs.delete(serverId);
+      if (current?.done) {
+        jobs.delete(serverId);
+        void clearPersistedTransferJob(serverId);
+      }
     }, 30 * 60_000);
   }
 }

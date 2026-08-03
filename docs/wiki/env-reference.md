@@ -104,6 +104,7 @@ The license **server** is hosted separately by Guartrix (default `https://licens
 | `ACTIVITY_WEBHOOK_URL` | Webhook for critical events; Discord URLs get embeds, others a generic JSON POST |
 | `ALERT_EMAIL` | Address that also receives critical-event mail (needs `SMTP_*`) |
 | `ACTIVITY_ALERT_MUTE` | Comma-separated action keys to never alert on, e.g. `auth.login-failed` |
+| `BACKUP_OFFSITE_CMD` | Optional shell command after each backup (`{path}` `{serverId}` `{backupId}` `{fileName}`) |
 
 See [Activity log](activity-log.md) for the event list and payload format.
 

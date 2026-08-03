@@ -25,11 +25,13 @@ export function startActivityWatch(): void {
       const action =
         isOom
           ? "server.oom"
-          : status === "ERROR"
-            ? "server.crashed"
-            : status === "STOPPED" && before === "RUNNING"
-              ? "server.offline"
-              : null;
+          : status === "ERROR" && /auto-restart stopped/i.test(reason)
+            ? "server.crash_loop"
+            : status === "ERROR"
+              ? "server.crashed"
+              : status === "STOPPED" && before === "RUNNING"
+                ? "server.offline"
+                : null;
       if (!action) return;
 
       void recordActivity({

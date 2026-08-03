@@ -66,15 +66,32 @@ export function CreateServerPage() {
   const nodeRamOk =
     !selectedNode ||
     selectedNode.memoryMb <= 0 ||
-    memoryMb <= selectedNode.memoryAvailableMb;
+    memoryMb <= (selectedNode.memoryUsableMb ?? selectedNode.memoryAvailableMb);
 
   useEffect(() => {
     void api
       .listNodes()
       .then(({ nodes: list }) => {
-        setNodes(list);
+        const ranked = [...list].sort((a, b) => {
+          const aOnline = a.status === "ONLINE" ? 1 : 0;
+          const bOnline = b.status === "ONLINE" ? 1 : 0;
+          if (aOnline !== bOnline) return bOnline - aOnline;
+          const aFree = a.memoryMb > 0 ? (a.memoryUsableMb ?? a.memoryAvailableMb) : -1;
+          const bFree = b.memoryMb > 0 ? (b.memoryUsableMb ?? b.memoryAvailableMb) : -1;
+          if (aFree !== bFree) return bFree - aFree;
+          if (a.isLocal !== b.isLocal) return a.isLocal ? -1 : 1;
+          return a.name.localeCompare(b.name);
+        });
+        setNodes(ranked);
         const preferred =
-          list.find((n) => n.isLocal) ?? list.find((n) => n.status === "ONLINE") ?? list[0];
+          ranked.find(
+            (n) =>
+              n.status === "ONLINE" &&
+              (n.memoryMb <= 0 || (n.memoryUsableMb ?? n.memoryAvailableMb) > 0),
+          ) ??
+          ranked.find((n) => n.isLocal) ??
+          ranked.find((n) => n.status === "ONLINE") ??
+          ranked[0];
         if (preferred) setNodeId(preferred.id);
       })
       .catch(() => setNodes([]));
@@ -112,12 +129,17 @@ export function CreateServerPage() {
     };
   }, [type]);
 
+  const selectedFreeMb =
+    selectedNode == null
+      ? 0
+      : selectedNode.memoryUsableMb ?? selectedNode.memoryAvailableMb;
+
   async function onCreate(e: FormEvent) {
     e.preventDefault();
     if (!nodeRamOk) {
       setError(
         selectedNode
-          ? `Not enough RAM on node "${selectedNode.name}": available ${formatGb(selectedNode.memoryAvailableMb)}`
+          ? `Not enough RAM on node "${selectedNode.name}": available ${formatGb(selectedFreeMb)} (after host reserve)`
           : "Choose a node",
       );
       return;
@@ -161,7 +183,7 @@ export function CreateServerPage() {
     if (!nodeRamOk) {
       setError(
         selectedNode
-          ? `Not enough RAM on node "${selectedNode.name}": available ${formatGb(selectedNode.memoryAvailableMb)}`
+          ? `Not enough RAM on node "${selectedNode.name}": available ${formatGb(selectedFreeMb)} (after host reserve)`
           : "Choose a node",
       );
       return;
@@ -211,16 +233,22 @@ export function CreateServerPage() {
           disabled={nodes.length === 0}
         >
           {nodes.length === 0 && <option value="">No nodes available</option>}
-          {nodes.map((n) => (
-            <option key={n.id} value={n.id}>
-              {n.name}
-              {n.isLocal ? " (local)" : ""}
-              {n.memoryMb > 0
-                ? ` — ${formatGb(n.memoryAvailableMb)} free / ${formatGb(n.memoryMb)}`
-                : ""}
-              {n.status !== "ONLINE" ? ` [${n.status}]` : ""}
-            </option>
-          ))}
+          {nodes.map((n, idx) => {
+            const free = n.memoryUsableMb ?? n.memoryAvailableMb;
+            const recommended =
+              idx === 0 && n.status === "ONLINE" && (n.memoryMb <= 0 || free > 0);
+            return (
+              <option key={n.id} value={n.id}>
+                {n.name}
+                {n.isLocal ? " (local)" : ""}
+                {recommended ? " ★ recommended" : ""}
+                {n.memoryMb > 0
+                  ? ` — ${formatGb(free)} usable / ${formatGb(n.memoryMb)}`
+                  : ""}
+                {n.status !== "ONLINE" ? ` [${n.status}]` : ""}
+              </option>
+            );
+          })}
         </Form.Select>
         {selectedNode && (
           <Form.Text
@@ -229,14 +257,15 @@ export function CreateServerPage() {
             {selectedNode.memoryMb > 0 ? (
               nodeRamOk ? (
                 <>
-                  Node has {formatGb(selectedNode.memoryAvailableMb)} available
-                  ({formatGb(selectedNode.memoryUsedMb)} of {formatGb(selectedNode.memoryMb)}{" "}
-                  allocated).
+                  Node has {formatGb(selectedFreeMb)} usable after host reserve
+                  ({formatGb(selectedNode.memoryReserveMb ?? 0)} reserved;{" "}
+                  {formatGb(selectedNode.memoryUsedMb)} of{" "}
+                  {formatGb(selectedNode.memoryMb)} allocated).
                 </>
               ) : (
                 <>
-                  Not enough RAM on this node: you requested {formatGb(memoryMb)}, available is{" "}
-                  {formatGb(selectedNode.memoryAvailableMb)}.
+                  Not enough RAM on this node: you requested {formatGb(memoryMb)}, usable is{" "}
+                  {formatGb(selectedFreeMb)}.
                 </>
               )
             ) : (
@@ -364,11 +393,11 @@ export function CreateServerPage() {
               required
               maxMb={
                 remainingRamMb != null && selectedNode && selectedNode.memoryMb > 0
-                  ? Math.min(remainingRamMb, selectedNode.memoryAvailableMb)
+                  ? Math.min(remainingRamMb, selectedFreeMb)
                   : remainingRamMb != null
                     ? remainingRamMb
                     : selectedNode && selectedNode.memoryMb > 0
-                      ? selectedNode.memoryAvailableMb
+                      ? selectedFreeMb
                       : undefined
               }
             />

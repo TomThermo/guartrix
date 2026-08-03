@@ -41,6 +41,12 @@ export function nodePublicUrl(node: {
   return `${node.scheme}://${node.fqdn}:${node.daemonPort}`;
 }
 
+/** Host reserve for OS + panel + MySQL + Docker (~1.5 GB or 15%). */
+export function nodeMemoryReserveMb(capacityMb: number): number {
+  if (capacityMb <= 0) return 0;
+  return Math.max(1536, Math.floor(capacityMb * 0.15));
+}
+
 export function serializeNode(
   node: {
     id: string;
@@ -63,6 +69,10 @@ export function serializeNode(
 ): DaemonNode {
   const capacity = Math.max(0, node.memoryMb);
   const used = Math.max(0, memoryUsedMb);
+  const reserve = nodeMemoryReserveMb(capacity);
+  const usableCap = capacity > 0 ? Math.max(0, capacity - reserve) : 0;
+  const available = capacity > 0 ? Math.max(0, capacity - used) : 0;
+  const usable = capacity > 0 ? Math.max(0, usableCap - used) : 0;
   return {
     id: node.id,
     name: node.name,
@@ -72,7 +82,9 @@ export function serializeNode(
     isLocal: node.isLocal,
     memoryMb: capacity,
     memoryUsedMb: used,
-    memoryAvailableMb: capacity > 0 ? Math.max(0, capacity - used) : 0,
+    memoryAvailableMb: available,
+    memoryReserveMb: reserve,
+    memoryUsableMb: usable,
     mysqlPort: node.mysqlPort ?? 3306,
     sftpPort: node.sftpPort ?? DEFAULT_SFTP_PORT,
     sftpHostname: node.sftpHostname ?? null,
@@ -209,7 +221,7 @@ export async function assertNodeCapacity(
     return;
   }
   // Reserve headroom for OS + panel + MySQL + Docker overhead (~1.5 GB or 15%)
-  const reserveMb = Math.max(1536, Math.floor(node.memoryMb * 0.15));
+  const reserveMb = nodeMemoryReserveMb(node.memoryMb);
   const usable = Math.max(0, node.memoryMb - reserveMb);
   const used = node.servers
     .filter((s) => s.id !== opts?.excludeServerId)

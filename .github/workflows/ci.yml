@@ -39,5 +39,9 @@ jobs:
       - name: Unit tests
         run: npm test
 
+      - name: npm audit (high+, production deps)
+        continue-on-error: true
+        run: npm audit --omit=dev --audit-level=high
+
       - name: Build workspaces
         run: npm run build

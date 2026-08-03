@@ -67,6 +67,7 @@ import {
   stopDaemonEventBridge,
 } from "./daemon-events.js";
 import { genReqId, logger } from "./logger.js";
+import type { FastifyBaseLogger } from "fastify";
 
 async function main() {
   await fs.mkdir(path.join(config.dataDir, "servers"), { recursive: true });
@@ -166,7 +167,7 @@ async function main() {
     .filter(Boolean);
 
   const app = Fastify({
-    loggerInstance: logger,
+    loggerInstance: logger as FastifyBaseLogger,
     requestIdHeader: "x-request-id",
     requestIdLogLabel: "reqId",
     genReqId,
@@ -226,8 +227,17 @@ async function main() {
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    exposedHeaders: ["Accept-Ranges", "Content-Range", "Content-Length"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-Request-Id",
+    ],
+    exposedHeaders: [
+      "Accept-Ranges",
+      "Content-Range",
+      "Content-Length",
+      "X-Request-Id",
+    ],
   });
   await app.register(cookie);
   await app.register(session, {
@@ -284,14 +294,49 @@ async function main() {
 
   app.get("/api/health", async () => ({ ok: true }));
 
-  /** Readiness: panel process is up and can reach the database. */
+  /** Readiness: DB reachable; optionally local daemon when not skipped. */
   app.get("/api/ready", async (_request, reply) => {
     try {
       await prisma.$queryRaw`SELECT 1`;
-      return { ok: true };
     } catch {
-      return reply.status(503).send({ ok: false, error: "database unavailable" });
+      return reply
+        .status(503)
+        .send({ ok: false, error: "database unavailable" });
     }
+
+    const skipLocal =
+      process.env.SKIP_LOCAL_DAEMON === "1" ||
+      process.env.SKIP_LOCAL_DAEMON === "true";
+    if (!skipLocal) {
+      const host = process.env.DAEMON_HOST?.trim() || "127.0.0.1";
+      const port = Number(process.env.DAEMON_PORT ?? 8081);
+      try {
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), 2500);
+        const res = await fetch(`http://${host}:${port}/ready`, {
+          signal: ctrl.signal,
+        }).finally(() => clearTimeout(t));
+        if (!res.ok) {
+          return reply
+            .status(503)
+            .send({ ok: false, error: "local daemon not ready" });
+        }
+      } catch {
+        return reply
+          .status(503)
+          .send({ ok: false, error: "local daemon unreachable" });
+      }
+    }
+
+    return { ok: true };
+  });
+
+  app.addHook("onSend", async (request, reply, payload) => {
+    const id = request.id;
+    if (id && !reply.hasHeader("x-request-id")) {
+      void reply.header("x-request-id", String(id));
+    }
+    return payload;
   });
 
   let lastActivityPrune = 0;
@@ -353,6 +398,9 @@ async function main() {
   startDiskWatch();
   startDiscordStatusWorker();
   void startDaemonEventBridge();
+  const { hydrateTransferJobsFromDisk } = await import("./transfer.js");
+  await hydrateTransferJobsFromDisk();
+  logger.info("Hydrated transfer job state from disk");
 
   const { startLicenseWatcher, validateLicense, assertLicensePanelQuota } =
     await import("./license.js");

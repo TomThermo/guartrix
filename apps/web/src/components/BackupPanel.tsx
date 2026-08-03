@@ -19,6 +19,7 @@ import {
 } from "react-bootstrap";
 import { api } from "../api";
 import { formatBytes, formatWhen } from "../utils";
+import { ConfirmModal } from "./ConfirmModal";
 
 interface Props {
   serverId: string;
@@ -69,6 +70,9 @@ export function BackupPanel({
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [downloadPct, setDownloadPct] = useState(0);
   const downloadAbortRef = useRef<AbortController | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ServerBackup | null>(null);
+  const [restoreTarget, setRestoreTarget] = useState<ServerBackup | null>(null);
+  const [actionBusy, setActionBusy] = useState(false);
 
   const maxUploadLabel = formatBytes(BACKUP_UPLOAD_MAX_BYTES);
 
@@ -256,45 +260,52 @@ export function BackupPanel({
     }
   }
 
-  async function onDelete(backup: ServerBackup) {
+  function onDelete(backup: ServerBackup) {
     if (!canDelete) return;
-    if (!confirm(`Delete backup ${backup.fileName}?`)) return;
+    setDeleteTarget(backup);
+  }
+
+  async function confirmDelete() {
+    if (!deleteTarget) return;
+    setActionBusy(true);
     onError(null);
     onNotice(null);
     try {
-      await api.deleteBackup(serverId, backup.id);
-      setBackups((prev) => prev.filter((b) => b.id !== backup.id));
+      await api.deleteBackup(serverId, deleteTarget.id);
+      setBackups((prev) => prev.filter((b) => b.id !== deleteTarget.id));
       onNotice("Backup deleted.");
+      setDeleteTarget(null);
     } catch (err) {
       onError(err instanceof Error ? err.message : "Delete failed");
+    } finally {
+      setActionBusy(false);
     }
   }
 
-  async function onRestore(backup: ServerBackup) {
+  function onRestore(backup: ServerBackup) {
     if (!canRestore) return;
-    if (
-      !confirm(
-        `Restore backup ${backup.fileName}?\n\n` +
-          "The server must be stopped. Current world and files will be overwritten.",
-      )
-    ) {
-      return;
-    }
-    const startAfter = confirm("Start the server after restore?");
+    setRestoreTarget(backup);
+  }
+
+  async function confirmRestore(startAfter: boolean) {
+    if (!restoreTarget) return;
     onError(null);
     onNotice(null);
+    setActionBusy(true);
     setBusy(true);
     try {
-      await api.restoreBackup(serverId, backup.id, startAfter);
+      await api.restoreBackup(serverId, restoreTarget.id, startAfter);
       onNotice(
         startAfter
           ? "Backup restored; server starting."
           : "Backup restored. Start the server when ready.",
       );
+      setRestoreTarget(null);
       await refresh();
     } catch (err) {
       onError(err instanceof Error ? err.message : "Restore failed");
     } finally {
+      setActionBusy(false);
       setBusy(false);
     }
   }
@@ -540,14 +551,14 @@ export function BackupPanel({
                     size="sm"
                     variant="outline-warning"
                     disabled={busy || uploading}
-                    onClick={() => void onRestore(b)}
+                    onClick={() => onRestore(b)}
                   >
                     <i className="fa-solid fa-clock-rotate-left me-1" />
                     Restore
                   </Button>
                 )}
                 {canDelete && (
-                  <Button size="sm" variant="outline-danger" onClick={() => void onDelete(b)}>
+                  <Button size="sm" variant="outline-danger" onClick={() => onDelete(b)}>
                     Delete
                   </Button>
                 )}
@@ -556,6 +567,52 @@ export function BackupPanel({
           );
         })}
       </ListGroup>
+
+      <ConfirmModal
+        show={Boolean(deleteTarget)}
+        title="Delete backup?"
+        body={
+          deleteTarget
+            ? `Delete backup ${deleteTarget.fileName}?`
+            : ""
+        }
+        confirmLabel="Delete"
+        variant="danger"
+        busy={actionBusy}
+        onCancel={() => {
+          if (actionBusy) return;
+          setDeleteTarget(null);
+        }}
+        onConfirm={() => void confirmDelete()}
+      />
+      <ConfirmModal
+        show={Boolean(restoreTarget)}
+        title="Restore backup?"
+        body={
+          restoreTarget ? (
+            <>
+              <p className="mb-2">
+                Restore backup <strong className="font-monospace">{restoreTarget.fileName}</strong>?
+              </p>
+              <p className="text-secondary small mb-0">
+                The server must be stopped. Current world and files will be overwritten.
+              </p>
+            </>
+          ) : (
+            ""
+          )
+        }
+        confirmLabel="Restore & start"
+        secondaryLabel="Restore only"
+        variant="warning"
+        busy={actionBusy}
+        onCancel={() => {
+          if (actionBusy) return;
+          setRestoreTarget(null);
+        }}
+        onSecondary={() => void confirmRestore(false)}
+        onConfirm={() => void confirmRestore(true)}
+      />
     </div>
   );
 }

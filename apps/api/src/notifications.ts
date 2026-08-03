@@ -107,8 +107,10 @@ export async function notifyCriticalActivity(
 
   const key = `${event.action}:${event.serverId ?? event.userId ?? "global"}`;
   const now = Date.now();
+  // Crash-loop exhaustion must always alert (do not hide behind crash dedupe).
+  const skipDedupe = event.action === "server.crash_loop";
   const previous = lastSent.get(key);
-  if (previous && now - previous < DEDUPE_WINDOW_MS) return;
+  if (!skipDedupe && previous && now - previous < DEDUPE_WINDOW_MS) return;
   lastSent.set(key, now);
 
   const webhooks = [webhookUrl, ownerWebhook].filter(

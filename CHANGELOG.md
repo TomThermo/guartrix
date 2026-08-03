@@ -7,6 +7,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.37] — 2026-08-03
+
+- P1 pass: readiness (`/api/ready` checks local daemon), crash-loop alerts (`server.crash_loop`)
+- Transfer job progress persisted under `data/transfers/`; hydrate after API restart
+- Create-server node ranking uses `memoryUsableMb` (matches host reserve) + recommended hint
+- File Manager / Backups / Schedules use ConfirmModal + PromptModal (no `prompt`/`confirm`)
+- Player routes extracted to `servers-players.ts`; `http-error` envelope helpers; OpenAPI health/nodes
+- Offsite backup hook `BACKUP_OFFSITE_CMD`; Biome lint; Dependabot Actions + CI `npm audit`
+- Playwright smoke expanded (login → server); Docker least-privilege notes in install-nodes
+
 ## [1.0.36] — 2026-08-03
 
 - Prisma **migrations** instead of `db push` for installs/upgrades (`20260803120000_init`, `scripts/db-migrate.sh`, legacy baseline)

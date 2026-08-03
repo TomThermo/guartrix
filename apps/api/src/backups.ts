@@ -10,6 +10,7 @@ import type {
 import { formatBytes } from "@msm/shared";
 import { logActivity } from "./activity-log.js";
 import { serverBackupsDir, serverDir } from "./config.js";
+import { logger } from "./logger.js";
 import { processManager } from "./process-manager.js";
 import { safeExtractArchive } from "@msm/node-agent";
 import {
@@ -19,6 +20,42 @@ import {
 } from "./schedule-time.js";
 
 const execFileAsync = promisify(execFile);
+
+/**
+ * Optional offsite copy after a successful backup.
+ * Set BACKUP_OFFSITE_CMD to a shell command; placeholders:
+ *   {path} {serverId} {backupId} {fileName}
+ * Example: rclone copy "{path}" b2:guartrix-backups/{serverId}/
+ */
+async function runOffsiteBackupHook(opts: {
+  archivePath: string;
+  serverId: string;
+  backupId: string;
+  fileName: string;
+}): Promise<void> {
+  const template = process.env.BACKUP_OFFSITE_CMD?.trim();
+  if (!template) return;
+  const cmd = template
+    .replaceAll("{path}", opts.archivePath)
+    .replaceAll("{serverId}", opts.serverId)
+    .replaceAll("{backupId}", opts.backupId)
+    .replaceAll("{fileName}", opts.fileName);
+  try {
+    await execFileAsync("bash", ["-lc", cmd], {
+      timeout: 10 * 60_000,
+      maxBuffer: 4 * 1024 * 1024,
+    });
+    logger.info(
+      { serverId: opts.serverId, backupId: opts.backupId },
+      "offsite backup hook completed",
+    );
+  } catch (err) {
+    logger.warn(
+      { err, serverId: opts.serverId, backupId: opts.backupId },
+      "offsite backup hook failed",
+    );
+  }
+}
 
 const TAR_EXCLUDES = [
   "--exclude=logs",
@@ -269,6 +306,13 @@ export async function createBackup(opts: {
       // writeBackupSchedule recomputes nextRunAt
       void updated;
     }
+
+    await runOffsiteBackupHook({
+      archivePath: dest,
+      serverId,
+      backupId: id,
+      fileName,
+    });
 
     return {
       id,

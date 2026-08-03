@@ -13,7 +13,28 @@ import {
 import { api } from "../api";
 import { useVisibleInterval } from "../hooks/useVisibleInterval";
 import { formatBytes } from "../utils";
+import { ConfirmModal } from "./ConfirmModal";
 import { DiskUsageCard } from "./DiskUsageCard";
+import { PromptModal } from "./PromptModal";
+
+type Dialog =
+  | {
+      kind: "confirm";
+      title: string;
+      body: string;
+      confirmLabel?: string;
+      variant?: "danger" | "primary" | "warning";
+      onYes: () => void | Promise<void>;
+    }
+  | {
+      kind: "prompt";
+      title: string;
+      label: string;
+      defaultValue: string;
+      confirmLabel?: string;
+      onYes: (v: string) => void | Promise<void>;
+    }
+  | null;
 
 interface Props {
   serverId: string;
@@ -74,7 +95,30 @@ export function FileManager({
   const [newFolder, setNewFolder] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [disk, setDisk] = useState<DiskUsageBreakdown | null>(null);
+  const [dialog, setDialog] = useState<Dialog>(null);
+  const [dialogBusy, setDialogBusy] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  function askDiscard(onYes: () => void | Promise<void>) {
+    setDialog({
+      kind: "confirm",
+      title: "Discard changes?",
+      body: "Discard unsaved changes?",
+      confirmLabel: "Discard",
+      variant: "warning",
+      onYes,
+    });
+  }
+
+  async function runDialogAction(action: () => void | Promise<void>) {
+    setDialogBusy(true);
+    try {
+      await action();
+      setDialog(null);
+    } finally {
+      setDialogBusy(false);
+    }
+  }
 
   const loadDisk = useCallback(async () => {
     try {
@@ -132,10 +176,16 @@ export function FileManager({
 
   async function openEntry(entry: FileEntry) {
     if (entry.type === "dir") {
-      if (editing && editDirty && !confirm("Discard unsaved changes?")) return;
-      setEditing(null);
-      setEditDirty(false);
-      await load(entry.path);
+      const proceed = async () => {
+        setEditing(null);
+        setEditDirty(false);
+        await load(entry.path);
+      };
+      if (editing && editDirty) {
+        askDiscard(proceed);
+        return;
+      }
+      await proceed();
       return;
     }
     if (!entry.editable) {
@@ -150,25 +200,37 @@ export function FileManager({
       onError("You do not have permission to view file contents.");
       return;
     }
-    if (editing && editDirty && !confirm("Discard unsaved changes?")) return;
-    setBusy(true);
-    onError(null);
-    try {
-      const data = await api.readFile(serverId, entry.path);
-      setEditing({ path: data.path, content: data.content });
-      setEditDirty(false);
-    } catch (err) {
-      onError(err instanceof Error ? err.message : "Failed to open file");
-    } finally {
-      setBusy(false);
+    const openFile = async () => {
+      setBusy(true);
+      onError(null);
+      try {
+        const data = await api.readFile(serverId, entry.path);
+        setEditing({ path: data.path, content: data.content });
+        setEditDirty(false);
+      } catch (err) {
+        onError(err instanceof Error ? err.message : "Failed to open file");
+      } finally {
+        setBusy(false);
+      }
+    };
+    if (editing && editDirty) {
+      askDiscard(openFile);
+      return;
     }
+    await openFile();
   }
 
   async function goTo(path: string) {
-    if (editing && editDirty && !confirm("Discard unsaved changes?")) return;
-    setEditing(null);
-    setEditDirty(false);
-    await load(path);
+    const proceed = async () => {
+      setEditing(null);
+      setEditDirty(false);
+      await load(path);
+    };
+    if (editing && editDirty) {
+      askDiscard(proceed);
+      return;
+    }
+    await proceed();
   }
 
   async function saveFile() {
@@ -204,45 +266,61 @@ export function FileManager({
     }
   }
 
-  async function onDelete(entry: FileEntry) {
+  function onDelete(entry: FileEntry) {
     if (!canDelete) return;
     const label = entry.type === "dir" ? `folder "${entry.name}" and its contents` : `"${entry.name}"`;
-    if (!confirm(`Delete ${label}?`)) return;
-    setBusy(true);
-    onError(null);
-    try {
-      if (editing?.path === entry.path || editing?.path.startsWith(`${entry.path}/`)) {
-        setEditing(null);
-        setEditDirty(false);
-      }
-      await api.deleteFile(serverId, entry.path);
-      await load(cwd);
-    } catch (err) {
-      onError(err instanceof Error ? err.message : "Delete failed");
-    } finally {
-      setBusy(false);
-    }
+    setDialog({
+      kind: "confirm",
+      title: "Delete?",
+      body: `Delete ${label}?`,
+      confirmLabel: "Delete",
+      variant: "danger",
+      onYes: async () => {
+        setBusy(true);
+        onError(null);
+        try {
+          if (editing?.path === entry.path || editing?.path.startsWith(`${entry.path}/`)) {
+            setEditing(null);
+            setEditDirty(false);
+          }
+          await api.deleteFile(serverId, entry.path);
+          await load(cwd);
+        } catch (err) {
+          onError(err instanceof Error ? err.message : "Delete failed");
+        } finally {
+          setBusy(false);
+        }
+      },
+    });
   }
 
-  async function onRename(entry: FileEntry) {
+  function onRename(entry: FileEntry) {
     if (!canUpdate) return;
-    const next = prompt("New name", entry.name);
-    if (!next || next === entry.name) return;
-    setBusy(true);
-    onError(null);
-    try {
-      const destDir = parentPath(entry.path);
-      const to = destDir === "." ? next : `${destDir}/${next}`;
-      await api.renameFile(serverId, entry.path, to);
-      if (editing?.path === entry.path) {
-        setEditing((prev) => (prev ? { ...prev, path: to } : prev));
-      }
-      await load(cwd);
-    } catch (err) {
-      onError(err instanceof Error ? err.message : "Rename failed");
-    } finally {
-      setBusy(false);
-    }
+    setDialog({
+      kind: "prompt",
+      title: "Rename",
+      label: "New name",
+      defaultValue: entry.name,
+      confirmLabel: "Rename",
+      onYes: async (next) => {
+        if (!next || next === entry.name) return;
+        setBusy(true);
+        onError(null);
+        try {
+          const destDir = parentPath(entry.path);
+          const to = destDir === "." ? next : `${destDir}/${next}`;
+          await api.renameFile(serverId, entry.path, to);
+          if (editing?.path === entry.path) {
+            setEditing((prev) => (prev ? { ...prev, path: to } : prev));
+          }
+          await load(cwd);
+        } catch (err) {
+          onError(err instanceof Error ? err.message : "Rename failed");
+        } finally {
+          setBusy(false);
+        }
+      },
+    });
   }
 
   async function onUpload(files: FileList | null) {
@@ -276,39 +354,54 @@ export function FileManager({
     }
   }
 
-  async function onDecompress(entry: FileEntry) {
+  function onDecompress(entry: FileEntry) {
     if (!canArchive || entry.type !== "file") return;
-    if (!confirm(`Extract "${entry.name}" into a new folder?`)) return;
-    setBusy(true);
-    onError(null);
-    try {
-      const result = await api.decompressFile(serverId, entry.path);
-      await load(cwd);
-      onError(null);
-      void result;
-    } catch (err) {
-      onError(err instanceof Error ? err.message : "Extract failed");
-    } finally {
-      setBusy(false);
-    }
+    setDialog({
+      kind: "confirm",
+      title: "Extract archive?",
+      body: `Extract "${entry.name}" into a new folder?`,
+      confirmLabel: "Extract",
+      variant: "primary",
+      onYes: async () => {
+        setBusy(true);
+        onError(null);
+        try {
+          await api.decompressFile(serverId, entry.path);
+          await load(cwd);
+          onError(null);
+        } catch (err) {
+          onError(err instanceof Error ? err.message : "Extract failed");
+        } finally {
+          setBusy(false);
+        }
+      },
+    });
   }
 
-  async function onCompressSelected() {
+  function onCompressSelected() {
     if (!canArchive || !someSelected) return;
     const defaultName = `archive-${new Date().toISOString().slice(0, 10)}.zip`;
-    const name = prompt("Archive file name (.zip or .tar.gz)", defaultName);
-    if (!name?.trim()) return;
-    const destination = joinPath(cwd === "." || !cwd ? "." : cwd, name.trim());
-    setBusy(true);
-    onError(null);
-    try {
-      await api.compressFiles(serverId, Array.from(selected), destination);
-      await load(cwd);
-    } catch (err) {
-      onError(err instanceof Error ? err.message : "Compress failed");
-    } finally {
-      setBusy(false);
-    }
+    setDialog({
+      kind: "prompt",
+      title: "Create archive",
+      label: "Archive file name (.zip or .tar.gz)",
+      defaultValue: defaultName,
+      confirmLabel: "Create",
+      onYes: async (name) => {
+        if (!name?.trim()) return;
+        const destination = joinPath(cwd === "." || !cwd ? "." : cwd, name.trim());
+        setBusy(true);
+        onError(null);
+        try {
+          await api.compressFiles(serverId, Array.from(selected), destination);
+          await load(cwd);
+        } catch (err) {
+          onError(err instanceof Error ? err.message : "Compress failed");
+        } finally {
+          setBusy(false);
+        }
+      },
+    });
   }
 
   async function onDownloadSelectedArchive() {
@@ -331,9 +424,25 @@ export function FileManager({
         destination,
       );
       await api.downloadFile(serverId, result.path, destName);
-      if (confirm("Download started. Delete the temporary archive from the server?")) {
-        await api.deleteFile(serverId, result.path);
-      }
+      setDialog({
+        kind: "confirm",
+        title: "Delete temporary archive?",
+        body: "Download started. Delete the temporary archive from the server?",
+        confirmLabel: "Delete",
+        variant: "warning",
+        onYes: async () => {
+          setBusy(true);
+          onError(null);
+          try {
+            await api.deleteFile(serverId, result.path);
+            await load(cwd);
+          } catch (err) {
+            onError(err instanceof Error ? err.message : "Delete failed");
+          } finally {
+            setBusy(false);
+          }
+        },
+      });
       await load(cwd);
     } catch (err) {
       onError(err instanceof Error ? err.message : "Archive download failed");
@@ -614,7 +723,13 @@ export function FileManager({
                     variant="outline-secondary"
                     disabled={busy}
                     onClick={() => {
-                      if (editDirty && !confirm("Discard unsaved changes?")) return;
+                      if (editDirty) {
+                        askDiscard(() => {
+                          setEditing(null);
+                          setEditDirty(false);
+                        });
+                        return;
+                      }
                       setEditing(null);
                       setEditDirty(false);
                     }}
@@ -649,6 +764,39 @@ export function FileManager({
           </Col>
         )}
       </Row>
+
+      <ConfirmModal
+        show={dialog?.kind === "confirm"}
+        title={dialog?.kind === "confirm" ? dialog.title : ""}
+        body={dialog?.kind === "confirm" ? dialog.body : ""}
+        confirmLabel={dialog?.kind === "confirm" ? dialog.confirmLabel : undefined}
+        variant={dialog?.kind === "confirm" ? dialog.variant : undefined}
+        busy={dialogBusy}
+        onCancel={() => {
+          if (dialogBusy) return;
+          setDialog(null);
+        }}
+        onConfirm={() => {
+          if (dialog?.kind !== "confirm" || dialogBusy) return;
+          void runDialogAction(dialog.onYes);
+        }}
+      />
+      <PromptModal
+        show={dialog?.kind === "prompt"}
+        title={dialog?.kind === "prompt" ? dialog.title : ""}
+        label={dialog?.kind === "prompt" ? dialog.label : ""}
+        defaultValue={dialog?.kind === "prompt" ? dialog.defaultValue : ""}
+        confirmLabel={dialog?.kind === "prompt" ? dialog.confirmLabel : undefined}
+        busy={dialogBusy}
+        onCancel={() => {
+          if (dialogBusy) return;
+          setDialog(null);
+        }}
+        onConfirm={(value) => {
+          if (dialog?.kind !== "prompt" || dialogBusy) return;
+          void runDialogAction(() => dialog.onYes(value));
+        }}
+      />
     </div>
   );
 }

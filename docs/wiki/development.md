@@ -57,17 +57,21 @@ Unit tests use [Vitest](https://vitest.dev/) at the repo root (`apps/api` + `pac
 ```bash
 npm test              # vitest run (CI gate)
 npm run test:watch    # vitest watch mode
+npm run lint          # Biome check (formatter + lint)
 ```
 
-GitHub Actions (`.github/workflows/ci.yml`) on push/PR to `main`: install → Prisma generate → build shared → typecheck API/web → `npm test` → `npm run build`.
+GitHub Actions (`.github/workflows/ci.yml`) on push/PR to `main`: install → Prisma generate → build shared → typecheck API/web → `npm test` → `npm audit` (high+, non-blocking) → `npm run build`.
 
 Playwright smoke under `e2e/` is **optional** and skipped unless `E2E_BASE_URL` is set:
 
 ```bash
 npx playwright install chromium
-E2E_BASE_URL=http://127.0.0.1:5173 npx playwright test
+E2E_BASE_URL=http://127.0.0.1:80 \
+  E2E_USER=admin E2E_PASSWORD='…' \
+  npx playwright test
 ```
 
+Health probes: `/api/health` (liveness) vs `/api/ready` (DB + local daemon). Daemon: `/health` vs `/ready` (Docker). Watchdog checks both.
 ## Workspace tips
 
 - Shared types: `packages/shared` — rebuild when changing exports (`npm run build -w @msm/shared`).

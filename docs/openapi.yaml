@@ -1,13 +1,14 @@
 openapi: 3.0.3
 info:
   title: Guartrix API
-  version: "1.0.35"
+  version: "1.0.37"
   description: |
     Machine-readable surface for the Guartrix panel.
 
     - **Client API** — personal keys (`Authorization: Bearer gt_…`)
     - **Application API** — admin/billing keys (`Authorization: Bearer gta_…`)
     - Session cookie routes (CSRF Origin required) are listed where relevant
+    - Errors prefer `{ error, code?, details? }` (see `http-error.ts`)
 
     Human docs: [Client API](wiki/client-api.md), [Application API](wiki/application-api.md).
 servers:
@@ -17,6 +18,7 @@ tags:
   - name: Client
   - name: Application
   - name: Account
+  - name: Health
 components:
   securitySchemes:
     ClientApiKey:
@@ -39,7 +41,43 @@ components:
       in: path
       required: true
       schema: { type: string }
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
+        code: { type: string }
+        details: {}
 paths:
+  /api/health:
+    get:
+      tags: [Health]
+      summary: Liveness probe (process up)
+      responses:
+        "200":
+          description: "{ ok: true }"
+  /api/ready:
+    get:
+      tags: [Health]
+      summary: Readiness probe (DB + optional local daemon)
+      responses:
+        "200":
+          description: "{ ok: true }"
+        "503":
+          description: Database or local daemon unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/nodes:
+    get:
+      tags: [Client]
+      summary: List nodes with capacity (usable RAM after host reserve)
+      security: [{ ClientApiKey: [] }, { SessionCookie: [] }]
+      responses:
+        "200":
+          description: "{ nodes: DaemonNode[] }"
   /api/servers:
     get:
       tags: [Client]

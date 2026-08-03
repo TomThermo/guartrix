@@ -83,6 +83,11 @@ export const ACTIVITY_ACTIONS: Record<string, ActivityActionMeta> = {
     label: "Server went offline unexpectedly",
     critical: true,
   },
+  "server.crash_loop": {
+    category: "power",
+    label: "Server crash-loop — auto-restart stopped",
+    critical: true,
+  },
 
   // Console
   "console.command": { category: "console", label: "Sent a console command" },

@@ -12,6 +12,7 @@ import {
 } from "react-bootstrap";
 import { api } from "../api";
 import { formatWhen } from "../utils";
+import { ConfirmModal } from "./ConfirmModal";
 
 interface Props {
   serverId: string;
@@ -64,6 +65,9 @@ export function TasksPanel({
   const [tasks, setTasks] = useState<ScheduledTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [runTarget, setRunTarget] = useState<ScheduledTask | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ScheduledTask | null>(null);
+  const [dialogBusy, setDialogBusy] = useState(false);
 
   const [mode, setMode] = useState<"daily" | "interval" | "weekly">("daily");
   const [dailyAt, setDailyAt] = useState("04:00");
@@ -154,38 +158,53 @@ export function TasksPanel({
     }
   }
 
-  async function onRunNow(task: ScheduledTask) {
+  function onRunNow(task: ScheduledTask) {
     if (!canUpdate) return;
-    if (!confirm("Run this schedule now?")) return;
+    setRunTarget(task);
+  }
+
+  async function confirmRunNow() {
+    if (!runTarget) return;
     onError(null);
     onNotice(null);
+    setDialogBusy(true);
     setBusy(true);
     try {
-      const result = await api.runTaskNow(serverId, task.id);
+      const result = await api.runTaskNow(serverId, runTarget.id);
       if (result.task.lastError) {
         onError(result.task.lastError);
       } else {
         onNotice("Schedule finished.");
       }
+      setRunTarget(null);
       await refresh();
     } catch (err) {
       onError(err instanceof Error ? err.message : "Run failed");
     } finally {
+      setDialogBusy(false);
       setBusy(false);
     }
   }
 
-  async function onDelete(task: ScheduledTask) {
+  function onDelete(task: ScheduledTask) {
     if (!canDelete) return;
-    if (!confirm("Delete this schedule?")) return;
+    setDeleteTarget(task);
+  }
+
+  async function confirmDelete() {
+    if (!deleteTarget) return;
     onError(null);
     onNotice(null);
+    setDialogBusy(true);
     try {
-      await api.deleteTask(serverId, task.id);
+      await api.deleteTask(serverId, deleteTarget.id);
       onNotice("Schedule deleted.");
+      setDeleteTarget(null);
       await refresh();
     } catch (err) {
       onError(err instanceof Error ? err.message : "Delete failed");
+    } finally {
+      setDialogBusy(false);
     }
   }
 
@@ -471,7 +490,7 @@ export function TasksPanel({
                         size="sm"
                         variant="outline-primary"
                         disabled={busy}
-                        onClick={() => void onRunNow(t)}
+                        onClick={() => onRunNow(t)}
                       >
                         Run now
                       </Button>
@@ -489,7 +508,7 @@ export function TasksPanel({
                       <Button
                         size="sm"
                         variant="outline-danger"
-                        onClick={() => void onDelete(t)}
+                        onClick={() => onDelete(t)}
                       >
                         Delete
                       </Button>
@@ -501,6 +520,33 @@ export function TasksPanel({
           </ListGroup>
         </Col>
       </Row>
+
+      <ConfirmModal
+        show={Boolean(runTarget)}
+        title="Run schedule?"
+        body="Run this schedule now?"
+        confirmLabel="Run now"
+        variant="primary"
+        busy={dialogBusy}
+        onCancel={() => {
+          if (dialogBusy) return;
+          setRunTarget(null);
+        }}
+        onConfirm={() => void confirmRunNow()}
+      />
+      <ConfirmModal
+        show={Boolean(deleteTarget)}
+        title="Delete schedule?"
+        body="Delete this schedule?"
+        confirmLabel="Delete"
+        variant="danger"
+        busy={dialogBusy}
+        onCancel={() => {
+          if (dialogBusy) return;
+          setDeleteTarget(null);
+        }}
+        onConfirm={() => void confirmDelete()}
+      />
     </div>
   );
 }

@@ -256,6 +256,10 @@ export interface DaemonNode {
   memoryMb: number;
   /** Sum of allocated server memoryMb on this node. */
   memoryUsedMb: number;
+  /** Remaining capacity before host reserve (matches assertNodeCapacity). */
+  memoryUsableMb: number;
+  /** Host reserve held back for OS/panel/Docker (0 if capacity unknown). */
+  memoryReserveMb: number;
   /** Remaining capacity (memoryMb - memoryUsedMb), 0 if capacity unknown. */
   memoryAvailableMb: number;
   /** Published MySQL port on this node. */
