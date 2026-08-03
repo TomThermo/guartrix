@@ -1934,8 +1934,96 @@ body {
   box-shadow: 0 0 0 0.2rem var(--bh-accent-glow);
 }
 
-.app-nav-actions .btn {
+.app-nav-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+}
+
+.app-nav-actions .btn,
+.app-nav-actions .dropdown {
+  width: 100%;
+}
+
+.app-nav-actions .app-nav-dropdown-toggle {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
   justify-content: flex-start;
+  gap: 0.15rem;
+}
+
+.app-nav-actions .app-nav-dropdown-toggle::after {
+  margin-left: auto;
+}
+
+.app-nav-username {
+  max-width: 9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-nav-role-badge {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.app-nav-alert-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--bs-danger);
+  box-shadow: 0 0 0 2px rgba(20, 26, 23, 0.9);
+  margin-left: 0.35rem;
+  flex: 0 0 auto;
+}
+
+.app-nav-dropdown-toggle.btn-warning .app-nav-alert-dot {
+  background: #1a1f1c;
+}
+
+.app-nav-dropdown-menu {
+  background: var(--bh-bg-raised);
+  border-color: var(--bh-border);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  min-width: 14rem;
+  padding: 0.4rem;
+}
+
+.app-nav-dropdown-menu .dropdown-header {
+  color: var(--bh-muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.35rem 0.75rem 0.25rem;
+}
+
+.app-nav-dropdown-menu .dropdown-item {
+  color: var(--bh-text);
+  border-radius: 0.4rem;
+  padding: 0.45rem 0.75rem;
+  display: flex;
+  align-items: center;
+}
+
+.app-nav-dropdown-menu .dropdown-item:hover,
+.app-nav-dropdown-menu .dropdown-item:focus {
+  background: rgba(93, 186, 106, 0.12);
+  color: var(--bh-text);
+}
+
+.app-nav-dropdown-menu .dropdown-item.text-danger:hover,
+.app-nav-dropdown-menu .dropdown-item.text-danger:focus {
+  background: rgba(220, 53, 69, 0.12);
+  color: var(--bs-danger);
+}
+
+.app-nav-dropdown-menu .dropdown-divider {
+  border-color: var(--bh-border);
+  margin: 0.35rem 0.4rem;
 }
 
 .btn-label {
@@ -2229,6 +2317,26 @@ body {
 }
 
 @media (min-width: 768px) {
+  .app-nav-actions {
+    flex-direction: row;
+    align-items: center;
+    width: auto;
+  }
+
+  .app-nav-actions .btn,
+  .app-nav-actions .dropdown {
+    width: auto;
+  }
+
+  .app-nav-actions .app-nav-dropdown-toggle {
+    width: auto;
+    justify-content: center;
+  }
+
+  .app-nav-actions .app-nav-dropdown-toggle::after {
+    margin-left: 0.45rem;
+  }
+
   .app-nav-actions .btn {
     justify-content: center;
   }

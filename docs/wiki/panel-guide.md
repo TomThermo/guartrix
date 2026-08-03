@@ -10,7 +10,7 @@ Visual walkthrough of everything you can do in the Guartrix web panel. Screensho
 
 ### Login
 
-Open the panel URL → sign in with your username and password. Admins see **Status**, **System**, and **Users** in the top bar.
+Open the panel URL → sign in with your username and password. Admins open **Admin** in the top bar for **Status**, **System**, **License**, **Activity**, **Panel billing**, and **Users**. Your account menu (username) has **Billing**, **Security**, and **Sign out**.
 
 ![Login](assets/01-login.png)
 

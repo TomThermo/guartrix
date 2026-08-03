@@ -2,7 +2,14 @@ import { lazy, Suspense, type ReactNode } from "react";
 import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { canCreateServer, roleLabel } from "@msm/shared";
-import { Alert, Badge, Button, Container, Navbar, Spinner } from "react-bootstrap";
+import {
+  Alert,
+  Badge,
+  Container,
+  Dropdown,
+  Navbar,
+  Spinner,
+} from "react-bootstrap";
 import { api } from "./api";
 import { useAuth } from "./auth";
 
@@ -197,99 +204,151 @@ function Shell({ children }: { children: ReactNode }) {
           </Navbar.Brand>
           <Navbar.Toggle aria-controls="app-nav" className="border-0 ms-auto" />
           <Navbar.Collapse id="app-nav">
-            <div className="app-nav-actions d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 ms-md-auto mt-3 mt-md-0">
-              {user && (
-                <span className="small text-secondary d-flex align-items-center gap-2 px-1">
-                  <i className="fa-solid fa-user d-md-none" aria-hidden />
-                  {user.username}
-                  <Badge bg="secondary">{roleLabel(user.role)}</Badge>
-                </span>
-              )}
-              {isAdmin && (
-                <>
-                  <Link
-                    to="/statusline"
-                    className="btn btn-sm btn-outline-secondary"
-                    onClick={closeNav}
-                  >
-                    <i className="fa-solid fa-heart-pulse me-1" />
-                    Status
-                  </Link>
-                  <Link
-                    to="/admin/system"
-                    className="btn btn-sm btn-outline-secondary"
-                    onClick={closeNav}
-                  >
-                    <i className="fa-solid fa-server me-1" />
-                    System
-                  </Link>
-                  <Link
-                    to="/admin/license"
-                    className={`btn btn-sm ${licenseOk ? "btn-outline-secondary" : "btn-outline-danger"}`}
-                    onClick={closeNav}
-                  >
-                    <i className="fa-solid fa-key me-1" />
-                    License
-                  </Link>
-                  <Link
-                    to="/admin/activity"
-                    className="btn btn-sm btn-outline-secondary"
-                    onClick={closeNav}
-                  >
-                    <i className="fa-solid fa-list-check me-1" />
-                    Activity
-                  </Link>
-                  <Link
-                    to="/admin/billing"
-                    className="btn btn-sm btn-outline-secondary"
-                    onClick={closeNav}
-                  >
-                    <i className="fa-solid fa-credit-card me-1" />
-                    Billing
-                  </Link>
-                  <Link
-                    to="/users"
-                    className="btn btn-sm btn-outline-secondary"
-                    onClick={closeNav}
-                  >
-                    <i className="fa-solid fa-users-gear me-1" />
-                    Users
-                  </Link>
-                </>
-              )}
+            <div className="app-nav-actions ms-md-auto mt-3 mt-md-0">
               {showCreate && (
-                <Link to="/servers/new" className="btn btn-sm btn-primary" onClick={closeNav}>
+                <Link
+                  to="/servers/new"
+                  className="btn btn-sm btn-primary app-nav-cta"
+                  onClick={closeNav}
+                >
                   <i className="fa-solid fa-plus me-1" />
                   New server
                 </Link>
               )}
-              <Link
-                to="/account/billing"
-                className="btn btn-sm btn-outline-secondary"
-                onClick={closeNav}
-              >
-                <i className="fa-solid fa-credit-card me-1" />
-                Billing
-              </Link>
-              <Link
-                to="/account/security"
-                className={`btn btn-sm ${needsTwoFactor ? "btn-warning" : "btn-outline-secondary"}`}
-                onClick={closeNav}
-              >
-                <i className="fa-solid fa-shield-halved me-1" />
-                Security
-              </Link>
-              <Button
-                variant="outline-secondary"
-                size="sm"
-                onClick={() => {
-                  closeNav();
-                  void logout();
-                }}
-              >
-                <i className="fa-solid fa-right-from-bracket me-1" />
-                Sign out
-              </Button>
+
+              {isAdmin && (
+                <Dropdown align="end" className="app-nav-dropdown">
+                  <Dropdown.Toggle
+                    variant={licenseOk ? "outline-secondary" : "outline-danger"}
+                    size="sm"
+                    id="app-nav-admin"
+                    className="app-nav-dropdown-toggle"
+                  >
+                    <i className="fa-solid fa-screwdriver-wrench me-1" />
+                    Admin
+                    {!licenseOk && (
+                      <span className="app-nav-alert-dot" title="License issue" />
+                    )}
+                  </Dropdown.Toggle>
+                  <Dropdown.Menu className="app-nav-dropdown-menu">
+                    <Dropdown.Header>Panel</Dropdown.Header>
+                    <Dropdown.Item
+                      as={Link}
+                      to="/statusline"
+                      onClick={closeNav}
+                    >
+                      <i className="fa-solid fa-heart-pulse fa-fw me-2 text-secondary" />
+                      Status
+                    </Dropdown.Item>
+                    <Dropdown.Item
+                      as={Link}
+                      to="/admin/system"
+                      onClick={closeNav}
+                    >
+                      <i className="fa-solid fa-server fa-fw me-2 text-secondary" />
+                      System
+                    </Dropdown.Item>
+                    <Dropdown.Item
+                      as={Link}
+                      to="/admin/license"
+                      onClick={closeNav}
+                      className={!licenseOk ? "text-danger" : undefined}
+                    >
+                      <i className="fa-solid fa-key fa-fw me-2 text-secondary" />
+                      License
+                      {!licenseOk && (
+                        <Badge bg="danger" className="ms-2">
+                          Attention
+                        </Badge>
+                      )}
+                    </Dropdown.Item>
+                    <Dropdown.Item
+                      as={Link}
+                      to="/admin/activity"
+                      onClick={closeNav}
+                    >
+                      <i className="fa-solid fa-list-check fa-fw me-2 text-secondary" />
+                      Activity
+                    </Dropdown.Item>
+                    <Dropdown.Item
+                      as={Link}
+                      to="/admin/billing"
+                      onClick={closeNav}
+                    >
+                      <i className="fa-solid fa-file-invoice-dollar fa-fw me-2 text-secondary" />
+                      Panel billing
+                    </Dropdown.Item>
+                    <Dropdown.Divider />
+                    <Dropdown.Item as={Link} to="/users" onClick={closeNav}>
+                      <i className="fa-solid fa-users-gear fa-fw me-2 text-secondary" />
+                      Users
+                    </Dropdown.Item>
+                  </Dropdown.Menu>
+                </Dropdown>
+              )}
+
+              {user && (
+                <Dropdown align="end" className="app-nav-dropdown">
+                  <Dropdown.Toggle
+                    variant={needsTwoFactor ? "warning" : "outline-secondary"}
+                    size="sm"
+                    id="app-nav-account"
+                    className="app-nav-dropdown-toggle app-nav-account-toggle"
+                  >
+                    <i className="fa-solid fa-user me-1" />
+                    <span className="app-nav-username">{user.username}</span>
+                    <Badge
+                      bg={needsTwoFactor ? "dark" : "secondary"}
+                      className="ms-1 app-nav-role-badge"
+                    >
+                      {roleLabel(user.role)}
+                    </Badge>
+                    {needsTwoFactor && (
+                      <span
+                        className="app-nav-alert-dot"
+                        title="Two-factor setup required"
+                      />
+                    )}
+                  </Dropdown.Toggle>
+                  <Dropdown.Menu className="app-nav-dropdown-menu">
+                    <Dropdown.Header>Account</Dropdown.Header>
+                    <Dropdown.Item
+                      as={Link}
+                      to="/account/billing"
+                      onClick={closeNav}
+                    >
+                      <i className="fa-solid fa-credit-card fa-fw me-2 text-secondary" />
+                      Billing
+                    </Dropdown.Item>
+                    <Dropdown.Item
+                      as={Link}
+                      to="/account/security"
+                      onClick={closeNav}
+                      className={needsTwoFactor ? "text-warning" : undefined}
+                    >
+                      <i className="fa-solid fa-shield-halved fa-fw me-2 text-secondary" />
+                      Security
+                      {needsTwoFactor && (
+                        <Badge bg="warning" text="dark" className="ms-2">
+                          2FA
+                        </Badge>
+                      )}
+                    </Dropdown.Item>
+                    <Dropdown.Divider />
+                    <Dropdown.Item
+                      as="button"
+                      className="text-danger"
+                      onClick={() => {
+                        closeNav();
+                        void logout();
+                      }}
+                    >
+                      <i className="fa-solid fa-right-from-bracket fa-fw me-2" />
+                      Sign out
+                    </Dropdown.Item>
+                  </Dropdown.Menu>
+                </Dropdown>
+              )}
             </div>
           </Navbar.Collapse>
         </Container>
