@@ -16,6 +16,8 @@ import { useVisibleInterval } from "../hooks/useVisibleInterval";
 import { formatBytes } from "../utils";
 import { ConfirmModal } from "./ConfirmModal";
 import { DiskUsageCard } from "./DiskUsageCard";
+import { FileEditorPane } from "./file-manager/FileEditorPane";
+import { isArchiveName, joinPath, parentPath } from "./file-manager/paths";
 import { PromptModal } from "./PromptModal";
 
 type Dialog =
@@ -53,27 +55,6 @@ interface Props {
   canArchive?: boolean;
 }
 
-function parentPath(path: string): string {
-  if (!path) return ".";
-  const parts = path.split("/").filter(Boolean);
-  parts.pop();
-  return parts.length ? parts.join("/") : ".";
-}
-
-function isArchiveName(name: string): boolean {
-  const lower = name.toLowerCase();
-  return (
-    lower.endsWith(".zip") ||
-    lower.endsWith(".tar.gz") ||
-    lower.endsWith(".tgz") ||
-    lower.endsWith(".tar")
-  );
-}
-
-function joinPath(dir: string, name: string): string {
-  return dir === "." || !dir ? name : `${dir}/${name}`;
-}
-
 export function FileManager({
   serverId,
   onError,
@@ -104,8 +85,8 @@ export function FileManager({
   function askDiscard(onYes: () => void | Promise<void>) {
     setDialog({
       kind: "confirm",
-      title: "Discard changes?",
-      body: "Discard unsaved changes?",
+      title: t("files.discardTitle"),
+      body: t("files.discardBody"),
       confirmLabel: t("files.discard"),
       variant: "warning",
       onYes,
@@ -716,54 +697,23 @@ export function FileManager({
 
         {editing && (
           <Col lg={6}>
-            <div className="border rounded surface p-3 h-100">
-              <div className="d-flex justify-content-between align-items-center gap-2 mb-2 flex-wrap">
-                <strong className="font-monospace small text-break">{editing.path}</strong>
-                <Stack direction="horizontal" gap={2}>
-                  {editDirty && <span className="badge text-bg-warning">Unsaved</span>}
-                  <Button
-                    size="sm"
-                    variant="outline-secondary"
-                    disabled={busy}
-                    onClick={() => {
-                      if (editDirty) {
-                        askDiscard(() => {
-                          setEditing(null);
-                          setEditDirty(false);
-                        });
-                        return;
-                      }
-                      setEditing(null);
-                      setEditDirty(false);
-                    }}
-                  >
-                    Close
-                  </Button>
-                  {canUpdate && (
-                    <Button
-                      size="sm"
-                      variant="primary"
-                      disabled={busy || !editDirty}
-                      onClick={() => void saveFile()}
-                    >
-                      {t("files.save")}
-                    </Button>
-                  )}
-                </Stack>
-              </div>
-              <Form.Control
-                as="textarea"
-                className="file-editor-textarea"
-                value={editing.content}
-                spellCheck={false}
-                readOnly={!canUpdate}
-                onChange={(e) => {
-                  if (!canUpdate) return;
-                  setEditing({ ...editing, content: e.target.value });
-                  setEditDirty(true);
-                }}
-              />
-            </div>
+            <FileEditorPane
+              path={editing.path}
+              content={editing.content}
+              dirty={editDirty}
+              busy={busy}
+              canUpdate={canUpdate}
+              onChange={(content) => {
+                setEditing({ ...editing, content });
+                setEditDirty(true);
+              }}
+              onClose={() => {
+                setEditing(null);
+                setEditDirty(false);
+              }}
+              onSave={() => void saveFile()}
+              onAskDiscard={askDiscard}
+            />
           </Col>
         )}
       </Row>

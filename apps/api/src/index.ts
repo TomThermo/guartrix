@@ -11,7 +11,8 @@ import cookie from "@fastify/cookie";
 import session from "@fastify/session";
 import websocket from "@fastify/websocket";
 import multipart from "@fastify/multipart";
-import { ensureBootstrapAdmin, registerAuthRoutes, registerOwnershipGuard } from "./auth.js";
+import { ensureBootstrapAdmin, registerOwnershipGuard } from "./auth.js";
+import { registerAuthRoutes } from "./routes/auth.js";
 import { registerCsrfGuard, allowedOrigins } from "./csrf.js";
 import { config } from "./config.js";
 import { prisma } from "./db.js";
@@ -156,7 +157,10 @@ async function main() {
     where: { status: { in: ["RUNNING", "STARTING", "STOPPING"] } },
     select: { id: true },
   });
-  for (const { id } of maybeStale) {
+  // Parallel reconcile with bounded concurrency (was sequential per server).
+  const RECONCILE_CONCURRENCY = 8;
+  let reconcileIdx = 0;
+  async function reconcileOne(id: string): Promise<void> {
     let actuallyRunning = false;
     try {
       actuallyRunning = await daemonIsRunning(id);
@@ -174,6 +178,17 @@ async function main() {
       data: { status: actuallyRunning ? "RUNNING" : "STOPPED" },
     });
   }
+  await Promise.all(
+    Array.from(
+      { length: Math.min(RECONCILE_CONCURRENCY, maybeStale.length) },
+      async () => {
+        while (reconcileIdx < maybeStale.length) {
+          const { id } = maybeStale[reconcileIdx++]!;
+          await reconcileOne(id);
+        }
+      },
+    ),
+  );
 
   // Clean leftover containers on every online node (multi-node)
   const allNodes = await prisma.node.findMany({ select: { id: true, name: true } });
@@ -202,6 +217,17 @@ async function main() {
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
+  const trustAllProxies = trustedProxyList.includes("*");
+  if (
+    trustAllProxies &&
+    process.env.ALLOW_INSECURE_TRUST_PROXY !== "1" &&
+    process.env.ALLOW_INSECURE_TRUST_PROXY !== "true"
+  ) {
+    throw new Error(
+      "[guartrix] TRUSTED_PROXIES=* re-enables X-Forwarded-For spoofing. " +
+        "Set ALLOW_INSECURE_TRUST_PROXY=1 only if every network hop is trusted.",
+    );
+  }
 
   const app = Fastify({
     loggerInstance: logger as FastifyBaseLogger,
@@ -216,7 +242,7 @@ async function main() {
     // is ever reachable beyond prod-web.
     trustProxy: !trustProxyEnv
       ? false
-      : trustedProxyList.includes("*")
+      : trustAllProxies
         ? true
         : (address: string) => {
             const bare = address.replace(/^::ffff:/, "");

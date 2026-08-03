@@ -492,6 +492,9 @@ export const nl: Messages = {
     modified: "Gewijzigd",
     save: "Opslaan",
     discard: "Verwerpen",
+    unsaved: "Niet opgeslagen",
+    discardTitle: "Wijzigingen verwerpen?",
+    discardBody: "Niet-opgeslagen wijzigingen verwerpen?",
   },
   backups: {
     title: "Back-ups",

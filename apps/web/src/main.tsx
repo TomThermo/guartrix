@@ -1,5 +1,7 @@
 import "bootstrap/dist/css/bootstrap.min.css";
-import "@fortawesome/fontawesome-free/css/all.min.css";
+/* Solid icons only — skip brands/regular webfonts (~136KB). */
+import "@fortawesome/fontawesome-free/css/fontawesome.min.css";
+import "@fortawesome/fontawesome-free/css/solid.min.css";
 import "./styles.css";
 
 import { StrictMode } from "react";

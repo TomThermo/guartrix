@@ -324,7 +324,7 @@ export function SettingsGeneralPanel({
                 <Card className="border mb-3">
                   <Card.Body className="py-3">
                     <div className="fw-semibold mb-1">
-                      <i className="fa-brands fa-discord me-2" />
+                      <i className="fa-solid fa-comments me-2" />
                       Discord status
                     </div>
                     <p className="small text-secondary mb-3">

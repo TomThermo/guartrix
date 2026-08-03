@@ -315,7 +315,7 @@ export function Console({
               title="Save as favorite"
               onClick={() => addFavorite()}
             >
-              <i className="fa-regular fa-star" />
+              <i className="fa-solid fa-star" />
             </Button>
             <Button type="submit" variant="primary" disabled={!connected}>
               {t("console.send")}

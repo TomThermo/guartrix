@@ -14,7 +14,8 @@ Copy `.env.example` → `.env` (repo root). Secrets must stay gitignored. The lo
 | `SESSION_SECRET` | Long random string — also keys at-rest seals (TOTP secrets, game MySQL passwords, node-token vault) |
 | `SESSION_SECURE` | `true` when serving over HTTPS; `false` for plain HTTP/IP |
 | `TRUST_PROXY` | `true` behind Cloudflare / prod-web HTTPS; usually `false` for direct IP HTTP |
-| `TRUSTED_PROXIES` | Peer IPs allowed to set `X-Forwarded-For` (default `127.0.0.1,::1`). Use `*` only if every hop is trusted |
+| `TRUSTED_PROXIES` | Peer IPs allowed to set `X-Forwarded-For` (default `127.0.0.1,::1`). `*` requires `ALLOW_INSECURE_TRUST_PROXY=1` |
+| `ALLOW_INSECURE_TRUST_PROXY` | Must be `1`/`true` to allow `TRUSTED_PROXIES=*` (re-enables XFF spoofing) |
 | `PUBLIC_HOST` | Canonical hostname or IP (also HTTPS redirect target when TLS on) |
 | `PUBLIC_IP` | Public IP when useful for players/DNS |
 | `PUBLIC_BASE_URL` | Full origin, e.g. `https://guartrix.com` or `http://203.0.113.10` |

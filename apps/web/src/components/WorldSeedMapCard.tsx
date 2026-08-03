@@ -208,7 +208,7 @@ export function WorldSeedMapCard({
             onClick={() => void copySeed()}
             title="Copy seed"
           >
-            <i className="fa-regular fa-copy" />
+            <i className="fa-solid fa-copy" />
           </Button>
         </Stack>
         {info?.source && info.source !== "none" && (

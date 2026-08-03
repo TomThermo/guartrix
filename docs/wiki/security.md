@@ -29,6 +29,7 @@ another tool on the host needs it.
 - [ ] `ACTIVITY_WEBHOOK_URL` / `ALERT_EMAIL` set so crashes and failed sign-ins are noticed (optional per install)
 - [x] Consider `TWO_FACTOR_REQUIRED_ROLES=ADMIN` so panel admins must use TOTP
 - [x] Login rate limits use client IP only from **trusted proxies** (`TRUSTED_PROXIES`, default localhost)
+- [x] `TRUSTED_PROXIES=*` refused unless `ALLOW_INSECURE_TRUST_PROXY=1`
 - [x] Watchdog posts to `ACTIVITY_WEBHOOK_URL` on panel restart / critical backoff
 - [x] Public `/download` on DNS-only host (`DOWNLOAD_PUBLIC_HOST`) to avoid Cloudflare bot challenges
 - [x] Outbound webhook / download URLs blocked from private IPs; Discord status HTTPS-only

@@ -7,6 +7,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.50] — 2026-08-03
+
+- API: peel auth HTTP into `routes/auth.ts` (helpers stay in `auth.ts`)
+- API: parallel boot status reconcile (concurrency 8)
+- API: refuse `TRUSTED_PROXIES=*` unless `ALLOW_INSECURE_TRUST_PROXY=1`
+- Web: Font Awesome solid-only webfonts (~−136KB brands/regular)
+- Web: FileManager path helpers + editor pane extract; i18n unsaved/close/discard
+- Tests: CSRF origin checks, daemon JWT round-trip, server-access permissions JSON, file path helpers
+
 ## [1.0.49] — 2026-08-03
 
 - Perf: batch server permissions on dashboard list (kill N+1 SubUser lookups)

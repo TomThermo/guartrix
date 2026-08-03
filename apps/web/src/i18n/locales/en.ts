@@ -489,6 +489,9 @@ export const en = {
     modified: "Modified",
     save: "Save",
     discard: "Discard",
+    unsaved: "Unsaved",
+    discardTitle: "Discard changes?",
+    discardBody: "Discard unsaved changes?",
   },
   backups: {
     title: "Backups",
