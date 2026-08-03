@@ -36,11 +36,19 @@ const APPS = {
     entry: "apps/api/src/index.ts",
     outfile: "apps/api/dist/index.js",
     cleanDir: "apps/api/dist",
+    /** Extra forked Mineflayer worker (must sit next to index.js). */
+    extraEntries: [
+      {
+        entry: "apps/api/src/bot-worker-main.ts",
+        outfile: "apps/api/dist/bot-worker-main.js",
+      },
+    ],
   },
   daemon: {
     entry: "apps/daemon/src/index.ts",
     outfile: "apps/daemon/dist/index.js",
     cleanDir: "apps/daemon/dist",
+    extraEntries: [],
   },
 };
 
@@ -73,25 +81,18 @@ function workspaceBundlePlugin() {
   };
 }
 
-async function buildApp(name) {
-  const cfg = APPS[name];
-  if (!cfg) throw new Error(`Unknown app: ${name}`);
+async function buildOne({ entry, outfile }) {
+  const entryPath = path.join(rootDir, entry);
+  const outPath = path.join(rootDir, outfile);
 
-  const entry = path.join(rootDir, cfg.entry);
-  const outfile = path.join(rootDir, cfg.outfile);
-  const cleanDir = path.join(rootDir, cfg.cleanDir);
-
-  if (!fs.existsSync(entry)) {
-    throw new Error(`Entry not found: ${entry}`);
+  if (!fs.existsSync(entryPath)) {
+    throw new Error(`Entry not found: ${entryPath}`);
   }
-
-  fs.rmSync(cleanDir, { recursive: true, force: true });
-  fs.mkdirSync(cleanDir, { recursive: true });
 
   const result = await esbuild.build({
     absWorkingDir: rootDir,
-    entryPoints: [entry],
-    outfile,
+    entryPoints: [entryPath],
+    outfile: outPath,
     bundle: true,
     platform: "node",
     format: "esm",
@@ -107,13 +108,27 @@ async function buildApp(name) {
   });
 
   if (result.errors.length) {
-    throw new Error(`esbuild failed for ${name}`);
+    throw new Error(`esbuild failed for ${entry}`);
   }
 
-  const size = fs.statSync(outfile).size;
+  const size = fs.statSync(outPath).size;
   console.log(
-    `[release] ${name} → ${path.relative(rootDir, outfile)} (${(size / 1024).toFixed(1)} KiB)`,
+    `[release] ${path.relative(rootDir, outPath)} (${(size / 1024).toFixed(1)} KiB)`,
   );
+}
+
+async function buildApp(name) {
+  const cfg = APPS[name];
+  if (!cfg) throw new Error(`Unknown app: ${name}`);
+
+  const cleanDir = path.join(rootDir, cfg.cleanDir);
+  fs.rmSync(cleanDir, { recursive: true, force: true });
+  fs.mkdirSync(cleanDir, { recursive: true });
+
+  await buildOne({ entry: cfg.entry, outfile: cfg.outfile });
+  for (const extra of cfg.extraEntries ?? []) {
+    await buildOne(extra);
+  }
 }
 
 const arg = process.argv[2] ?? "all";

@@ -6,7 +6,7 @@ import {
   ensureViaForBots,
   resolveBotClientVersion,
 } from "../bot-compat.js";
-import { botManager, DEFAULT_COUNT } from "../bot-manager.js";
+import { botManager, DEFAULT_COUNT } from "../bot-manager-proxy.js";
 import { prisma } from "../db.js";
 import { processManager } from "../process-manager.js";
 import { readServerProperties } from "../properties.js";
@@ -94,7 +94,7 @@ export function registerBotRoutes(app: FastifyInstance): void {
       if (!server) return reply.status(404).send({ error: "Not found" });
       const compat = resolveBotClientVersion(server.mcVersion);
       return {
-        bots: botManager.listBots(server.id),
+        bots: await botManager.listBots(server.id),
         clientVersion: compat.clientVersion,
         needsVia: compat.needsVia,
       };

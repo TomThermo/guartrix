@@ -53,7 +53,7 @@ import { registerInviteRoutes } from "./routes/invites.js";
 import { registerTaskRoutes } from "./routes/tasks.js";
 import { registerConsoleWs } from "./ws/console.js";
 import { registerAdminLogsWs } from "./ws/admin-logs.js";
-import { botManager } from "./bot-manager.js";
+import { botManager } from "./bot-manager-proxy.js";
 import { BACKUP_UPLOAD_MAX_BYTES } from "@msm/shared";
 import { ensureLocalNode } from "./nodes.js";
 import {

@@ -98,6 +98,7 @@ Disk walks use a **30s cache** (stale-while-revalidate) so UI polls never block 
 - **Daemon tokens:** long-lived shared secret per node (vault + `data/daemon.env`). On the wire the panel sends **short-lived HS256 JWTs** (`aud=daemon`, `nid`, `exp`) signed with that secret. Raw bearer is rejected unless `DAEMON_JWT_LEGACY=true`. SFTP callbacks use `aud=panel` JWTs.
 - **Server files:** on the node under `data/servers/<serverId>/` (or daemon `DATA_DIR`). File **list/read** does not run a recursive `chown`; ownership is fixed on start and on write/upload/SFTP paths.
 - **Console:** browser connects to the **panel** WebSocket; the panel fans out daemon event streams (output, status, stats).
+- **Mineflayer bots:** run in a **forked API child** (`bot-worker-main`) so physics/event loops stay out of the Fastify process. The panel proxies spawn/list/command over IPC; `BOT_WORKER=0` forces in-process emergency mode.
 
 ## Trust boundaries
 

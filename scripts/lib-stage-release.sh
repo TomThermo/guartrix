@@ -23,6 +23,7 @@ guartrix_stage_release_tree() {
 
   for f in \
     apps/api/dist/index.js \
+    apps/api/dist/bot-worker-main.js \
     apps/daemon/dist/index.js \
     apps/web/dist/index.html
   do
@@ -106,7 +107,7 @@ const rootPkg = JSON.parse(fs.readFileSync(path.join(stage, "package.json"), "ut
 rootPkg.scripts = {
   ...rootPkg.scripts,
   build:
-    "node -e \"const fs=require('fs'); for (const f of ['apps/api/dist/index.js','apps/daemon/dist/index.js','apps/web/dist/index.html']) { if (!fs.existsSync(f)) { console.error('[guartrix] Missing '+f); process.exit(1);} } console.log('[guartrix] Prebuilt release OK');\"" ,
+    "node -e \"const fs=require('fs'); for (const f of ['apps/api/dist/index.js','apps/api/dist/bot-worker-main.js','apps/daemon/dist/index.js','apps/web/dist/index.html']) { if (!fs.existsSync(f)) { console.error('[guartrix] Missing '+f); process.exit(1);} } console.log('[guartrix] Prebuilt release OK');\"" ,
   "build:release": "npm run build",
   "build:dev": "echo 'Source tree not included in this build output' && exit 1",
   "build:out": "echo 'Not available in release package' && exit 1",
@@ -134,9 +135,13 @@ NODE
   find "$STAGE" -type d -name src -exec rm -rf {} + 2>/dev/null || true
   find "$STAGE" -name '*.map' -delete 2>/dev/null || true
 
-  for app in api daemon; do
-    find "$STAGE/apps/$app/dist" -type f ! -name 'index.js' -delete 2>/dev/null || true
-  done
+  # API ships a second entry (Mineflayer bot worker). Daemon stays single-file.
+  find "$STAGE/apps/daemon/dist" -type f ! -name 'index.js' -delete 2>/dev/null || true
+  find "$STAGE/apps/api/dist" -type f ! \( -name 'index.js' -o -name 'bot-worker-main.js' \) -delete 2>/dev/null || true
+  if [[ ! -f "$STAGE/apps/api/dist/bot-worker-main.js" ]]; then
+    echo "[guartrix] ERROR: missing apps/api/dist/bot-worker-main.js" >&2
+    return 1
+  fi
 
   cat > "$STAGE/start.sh" <<'EOF'
 #!/usr/bin/env bash
@@ -269,7 +274,7 @@ const p = path.join(process.env.STAGE, "package.json");
 const pkg = JSON.parse(fs.readFileSync(p, "utf8"));
 pkg.scripts = pkg.scripts || {};
 pkg.scripts.build =
-  "node -e \"const fs=require('fs'); for (const f of ['apps/api/dist/index.js','apps/daemon/dist/index.js','apps/web/dist/index.html']) { if (!fs.existsSync(f)) { console.error('[guartrix] Missing '+f); process.exit(1);} } console.log('[guartrix] Prebuilt release OK');\"";
+  "node -e \"const fs=require('fs'); for (const f of ['apps/api/dist/index.js','apps/api/dist/bot-worker-main.js','apps/daemon/dist/index.js','apps/web/dist/index.html']) { if (!fs.existsSync(f)) { console.error('[guartrix] Missing '+f); process.exit(1);} } console.log('[guartrix] Prebuilt release OK');\"";
 delete pkg.scripts["package:download"];
 delete pkg.scripts["package:release"];
 delete pkg.scripts["build:out"];

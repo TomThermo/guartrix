@@ -319,7 +319,8 @@ Live meters plus the disk usage breakdown for the instance (World / mods·plugin
 
 ### Bots (admin)
 
-Admin-only tab to attach / control in-game bots for this server.
+Admin-only tab to attach / control in-game bots for this server. Bots run in a
+forked API worker process (not inside Fastify); require `online-mode=false`.
 
 ![Bots](assets/38-server-bots.png)
 

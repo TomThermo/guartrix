@@ -64,6 +64,7 @@ fi
 
 for f in \
   apps/api/dist/index.js \
+  apps/api/dist/bot-worker-main.js \
   apps/daemon/dist/index.js \
   apps/web/dist/index.html
 do

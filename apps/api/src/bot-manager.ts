@@ -1259,11 +1259,19 @@ class BotManager {
   private servers = new Map<string, Map<string, ManagedBot>>();
 
   constructor() {
+    // Forked worker receives status via IPC (see bot-manager-proxy); skip
+    // the in-process processManager subscription there.
+    if (process.env.GUARTRIX_IS_BOT_WORKER === "1") return;
     processManager.on("status", (serverId: string, status: string) => {
-      if (status === "STOPPED" || status === "STOPPING" || status === "ERROR") {
-        void this.stopBots(serverId);
-      }
+      this.handleServerStatus(serverId, status);
     });
+  }
+
+  /** Stop bots when the MC server leaves RUNNING (panel or worker IPC). */
+  handleServerStatus(serverId: string, status: string): void {
+    if (status === "STOPPED" || status === "STOPPING" || status === "ERROR") {
+      void this.stopBots(serverId);
+    }
   }
 
   listBots(serverId: string): BotInfo[] {
