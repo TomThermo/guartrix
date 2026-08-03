@@ -484,6 +484,12 @@ export const en = {
     name: "Name",
     size: "Size",
     created: "Created",
+    noteOptional: "Note (optional)",
+    notePlaceholder: "Before big update…",
+    help:
+      "Backups are stored as .tar.gz archives (world, configs, mods/plugins). Logs and libraries are skipped. If the server is running, Guartrix runs save-all first. You can upload .tar.gz, .tgz or .zip (zips are unpacked and converted). Max upload {max}.",
+    helpEncrypted:
+      "New backups are encrypted at rest (AES-256-GCM) as .tar.gz.enc — downloads stay ciphertext; restore needs the panel key.",
   },
   addons: {
     title: "Plugin Management",
@@ -523,12 +529,83 @@ export const en = {
     installSelected: "Install selected",
     switching: "Switching…",
     installing: "Installing…",
+    helpLead: "Browse Modrinth for",
+    helpMid: "builds compatible with Minecraft",
+    helpFolder: "Files go into {folder}.",
+    helpDeps: "Required dependencies are installed automatically.",
+    helpSyncBefore: "Jars added via Files/SFTP need",
+    syncFromDisk: "Sync from disk",
+    helpSyncAfter: "to appear here — restart required to apply.",
+    vanillaNoLoader:
+      "Vanilla servers have no plugin/mod loader. Use Paper for plugins, or Fabric/Forge for mods.",
+    recommendedStacks: "Recommended stacks",
+    checkingUpdates: "Checking updates…",
+    updateAll: "Update all ({count})",
+    updating: "Updating…",
+    syncing: "Syncing…",
+    syncTitle: "Scan {folder}/ and match jars via Modrinth",
+    browseModrinth: "Browse Modrinth",
+    results: "{count} results",
+    sortBy: "Sort by",
+    sortDownloads: "Most downloads",
+    sortFollows: "Most likes",
+    sortRelevance: "Relevance",
+    sortNewest: "Newest",
+    sortUpdated: "Recently updated",
+    searchingLibrary: "Searching the mod library…",
+    loadMore: "Load more",
+    byAuthor: "by {author}",
+    downloadsCount: "{count} downloads",
+    likesCount: "{count} likes",
+    local: "local",
+    updateBadge: "update",
+    removeConfirm: "Remove {title}?",
+    removeTitle: "Remove {title}",
+    updateTo: "Update to {version}",
+    installFailed: "Install failed",
+    updateFailed: "Update failed",
+    uninstallFailed: "Uninstall failed",
+    syncFailed: "Sync failed",
+    stackInstallFailed: "Stack install failed",
+    loadFailed: "Failed to load addons",
+    noticeSwitched:
+      "Switched {title} to {version}. Restart the server to load it.",
+    noticeInstalled:
+      "Installed {title} {version}. Restart the server to load it.",
+    noticeInstalledDeps:
+      "Installed {title} {version} + required deps: {deps}. Restart the server to load them.",
+    noticeUpdated:
+      "Updated {title} to {version}. Restart the server to load it.",
+    noticeUpdatedAll:
+      "Updated {count} addon(s). Restart the server to load them.",
+    noticeUpdatedPartial:
+      "Updated {ok}/{total}. Failed: {failed}. Restart to apply.",
+    noticeRemoved: "Removed {title}. Restart the server to fully unload it.",
+    noticeStack:
+      "Installed {count} from “{name}”{errors}. Restart required.",
+    stackErrors: " · {count} failed",
+    syncScanned: "Scanned {count} jar(s) in {folder}/",
+    syncAdded: "added {count}",
+    syncRemoved: "removed {count}",
+    syncLocal: "{count} not on Modrinth",
+    syncDuplicates: "{count} duplicate jar(s) ignored",
   },
   modpacks: {
     title: "Modpacks",
     search: "Search modpacks…",
     install: "Install",
     empty: "No modpack installed",
+    unsupported:
+      "Modpacks are available on Fabric, Quilt, Forge, and NeoForge servers.",
+    help: "Browse and install server-side modpacks. Stop the server first; a backup runs automatically.",
+    curseforgeMissing:
+      "CurseForge is not configured. Set CURSEFORGE_API_KEY on the panel host.",
+    noticeInstalled:
+      "Installed {title} ({version}) — {count} items. Restart required.",
+    stopFirst: "Stop the server before installing a modpack.",
+    confirmInstall:
+      "Install modpack \"{title}\"?\n\nA backup will be created. Existing mods/config may be overwritten.",
+    searchFailed: "Modpack search failed",
   },
   sftp: {
     title: "SFTP",
@@ -556,6 +633,14 @@ export const en = {
     ip: "IP",
     port: "Port",
     notes: "Notes",
+    restartRequired: "Restart required.",
+    restartHelp:
+      "Extra TCP/UDP ports only become active after the next start or restart. Assigning or removing ports while the server is running will not change live bindings until then.",
+    geyserTitle: "Bedrock (Geyser)",
+    geyserHelp:
+      "One-click install Geyser + Floodgate and open UDP on the primary port so Bedrock clients can join.",
+    geyserInstall: "Install Geyser",
+    selectFree: "Select free allocation…",
   },
   schedules: {
     title: "Schedules",

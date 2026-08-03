@@ -328,17 +328,8 @@ export function BackupPanel({
     <div>
       <h2 className="h5 mb-3">{t("backups.title")}</h2>
       <Alert variant="light" className="border small">
-        Backups are stored as <code>.tar.gz</code> archives (world, configs, mods/plugins). Logs and
-        libraries are skipped. If the server is running, Guartrix runs <code>save-all</code> first.
-        You can upload <code>.tar.gz</code>, <code>.tgz</code> or <code>.zip</code> (zips are unpacked
-        and converted). Max upload {maxUploadLabel}.
-        {encryptionEnabled ? (
-          <>
-            {" "}
-            New backups are <strong>encrypted at rest</strong> (AES-256-GCM) as{" "}
-            <code>.tar.gz.enc</code> — downloads stay ciphertext; restore needs the panel key.
-          </>
-        ) : null}
+        {t("backups.help", { max: maxUploadLabel })}
+        {encryptionEnabled ? <> {t("backups.helpEncrypted")}</> : null}
       </Alert>
 
       <Row className="g-4 mb-4">
@@ -349,11 +340,11 @@ export function BackupPanel({
               {t("backups.create")}
             </h3>
             <Form.Group className="mb-3">
-              <Form.Label>Note (optional)</Form.Label>
+              <Form.Label>{t("backups.noteOptional")}</Form.Label>
               <Form.Control
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                placeholder="Before big update…"
+                placeholder={t("backups.notePlaceholder")}
                 maxLength={120}
                 disabled={busy || uploading}
               />

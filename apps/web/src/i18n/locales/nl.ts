@@ -487,6 +487,12 @@ export const nl: Messages = {
     name: "Naam",
     size: "Grootte",
     created: "Aangemaakt",
+    noteOptional: "Notitie (optioneel)",
+    notePlaceholder: "Voor grote update…",
+    help:
+      "Back-ups worden opgeslagen als .tar.gz-archieven (wereld, configs, mods/plugins). Logs en libraries worden overgeslagen. Als de server draait, voert Guartrix eerst save-all uit. Je kunt .tar.gz, .tgz of .zip uploaden (zips worden uitgepakt en geconverteerd). Max. upload {max}.",
+    helpEncrypted:
+      "Nieuwe back-ups worden at-rest versleuteld (AES-256-GCM) als .tar.gz.enc — downloads blijven ciphertext; herstellen vereist de paneelsleutel.",
   },
   addons: {
     title: "Pluginbeheer",
@@ -526,12 +532,84 @@ export const nl: Messages = {
     installSelected: "Geselecteerde installeren",
     switching: "Overschakelen…",
     installing: "Installeren…",
+    helpLead: "Blader op Modrinth naar",
+    helpMid: "builds die compatibel zijn met Minecraft",
+    helpFolder: "Bestanden komen in {folder}.",
+    helpDeps: "Vereiste dependencies worden automatisch geïnstalleerd.",
+    helpSyncBefore: "Jars die via Bestanden/SFTP zijn toegevoegd hebben",
+    syncFromDisk: "Sync vanaf schijf",
+    helpSyncAfter: "nodig om hier te verschijnen — herstart vereist om toe te passen.",
+    vanillaNoLoader:
+      "Vanilla-servers hebben geen plugin-/modloader. Gebruik Paper voor plugins, of Fabric/Forge voor mods.",
+    recommendedStacks: "Aanbevolen stacks",
+    checkingUpdates: "Updates controleren…",
+    updateAll: "Alles bijwerken ({count})",
+    updating: "Bijwerken…",
+    syncing: "Synchroniseren…",
+    syncTitle: "Scan {folder}/ en match jars via Modrinth",
+    browseModrinth: "Blader op Modrinth",
+    results: "{count} resultaten",
+    sortBy: "Sorteren op",
+    sortDownloads: "Meeste downloads",
+    sortFollows: "Meeste likes",
+    sortRelevance: "Relevantie",
+    sortNewest: "Nieuwste",
+    sortUpdated: "Recent bijgewerkt",
+    searchingLibrary: "Modbibliotheek doorzoeken…",
+    loadMore: "Meer laden",
+    byAuthor: "door {author}",
+    downloadsCount: "{count} downloads",
+    likesCount: "{count} likes",
+    local: "lokaal",
+    updateBadge: "update",
+    removeConfirm: "{title} verwijderen?",
+    removeTitle: "{title} verwijderen",
+    updateTo: "Bijwerken naar {version}",
+    installFailed: "Installeren mislukt",
+    updateFailed: "Bijwerken mislukt",
+    uninstallFailed: "Verwijderen mislukt",
+    syncFailed: "Synchroniseren mislukt",
+    stackInstallFailed: "Stack installeren mislukt",
+    loadFailed: "Addons laden mislukt",
+    noticeSwitched:
+      "{title} omgezet naar {version}. Herstart de server om te laden.",
+    noticeInstalled:
+      "{title} {version} geïnstalleerd. Herstart de server om te laden.",
+    noticeInstalledDeps:
+      "{title} {version} geïnstalleerd + vereiste deps: {deps}. Herstart de server om te laden.",
+    noticeUpdated:
+      "{title} bijgewerkt naar {version}. Herstart de server om te laden.",
+    noticeUpdatedAll:
+      "{count} addon(s) bijgewerkt. Herstart de server om te laden.",
+    noticeUpdatedPartial:
+      "{ok}/{total} bijgewerkt. Mislukt: {failed}. Herstart om toe te passen.",
+    noticeRemoved:
+      "{title} verwijderd. Herstart de server om volledig te ontladen.",
+    noticeStack:
+      "{count} geïnstalleerd uit “{name}”{errors}. Herstart vereist.",
+    stackErrors: " · {count} mislukt",
+    syncScanned: "{count} jar(s) gescand in {folder}/",
+    syncAdded: "{count} toegevoegd",
+    syncRemoved: "{count} verwijderd",
+    syncLocal: "{count} niet op Modrinth",
+    syncDuplicates: "{count} dubbele jar(s) genegeerd",
   },
   modpacks: {
     title: "Modpacks",
     search: "Modpacks zoeken…",
     install: "Installeren",
     empty: "Geen modpack geïnstalleerd",
+    unsupported:
+      "Modpacks zijn beschikbaar op Fabric-, Quilt-, Forge- en NeoForge-servers.",
+    help: "Blader en installeer server-side modpacks. Stop de server eerst; er wordt automatisch een back-up gemaakt.",
+    curseforgeMissing:
+      "CurseForge is niet geconfigureerd. Stel CURSEFORGE_API_KEY in op de paneelhost.",
+    noticeInstalled:
+      "{title} ({version}) geïnstalleerd — {count} items. Herstart vereist.",
+    stopFirst: "Stop de server voordat je een modpack installeert.",
+    confirmInstall:
+      "Modpack \"{title}\" installeren?\n\nEr wordt een back-up gemaakt. Bestaande mods/config kunnen worden overschreven.",
+    searchFailed: "Modpack zoeken mislukt",
   },
   sftp: {
     title: "SFTP",
@@ -559,6 +637,14 @@ export const nl: Messages = {
     ip: "IP",
     port: "Poort",
     notes: "Notities",
+    restartRequired: "Herstart vereist.",
+    restartHelp:
+      "Extra TCP/UDP-poorten worden pas actief na de volgende start of herstart. Toewijzen of verwijderen terwijl de server draait verandert live bindings pas daarna.",
+    geyserTitle: "Bedrock (Geyser)",
+    geyserHelp:
+      "Installeer Geyser + Floodgate met één klik en open UDP op de primaire poort zodat Bedrock-clients kunnen joinen.",
+    geyserInstall: "Geyser installeren",
+    selectFree: "Kies vrije allocatie…",
   },
   schedules: {
     title: "Schema's",

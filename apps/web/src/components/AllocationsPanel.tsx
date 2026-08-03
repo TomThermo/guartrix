@@ -212,28 +212,24 @@ export function AllocationsPanel({
       </header>
 
       <Alert variant="warning" className="mb-3">
-        <strong>Restart required.</strong> Extra TCP/UDP ports only become active
-        after the next <em>start</em> or <em>restart</em>. Assigning or removing
-        ports while the server is running will not change live bindings until then.
+        <strong>{t("allocations.restartRequired")}</strong>{" "}
+        {t("allocations.restartHelp")}
       </Alert>
 
       {showGeyser && (
         <Alert variant="light" className="border mb-3">
           <div className="fw-semibold mb-1">
             <i className="fa-solid fa-mobile-screen me-2" />
-            Bedrock (Geyser)
+            {t("allocations.geyserTitle")}
           </div>
-          <p className="small text-secondary mb-2">
-            One-click install Geyser + Floodgate and open UDP on the primary port
-            so Bedrock clients can join.
-          </p>
+          <p className="small text-secondary mb-2">{t("allocations.geyserHelp")}</p>
           <Button
             size="sm"
             variant="outline-primary"
             disabled={geyserBusy}
             onClick={() => void installGeyser()}
           >
-            {geyserBusy ? <Spinner size="sm" /> : "Install Geyser"}
+            {geyserBusy ? <Spinner size="sm" /> : t("allocations.geyserInstall")}
           </Button>
         </Alert>
       )}
@@ -317,7 +313,7 @@ export function AllocationsPanel({
                     onChange={(e) => setPickId(e.target.value)}
                     className="mb-2"
                   >
-                    <option value="">Select free allocation…</option>
+                    <option value="">{t("allocations.selectFree")}</option>
                     {free.map((f) => (
                       <option key={f.id} value={f.id}>
                         {f.ip}:{f.port}/{f.protocol}

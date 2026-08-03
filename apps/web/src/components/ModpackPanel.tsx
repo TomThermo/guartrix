@@ -55,12 +55,12 @@ export function ModpackPanel({
       setHits(res.hits);
       setConfigured(res.configured !== false);
     } catch (err) {
-      onError(err instanceof Error ? err.message : "Modpack search failed");
+      onError(err instanceof Error ? err.message : t("modpacks.searchFailed"));
       setHits([]);
     } finally {
       setLoading(false);
     }
-  }, [server.id, query, source, supports, onError]);
+  }, [server.id, query, source, supports, onError, t]);
 
   useEffect(() => {
     void search();
@@ -71,15 +71,11 @@ export function ModpackPanel({
     const running =
       server.status === "RUNNING" || server.status === "STARTING";
     if (running) {
-      onError("Stop the server before installing a modpack.");
+      onError(t("modpacks.stopFirst"));
       return;
     }
     const title = String(hit.title ?? hit.name ?? "modpack");
-    if (
-      !confirm(
-        `Install modpack "${title}"?\n\nA backup will be created. Existing mods/config may be overwritten.`,
-      )
-    ) {
+    if (!confirm(t("modpacks.confirmInstall", { title }))) {
       return;
     }
     setInstalling(title);
@@ -93,7 +89,11 @@ export function ModpackPanel({
           modId,
         });
         onNotice(
-          `Installed ${result.title} (${result.versionNumber}) — ${result.filesInstalled} items. Restart required.`,
+          t("modpacks.noticeInstalled", {
+            title: result.title,
+            version: result.versionNumber,
+            count: result.filesInstalled,
+          }),
         );
       } else {
         const projectId = String(hit.project_id ?? hit.slug ?? "");
@@ -102,11 +102,15 @@ export function ModpackPanel({
           projectId,
         });
         onNotice(
-          `Installed ${result.title} (${result.versionNumber}) — ${result.filesInstalled} files. Restart required.`,
+          t("modpacks.noticeInstalled", {
+            title: result.title,
+            version: result.versionNumber,
+            count: result.filesInstalled,
+          }),
         );
       }
     } catch (err) {
-      onError(err instanceof Error ? err.message : "Install failed");
+      onError(err instanceof Error ? err.message : t("addons.installFailed"));
     } finally {
       setInstalling(null);
     }
@@ -115,7 +119,7 @@ export function ModpackPanel({
   if (!supports || kind !== "mod") {
     return (
       <Alert variant="light" className="border">
-        Modpacks are available on Fabric, Quilt, Forge, and NeoForge servers.
+        {t("modpacks.unsupported")}
       </Alert>
     );
   }
@@ -123,10 +127,7 @@ export function ModpackPanel({
   return (
     <div>
       <h2 className="h5 mb-3">{t("modpacks.title")}</h2>
-      <p className="text-secondary small">
-        Browse and install server-side modpacks. Stop the server first; a backup
-        runs automatically.
-      </p>
+      <p className="text-secondary small">{t("modpacks.help")}</p>
       <Stack direction="horizontal" gap={2} className="flex-wrap mb-3">
         <Form.Select
           style={{ maxWidth: 160 }}
@@ -155,10 +156,7 @@ export function ModpackPanel({
       </Stack>
 
       {source === "curseforge" && !configured && (
-        <Alert variant="warning">
-          CurseForge is not configured. Set <code>CURSEFORGE_API_KEY</code> on
-          the panel and restart.
-        </Alert>
+        <Alert variant="warning">{t("modpacks.curseforgeMissing")}</Alert>
       )}
 
       {hits.length === 0 && !loading ? (

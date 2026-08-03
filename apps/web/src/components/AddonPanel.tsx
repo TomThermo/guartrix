@@ -36,12 +36,12 @@ interface Props {
   onUpdateCountChange?: (count: number) => void;
 }
 
-const SORT_OPTIONS: { value: AddonSortIndex; label: string }[] = [
-  { value: "downloads", label: "Most downloads" },
-  { value: "follows", label: "Most likes" },
-  { value: "relevance", label: "Relevance" },
-  { value: "newest", label: "Newest" },
-  { value: "updated", label: "Recently updated" },
+const SORT_OPTIONS: { value: AddonSortIndex; labelKey: string }[] = [
+  { value: "downloads", labelKey: "addons.sortDownloads" },
+  { value: "follows", labelKey: "addons.sortFollows" },
+  { value: "relevance", labelKey: "addons.sortRelevance" },
+  { value: "newest", labelKey: "addons.sortNewest" },
+  { value: "updated", labelKey: "addons.sortUpdated" },
 ];
 
 export function AddonPanel({
@@ -148,7 +148,7 @@ export function AddonPanel({
   useEffect(() => {
     if (!kind) return;
     void refreshInstalled().catch((err) =>
-      onError(err instanceof Error ? err.message : "Failed to load addons"),
+      onError(err instanceof Error ? err.message : t("addons.loadFailed")),
     );
     void api
       .listAddonCategories(serverId)
@@ -209,17 +209,27 @@ export function AddonPanel({
       const depNames = deps.map((d) => d.title).join(", ");
       if (changing) {
         onNotice(
-          `Switched ${result.installed.title} to ${result.installed.versionNumber}. Restart the server to load it.`,
+          t("addons.noticeSwitched", {
+            title: result.installed.title,
+            version: result.installed.versionNumber,
+          }),
         );
       } else {
         onNotice(
           deps.length > 0
-            ? `Installed ${result.installed.title} ${result.installed.versionNumber} + required deps: ${depNames}. Restart the server to load them.`
-            : `Installed ${result.installed.title} ${result.installed.versionNumber}. Restart the server to load it.`,
+            ? t("addons.noticeInstalledDeps", {
+                title: result.installed.title,
+                version: result.installed.versionNumber,
+                deps: depNames,
+              })
+            : t("addons.noticeInstalled", {
+                title: result.installed.title,
+                version: result.installed.versionNumber,
+              }),
         );
       }
     } catch (err) {
-      onError(err instanceof Error ? err.message : "Install failed");
+      onError(err instanceof Error ? err.message : t("addons.installFailed"));
     } finally {
       setBusyId(null);
     }
@@ -239,10 +249,13 @@ export function AddonPanel({
       );
       await refreshInstalled();
       onNotice(
-        `Updated ${result.installed.title} to ${result.installed.versionNumber}. Restart the server to load it.`,
+        t("addons.noticeUpdated", {
+          title: result.installed.title,
+          version: result.installed.versionNumber,
+        }),
       );
     } catch (err) {
-      onError(err instanceof Error ? err.message : "Update failed");
+      onError(err instanceof Error ? err.message : t("addons.updateFailed"));
     } finally {
       setBusyId(null);
     }
@@ -272,8 +285,12 @@ export function AddonPanel({
       await refreshInstalled();
       onNotice(
         failed.length
-          ? `Updated ${ok}/${pending.length}. Failed: ${failed.join(", ")}. Restart to apply.`
-          : `Updated ${ok} addon(s). Restart the server to load them.`,
+          ? t("addons.noticeUpdatedPartial", {
+              ok,
+              total: pending.length,
+              failed: failed.join(", "),
+            })
+          : t("addons.noticeUpdatedAll", { count: ok }),
       );
     } finally {
       setBusyId(null);
@@ -283,16 +300,16 @@ export function AddonPanel({
 
   async function uninstall(projectId: string, title: string) {
     if (!canUpdate) return;
-    if (!confirm(`Remove ${title}?`)) return;
+    if (!confirm(t("addons.removeConfirm", { title }))) return;
     setBusyId(projectId);
     onError(null);
     onNotice(null);
     try {
       await api.uninstallAddon(serverId, projectId);
       await refreshInstalled();
-      onNotice(`Removed ${title}. Restart the server to fully unload it.`);
+      onNotice(t("addons.noticeRemoved", { title }));
     } catch (err) {
-      onError(err instanceof Error ? err.message : "Uninstall failed");
+      onError(err instanceof Error ? err.message : t("addons.uninstallFailed"));
     } finally {
       setBusyId(null);
     }
@@ -309,17 +326,24 @@ export function AddonPanel({
       void refreshUpdates();
       const localCount = result.installed.filter((a) => a.source === "local").length;
       const parts = [
-        `Scanned ${result.jarCount} jar(s) in ${result.folder}/`,
-        result.added.length ? `added ${result.added.length}` : null,
-        result.removed.length ? `removed ${result.removed.length}` : null,
-        localCount ? `${localCount} not on Modrinth` : null,
+        t("addons.syncScanned", {
+          count: result.jarCount,
+          folder: result.folder,
+        }),
+        result.added.length
+          ? t("addons.syncAdded", { count: result.added.length })
+          : null,
+        result.removed.length
+          ? t("addons.syncRemoved", { count: result.removed.length })
+          : null,
+        localCount ? t("addons.syncLocal", { count: localCount }) : null,
         result.duplicates.length
-          ? `${result.duplicates.length} duplicate jar(s) ignored`
+          ? t("addons.syncDuplicates", { count: result.duplicates.length })
           : null,
       ].filter(Boolean);
       onNotice(`${parts.join(" · ")}.`);
     } catch (err) {
-      onError(err instanceof Error ? err.message : "Sync failed");
+      onError(err instanceof Error ? err.message : t("addons.syncFailed"));
     } finally {
       setSyncing(false);
     }
@@ -332,27 +356,28 @@ export function AddonPanel({
   if (!kind) {
     return (
       <Alert variant="light" className="border">
-        Vanilla servers have no plugin/mod loader. Use Paper for plugins, or Fabric/Forge for mods.
+        {t("addons.vanillaNoLoader")}
       </Alert>
     );
   }
+
+  const folder = kind === "plugin" ? "plugins/" : "mods/";
 
   return (
     <div>
       <h2 className="h5 mb-3">{t("addons.title")}</h2>
       <Alert variant="light" className="border small">
-        Browse Modrinth for <strong>{serverType}</strong> builds compatible with Minecraft{" "}
-        <strong>{mcVersion}</strong>. Files go into{" "}
-        <code>{kind === "plugin" ? "plugins/" : "mods/"}</code>. Required dependencies are
-        installed automatically. Jars added via Files/SFTP need{" "}
-        <strong>Sync from disk</strong> to appear here — restart required to apply.
+        {t("addons.helpLead")} <strong>{serverType}</strong> {t("addons.helpMid")}{" "}
+        <strong>{mcVersion}</strong>. {t("addons.helpFolder", { folder })}{" "}
+        {t("addons.helpDeps")} {t("addons.helpSyncBefore")}{" "}
+        <strong>{t("addons.syncFromDisk")}</strong> {t("addons.helpSyncAfter")}
       </Alert>
 
       {kind === "plugin" && canUpdate && (
         <Alert variant="light" className="border mb-3">
           <div className="fw-semibold mb-2">
             <i className="fa-solid fa-layer-group me-2" />
-            Recommended stacks
+            {t("addons.recommendedStacks")}
           </div>
           <Stack gap={2}>
             {RECOMMENDED_PLUGIN_STACKS.map((stack) => (
@@ -380,15 +405,23 @@ export function AddonPanel({
                         await refreshInstalled();
                         const errPart =
                           res.errors.length > 0
-                            ? ` · ${res.errors.length} failed`
+                            ? t("addons.stackErrors", {
+                                count: res.errors.length,
+                              })
                             : "";
                         onNotice(
-                          `Installed ${res.installed.length} from “${stack.name}”${errPart}. Restart required.`,
+                          t("addons.noticeStack", {
+                            count: res.installed.length,
+                            name: stack.name,
+                            errors: errPart,
+                          }),
                         );
                       })
                       .catch((err) =>
                         onError(
-                          err instanceof Error ? err.message : "Stack install failed",
+                          err instanceof Error
+                            ? err.message
+                            : t("addons.stackInstallFailed"),
                         ),
                       )
                       .finally(() => setStackBusy(null));
@@ -397,7 +430,7 @@ export function AddonPanel({
                   {stackBusy === stack.id ? (
                     <Spinner size="sm" />
                   ) : (
-                    "Install"
+                    t("addons.install")
                   )}
                 </Button>
               </div>
@@ -413,12 +446,14 @@ export function AddonPanel({
           {checkingUpdates && (
             <span className="small text-secondary fw-normal ms-2">
               <Spinner size="sm" className="me-1" />
-              Checking updates…
+              {t("addons.checkingUpdates")}
             </span>
           )}
           {!checkingUpdates && updateCount > 0 && (
             <Badge bg="warning" text="dark" className="ms-2 align-middle">
-              {updateCount} update{updateCount === 1 ? "" : "s"}
+              {updateCount === 1
+                ? t("common.updateOne", { count: updateCount })
+                : t("common.updateMany", { count: updateCount })}
             </Badge>
           )}
         </h3>
@@ -433,12 +468,12 @@ export function AddonPanel({
               {updatingAll ? (
                 <>
                   <Spinner size="sm" className="me-2" />
-                  Updating…
+                  {t("addons.updating")}
                 </>
               ) : (
                 <>
                   <i className="fa-solid fa-arrow-up me-1" />
-                  Update all ({updateCount})
+                  {t("addons.updateAll", { count: updateCount })}
                 </>
               )}
             </Button>
@@ -449,17 +484,19 @@ export function AddonPanel({
               variant="outline-secondary"
               disabled={syncing || busyId !== null || updatingAll}
               onClick={() => void syncFromDisk()}
-              title={`Scan ${kind === "plugin" ? "plugins" : "mods"}/ and match jars via Modrinth`}
+              title={t("addons.syncTitle", {
+                folder: kind === "plugin" ? "plugins" : "mods",
+              })}
             >
               {syncing ? (
                 <>
                   <Spinner size="sm" className="me-2" />
-                  Syncing…
+                  {t("addons.syncing")}
                 </>
               ) : (
                 <>
                   <i className="fa-solid fa-arrows-rotate me-1" />
-                  Sync from disk
+                  {t("addons.syncFromDisk")}
                 </>
               )}
             </Button>
@@ -507,12 +544,12 @@ export function AddonPanel({
                     {a.title}
                     {a.source === "local" && (
                       <Badge bg="secondary" className="ms-2 align-middle">
-                        local
+                        {t("addons.local")}
                       </Badge>
                     )}
                     {hasUpdate && (
                       <Badge bg="warning" text="dark" className="ms-2 align-middle">
-                        update
+                        {t("addons.updateBadge")}
                       </Badge>
                     )}
                   </div>
@@ -533,7 +570,7 @@ export function AddonPanel({
                         variant="outline-secondary"
                         className="installed-addon-remove"
                         disabled={busyId === a.projectId || updatingAll}
-                        title="Change version"
+                        title={t("serverDetail.changeVersion")}
                         onClick={(e) => {
                           e.stopPropagation();
                           openInstallPicker({
@@ -554,7 +591,9 @@ export function AddonPanel({
                         variant="warning"
                         className="installed-addon-remove"
                         disabled={busyId === a.projectId || updatingAll}
-                        title={`Update to ${update?.latestVersionNumber ?? ""}`}
+                        title={t("addons.updateTo", {
+                          version: update?.latestVersionNumber ?? "",
+                        })}
                         onClick={(e) => {
                           e.stopPropagation();
                           void upgradeAddon(a);
@@ -572,7 +611,7 @@ export function AddonPanel({
                       variant="outline-danger"
                       className="installed-addon-remove"
                       disabled={busyId === a.projectId || updatingAll}
-                      title={`Remove ${a.title}`}
+                      title={t("addons.removeTitle", { title: a.title })}
                       onClick={(e) => {
                         e.stopPropagation();
                         void uninstall(a.projectId, a.title);
@@ -592,9 +631,11 @@ export function AddonPanel({
       <div className="d-flex justify-content-between align-items-center mb-3">
         <h3 className="h6 mb-0">
           <i className="fa-solid fa-puzzle-piece me-2" />
-          Browse Modrinth
+          {t("addons.browseModrinth")}
         </h3>
-        <span className="small text-secondary">{totalHits.toLocaleString()} results</span>
+        <span className="small text-secondary">
+          {t("addons.results", { count: totalHits.toLocaleString() })}
+        </span>
       </div>
 
       <Form onSubmit={(e) => void onSearch(e)} className="mb-3">
@@ -612,11 +653,11 @@ export function AddonPanel({
               size="sm"
               value={sort}
               onChange={(e) => setSort(e.target.value as AddonSortIndex)}
-              aria-label="Sort by"
+              aria-label={t("addons.sortBy")}
             >
               {SORT_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
-                  {opt.label}
+                  {t(opt.labelKey)}
                 </option>
               ))}
             </Form.Select>
@@ -632,7 +673,7 @@ export function AddonPanel({
       {searching && (
         <Alert variant="light" className="border small py-2 mb-3">
           <Spinner size="sm" className="me-2" />
-          Searching the mod library…
+          {t("addons.searchingLibrary")}
         </Alert>
       )}
 
@@ -679,8 +720,12 @@ export function AddonPanel({
               <div className="min-w-0">
                 <div className="fw-semibold">{h.title}</div>
                 <div className="small text-secondary">
-                  by {h.author} · {formatCount(h.downloads)} downloads ·{" "}
-                  {formatCount(h.follows)} likes
+                  {t("addons.byAuthor", { author: h.author })} ·{" "}
+                  {t("addons.downloadsCount", {
+                    count: formatCount(h.downloads),
+                  })}{" "}
+                  ·{" "}
+                  {t("addons.likesCount", { count: formatCount(h.follows) })}
                 </div>
                 {h.categories.length > 0 && (
                   <div className="d-flex flex-wrap gap-1 mt-1">
@@ -736,7 +781,7 @@ export function AddonPanel({
             disabled={searching}
             onClick={() => void browse(offset + limit, true)}
           >
-            {searching ? "Loading…" : "Load more"}
+            {searching ? t("common.loading") : t("addons.loadMore")}
           </Button>
         </div>
       )}
