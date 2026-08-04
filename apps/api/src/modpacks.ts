@@ -192,24 +192,36 @@ export async function installModrinthModpack(opts: {
   };
 
   const loaders = loaderFacet(server.type as ServerType);
-  const params = new URLSearchParams();
-  for (const l of loaders) params.append("loaders", JSON.stringify([l]));
-  params.append("game_versions", JSON.stringify([server.mcVersion]));
+  let version: ModrinthVersion | undefined;
 
-  let versions = await fetchJson<ModrinthVersion[]>(
-    `https://api.modrinth.com/v2/project/${encodeURIComponent(opts.projectId)}/version?${params}`,
-  );
-  if (!versions.length) {
-    versions = await fetchJson<ModrinthVersion[]>(
-      `https://api.modrinth.com/v2/project/${encodeURIComponent(opts.projectId)}/version`,
-    );
+  if (opts.versionId?.trim()) {
+    try {
+      version = await fetchJson<ModrinthVersion>(
+        `https://api.modrinth.com/v2/version/${encodeURIComponent(opts.versionId.trim())}`,
+      );
+    } catch {
+      version = undefined;
+    }
   }
 
-  const version =
-    (opts.versionId
-      ? versions.find((v) => v.id === opts.versionId)
-      : versions.find((v) => v.game_versions.includes(server.mcVersion))) ??
-    versions[0];
+  if (!version) {
+    const params = new URLSearchParams();
+    for (const l of loaders) params.append("loaders", JSON.stringify([l]));
+    params.append("game_versions", JSON.stringify([server.mcVersion]));
+
+    let versions = await fetchJson<ModrinthVersion[]>(
+      `https://api.modrinth.com/v2/project/${encodeURIComponent(opts.projectId)}/version?${params}`,
+    );
+    if (!versions.length) {
+      versions = await fetchJson<ModrinthVersion[]>(
+        `https://api.modrinth.com/v2/project/${encodeURIComponent(opts.projectId)}/version`,
+      );
+    }
+
+    version =
+      versions.find((v) => v.game_versions.includes(server.mcVersion)) ??
+      versions[0];
+  }
   if (!version) throw new Error("No compatible modpack version found");
 
   const file =

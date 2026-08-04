@@ -252,7 +252,7 @@ Guided toggles for common `paper-global.yml` / `spigot.yml` / `purpur.yml` keys.
 
 ### Modpacks
 
-On Fabric/Quilt/Forge/NeoForge: the **Modpacks** tab browses [Modrinth](https://modrinth.com/) modpacks in the same list style as Plugin Management (icon, author, downloads, description). Results load immediately with sort **Relevance** (also downloads / likes / newest / updated). **CurseForge** is available when `CURSEFORGE_API_KEY` is set. Install runs a pre-backup; stop the server first. Restart required after install.
+On Fabric/Quilt/Forge/NeoForge: the **Modpacks** tab browses [Modrinth](https://modrinth.com/) modpacks with the same UX as Plugin Management (list, detail modal, version picker with Minecraft filter). Default sort **Relevance**. **CurseForge** remains a simpler confirm-install flow when `CURSEFORGE_API_KEY` is set. Install runs a pre-backup; stop the server first. Restart required after install.
 
 ![Modpacks](assets/33-server-modpacks.png)
 

@@ -15,6 +15,8 @@ import {
 import { api } from "../api";
 import { useI18n } from "../i18n/react";
 import { formatCount } from "../utils";
+import { AddonDetailModal } from "./AddonDetailModal";
+import { AddonVersionPickerModal } from "./AddonVersionPickerModal";
 
 interface Props {
   server: McServer;
@@ -107,6 +109,12 @@ export function ModpackPanel({
   const [configured, setConfigured] = useState(true);
   const [searching, setSearching] = useState(false);
   const [installing, setInstalling] = useState<string | null>(null);
+  const [detailProjectId, setDetailProjectId] = useState<string | null>(null);
+  const [installPick, setInstallPick] = useState<{
+    projectId: string;
+    title: string;
+    iconUrl?: string | null;
+  } | null>(null);
   const limit = 24;
   const browseAbortRef = useRef<AbortController | null>(null);
   const browseSeqRef = useRef(0);
@@ -161,8 +169,7 @@ export function ModpackPanel({
     return () => {
       browseAbortRef.current?.abort();
     };
-    // Reload when source/sort change — not while typing the query.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reload when source/sort change
   }, [supports, source, sort, server.id]);
 
   async function onSearch(e: FormEvent) {
@@ -170,7 +177,49 @@ export function ModpackPanel({
     await browse(0, false);
   }
 
-  async function installHit(hit: ModpackHit) {
+  function openInstallPicker(hit: Pick<ModpackHit, "projectId" | "title" | "iconUrl">) {
+    if (!canUpdate || !hit.projectId) return;
+    setInstallPick({
+      projectId: hit.projectId,
+      title: hit.title,
+      iconUrl: hit.iconUrl,
+    });
+  }
+
+  async function installModrinth(projectId: string, versionId: string) {
+    if (!canUpdate) return;
+    const running =
+      server.status === "RUNNING" || server.status === "STARTING";
+    if (running) {
+      onError(t("modpacks.stopFirst"));
+      return;
+    }
+    setInstalling(projectId);
+    onError(null);
+    onNotice(null);
+    try {
+      const result = await api.installModpack(server.id, {
+        source: "modrinth",
+        projectId,
+        versionId,
+      });
+      onNotice(
+        t("modpacks.noticeInstalled", {
+          title: result.title,
+          version: result.versionNumber,
+          count: result.filesInstalled,
+        }),
+      );
+      setInstallPick(null);
+      setDetailProjectId(null);
+    } catch (err) {
+      onError(err instanceof Error ? err.message : t("addons.installFailed"));
+    } finally {
+      setInstalling(null);
+    }
+  }
+
+  async function installCurseforge(hit: ModpackHit) {
     if (!canUpdate) return;
     const running =
       server.status === "RUNNING" || server.status === "STARTING";
@@ -181,39 +230,25 @@ export function ModpackPanel({
     if (!confirm(t("modpacks.confirmInstall", { title: hit.title }))) {
       return;
     }
+    if (!Number.isFinite(hit.modId)) {
+      onError("Missing CurseForge mod id");
+      return;
+    }
     setInstalling(hit.key);
     onError(null);
     onNotice(null);
     try {
-      if (source === "curseforge") {
-        if (!Number.isFinite(hit.modId)) {
-          throw new Error("Missing CurseForge mod id");
-        }
-        const result = await api.installModpack(server.id, {
-          source: "curseforge",
-          modId: hit.modId,
-        });
-        onNotice(
-          t("modpacks.noticeInstalled", {
-            title: result.title,
-            version: result.versionNumber,
-            count: result.filesInstalled,
-          }),
-        );
-      } else {
-        if (!hit.projectId) throw new Error("Missing Modrinth project id");
-        const result = await api.installModpack(server.id, {
-          source: "modrinth",
-          projectId: hit.projectId,
-        });
-        onNotice(
-          t("modpacks.noticeInstalled", {
-            title: result.title,
-            version: result.versionNumber,
-            count: result.filesInstalled,
-          }),
-        );
-      }
+      const result = await api.installModpack(server.id, {
+        source: "curseforge",
+        modId: hit.modId,
+      });
+      onNotice(
+        t("modpacks.noticeInstalled", {
+          title: result.title,
+          version: result.versionNumber,
+          count: result.filesInstalled,
+        }),
+      );
     } catch (err) {
       onError(err instanceof Error ? err.message : t("addons.installFailed"));
     } finally {
@@ -308,68 +343,101 @@ export function ModpackPanel({
             {t("modpacks.noResults")}
           </ListGroup.Item>
         )}
-        {hits.map((h) => (
-          <ListGroup.Item
-            key={h.key}
-            className="d-flex justify-content-between align-items-start gap-3 flex-wrap"
-          >
-            <div className="d-flex gap-2 min-w-0">
-              {h.iconUrl ? (
-                <img
-                  className="addon-icon"
-                  src={h.iconUrl}
-                  alt=""
-                  width={40}
-                  height={40}
-                />
-              ) : (
-                <div className="addon-icon addon-icon-fallback d-grid place-items-center">
-                  <i className="fa-solid fa-cubes text-secondary" />
-                </div>
-              )}
-              <div className="min-w-0">
-                <div className="fw-semibold">{h.title}</div>
-                <div className="small text-secondary">
-                  {h.author
-                    ? `${t("addons.byAuthor", { author: h.author })} · `
-                    : ""}
-                  {t("addons.downloadsCount", {
-                    count: formatCount(h.downloads),
-                  })}
-                  {h.follows > 0
-                    ? ` · ${t("addons.likesCount", {
-                        count: formatCount(h.follows),
-                      })}`
-                    : ""}
-                </div>
-                {h.categories.length > 0 && (
-                  <Stack direction="horizontal" gap={1} className="flex-wrap mt-1">
-                    {h.categories.slice(0, 4).map((c) => (
-                      <Badge key={c} bg="secondary">
-                        {c}
-                      </Badge>
-                    ))}
-                  </Stack>
-                )}
-                <p className="small text-secondary mb-0 mt-1">{h.description}</p>
-              </div>
-            </div>
-            {canUpdate && (
-              <Button
-                size="sm"
-                variant="primary"
-                disabled={!!installing}
-                onClick={() => void installHit(h)}
-              >
-                {installing === h.key ? (
-                  <Spinner size="sm" />
+        {hits.map((h) => {
+          const clickable = source === "modrinth" && Boolean(h.projectId);
+          return (
+            <ListGroup.Item
+              key={h.key}
+              className={`d-flex justify-content-between align-items-start gap-3 flex-wrap${
+                clickable ? " addon-row-clickable" : ""
+              }`}
+              onClick={
+                clickable
+                  ? () => setDetailProjectId(h.projectId!)
+                  : undefined
+              }
+              role={clickable ? "button" : undefined}
+              tabIndex={clickable ? 0 : undefined}
+              onKeyDown={
+                clickable
+                  ? (e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setDetailProjectId(h.projectId!);
+                      }
+                    }
+                  : undefined
+              }
+            >
+              <div className="d-flex gap-2 min-w-0">
+                {h.iconUrl ? (
+                  <img
+                    className="addon-icon"
+                    src={h.iconUrl}
+                    alt=""
+                    width={40}
+                    height={40}
+                  />
                 ) : (
-                  t("modpacks.install")
+                  <div className="addon-icon addon-icon-fallback d-grid place-items-center">
+                    <i className="fa-solid fa-cubes text-secondary" />
+                  </div>
                 )}
-              </Button>
-            )}
-          </ListGroup.Item>
-        ))}
+                <div className="min-w-0">
+                  <div className="fw-semibold">{h.title}</div>
+                  <div className="small text-secondary">
+                    {h.author
+                      ? `${t("addons.byAuthor", { author: h.author })} · `
+                      : ""}
+                    {t("addons.downloadsCount", {
+                      count: formatCount(h.downloads),
+                    })}
+                    {h.follows > 0
+                      ? ` · ${t("addons.likesCount", {
+                          count: formatCount(h.follows),
+                        })}`
+                      : ""}
+                  </div>
+                  {h.categories.length > 0 && (
+                    <Stack
+                      direction="horizontal"
+                      gap={1}
+                      className="flex-wrap mt-1"
+                    >
+                      {h.categories.slice(0, 4).map((c) => (
+                        <Badge key={c} bg="secondary">
+                          {c}
+                        </Badge>
+                      ))}
+                    </Stack>
+                  )}
+                  <p className="small text-secondary mb-0 mt-1">{h.description}</p>
+                </div>
+              </div>
+              {canUpdate && (
+                <Button
+                  size="sm"
+                  variant="primary"
+                  disabled={!!installing}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (source === "curseforge") {
+                      void installCurseforge(h);
+                    } else {
+                      openInstallPicker(h);
+                    }
+                  }}
+                >
+                  {installing === (h.projectId ?? h.key) ? (
+                    <Spinner size="sm" />
+                  ) : (
+                    t("modpacks.install")
+                  )}
+                </Button>
+              )}
+            </ListGroup.Item>
+          );
+        })}
       </ListGroup>
 
       {canLoadMore && (
@@ -383,6 +451,42 @@ export function ModpackPanel({
             {searching ? t("common.loading") : t("addons.loadMore")}
           </Button>
         </div>
+      )}
+
+      {detailProjectId && source === "modrinth" && (
+        <AddonDetailModal
+          serverId={server.id}
+          projectId={detailProjectId}
+          installed={false}
+          installing={installing === detailProjectId}
+          canUpdate={canUpdate}
+          onClose={() => setDetailProjectId(null)}
+          onInstall={(id, title, iconUrl) => {
+            openInstallPicker({
+              projectId: id,
+              title,
+              iconUrl: iconUrl ?? null,
+            });
+          }}
+          onError={onError}
+        />
+      )}
+
+      {installPick && (
+        <AddonVersionPickerModal
+          serverId={server.id}
+          projectId={installPick.projectId}
+          title={installPick.title}
+          iconUrl={installPick.iconUrl}
+          mcVersion={server.mcVersion}
+          mode="install"
+          installing={installing === installPick.projectId}
+          onClose={() => {
+            if (installing !== installPick.projectId) setInstallPick(null);
+          }}
+          onInstall={(id, versionId) => void installModrinth(id, versionId)}
+          onError={onError}
+        />
       )}
     </div>
   );

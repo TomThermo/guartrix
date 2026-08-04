@@ -7,6 +7,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.54] — 2026-08-04
+
+- Modpacks: same install UX as plugins — detail modal + version picker (MC version + build); install uses chosen `versionId`
+
 ## [1.0.53] — 2026-08-04
 
 - Fix Modrinth browse returning 0 hits: empty search no longer sends `query=" "` (API treats space as no matches)
