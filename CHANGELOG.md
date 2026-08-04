@@ -7,6 +7,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.78] — 2026-08-04
+
+- File manager i18n: errors, dialogs, bulk select, unzip label (EN/NL)
+- Web tests: `file-permissions.test.ts` for file action permission gates
+
 ## [1.0.77] — 2026-08-04
 
 - API `src/` phase 2: `servers/`, `nodes/`, `bots/` folders (~57 modules); ~22 core files remain at root

@@ -4,7 +4,14 @@ import { useI18n } from "../../i18n/react";
 import { formatBytes } from "../../utils";
 import { EmptyState } from "../EmptyState";
 import { TabLoading } from "../TabLoading";
-import { isArchiveName, parentPath } from "./paths";
+import { parentPath } from "./paths";
+import {
+  showBulkSelect,
+  showDecompressButton,
+  showDeleteButton,
+  showDownloadButton,
+  showRenameButton,
+} from "./file-permissions";
 
 interface Props {
   cwd: string;
@@ -62,13 +69,13 @@ export function FileBrowserTable({
         <thead>
           <tr className="text-secondary">
             <th style={{ width: "2.5rem" }}>
-              {(canDownload || canArchive) && (
+              {showBulkSelect({ canDownload, canArchive }) && (
                 <Form.Check
                   type="checkbox"
                   checked={allSelected}
                   disabled={!entries.length || busy}
                   onChange={onToggleSelectAll}
-                  aria-label="Select all"
+                  aria-label={t("files.selectAll")}
                 />
               )}
             </th>
@@ -100,13 +107,13 @@ export function FileBrowserTable({
               className={editingPath === entry.path ? "table-active" : undefined}
             >
               <td>
-                {(canDownload || canArchive) && (
+                {showBulkSelect({ canDownload, canArchive }) && (
                   <Form.Check
                     type="checkbox"
                     checked={selected.has(entry.path)}
                     disabled={busy}
                     onChange={() => onToggleSelect(entry.path)}
-                    aria-label={`Select ${entry.name}`}
+                    aria-label={t("files.selectItem", { name: entry.name })}
                   />
                 )}
               </td>
@@ -139,7 +146,7 @@ export function FileBrowserTable({
                   gap={1}
                   className="justify-content-end flex-wrap"
                 >
-                  {canDownload && entry.type === "file" && (
+                  {showDownloadButton({ canDownload }, entry) && (
                     <Button
                       size="sm"
                       variant="outline-secondary"
@@ -149,19 +156,17 @@ export function FileBrowserTable({
                       {t("files.download")}
                     </Button>
                   )}
-                  {canArchive &&
-                    entry.type === "file" &&
-                    isArchiveName(entry.name) && (
+                  {showDecompressButton({ canArchive }, entry) && (
                       <Button
                         size="sm"
                         variant="outline-secondary"
                         disabled={busy}
                         onClick={() => void onDecompress(entry)}
                       >
-                        Unzip
+                        {t("files.unzip")}
                       </Button>
                     )}
-                  {canUpdate && (
+                  {showRenameButton({ canUpdate }) && (
                     <Button
                       size="sm"
                       variant="outline-secondary"
@@ -171,7 +176,7 @@ export function FileBrowserTable({
                       {t("files.rename")}
                     </Button>
                   )}
-                  {canDelete && (
+                  {showDeleteButton({ canDelete }) && (
                     <Button
                       size="sm"
                       variant="outline-danger"

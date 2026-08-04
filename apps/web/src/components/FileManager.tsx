@@ -9,6 +9,10 @@ import { FileBrowserTable } from "./file-manager/FileBrowserTable";
 import { FileEditorPane } from "./file-manager/FileEditorPane";
 import { FileManagerToolbar } from "./file-manager/FileManagerToolbar";
 import { joinPath, parentPath } from "./file-manager/paths";
+import {
+  canViewFileContents,
+  shouldDownloadInsteadOfEdit,
+} from "./file-manager/file-permissions";
 import { useFileDiskPoll } from "./file-manager/useFileDiskPoll";
 import { PromptModal } from "./PromptModal";
 
@@ -105,7 +109,7 @@ export function FileManager({
         setEntries(data.entries);
         setSelected(new Set());
       } catch (err) {
-        onError(err instanceof Error ? err.message : "Failed to list files");
+        onError(err instanceof Error ? err.message : t("files.listFailed"));
       } finally {
         setLoading(false);
       }
@@ -153,15 +157,15 @@ export function FileManager({
       return;
     }
     if (!entry.editable) {
-      if (canDownload) {
+      if (shouldDownloadInsteadOfEdit(entry, { canDownload })) {
         await onDownload(entry);
         return;
       }
-      onError("This file cannot be edited in the panel (binary or too large).");
+      onError(t("files.notEditable"));
       return;
     }
-    if (!canReadContent) {
-      onError("You do not have permission to view file contents.");
+    if (!canViewFileContents({ canReadContent })) {
+      onError(t("files.noReadPermission"));
       return;
     }
     const openFile = async () => {
@@ -172,7 +176,7 @@ export function FileManager({
         setEditing({ path: data.path, content: data.content });
         setEditDirty(false);
       } catch (err) {
-        onError(err instanceof Error ? err.message : "Failed to open file");
+        onError(err instanceof Error ? err.message : t("files.openFailed"));
       } finally {
         setBusy(false);
       }
@@ -205,7 +209,7 @@ export function FileManager({
       await api.writeFile(serverId, editing.path, editing.content);
       setEditDirty(false);
     } catch (err) {
-      onError(err instanceof Error ? err.message : "Save failed");
+      onError(err instanceof Error ? err.message : t("files.saveFailed"));
     } finally {
       setBusy(false);
     }
@@ -224,7 +228,7 @@ export function FileManager({
       setNewFolder("");
       await load(cwd);
     } catch (err) {
-      onError(err instanceof Error ? err.message : "Could not create folder");
+      onError(err instanceof Error ? err.message : t("files.mkdirFailed"));
     } finally {
       setBusy(false);
     }
@@ -232,11 +236,14 @@ export function FileManager({
 
   function onDelete(entry: FileEntry) {
     if (!canDelete) return;
-    const label = entry.type === "dir" ? `folder "${entry.name}" and its contents` : `"${entry.name}"`;
+    const body =
+      entry.type === "dir"
+        ? t("files.deleteBodyFolder", { name: entry.name })
+        : t("files.deleteBodyFile", { name: entry.name });
     setDialog({
       kind: "confirm",
-      title: "Delete?",
-      body: `Delete ${label}?`,
+      title: t("files.deleteTitle"),
+      body,
       confirmLabel: t("common.delete"),
       variant: "danger",
       onYes: async () => {
@@ -250,7 +257,7 @@ export function FileManager({
           await api.deleteFile(serverId, entry.path);
           await load(cwd);
         } catch (err) {
-          onError(err instanceof Error ? err.message : "Delete failed");
+          onError(err instanceof Error ? err.message : t("files.deleteFailed"));
         } finally {
           setBusy(false);
         }
@@ -263,9 +270,9 @@ export function FileManager({
     setDialog({
       kind: "prompt",
       title: t("files.rename"),
-      label: "New name",
+      label: t("files.newNameLabel"),
       defaultValue: entry.name,
-      confirmLabel: "Rename",
+      confirmLabel: t("files.rename"),
       onYes: async (next) => {
         if (!next || next === entry.name) return;
         setBusy(true);
@@ -279,7 +286,7 @@ export function FileManager({
           }
           await load(cwd);
         } catch (err) {
-          onError(err instanceof Error ? err.message : "Rename failed");
+          onError(err instanceof Error ? err.message : t("files.renameFailed"));
         } finally {
           setBusy(false);
         }
@@ -298,7 +305,7 @@ export function FileManager({
       }
       await load(cwd);
     } catch (err) {
-      onError(err instanceof Error ? err.message : "Upload failed");
+      onError(err instanceof Error ? err.message : t("files.uploadFailed"));
     } finally {
       setBusy(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -312,7 +319,7 @@ export function FileManager({
     try {
       await api.downloadFile(serverId, entry.path, entry.name);
     } catch (err) {
-      onError(err instanceof Error ? err.message : "Download failed");
+      onError(err instanceof Error ? err.message : t("files.downloadFailed"));
     } finally {
       setBusy(false);
     }
@@ -322,9 +329,9 @@ export function FileManager({
     if (!canArchive || entry.type !== "file") return;
     setDialog({
       kind: "confirm",
-      title: "Extract archive?",
-      body: `Extract "${entry.name}" into a new folder?`,
-      confirmLabel: "Extract",
+      title: t("files.extractTitle"),
+      body: t("files.extractBody", { name: entry.name }),
+      confirmLabel: t("files.extractConfirm"),
       variant: "primary",
       onYes: async () => {
         setBusy(true);
@@ -334,7 +341,7 @@ export function FileManager({
           await load(cwd);
           onError(null);
         } catch (err) {
-          onError(err instanceof Error ? err.message : "Extract failed");
+          onError(err instanceof Error ? err.message : t("files.extractFailed"));
         } finally {
           setBusy(false);
         }
@@ -347,8 +354,8 @@ export function FileManager({
     const defaultName = `archive-${new Date().toISOString().slice(0, 10)}.zip`;
     setDialog({
       kind: "prompt",
-      title: "Create archive",
-      label: "Archive file name (.zip or .tar.gz)",
+      title: t("files.createArchiveTitle"),
+      label: t("files.archiveNameLabel"),
       defaultValue: defaultName,
       confirmLabel: t("common.create"),
       onYes: async (name) => {
@@ -360,7 +367,7 @@ export function FileManager({
           await api.compressFiles(serverId, Array.from(selected), destination);
           await load(cwd);
         } catch (err) {
-          onError(err instanceof Error ? err.message : "Compress failed");
+          onError(err instanceof Error ? err.message : t("files.compressFailed"));
         } finally {
           setBusy(false);
         }
@@ -390,8 +397,8 @@ export function FileManager({
       await api.downloadFile(serverId, result.path, destName);
       setDialog({
         kind: "confirm",
-        title: "Delete temporary archive?",
-        body: "Download started. Delete the temporary archive from the server?",
+        title: t("files.deleteTempArchiveTitle"),
+        body: t("files.deleteTempArchiveBody"),
         confirmLabel: t("common.delete"),
         variant: "warning",
         onYes: async () => {
@@ -401,7 +408,7 @@ export function FileManager({
             await api.deleteFile(serverId, result.path);
             await load(cwd);
           } catch (err) {
-            onError(err instanceof Error ? err.message : "Delete failed");
+            onError(err instanceof Error ? err.message : t("files.deleteFailed"));
           } finally {
             setBusy(false);
           }
@@ -409,7 +416,7 @@ export function FileManager({
       });
       await load(cwd);
     } catch (err) {
-      onError(err instanceof Error ? err.message : "Archive download failed");
+      onError(err instanceof Error ? err.message : t("files.archiveDownloadFailed"));
     } finally {
       setBusy(false);
     }

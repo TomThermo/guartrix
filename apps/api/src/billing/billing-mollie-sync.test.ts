@@ -38,7 +38,7 @@ vi.mock("./mollie.js", async (importOriginal) => {
   };
 });
 
-vi.mock("./db.js", () => ({ prisma }));
+vi.mock("../db.js", () => ({ prisma }));
 
 vi.mock("./billing.js", () => ({
   provisionPaidPayment,
@@ -47,7 +47,7 @@ vi.mock("./billing.js", () => ({
   emitBillingWebhook,
 }));
 
-vi.mock("./activity-log.js", () => ({ logActivity }));
+vi.mock("../activity-log.js", () => ({ logActivity }));
 
 import { syncMolliePayment } from "./billing-mollie-sync.js";
 
