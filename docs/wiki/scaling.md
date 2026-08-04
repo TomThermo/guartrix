@@ -2,7 +2,7 @@
 
 ## Supported model
 
-**Scale out daemons (nodes). Keep one panel API.**
+**Scale out daemons (nodes). Keep one panel API** unless you enable Redis HA.
 
 Example that works well: **~10 nodes**, **~100 users**, dozens of game servers — one API process, one MySQL, local `data/` on the panel host.
 
@@ -22,49 +22,49 @@ On one panel host these live under `DATA_DIR` (default `./data`) and are **not**
 | Path | Purpose |
 |------|---------|
 | `data/sessions/*.json` | Login sessions (`FileSessionStore`) |
-| `data/transfers/` (or similar job files) | In-flight **server transfer** jobs hydrated on API boot |
+| `data/transfers/` | In-flight **server transfer** jobs (also mirrored to Redis when enabled) |
 | `data/rate-limits/` | Optional file rate-limit counters (`RATE_LIMIT_STORE=file`) |
 
-Two API processes on different hosts without sharing that state will **duplicate scheduled ticks**, break consoles (per-process WebSocket bridges), and lose or split sessions / transfer progress.
+Two API processes on different hosts without Redis (or a shared `DATA_DIR`) will **duplicate scheduled ticks**, break consoles, and split sessions / transfer progress.
 
-## Multi-API / panel HA
+## Multi-API / panel HA (Redis)
 
-**Still not a first-class product mode.** If you must run more than one API replica:
-
-### Option A — shared session directory (NFS / shared volume)
-
-1. Mount the same directory on every API host (e.g. NFS, CephFS, cloud file share).
-2. Point `DATA_DIR` (or at least sessions) at that mount so `data/sessions` is identical everywhere.
-3. Use a **POSIX-compatible** share (rename + flock semantics). Object storage (S3) is **not** enough for `FileSessionStore`.
-4. Transfer job files and rate-limit files need the same shared `DATA_DIR` (or you accept broken transfers / split limits).
-5. You still need **leader election** (or a single worker) for backup/schedule timers and a shared event bus for live console — those are **not** solved by NFS alone.
-
-### Option B — Redis sessions
+Opt in at install (**Docker Redis** `guartrix-redis` or **external** `REDIS_URL`) or set env manually:
 
 ```bash
-# .env
-SESSION_STORE=redis
 REDIS_URL=redis://127.0.0.1:6379/0
+REDIS_ENABLED=1
+SESSION_STORE=redis
+RATE_LIMIT_STORE=redis
+# optional
+SCHEDULER_LOCK_TTL_MS=15000
 ```
 
-Install the optional client on the API package:
+Requires optional dependency `ioredis` (`npm i ioredis -w @msm/api` — already an optionalDependency).
 
-```bash
-npm i ioredis -w @msm/api
-```
+When Redis is connected, the panel uses it for:
 
-When `SESSION_STORE=redis` and `REDIS_URL` is set, the API uses `RedisSessionStore` if `ioredis` loads; otherwise it **falls back to file sessions** and logs a warning.
+| Concern | Behaviour |
+|---------|-----------|
+| Sessions | `RedisSessionStore` |
+| Rate limits | Shared sliding-window counters |
+| Transfer jobs | Keys `guartrix:transfer:*` (+ disk mirror) |
+| Schedules / backups | One API holds `guartrix:scheduler:lock` |
+| Console / daemon events | Pub/sub `guartrix:events` for cross-replica fan-out |
 
-Redis covers **sessions only**. Transfer jobs, rate limits, schedule ticks, and daemon event fan-out remain process-local until further work.
+Admin → **Status** shows Redis health; Admin → **Settings → Security** can **Test Redis connection**.
+
+Without Redis, behaviour stays single-API (file sessions / file rate limits).
+
+### Option A — shared session directory (NFS)
+
+Still valid for sessions only: mount the same `data/sessions` (POSIX rename semantics). Object storage (S3) is **not** enough. Transfers, rate limits, locks, and live consoles still need Redis (or you accept single-API limits).
 
 ## Do you need Redis?
 
-**Not for multi-node Minecraft.** Redis (or NFS for sessions) is only relevant if you want **multiple panel API replicas**.
+**Not for multi-node Minecraft.** Add nodes via System → Add node.
 
-Today the panel also keeps in-process:
-
-- Per-node event WebSockets and live console fan-out
-- Backup mutex + scheduled-task tick (single `setInterval`)
+Redis is for **multiple panel API replicas** behind a load balancer.
 
 ## Guidance
 
@@ -72,11 +72,12 @@ Today the panel also keeps in-process:
 |------|----------|
 | More Minecraft capacity | Add nodes via System → Add node |
 | More admins / light panel traffic | Bigger single panel VPS is enough |
-| Shared logins across API replicas | NFS on `data/sessions` **or** `SESSION_STORE=redis` + `REDIS_URL` |
-| Full panel HA | Not implemented — needs shared sessions **plus** leader election + event bus |
+| Shared logins + rate limits across API replicas | `SESSION_STORE=redis` + `RATE_LIMIT_STORE=redis` + `REDIS_URL` |
+| Full panel HA | Redis as above (sessions, rate limits, transfers, scheduler lock, event bus) |
 
 ## Related
 
 - [Architecture](architecture.md)
+- [Install panel](install-panel.md)
 - [Install nodes](install-nodes.md)
 - [Env reference](env-reference.md)

@@ -46,7 +46,7 @@ export function registerAdminSettingsRoutes(app: FastifyInstance): void {
       });
 
       return {
-        ...getPanelSettingsView(),
+        ...(await getPanelSettingsView()),
         restartRequired,
         envChanged,
       };
@@ -54,6 +54,39 @@ export function registerAdminSettingsRoutes(app: FastifyInstance): void {
       const message = err instanceof Error ? err.message : String(err);
       return reply.status(400).send({ error: message });
     }
+  });
+
+  app.post("/api/admin/settings/test-redis", async (request, reply) => {
+    const user = await requireAdmin(request, reply);
+    if (!user) return;
+    const { pingRedis, getRedisStatus } = await import("../redis.js");
+    const ping = await pingRedis();
+    const status = await getRedisStatus();
+    logActivity({
+      action: "admin.settings.test-redis",
+      request,
+      user,
+      success: ping.ok,
+      metadata: {
+        connected: ping.ok,
+        latencyMs: ping.latencyMs,
+        error: ping.error,
+      },
+    });
+    if (!status.configured) {
+      return reply.status(400).send({
+        ...status,
+        error:
+          "Redis is not configured — set REDIS_URL in .env (or re-run the installer with Docker/external Redis)",
+      });
+    }
+    if (!ping.ok) {
+      return reply.status(502).send({
+        ...status,
+        error: ping.error ?? "Redis ping failed",
+      });
+    }
+    return { ok: true, ...status };
   });
 
   app.post("/api/admin/settings/test-mail", async (request, reply) => {

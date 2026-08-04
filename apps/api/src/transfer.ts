@@ -62,10 +62,26 @@ async function persistTransferJob(job: Job): Promise<void> {
   } catch {
     // Persistence must never break a live transfer.
   }
+  try {
+    const { getRedis, transferRedisKey } = await import("./redis.js");
+    const redis = await getRedis();
+    if (redis) {
+      await redis.set(transferRedisKey(job.serverId), JSON.stringify(job));
+    }
+  } catch {
+    // ignore Redis blips
+  }
 }
 
 async function clearPersistedTransferJob(serverId: string): Promise<void> {
   await fs.unlink(transferJobPath(serverId)).catch(() => undefined);
+  try {
+    const { getRedis, transferRedisKey } = await import("./redis.js");
+    const redis = await getRedis();
+    if (redis) await redis.del(transferRedisKey(serverId));
+  } catch {
+    // ignore
+  }
 }
 
 function jobFromDisk(raw: unknown): Job | null {
@@ -94,6 +110,40 @@ function jobFromDisk(raw: unknown): Job | null {
 
 /** Restore incomplete transfer UI state after an API restart (no auto-resume). */
 export async function hydrateTransferJobsFromDisk(): Promise<void> {
+  const ingest = (raw: unknown) => {
+    const job = jobFromDisk(raw);
+    if (!job || jobs.has(job.serverId)) return;
+    if (!job.done) {
+      job.error =
+        job.error ??
+        "API restarted during transfer — progress restored; re-run move if needed.";
+      job.done = true;
+      job.ok = false;
+    }
+    jobs.set(job.serverId, job);
+  };
+
+  try {
+    const { getRedis, scanRedisKeys, TRANSFER_KEY_PREFIX } = await import(
+      "./redis.js"
+    );
+    const redis = await getRedis();
+    if (redis) {
+      const keys = await scanRedisKeys(`${TRANSFER_KEY_PREFIX}*`);
+      for (const key of keys) {
+        try {
+          const raw = await redis.get(key);
+          if (!raw) continue;
+          ingest(JSON.parse(raw) as unknown);
+        } catch {
+          // ignore corrupt keys
+        }
+      }
+    }
+  } catch {
+    // Redis optional
+  }
+
   let names: string[] = [];
   try {
     names = await fs.readdir(transferJobDir());
@@ -106,16 +156,7 @@ export async function hydrateTransferJobsFromDisk(): Promise<void> {
       const raw = JSON.parse(
         await fs.readFile(path.join(transferJobDir(), name), "utf8"),
       ) as unknown;
-      const job = jobFromDisk(raw);
-      if (!job || jobs.has(job.serverId)) continue;
-      if (!job.done) {
-        job.error =
-          job.error ??
-          "API restarted during transfer — progress restored; re-run move if needed.";
-        job.done = true;
-        job.ok = false;
-      }
-      jobs.set(job.serverId, job);
+      ingest(raw);
     } catch {
       // ignore corrupt files
     }

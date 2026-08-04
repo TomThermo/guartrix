@@ -110,14 +110,14 @@ function apiKeyRateLimit(): number {
  * Returns an error message when over limit, else null.
  * Call after a successful key lookup.
  */
-export function checkApiKeyRate(keyId: string): string | null {
+export async function checkApiKeyRate(keyId: string): Promise<string | null> {
   const limit = apiKeyRateLimit();
-  const { limited } = getRateLimitStore().hit(
+  const result = await getRateLimitStore().hit(
     `apikey:${keyId}`,
     API_KEY_RATE_WINDOW_MS,
     limit,
   );
-  if (limited) {
+  if (result.limited) {
     return `API key rate limit exceeded (${limit}/min)`;
   }
   return null;
@@ -154,7 +154,7 @@ export async function resolveApiKeyAuth(
     return null;
   }
 
-  const limited = checkApiKeyRate(row.id);
+  const limited = await checkApiKeyRate(row.id);
   if (limited) {
     (request as FastifyRequest & { apiKeyRateLimited?: string }).apiKeyRateLimited =
       limited;

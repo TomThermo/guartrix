@@ -98,7 +98,7 @@ Disk walks use a **30s cache** (stale-while-revalidate) so UI polls never block 
 
 ## Data flow notes
 
-- **Sessions:** default `FileSessionStore` under `data/sessions/*.json` (survive API restart on the same host). For multi-API, share that directory via NFS or set `SESSION_STORE=redis` + `REDIS_URL` (optional `ioredis`) — see [Scaling](scaling.md). Session cookies use `rolling: false` so routine GETs/polls do not rewrite the session every request (expiry still follows `maxAge` from login).
+- **Sessions:** default `FileSessionStore` under `data/sessions/*.json` (survive API restart on the same host). For multi-API HA, enable Redis at install or set `SESSION_STORE=redis` + `RATE_LIMIT_STORE=redis` + `REDIS_URL` — shared sessions, rate limits, transfer jobs, scheduler leader lock, and console event pub/sub. See [Scaling](scaling.md). Session cookies use `rolling: false` so routine GETs/polls do not rewrite the session every request (expiry still follows `maxAge` from login).
 - **Scheduled tasks:** MySQL `ScheduledTask` (JSON columns for schedule + steps); one-time import from legacy `guartrix-scheduled-tasks.json`.
 - **Dashboard online counts:** `GET /api/servers/online` uses the daemon/console player cache only (no Minecraft query ping), scoped to servers the user can see.
 - **Daemon tokens:** long-lived shared secret per node (vault + `data/daemon.env`). On the wire the panel sends **short-lived HS256 JWTs** (`aud=daemon`, `nid`, `exp`) signed with that secret. Raw bearer is rejected unless `DAEMON_JWT_LEGACY=true`. SFTP callbacks use `aud=panel` JWTs.

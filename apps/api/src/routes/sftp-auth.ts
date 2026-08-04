@@ -30,13 +30,13 @@ function rateLimitKey(nodeId: string, username: string): string {
   return `sftp:${nodeId}:${username.toLowerCase()}`;
 }
 
-function checkRateLimit(key: string): boolean {
-  const { limited } = getRateLimitStore().hit(
+async function checkRateLimit(key: string): Promise<boolean> {
+  const result = await getRateLimitStore().hit(
     key,
     SFTP_AUTH_RATE_WINDOW_MS,
     SFTP_AUTH_RATE_MAX,
   );
-  return !limited;
+  return !result.limited;
 }
 
 async function resolveDaemonNodeFromBearer(token: string) {
@@ -96,7 +96,7 @@ export function registerSftpAuthRoutes(app: FastifyInstance): void {
     }
 
     const { username, serverId, password } = parsed.data;
-    if (!checkRateLimit(rateLimitKey(node.id, username))) {
+    if (!(await checkRateLimit(rateLimitKey(node.id, username)))) {
       return reply.status(429).send({ ok: false, error: "Too many attempts" });
     }
 

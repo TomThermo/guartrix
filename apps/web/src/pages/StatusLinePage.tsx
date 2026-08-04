@@ -587,7 +587,7 @@ export function StatusLinePage() {
 
       <div className="small text-secondary text-uppercase mb-2">Panel (control plane)</div>
       <Row className="g-3 mb-4">
-        <Col xs={12} md={4}>
+        <Col xs={12} md={6} xl={3}>
           <Card className="h-100 border-primary">
             <Card.Body>
               <Card.Title className="h6 mb-1 d-flex align-items-center gap-2">
@@ -623,7 +623,7 @@ export function StatusLinePage() {
             </Card.Body>
           </Card>
         </Col>
-        <Col xs={12} md={4}>
+        <Col xs={12} md={6} xl={3}>
           <Card className="h-100 border-dark">
             <Card.Body>
               <Card.Title className="h6 mb-1 d-flex align-items-center gap-2">
@@ -657,7 +657,7 @@ export function StatusLinePage() {
             </Card.Body>
           </Card>
         </Col>
-        <Col xs={12} md={4}>
+        <Col xs={12} md={6} xl={3}>
           <Card className="h-100">
             <Card.Body>
               <Card.Title className="h6 mb-1 d-flex align-items-center gap-2">
@@ -683,6 +683,68 @@ export function StatusLinePage() {
                 </>
               ) : (
                 <div className="small text-secondary">No watchdog status.</div>
+              )}
+            </Card.Body>
+          </Card>
+        </Col>
+        <Col xs={12} md={6} xl={3}>
+          <Card className="h-100 border-info">
+            <Card.Body>
+              <Card.Title className="h6 mb-1 d-flex align-items-center gap-2">
+                <i className="fa-solid fa-database text-info" />
+                Redis
+                <RoleBadge>HA store</RoleBadge>
+              </Card.Title>
+              <p className="small text-secondary mb-3">
+                Optional shared store for multi-API sessions, rate limits, transfers, and events.
+              </p>
+              {panel?.redis ? (
+                <>
+                  <div className="d-flex align-items-center mb-2">
+                    <HealthDot
+                      ok={
+                        !panel.redis.enabled
+                          ? true
+                          : panel.redis.connected
+                      }
+                    />
+                    <span className="fw-semibold">
+                      {!panel.redis.configured
+                        ? "Not configured"
+                        : !panel.redis.enabled
+                          ? "Disabled"
+                          : panel.redis.connected
+                            ? "Connected"
+                            : "Error"}
+                    </span>
+                  </div>
+                  <dl className="row small mb-0">
+                    <dt className="col-5 text-secondary">URL</dt>
+                    <dd className="col-7 font-monospace text-break">
+                      {panel.redis.urlMasked ?? "—"}
+                    </dd>
+                    <dt className="col-5 text-secondary">Latency</dt>
+                    <dd className="col-7">
+                      {panel.redis.latencyMs != null
+                        ? `${panel.redis.latencyMs} ms`
+                        : "—"}
+                    </dd>
+                    <dt className="col-5 text-secondary">Sessions</dt>
+                    <dd className="col-7">{panel.redis.sessionStore}</dd>
+                    <dt className="col-5 text-secondary">Rate limits</dt>
+                    <dd className="col-7">{panel.redis.rateLimitStore}</dd>
+                    {panel.redis.error && (
+                      <>
+                        <dt className="col-5 text-secondary">Error</dt>
+                        <dd className="col-7 text-danger text-break">
+                          {panel.redis.error}
+                        </dd>
+                      </>
+                    )}
+                  </dl>
+                </>
+              ) : (
+                <div className="small text-secondary">No Redis status.</div>
               )}
             </Card.Body>
           </Card>

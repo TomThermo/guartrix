@@ -15,6 +15,9 @@
 #   # External panel MySQL:
 #   sudo bash /tmp/guartrix-install.sh --mysql-external --mysql-host 10.0.0.5 \
 #     --mysql-user guartrix --mysql-password '…' --mysql-database guartrix_panel
+#   # Optional Redis for multi-API HA:
+#   sudo bash /tmp/guartrix-install.sh --redis-docker
+#   sudo bash /tmp/guartrix-install.sh --redis-external --redis-url redis://10.0.0.5:6379/0
 #
 # Env overrides (non-interactive — set GUARTRIX_NONINTERACTIVE=1 to skip wizard):
 #   GUARTRIX_DOMAIN, GUARTRIX_PUBLIC_IP, GUARTRIX_ADMIN_PASSWORD,
@@ -22,6 +25,7 @@
 #   GUARTRIX_HTTPS=0|1 (0 = HTTP via IP/host, 1 = HTTPS),
 #   GUARTRIX_MYSQL_MODE=docker|external,
 #   GUARTRIX_DATABASE_URL / GUARTRIX_MYSQL_HOST|PORT|DATABASE|USER|PASSWORD,
+#   GUARTRIX_REDIS_MODE=skip|docker|external, GUARTRIX_REDIS_URL,
 #   GUARTRIX_INSTALL_ROLE=full|panel|daemon
 
 set -euo pipefail
@@ -43,6 +47,9 @@ MYSQL_DATABASE="${GUARTRIX_MYSQL_DATABASE:-guartrix_panel}"
 MYSQL_USER="${GUARTRIX_MYSQL_USER:-guartrix}"
 MYSQL_PASSWORD="${GUARTRIX_MYSQL_PASSWORD:-}"
 DATABASE_URL_OVERRIDE="${GUARTRIX_DATABASE_URL:-}"
+# empty | skip | docker | external
+REDIS_MODE="${GUARTRIX_REDIS_MODE:-}"
+REDIS_URL_IN="${GUARTRIX_REDIS_URL:-}"
 # full | panel | daemon (empty until resolved)
 INSTALL_ROLE="${GUARTRIX_INSTALL_ROLE:-}"
 # daemon-only extras (passed through / prompted)
@@ -81,6 +88,10 @@ Options:
   --mysql-user USER      Panel DB user (default guartrix)
   --mysql-password PASS  Panel DB password
   --database-url URL     Full mysql://… URL (implies --mysql-external)
+  --redis-docker         Optional Redis in Docker (guartrix-redis) for multi-API HA
+  --redis-external       Use an existing Redis (with --redis-url)
+  --redis-url URL        redis://… URL (implies --redis-external)
+  --redis-skip           Do not configure Redis (default for single-API)
   --admin-password PASS  Initial admin password (min 12 chars, mixed)
   --license-key KEY      Panel LICENSE_KEY (GTRX-…); can set later in Admin → License
   --token TOKEN          Daemon shared secret (daemon role)
@@ -96,8 +107,18 @@ Options:
 Interactive (no flags, with a TTY — e.g. curl|bash):
   Asks role (full / panel-only / daemon-only), then the matching questions.
 
-Env: GUARTRIX_INSTALL_ROLE, GUARTRIX_HTTPS, GUARTRIX_MYSQL_MODE, …
+Env: GUARTRIX_INSTALL_ROLE, GUARTRIX_HTTPS, GUARTRIX_MYSQL_MODE, GUARTRIX_REDIS_MODE, …
 EOF
+}
+
+normalize_redis_mode() {
+  local raw="${1:-}"
+  case "${raw,,}" in
+    docker|local|bundled) echo docker ;;
+    external|existing|remote) echo external ;;
+    skip|none|off|0|"") echo skip ;;
+    *) echo "" ;;
+  esac
 }
 
 normalize_role() {
@@ -185,6 +206,16 @@ normalize_mysql_mode() {
   esac
 }
 
+normalize_redis_mode_strict() {
+  local raw="${1:-}"
+  case "${raw,,}" in
+    docker|local|bundled) echo docker ;;
+    external|existing|remote) echo external ;;
+    skip|none|off|0) echo skip ;;
+    *) echo "" ;;
+  esac
+}
+
 uri_encode() {
   python3 -c 'import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1], safe=""))' "$1"
 }
@@ -213,6 +244,10 @@ while [[ $# -gt 0 ]]; do
     --mysql-user) MYSQL_USER="${2:-}"; shift 2 ;;
     --mysql-password) MYSQL_PASSWORD="${2:-}"; shift 2 ;;
     --database-url) DATABASE_URL_OVERRIDE="${2:-}"; MYSQL_MODE=external; shift 2 ;;
+    --redis-docker) REDIS_MODE=docker; shift ;;
+    --redis-external) REDIS_MODE=external; shift ;;
+    --redis-skip|--no-redis) REDIS_MODE=skip; shift ;;
+    --redis-url) REDIS_URL_IN="${2:-}"; REDIS_MODE="${REDIS_MODE:-external}"; shift 2 ;;
     --admin-password) ADMIN_PASSWORD="${2:-}"; shift 2 ;;
     --license-key) LICENSE_KEY="${2:-}"; shift 2 ;;
     --token) DAEMON_TOKEN_IN="${2:-}"; shift 2 ;;
@@ -241,6 +276,21 @@ if [[ -n "$DATABASE_URL_OVERRIDE" ]]; then
   MYSQL_MODE=external
 fi
 MYSQL_MODE="$(normalize_mysql_mode "$MYSQL_MODE")"
+
+if [[ -z "$REDIS_MODE" && -n "${GUARTRIX_REDIS_MODE:-}" ]]; then
+  REDIS_MODE="$(normalize_redis_mode_strict "${GUARTRIX_REDIS_MODE}")"
+fi
+if [[ -n "$REDIS_URL_IN" && -z "$REDIS_MODE" ]]; then
+  REDIS_MODE=external
+fi
+# Default: skip Redis (single-API installs)
+if [[ -z "$REDIS_MODE" ]]; then
+  REDIS_MODE=skip
+fi
+REDIS_MODE="$(normalize_redis_mode_strict "$REDIS_MODE")"
+if [[ -z "$REDIS_MODE" ]]; then
+  REDIS_MODE=skip
+fi
 
 if [[ -z "$INSTALL_ROLE" && -n "${GUARTRIX_INSTALL_ROLE:-}" ]]; then
   INSTALL_ROLE="$(normalize_role "${GUARTRIX_INSTALL_ROLE}")"
@@ -385,6 +435,24 @@ if [[ "$WIZARD" -eq 1 ]]; then
     fi
 
     say ""
+    say "Redis (optional — multi-API HA / shared sessions)"
+    say "  1) Skip — single panel API (recommended for most installs)"
+    say "  2) Docker Redis on this server (guartrix-redis on 127.0.0.1:6379)"
+    say "  3) Existing / remote Redis URL"
+    ask redis_ans "Redis choice [1/2/3] (default 1): "
+    case "${redis_ans}" in
+      2) REDIS_MODE=docker ;;
+      3) REDIS_MODE=external ;;
+      *) REDIS_MODE=skip ;;
+    esac
+    if [[ "$REDIS_MODE" == "external" ]]; then
+      while [[ -z "$REDIS_URL_IN" ]]; do
+        ask REDIS_URL_IN "Redis URL [redis://127.0.0.1:6379/0]: "
+        REDIS_URL_IN="${REDIS_URL_IN:-redis://127.0.0.1:6379/0}"
+      done
+    fi
+
+    say ""
     say "----------------------------------------------"
     say " Summary"
     say "  Role:     ${INSTALL_ROLE}"
@@ -400,6 +468,10 @@ if [[ "$WIZARD" -eq 1 ]]; then
     say "  Panel DB: ${MYSQL_MODE}"
     if [[ "$MYSQL_MODE" == "external" ]]; then
       say "            ${MYSQL_USER}@${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DATABASE}"
+    fi
+    say "  Redis:    ${REDIS_MODE}"
+    if [[ "$REDIS_MODE" == "external" ]]; then
+      say "            ${REDIS_URL_IN}"
     fi
     if [[ "$INSTALL_ROLE" == "panel" ]]; then
       say "  Daemon:   none locally — add remote nodes after login"
@@ -704,6 +776,24 @@ else
   echo "[guartrix] Panel DB: Docker MySQL (guartrix-mysql on 127.0.0.1:3306)"
 fi
 
+# Resolve Redis URL for .env
+REDIS_URL_OUT=""
+SESSION_STORE_OUT=file
+RATE_LIMIT_STORE_OUT=file
+if [[ "$REDIS_MODE" == "docker" ]]; then
+  REDIS_URL_OUT="redis://127.0.0.1:6379/0"
+  SESSION_STORE_OUT=redis
+  RATE_LIMIT_STORE_OUT=redis
+elif [[ "$REDIS_MODE" == "external" ]]; then
+  if [[ -z "$REDIS_URL_IN" ]]; then
+    echo "ERROR: --redis-external needs --redis-url (or GUARTRIX_REDIS_URL)." >&2
+    exit 1
+  fi
+  REDIS_URL_OUT="$REDIS_URL_IN"
+  SESSION_STORE_OUT=redis
+  RATE_LIMIT_STORE_OUT=redis
+fi
+
 echo "[guartrix] Cloning ${REPO_URL} (${BRANCH}) → ${INSTALL_DIR}"
 mkdir -p "$(dirname "$INSTALL_DIR")"
 if [[ -d "$INSTALL_DIR/.git" ]]; then
@@ -756,7 +846,13 @@ BOOT_START_STAGGER_MS=20000
 # Panel validates against Guartrix's public license API
 LICENSE_SERVER_URL=https://license.guartrix.com
 SKIP_LOCAL_DAEMON=${SKIP_LOCAL_DAEMON}
+SESSION_STORE=${SESSION_STORE_OUT}
+RATE_LIMIT_STORE=${RATE_LIMIT_STORE_OUT}
 EOF
+if [[ -n "$REDIS_URL_OUT" ]]; then
+  printf 'REDIS_URL=%s\n' "$REDIS_URL_OUT" >> .env
+  printf 'REDIS_ENABLED=1\n' >> .env
+fi
 if [[ -n "$LICENSE_KEY" ]]; then
   printf 'LICENSE_KEY=%s\n' "$LICENSE_KEY" >> .env
 fi
@@ -849,6 +945,38 @@ if [[ "$MYSQL_MODE" == "docker" ]]; then
 else
   echo "[guartrix] Skipping Docker MySQL — using external panel database"
   echo "[guartrix] Ensure database '${MYSQL_DATABASE}' and user '${MYSQL_USER}' already exist with rights."
+fi
+
+if [[ "$REDIS_MODE" == "docker" ]]; then
+  mkdir -p "${INSTALL_DIR}/data/redis"
+  docker network create guartrix 2>/dev/null || true
+  if ! docker ps --format '{{.Names}}' | grep -qx guartrix-redis; then
+    echo "[guartrix] Starting Redis container (guartrix-redis)…"
+    if docker ps -a --format '{{.Names}}' 2>/dev/null | grep -qx guartrix-redis; then
+      docker start guartrix-redis
+    else
+      docker run -d --name guartrix-redis --restart unless-stopped \
+        --network guartrix \
+        -p 127.0.0.1:6379:6379 \
+        -v "${INSTALL_DIR}/data/redis:/data" \
+        redis:7-alpine \
+        redis-server --appendonly yes
+    fi
+    echo "[guartrix] Waiting for Redis…"
+    for i in $(seq 1 30); do
+      if docker exec guartrix-redis redis-cli ping 2>/dev/null | grep -qi PONG; then
+        break
+      fi
+      sleep 1
+    done
+  else
+    echo "[guartrix] Redis container guartrix-redis already running — reusing"
+  fi
+  echo "[guartrix] Redis: Docker (guartrix-redis on 127.0.0.1:6379)"
+elif [[ "$REDIS_MODE" == "external" ]]; then
+  echo "[guartrix] Redis: external (${REDIS_URL_OUT})"
+else
+  echo "[guartrix] Redis: skipped (file sessions / rate limits)"
 fi
 
 # Prisma CLI loads apps/api/.env (next to prisma/), not the panel root .env.

@@ -219,7 +219,10 @@ export function registerStatusRoutes(app: FastifyInstance): void {
       port: config.port,
     };
 
-    const [versionStatus] = await Promise.all([getPanelVersionStatus(false)]);
+    const [versionStatus, redisStatus] = await Promise.all([
+      getPanelVersionStatus(false),
+      import("../redis.js").then((m) => m.getRedisStatus()),
+    ]);
 
     const response: AdminStatusResponse = {
       generatedAt: new Date().toISOString(),
@@ -238,6 +241,16 @@ export function registerStatusRoutes(app: FastifyInstance): void {
           pid: watchdogPid,
         },
         version: versionStatus,
+        redis: {
+          configured: redisStatus.configured,
+          enabled: redisStatus.enabled,
+          connected: redisStatus.connected,
+          urlMasked: redisStatus.urlMasked,
+          latencyMs: redisStatus.latencyMs,
+          error: redisStatus.error,
+          sessionStore: redisStatus.sessionStore,
+          rateLimitStore: redisStatus.rateLimitStore,
+        },
       },
       api: {
         ok: true,

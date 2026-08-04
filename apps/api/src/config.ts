@@ -25,6 +25,14 @@ export const config = {
     process.env.SESSION_SECURE === "true" ||
     process.env.SESSION_SECURE === "1" ||
     (process.env.PUBLIC_BASE_URL ?? "").startsWith("https://"),
+  /** Optional Redis for multi-API HA (sessions, rate limits, transfers, locks, pub/sub). */
+  redisUrl: process.env.REDIS_URL?.trim() || "",
+  sessionStore: (process.env.SESSION_STORE || "file").trim().toLowerCase(),
+  rateLimitStore: (process.env.RATE_LIMIT_STORE || "file").trim().toLowerCase(),
+  schedulerLockTtlMs: (() => {
+    const n = Number(process.env.SCHEDULER_LOCK_TTL_MS ?? 15_000);
+    return Number.isFinite(n) && n >= 3000 ? Math.floor(n) : 15_000;
+  })(),
   /** Cloudflare DNS for automatic Minecraft subdomains (optional). */
   cloudflare: {
     apiToken: process.env.CLOUDFLARE_API_TOKEN?.trim() || "",

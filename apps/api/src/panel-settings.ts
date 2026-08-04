@@ -62,6 +62,17 @@ export type PanelSettingsView = {
   activityWebhookUrl: string;
   alertEmail: string;
   activityAlertMute: string[];
+  /** Redis HA status (read-only; configure via install / .env). */
+  redis: {
+    configured: boolean;
+    enabled: boolean;
+    connected: boolean;
+    urlMasked: string | null;
+    latencyMs: number | null;
+    error: string | null;
+    sessionStore: string;
+    rateLimitStore: string;
+  };
   /** Keys that need `bash build/start.sh` after change. */
   restartRequiredKeys: string[];
 };
@@ -224,7 +235,9 @@ function currentHttpsEnabled(): boolean {
   return parseBoolEnv(process.env.HTTPS_ENABLED, true);
 }
 
-export function getPanelSettingsView(): PanelSettingsView {
+export async function getPanelSettingsView(): Promise<PanelSettingsView> {
+  const { getRedisStatus } = await import("./redis.js");
+  const redis = await getRedisStatus();
   return {
     publicHost: config.publicHost,
     publicBaseUrl: config.publicBaseUrl,
@@ -250,6 +263,16 @@ export function getPanelSettingsView(): PanelSettingsView {
     activityWebhookUrl: config.alerts.webhookUrl,
     alertEmail: config.alerts.alertEmail,
     activityAlertMute: [...config.alerts.mutedActions],
+    redis: {
+      configured: redis.configured,
+      enabled: redis.enabled,
+      connected: redis.connected,
+      urlMasked: redis.urlMasked,
+      latencyMs: redis.latencyMs,
+      error: redis.error,
+      sessionStore: redis.sessionStore,
+      rateLimitStore: redis.rateLimitStore,
+    },
     restartRequiredKeys: [...ENV_SYNC_KEYS],
   };
 }

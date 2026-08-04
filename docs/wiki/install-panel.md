@@ -56,12 +56,13 @@ The interactive wizard asks for:
 6. Admin password (blank = generate)  
 7. License key (blank = the panel runs the **free tier**: 1 node, 1 server, 10 GB disk — set a key later in Admin → License)  
 8. Panel MySQL: Docker (default) or existing server  
-9. Confirm summary → install  
+9. Redis (optional): skip / Docker `guartrix-redis` / external URL  
+10. Confirm summary → install  
 
 Daemon-only asks for token + node id from **System → Add node** instead of panel DB/HTTPS details.
 
 The script installs Docker/Node if needed, clones to `/opt/guartrix`, writes `.env`
-(`LICENSE_SERVER_URL=https://license.guartrix.com`), sets up MySQL, builds, and enables
+(`LICENSE_SERVER_URL=https://license.guartrix.com`), sets up MySQL (and optional Redis), builds, and enables
 systemd units (`guartrix-daemon`, `guartrix-api`, `guartrix-web`).
 
 ### Shortcut entrypoint (optional)
@@ -106,6 +107,30 @@ sudo bash /tmp/guartrix-install.sh --http --ip YOUR.PUBLIC.IP --mysql-docker
 
 **Existing MySQL/MariaDB** — create an empty database + user first, then:
 
+```bash
+sudo bash /tmp/guartrix-install.sh --mysql-external --mysql-host 10.0.0.5 \
+  --mysql-user guartrix --mysql-password '…' --mysql-database guartrix_panel
+```
+
+### Optional Redis (multi-API HA)
+
+**Skip (default)** — single panel API; file sessions and rate limits.
+
+**Docker** — installer starts `guartrix-redis` on `127.0.0.1:6379` and sets `REDIS_URL`, `SESSION_STORE=redis`, `RATE_LIMIT_STORE=redis`.
+
+```bash
+sudo bash /tmp/guartrix-install.sh --redis-docker
+```
+
+**External** — point at an existing Redis:
+
+```bash
+sudo bash /tmp/guartrix-install.sh --redis-external --redis-url 'redis://10.0.0.5:6379/0'
+```
+
+See [Scaling](scaling.md) for what Redis covers (sessions, rate limits, transfers, scheduler lock, event bus).
+
+### Flags / automation notes
 ```bash
 sudo bash /tmp/guartrix-install.sh --http --ip YOUR.PUBLIC.IP \
   --mysql-external \

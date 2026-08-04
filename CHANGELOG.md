@@ -7,6 +7,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.68] — 2026-08-04
+
+- Redis multi-API HA: shared client, installer Docker/external Redis, Admin Status/Settings, Redis rate limits, transfer keys, scheduler lock, console event pub/sub
+
 ## [1.0.67] — 2026-08-04
 
 - Improvement cut: peel daemon routes, bot-movement, addons install/sync, FileManager toolbar, AddonPanel sections, DashboardServerRow, process/sftp helpers, license validate/quota; Mollie sync tests; shared world-seed URLs; schedule migrate boot-only; SFTP legacy deprecation warn; biome noExplicitAny warn.

@@ -25,6 +25,16 @@ export type PanelSettings = {
   activityWebhookUrl: string;
   alertEmail: string;
   activityAlertMute: string[];
+  redis: {
+    configured: boolean;
+    enabled: boolean;
+    connected: boolean;
+    urlMasked: string | null;
+    latencyMs: number | null;
+    error: string | null;
+    sessionStore: string;
+    rateLimitStore: string;
+  };
   restartRequiredKeys: string[];
   restartRequired?: boolean;
   envChanged?: string[];
@@ -69,6 +79,21 @@ export const adminSettingsApi = {
       to: string;
       outboxPath: string;
     }>("/api/admin/settings/test-mail", {
+      method: "POST",
+      body: "{}",
+    }),
+  testPanelRedis: () =>
+    request<{
+      ok: boolean;
+      configured: boolean;
+      enabled: boolean;
+      connected: boolean;
+      urlMasked: string | null;
+      latencyMs: number | null;
+      error: string | null;
+      sessionStore: string;
+      rateLimitStore: string;
+    }>("/api/admin/settings/test-redis", {
       method: "POST",
       body: "{}",
     }),

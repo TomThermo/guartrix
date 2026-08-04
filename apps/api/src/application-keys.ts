@@ -84,14 +84,16 @@ function applicationRateLimit(): number {
   return Math.floor(raw);
 }
 
-export function checkApplicationKeyRate(keyId: string): string | null {
+export async function checkApplicationKeyRate(
+  keyId: string,
+): Promise<string | null> {
   const limit = applicationRateLimit();
-  const { limited } = getRateLimitStore().hit(
+  const result = await getRateLimitStore().hit(
     `appkey:${keyId}`,
     APPLICATION_API_RATE_WINDOW_MS,
     limit,
   );
-  if (limited) {
+  if (result.limited) {
     return `Application API rate limit exceeded (${limit}/min)`;
   }
   return null;
@@ -107,7 +109,7 @@ export async function resolveApplicationAuth(
   const row = await prisma.applicationApiKey.findUnique({ where: { tokenHash } });
   if (!row || row.revokedAt) return null;
 
-  const limited = checkApplicationKeyRate(row.id);
+  const limited = await checkApplicationKeyRate(row.id);
   if (limited) {
     (request as FastifyRequest & { applicationRateLimited?: string }).applicationRateLimited =
       limited;

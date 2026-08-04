@@ -55,9 +55,11 @@ Installer: `--mysql-docker` (default) or `--mysql-external` / `--database-url`. 
 | `TWO_FACTOR_REQUIRED_ROLES` | Comma-separated roles that must enable TOTP (e.g. `ADMIN`). Empty = optional |
 | `API_KEY_RATE_LIMIT` | Max Client API requests per minute per key (default **120**) |
 | `APPLICATION_API_RATE_LIMIT` | Max Application API (`gta_`) requests per minute per key (default **120**) |
-| `RATE_LIMIT_STORE` | `file` (default) persists counters under `data/rate-limits/`; `memory` is in-process only |
+| `RATE_LIMIT_STORE` | `file` (default) under `data/rate-limits/`; `memory` in-process; `redis` shared (needs `REDIS_URL`) |
 | `SESSION_STORE` | `file` (default, `data/sessions`) or `redis` (needs `REDIS_URL` + optional `ioredis`) |
-| `REDIS_URL` | Redis URL when `SESSION_STORE=redis` (multi-API session sharing) |
+| `REDIS_URL` | Redis URL for multi-API HA (sessions, rate limits, transfers, scheduler lock, event bus) |
+| `REDIS_ENABLED` | `0` disables Redis even if `REDIS_URL` is set; default on when URL is present |
+| `SCHEDULER_LOCK_TTL_MS` | Redis leader-lock TTL for backup/schedule ticks (default **15000**) |
 | `CSP_REPORT_ONLY` | `1` = prod-web also sends CSP Report-Only (stricter `style-src 'self'`) for violation telemetry |
 | `CSP_SCRIPT_SRC_EXTRA` | Extra `script-src` tokens (space-separated hosts/hashes) appended to the enforcing CSP |
 | `CSP_ALLOW_UNSAFE_INLINE_SCRIPT` | `1` = allow `'unsafe-inline'` in `script-src` (last resort; browsers ignore it when a nonce is present). Prefer disabling Cloudflare Email Obfuscation / fixing injects instead |

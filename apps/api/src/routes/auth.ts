@@ -104,20 +104,20 @@ function clientKey(request: FastifyRequest): string {
   return `login:${request.ip || "unknown"}`;
 }
 
-function checkLoginRate(request: FastifyRequest): string | null {
-  const { limited } = getRateLimitStore().hit(
+async function checkLoginRate(request: FastifyRequest): Promise<string | null> {
+  const result = await getRateLimitStore().hit(
     clientKey(request),
     LOGIN_RATE_WINDOW_MS,
     LOGIN_RATE_MAX,
   );
-  if (limited) {
+  if (result.limited) {
     return "Too many login attempts. Try again in 15 minutes.";
   }
   return null;
 }
 
-function clearLoginRate(request: FastifyRequest): void {
-  getRateLimitStore().clear(clientKey(request));
+async function clearLoginRate(request: FastifyRequest): Promise<void> {
+  await getRateLimitStore().clear(clientKey(request));
 }
 
 /** When SMTP is live, non-admin accounts must verify email before a session. */
@@ -148,7 +148,7 @@ export function registerAuthRoutes(app: FastifyInstance): void {
       const originErr = assertSameOrigin(request);
       if (originErr) return reply.status(403).send({ error: originErr });
 
-      const limited = checkLoginRate(request);
+      const limited = await checkLoginRate(request);
       if (limited) {
         return reply.status(429).send({ error: limited });
       }
@@ -213,7 +213,7 @@ export function registerAuthRoutes(app: FastifyInstance): void {
         return { ok: true, requiresTwoFactor: true };
       }
 
-      clearLoginRate(request);
+      await clearLoginRate(request);
       await request.session.regenerate();
       request.session.authenticated = true;
       request.session.userId = user.id;
@@ -247,7 +247,7 @@ export function registerAuthRoutes(app: FastifyInstance): void {
       const originErr = assertSameOrigin(request);
       if (originErr) return reply.status(403).send({ error: originErr });
 
-      const limited = checkLoginRate(request);
+      const limited = await checkLoginRate(request);
       if (limited) {
         return reply.status(429).send({ error: limited });
       }
@@ -318,7 +318,7 @@ export function registerAuthRoutes(app: FastifyInstance): void {
       }
 
       const rememberMe = Boolean(request.session.pendingRememberMe);
-      clearLoginRate(request);
+      await clearLoginRate(request);
       await request.session.regenerate();
       request.session.pendingTwoFactorUserId = undefined;
       request.session.pendingRememberMe = undefined;
@@ -368,7 +368,7 @@ export function registerAuthRoutes(app: FastifyInstance): void {
       return reply.status(403).send({ error: "Registration is disabled" });
     }
 
-    const limited = checkLoginRate(request);
+    const limited = await checkLoginRate(request);
     if (limited) return reply.status(429).send({ error: limited });
 
     const parsed = registerSchema.safeParse(request.body);
@@ -443,7 +443,7 @@ export function registerAuthRoutes(app: FastifyInstance): void {
       ].join("\n"),
     });
 
-    clearLoginRate(request);
+    await clearLoginRate(request);
     logActivity({
       action: "auth.register",
       request,
@@ -515,7 +515,7 @@ export function registerAuthRoutes(app: FastifyInstance): void {
     const originErr = assertSameOrigin(request);
     if (originErr) return reply.status(403).send({ error: originErr });
 
-    const limited = checkLoginRate(request);
+    const limited = await checkLoginRate(request);
     if (limited) return reply.status(429).send({ error: limited });
 
     const parsed = forgotPasswordSchema.safeParse(request.body);
@@ -566,7 +566,7 @@ export function registerAuthRoutes(app: FastifyInstance): void {
     const originErr = assertSameOrigin(request);
     if (originErr) return reply.status(403).send({ error: originErr });
 
-    const limited = checkLoginRate(request);
+    const limited = await checkLoginRate(request);
     if (limited) return reply.status(429).send({ error: limited });
 
     const parsed = resetPasswordSchema.safeParse(request.body);
@@ -594,7 +594,7 @@ export function registerAuthRoutes(app: FastifyInstance): void {
     });
     await prisma.passwordResetToken.deleteMany({ where: { userId: row.userId } });
     await destroySessionsForUser(row.userId);
-    clearLoginRate(request);
+    await clearLoginRate(request);
     logActivity({ action: "auth.password-reset", request, user: row.user });
 
     return { ok: true, message: "Password updated. You can sign in now." };

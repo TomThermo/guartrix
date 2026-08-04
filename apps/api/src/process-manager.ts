@@ -37,6 +37,7 @@ class ProcessManagerProxy extends EventEmitter {
     serverId: string,
     status: ServerStatus,
     errorMessage?: string | null,
+    opts?: { fromBus?: boolean },
   ): void {
     this.statuses.set(serverId, status);
     if (status === "RUNNING" || status === "STARTING" || status === "STOPPING") {
@@ -45,36 +46,70 @@ class ProcessManagerProxy extends EventEmitter {
       this.running.delete(serverId);
     }
     this.emit("status", serverId, status, errorMessage ?? null);
-    void prisma.server
-      .update({
-        where: { id: serverId },
-        data: {
+    if (!opts?.fromBus) {
+      void prisma.server
+        .update({
+          where: { id: serverId },
+          data: {
+            status,
+            ...(errorMessage !== undefined ? { errorMessage } : {}),
+          },
+        })
+        .catch(() => undefined);
+      void import("./redis.js").then(({ publishPanelEvent }) =>
+        publishPanelEvent({
+          kind: "status",
+          serverId,
           status,
-          ...(errorMessage !== undefined ? { errorMessage } : {}),
-        },
-      })
-      .catch(() => undefined);
+          errorMessage: errorMessage ?? null,
+        }),
+      );
+    }
   }
 
-  applyPlayers(serverId: string, names: string[]): void {
+  applyPlayers(
+    serverId: string,
+    names: string[],
+    opts?: { fromBus?: boolean },
+  ): void {
     this.onlinePlayers.set(serverId, names);
     this.emit("players", serverId, names);
+    if (!opts?.fromBus) {
+      void import("./redis.js").then(({ publishPanelEvent }) =>
+        publishPanelEvent({ kind: "players", serverId, players: names }),
+      );
+    }
   }
 
   applyOutput(
     serverId: string,
     line: string,
     stream: "stdout" | "stderr" = "stdout",
+    opts?: { fromBus?: boolean },
   ): void {
     this.emit("output", serverId, line, stream);
+    if (!opts?.fromBus) {
+      void import("./redis.js").then(({ publishPanelEvent }) =>
+        publishPanelEvent({ kind: "output", serverId, line, stream }),
+      );
+    }
   }
 
-  applyStats(serverId: string, stats: ServerStats): void {
+  applyStats(
+    serverId: string,
+    stats: ServerStats,
+    opts?: { fromBus?: boolean },
+  ): void {
     this.stats.set(serverId, stats);
     this.emit("stats", serverId, stats);
     void import("./stats-history.js").then(({ pushStatsHistory }) => {
       pushStatsHistory(serverId, stats);
     });
+    if (!opts?.fromBus) {
+      void import("./redis.js").then(({ publishPanelEvent }) =>
+        publishPanelEvent({ kind: "stats", serverId, stats }),
+      );
+    }
   }
 
   getCachedStats(serverId: string): ServerStats | null {

@@ -1,9 +1,14 @@
 import WebSocket from "ws";
-import type { NodeStatus, ServerStatus } from "@msm/shared";
+import type { NodeStatus, ServerStatus, ServerStats } from "@msm/shared";
 import { recordActivity } from "./activity-log.js";
 import { daemonWsAuthorization, daemonWsUrl, getNodeToken } from "./daemon-client.js";
 import { prisma } from "./db.js";
 import { processManager } from "./process-manager.js";
+import {
+  onPanelBusEvent,
+  startPanelEventBus,
+  type PanelBusEvent,
+} from "./redis.js";
 
 type Bridge = {
   nodeId: string;
@@ -14,6 +19,7 @@ type Bridge = {
 const bridges = new Map<string, Bridge>();
 let stopped = false;
 let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+let busUnsub: (() => void) | null = null;
 
 /** Last reachability we logged per node, so reconnect churn stays quiet. */
 const loggedNodeStatus = new Map<string, NodeStatus>();
@@ -40,18 +46,50 @@ export function stopDaemonEventBridge(): void {
   stopped = true;
   if (refreshTimer) clearTimeout(refreshTimer);
   refreshTimer = null;
+  if (busUnsub) {
+    busUnsub();
+    busUnsub = null;
+  }
   for (const bridge of bridges.values()) {
     tearDownBridge(bridge, false);
   }
   bridges.clear();
 }
 
+function applyBusEvent(event: PanelBusEvent): void {
+  if (event.kind === "status") {
+    processManager.applyStatus(
+      event.serverId,
+      event.status as ServerStatus,
+      event.errorMessage,
+      { fromBus: true },
+    );
+  } else if (event.kind === "players") {
+    processManager.applyPlayers(event.serverId, event.players, { fromBus: true });
+  } else if (event.kind === "output") {
+    processManager.applyOutput(event.serverId, event.line, event.stream, {
+      fromBus: true,
+    });
+  } else if (event.kind === "stats") {
+    processManager.applyStats(
+      event.serverId,
+      event.stats as ServerStats,
+      { fromBus: true },
+    );
+  }
+}
+
 /**
  * multi-node: one live event WebSocket per daemon node so console/status/players
  * from every node flow into the panel processManager.
+ * With Redis, events are published for other API replicas (console fan-out).
  */
 export async function startDaemonEventBridge(): Promise<void> {
   stopped = false;
+  await startPanelEventBus();
+  if (!busUnsub) {
+    busUnsub = onPanelBusEvent(applyBusEvent);
+  }
   await refreshBridges();
   scheduleRefresh();
 }

@@ -352,7 +352,7 @@ export async function destroySessionsForUser(userId: string): Promise<void> {
 }
 
 /**
- * Prefer Redis when `SESSION_STORE=redis` and `REDIS_URL` + `ioredis` are available;
+ * Prefer Redis when `SESSION_STORE=redis` and shared Redis client is available;
  * otherwise FileSessionStore under `data/sessions` (NFS-shareable for multi-API).
  */
 export async function createSessionStore(
@@ -360,30 +360,15 @@ export async function createSessionStore(
 ): Promise<PanelSessionStore> {
   const mode = (process.env.SESSION_STORE || "file").trim().toLowerCase();
   if (mode === "redis") {
-    const url = process.env.REDIS_URL?.trim();
-    if (!url) {
+    const { getRedis } = await import("./redis.js");
+    const redis = await getRedis();
+    if (!redis) {
       console.warn(
-        "[guartrix] SESSION_STORE=redis but REDIS_URL is empty — using file sessions",
+        "[guartrix] SESSION_STORE=redis but Redis unavailable — using file sessions",
       );
     } else {
-      try {
-        const { default: Redis } = await import("ioredis");
-        const redis = new Redis(url, {
-          maxRetriesPerRequest: 2,
-          enableReadyCheck: true,
-          lazyConnect: false,
-        });
-        redis.on("error", (err: Error) => {
-          console.warn(`[guartrix] Redis session store error: ${err.message}`);
-        });
-        console.info("[guartrix] Session store: redis");
-        return new RedisSessionStore(redis);
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        console.warn(
-          `[guartrix] SESSION_STORE=redis but ioredis unavailable (${msg}) — using file sessions. Install with: npm i ioredis -w @msm/api`,
-        );
-      }
+      console.info("[guartrix] Session store: redis");
+      return new RedisSessionStore(redis);
     }
   }
 

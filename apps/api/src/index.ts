@@ -108,7 +108,7 @@ async function main() {
   const sessionStore = await createSessionStore(sessionsDir);
   const { setActiveSessionStore } = await import("./session-store.js");
   setActiveSessionStore(sessionStore);
-  setActiveRateLimitStore(createRateLimitStore(config.dataDir));
+  setActiveRateLimitStore(await createRateLimitStore(config.dataDir));
   await ensureBootstrapAdmin();
 
   // multi-node: restore all node tokens, then refresh/ensure the local daemon token.
@@ -413,6 +413,10 @@ async function main() {
   const schedulerTimer = setInterval(() => {
     void (async () => {
       try {
+        const { acquireSchedulerLock } = await import("./redis.js");
+        const isLeader = await acquireSchedulerLock();
+        if (!isLeader) return;
+
         await sessionStore.purgeExpired?.();
         if (Date.now() - lastActivityPrune > 60 * 60_000) {
           lastActivityPrune = Date.now();
@@ -454,6 +458,12 @@ async function main() {
     } catch {
       // ignore persist errors on shutdown
     }
+    try {
+      const { closeRedis } = await import("./redis.js");
+      await closeRedis();
+    } catch {
+      // ignore
+    }
     await botManager.stopAll();
     await app.close();
     await prisma.$disconnect();
@@ -474,9 +484,11 @@ async function main() {
   startDiskWatch();
   startDiscordStatusWorker();
   void startDaemonEventBridge();
+  const { startPanelEventBus } = await import("./redis.js");
+  await startPanelEventBus();
   const { hydrateTransferJobsFromDisk } = await import("./transfer.js");
   await hydrateTransferJobsFromDisk();
-  logger.info("Hydrated transfer job state from disk");
+  logger.info("Hydrated transfer job state from disk/redis");
 
   const { startLicenseWatcher, validateLicense, assertLicensePanelQuota } =
     await import("./license.js");

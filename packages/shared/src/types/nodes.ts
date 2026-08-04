@@ -189,6 +189,17 @@ export interface AdminStatusResponse {
     };
     /** Product version vs license-server channel (when reachable). */
     version?: PanelVersionStatus;
+    /** Optional Redis (multi-API HA). */
+    redis?: {
+      configured: boolean;
+      enabled: boolean;
+      connected: boolean;
+      urlMasked: string | null;
+      latencyMs: number | null;
+      error: string | null;
+      sessionStore: string;
+      rateLimitStore: string;
+    };
   };
   /** @deprecated use panel.api — kept for older clients */
   api: {

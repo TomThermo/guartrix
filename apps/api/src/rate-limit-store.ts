@@ -11,8 +11,12 @@ interface BucketState {
 }
 
 export interface RateLimitStore {
-  hit(key: string, windowMs: number, max: number): RateLimitHitResult;
-  clear(key: string): void;
+  hit(
+    key: string,
+    windowMs: number,
+    max: number,
+  ): RateLimitHitResult | Promise<RateLimitHitResult>;
+  clear(key: string): void | Promise<void>;
 }
 
 function safeKey(key: string): string {
@@ -183,19 +187,90 @@ export function ensureRateLimitDir(dir: string): void {
   }
 }
 
-let activeStore: RateLimitStore | null = null;
+/**
+ * Sliding-window rate limits in Redis (shared across API replicas).
+ * Uses a sorted set of hit timestamps per key.
+ */
+export class RedisRateLimitStore implements RateLimitStore {
+  constructor(
+    private redis: {
+      zremrangebyscore(
+        key: string,
+        min: number | string,
+        max: number | string,
+      ): Promise<number>;
+      zcard(key: string): Promise<number>;
+      zadd(key: string, ...args: unknown[]): Promise<number>;
+      pexpire(key: string, ms: number): Promise<number>;
+      del(...keys: string[]): Promise<number>;
+    },
+  ) {}
 
-export function rateLimitStoreMode(): "memory" | "file" {
-  const raw = (process.env.RATE_LIMIT_STORE ?? "file").trim().toLowerCase();
-  return raw === "memory" ? "memory" : "file";
+  async hit(
+    key: string,
+    windowMs: number,
+    max: number,
+  ): Promise<RateLimitHitResult> {
+    const { rateLimitRedisKey } = await import("./redis.js");
+    const rk = rateLimitRedisKey(key);
+    const now = Date.now();
+    const member = `${now}:${Math.random().toString(16).slice(2)}`;
+    try {
+      await this.redis.zremrangebyscore(rk, 0, now - windowMs);
+      const count = await this.redis.zcard(rk);
+      if (count >= max) {
+        await this.redis.pexpire(rk, windowMs);
+        return { limited: true, remaining: 0 };
+      }
+      await this.redis.zadd(rk, now, member);
+      await this.redis.pexpire(rk, windowMs);
+      return {
+        limited: false,
+        remaining: Math.max(0, max - count - 1),
+      };
+    } catch {
+      // Fail open on Redis blip so auth is not locked out.
+      return { limited: false, remaining: max };
+    }
+  }
+
+  async clear(key: string): Promise<void> {
+    const { rateLimitRedisKey } = await import("./redis.js");
+    await this.redis.del(rateLimitRedisKey(key)).catch(() => undefined);
+  }
 }
 
-export function createRateLimitStore(dataDir = config.dataDir): RateLimitStore {
-  if (rateLimitStoreMode() === "memory") {
+let activeStore: RateLimitStore | null = null;
+
+export function rateLimitStoreMode(): "memory" | "file" | "redis" {
+  const raw = (process.env.RATE_LIMIT_STORE ?? "file").trim().toLowerCase();
+  if (raw === "memory") return "memory";
+  if (raw === "redis") return "redis";
+  return "file";
+}
+
+export async function createRateLimitStore(
+  dataDir = config.dataDir,
+): Promise<RateLimitStore> {
+  const mode = rateLimitStoreMode();
+  if (mode === "redis") {
+    const { getRedis } = await import("./redis.js");
+    const redis = await getRedis();
+    if (redis) {
+      console.info("[guartrix] Rate limit store: redis");
+      return new RedisRateLimitStore(redis);
+    }
+    console.warn(
+      "[guartrix] RATE_LIMIT_STORE=redis but Redis unavailable — using file",
+    );
+  }
+  if (mode === "memory") {
+    console.info("[guartrix] Rate limit store: memory");
     return new MemoryRateLimitStore();
   }
   const dir = path.join(dataDir, "rate-limits");
   ensureRateLimitDir(dir);
+  console.info("[guartrix] Rate limit store: file");
   return new FileRateLimitStore(dir);
 }
 
@@ -205,7 +280,10 @@ export function setActiveRateLimitStore(store: RateLimitStore): void {
 
 export function getRateLimitStore(): RateLimitStore {
   if (!activeStore) {
-    activeStore = createRateLimitStore();
+    // Boot path always calls createRateLimitStore(); this is a safety fallback.
+    const dir = path.join(config.dataDir, "rate-limits");
+    ensureRateLimitDir(dir);
+    activeStore = new FileRateLimitStore(dir);
   }
   return activeStore;
 }

@@ -56,6 +56,9 @@ export function AdminSettingsPage() {
   const [activityWebhookUrl, setActivityWebhookUrl] = useState("");
   const [alertEmail, setAlertEmail] = useState("");
   const [activityAlertMute, setActivityAlertMute] = useState("");
+  const [redisInfo, setRedisInfo] = useState<PanelSettings["redis"] | null>(
+    null,
+  );
 
   const applyView = useCallback((s: PanelSettings) => {
     setPublicHost(s.publicHost);
@@ -79,10 +82,11 @@ export function AdminSettingsPage() {
     setSmtpConfigured(s.smtpConfigured);
     setHttpsEnabled(s.httpsEnabled);
     setSessionSecure(s.sessionSecure);
-    setTwoFactorRoles(s.twoFactorRequiredRoles);
+    setTwoFactorRoles(s.twoFactorRequiredRoles ?? []);
     setActivityWebhookUrl(s.activityWebhookUrl);
     setAlertEmail(s.alertEmail);
-    setActivityAlertMute(s.activityAlertMute.join(", "));
+    setActivityAlertMute((s.activityAlertMute ?? []).join(", "));
+    setRedisInfo(s.redis ?? null);
   }, []);
 
   const refresh = useCallback(async () => {
@@ -170,6 +174,34 @@ export function AdminSettingsPage() {
       setError(
         err instanceof Error ? err.message : t("adminSettings.testMailFailed"),
       );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onTestRedis() {
+    setBusy(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const res = await api.testPanelRedis();
+      setRedisInfo({
+        configured: res.configured,
+        enabled: res.enabled,
+        connected: res.connected,
+        urlMasked: res.urlMasked,
+        latencyMs: res.latencyMs,
+        error: res.error,
+        sessionStore: res.sessionStore,
+        rateLimitStore: res.rateLimitStore,
+      });
+      setNotice(
+        res.connected
+          ? `Redis OK${res.latencyMs != null ? ` (${res.latencyMs} ms)` : ""}`
+          : "Redis ping failed",
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Redis test failed");
     } finally {
       setBusy(false);
     }
@@ -480,6 +512,54 @@ export function AdminSettingsPage() {
                       checked={sessionSecure}
                       onChange={(e) => setSessionSecure(e.target.checked)}
                     />
+                  </Col>
+                  <Col xs={12}>
+                    <div className="border rounded p-3 bg-body-tertiary">
+                      <div className="fw-semibold mb-1">Redis (multi-API HA)</div>
+                      <p className="small text-secondary mb-2">
+                        Configure via installer or <code>.env</code> (
+                        <code>REDIS_URL</code>, <code>SESSION_STORE</code>,{" "}
+                        <code>RATE_LIMIT_STORE</code>). Restart required after
+                        env changes.
+                      </p>
+                      {redisInfo ? (
+                        <dl className="row small mb-2">
+                          <dt className="col-sm-3 text-secondary">Status</dt>
+                          <dd className="col-sm-9">
+                            {!redisInfo.configured
+                              ? "Not configured"
+                              : redisInfo.connected
+                                ? "Connected"
+                                : redisInfo.error || "Disconnected"}
+                          </dd>
+                          <dt className="col-sm-3 text-secondary">URL</dt>
+                          <dd className="col-sm-9 font-monospace text-break">
+                            {redisInfo.urlMasked ?? "—"}
+                          </dd>
+                          <dt className="col-sm-3 text-secondary">Sessions</dt>
+                          <dd className="col-sm-9">{redisInfo.sessionStore}</dd>
+                          <dt className="col-sm-3 text-secondary">Rate limits</dt>
+                          <dd className="col-sm-9">{redisInfo.rateLimitStore}</dd>
+                          <dt className="col-sm-3 text-secondary">Latency</dt>
+                          <dd className="col-sm-9">
+                            {redisInfo.latencyMs != null
+                              ? `${redisInfo.latencyMs} ms`
+                              : "—"}
+                          </dd>
+                        </dl>
+                      ) : (
+                        <p className="small text-secondary">Loading…</p>
+                      )}
+                      <Button
+                        type="button"
+                        variant="outline-secondary"
+                        size="sm"
+                        disabled={busy}
+                        onClick={() => void onTestRedis()}
+                      >
+                        Test Redis connection
+                      </Button>
+                    </div>
                   </Col>
                   <Col xs={12}>
                     <Form.Label className="fw-semibold">

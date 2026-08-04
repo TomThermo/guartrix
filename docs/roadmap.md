@@ -14,11 +14,11 @@ Last updated: 2026-08-03
 - Disk quota + CPU limits, allocations, activity log, 2FA, Client/Application API
 - Node transfer, schedule chains + file archives, Mollie billing
 - License enforcement (free tier + paid caps), hosting tools, PWA shell
+- Redis multi-API HA (sessions, rate limits, transfers, scheduler lock, event bus; install + Admin status)
 
 ### Still optional / later (P2+)
 
 - Eggs / nests (only if multi-game)
-- Redis / multi-API HA (see [scaling.md](wiki/scaling.md))
 - Schedules in Prisma, i18n, OpenAPI codegen
 
 ### Shipped recently (improvement backlog)

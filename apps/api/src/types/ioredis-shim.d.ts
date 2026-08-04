@@ -13,12 +13,30 @@ declare module "ioredis" {
 
   class Redis extends EventEmitter {
     constructor(url: string, options?: RedisOptions);
+    status: string;
     get(key: string): Promise<string | null>;
     set(key: string, value: string, ...args: unknown[]): Promise<unknown>;
     del(...keys: string[]): Promise<number>;
-    scanStream(opts: { match: string; count: number }): NodeJS.ReadableStream;
+    exists(...keys: string[]): Promise<number>;
+    expire(key: string, seconds: number): Promise<number>;
+    pexpire(key: string, ms: number): Promise<number>;
+    ping(): Promise<string>;
     quit(): Promise<string>;
-    on(event: "error", listener: (err: Error) => void): this;
+    disconnect(): void;
+    duplicate(): Redis;
+    publish(channel: string, message: string): Promise<number>;
+    subscribe(...channels: string[]): Promise<unknown>;
+    unsubscribe(...channels: string[]): Promise<unknown>;
+    zadd(key: string, ...args: unknown[]): Promise<number>;
+    zremrangebyscore(
+      key: string,
+      min: number | string,
+      max: number | string,
+    ): Promise<number>;
+    zcard(key: string): Promise<number>;
+    zrange(key: string, start: number, stop: number): Promise<string[]>;
+    scanStream(opts: { match: string; count: number }): NodeJS.ReadableStream;
+    on(event: string, listener: (...args: unknown[]) => void): this;
   }
 
   export default Redis;
