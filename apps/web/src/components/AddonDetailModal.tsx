@@ -1,9 +1,18 @@
-import { useEffect, useState, type ReactNode } from "react";
-import type { AddonProjectDetails } from "@msm/shared";
-import { Badge, Button, Carousel, Modal, Spinner, Stack } from "react-bootstrap";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import type { AddonProjectDetails, AddonVersionInfo } from "@msm/shared";
+import {
+  Badge,
+  Button,
+  Carousel,
+  ListGroup,
+  Modal,
+  Nav,
+  Spinner,
+  Stack,
+} from "react-bootstrap";
 import { api } from "../api";
 import { useI18n } from "../i18n/react";
-import { formatCount, formatWhen } from "../utils";
+import { formatBytes, formatCount, formatWhen } from "../utils";
 
 interface Props {
   serverId: string;
@@ -12,10 +21,20 @@ interface Props {
   installing: boolean;
   canUpdate?: boolean;
   onClose: () => void;
+  /** Opens the version picker (footer / choose version). */
   onInstall: (projectId: string, title: string, iconUrl?: string | null) => void;
+  /** Install a specific build from the Versions tab. */
+  onInstallVersion?: (
+    projectId: string,
+    versionId: string,
+    title: string,
+    iconUrl?: string | null,
+  ) => void;
   onUninstall?: (projectId: string) => void;
   onError: (message: string | null) => void;
 }
+
+type DetailTab = "description" | "gallery" | "changelog" | "versions";
 
 /** Lightweight markdown-ish renderer (no extra dependency). */
 function safeHttpUrl(raw: string | undefined): string | null {
@@ -135,6 +154,14 @@ function SimpleMarkdown({ text }: { text: string }) {
   );
 }
 
+function channelBadge(channel: string) {
+  const c = channel.toLowerCase();
+  if (c === "release") return "success";
+  if (c === "beta") return "warning";
+  if (c === "alpha") return "danger";
+  return "secondary";
+}
+
 export function AddonDetailModal({
   serverId,
   projectId,
@@ -143,6 +170,7 @@ export function AddonDetailModal({
   canUpdate = true,
   onClose,
   onInstall,
+  onInstallVersion,
   onUninstall,
   onError,
 }: Props) {
@@ -150,12 +178,19 @@ export function AddonDetailModal({
   const [project, setProject] = useState<AddonProjectDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [galleryIndex, setGalleryIndex] = useState(0);
+  const [tab, setTab] = useState<DetailTab>("description");
+  const [versions, setVersions] = useState<AddonVersionInfo[]>([]);
+  const [versionsLoading, setVersionsLoading] = useState(false);
+  const [versionsLoaded, setVersionsLoaded] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setProject(null);
     setGalleryIndex(0);
+    setTab("description");
+    setVersions([]);
+    setVersionsLoaded(false);
     onError(null);
     void api
       .getAddonProject(serverId, projectId)
@@ -176,6 +211,70 @@ export function AddonDetailModal({
     };
   }, [serverId, projectId, onClose, onError, t]);
 
+  useEffect(() => {
+    if (tab !== "changelog" && tab !== "versions") return;
+    if (versionsLoaded || versionsLoading) return;
+    let cancelled = false;
+    setVersionsLoading(true);
+    void api
+      .listAddonVersions(serverId, projectId)
+      .then((data) => {
+        if (!cancelled) {
+          setVersions(data.versions);
+          setVersionsLoaded(true);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          onError(
+            err instanceof Error ? err.message : t("addons.loadingVersions"),
+          );
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setVersionsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    tab,
+    versionsLoaded,
+    versionsLoading,
+    serverId,
+    projectId,
+    onError,
+    t,
+  ]);
+
+  const tabs = useMemo(() => {
+    const items: { id: DetailTab; label: string; show: boolean }[] = [
+      { id: "description", label: t("addons.tabDescription"), show: true },
+      {
+        id: "gallery",
+        label: t("addons.tabGallery"),
+        show: Boolean(project?.gallery.length),
+      },
+      { id: "changelog", label: t("addons.tabChangelog"), show: true },
+      { id: "versions", label: t("addons.tabVersions"), show: true },
+    ];
+    return items.filter((i) => i.show);
+  }, [project, t]);
+
+  function installVersion(versionId: string) {
+    if (!project || !canUpdate) return;
+    if (onInstallVersion) {
+      onInstallVersion(
+        project.projectId,
+        versionId,
+        project.title,
+        project.iconUrl,
+      );
+    } else {
+      onInstall(project.projectId, project.title, project.iconUrl);
+    }
+  }
+
   return (
     <Modal show onHide={onClose} size="xl" centered scrollable fullscreen="sm-down">
       <Modal.Header closeButton>
@@ -193,7 +292,9 @@ export function AddonDetailModal({
               <i className="fa-solid fa-puzzle-piece text-secondary" />
             </span>
           )}
-          <span className="text-truncate">{project?.title ?? `${t("common.loading")}…`}</span>
+          <span className="text-truncate">
+            {project?.title ?? `${t("common.loading")}…`}
+          </span>
         </Modal.Title>
       </Modal.Header>
 
@@ -206,7 +307,7 @@ export function AddonDetailModal({
 
         {!loading && project && (
           <>
-            <p className="text-secondary">{project.description}</p>
+            <p className="text-secondary mb-2">{project.description}</p>
 
             <div className="d-flex flex-wrap gap-2 mb-3 align-items-center">
               <Badge bg="secondary">
@@ -217,9 +318,19 @@ export function AddonDetailModal({
                 <i className="fa-solid fa-heart me-1" />
                 {formatCount(project.follows)}
               </Badge>
-              <Badge bg="secondary">{t("addons.clientSide", { side: project.clientSide })}</Badge>
-              <Badge bg="secondary">{t("addons.serverSide", { side: project.serverSide })}</Badge>
-              {project.license && <Badge bg="secondary">License: {project.license}</Badge>}
+              {project.projectType !== "modpack" && (
+                <>
+                  <Badge bg="secondary">
+                    {t("addons.clientSide", { side: project.clientSide })}
+                  </Badge>
+                  <Badge bg="secondary">
+                    {t("addons.serverSide", { side: project.serverSide })}
+                  </Badge>
+                </>
+              )}
+              {project.license && (
+                <Badge bg="secondary">License: {project.license}</Badge>
+              )}
             </div>
 
             {project.authors.length > 0 && (
@@ -243,84 +354,205 @@ export function AddonDetailModal({
               </Stack>
             )}
 
-            {project.gallery.length > 0 && (
-              <div className="addon-gallery mb-4">
-                <Carousel
-                  activeIndex={galleryIndex}
-                  onSelect={(i) => setGalleryIndex(i)}
-                  interval={null}
-                >
-                  {project.gallery.map((img) => (
-                    <Carousel.Item key={img.url}>
-                      <div className="addon-gallery-slide">
-                        <img src={img.url} alt={img.title || project.title} />
-                      </div>
-                      {(img.title || img.description) && (
-                        <Carousel.Caption className="addon-gallery-caption">
-                          {img.title && <h3 className="h6 mb-1">{img.title}</h3>}
-                          {img.description && <p className="small mb-0">{img.description}</p>}
-                        </Carousel.Caption>
-                      )}
-                    </Carousel.Item>
-                  ))}
-                </Carousel>
+            <Nav
+              variant="pills"
+              className="addon-detail-tabs flex-nowrap overflow-auto mb-3"
+              activeKey={tab}
+              onSelect={(k) => k && setTab(k as DetailTab)}
+            >
+              {tabs.map((item) => (
+                <Nav.Item key={item.id}>
+                  <Nav.Link eventKey={item.id}>{item.label}</Nav.Link>
+                </Nav.Item>
+              ))}
+            </Nav>
+
+            {tab === "description" && (
+              <>
+                <h3 className="h6">{t("addons.about")}</h3>
+                <SimpleMarkdown text={project.body} />
+                <Stack direction="horizontal" gap={2} className="flex-wrap mt-3">
+                  <a
+                    className="btn btn-sm btn-outline-secondary"
+                    href={project.modrinthUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <i className="fa-solid fa-arrow-up-right-from-square me-1" />
+                    Modrinth
+                  </a>
+                  {project.sourceUrl && (
+                    <a
+                      className="btn btn-sm btn-outline-secondary"
+                      href={project.sourceUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {t("addons.source")}
+                    </a>
+                  )}
+                  {project.issuesUrl && (
+                    <a
+                      className="btn btn-sm btn-outline-secondary"
+                      href={project.issuesUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {t("addons.issues")}
+                    </a>
+                  )}
+                  {project.wikiUrl && (
+                    <a
+                      className="btn btn-sm btn-outline-secondary"
+                      href={project.wikiUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {t("addons.wiki")}
+                    </a>
+                  )}
+                  {project.discordUrl && (
+                    <a
+                      className="btn btn-sm btn-outline-secondary"
+                      href={project.discordUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Discord
+                    </a>
+                  )}
+                </Stack>
+              </>
+            )}
+
+            {tab === "gallery" && (
+              <div className="addon-gallery">
+                {project.gallery.length === 0 ? (
+                  <div className="text-secondary small">{t("addons.noGallery")}</div>
+                ) : (
+                  <Carousel
+                    activeIndex={galleryIndex}
+                    onSelect={(i) => setGalleryIndex(i)}
+                    interval={null}
+                  >
+                    {project.gallery.map((img) => (
+                      <Carousel.Item key={img.url}>
+                        <div className="addon-gallery-slide">
+                          <img src={img.url} alt={img.title || project.title} />
+                        </div>
+                        {(img.title || img.description) && (
+                          <Carousel.Caption className="addon-gallery-caption">
+                            {img.title && <h3 className="h6 mb-1">{img.title}</h3>}
+                            {img.description && (
+                              <p className="small mb-0">{img.description}</p>
+                            )}
+                          </Carousel.Caption>
+                        )}
+                      </Carousel.Item>
+                    ))}
+                  </Carousel>
+                )}
               </div>
             )}
 
-            <h3 className="h6">{t("addons.about")}</h3>
-            <SimpleMarkdown text={project.body} />
+            {tab === "changelog" && (
+              <>
+                {versionsLoading && (
+                  <div className="text-center py-4 text-secondary">
+                    <Spinner size="sm" className="me-2" />
+                    {t("addons.loadingVersions")}
+                  </div>
+                )}
+                {!versionsLoading && versions.length === 0 && (
+                  <div className="text-secondary small">{t("addons.noChangelog")}</div>
+                )}
+                {!versionsLoading &&
+                  versions.map((v) => (
+                    <div key={v.versionId} className="addon-changelog-entry mb-4">
+                      <div className="d-flex flex-wrap align-items-center gap-2 mb-2">
+                        <span className="fw-semibold">{v.versionNumber}</span>
+                        <Badge bg={channelBadge(v.releaseChannel)}>
+                          {v.releaseChannel}
+                        </Badge>
+                        {v.datePublished && (
+                          <span className="small text-secondary">
+                            {formatWhen(v.datePublished)}
+                          </span>
+                        )}
+                      </div>
+                      {v.changelog?.trim() ? (
+                        <SimpleMarkdown text={v.changelog} />
+                      ) : (
+                        <div className="small text-secondary">
+                          {t("addons.noChangelogEntry")}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+              </>
+            )}
 
-            <Stack direction="horizontal" gap={2} className="flex-wrap mt-3">
-              <a
-                className="btn btn-sm btn-outline-secondary"
-                href={project.modrinthUrl}
-                target="_blank"
-                rel="noreferrer"
-              >
-                <i className="fa-solid fa-arrow-up-right-from-square me-1" />
-                Modrinth
-              </a>
-              {project.sourceUrl && (
-                <a
-                  className="btn btn-sm btn-outline-secondary"
-                  href={project.sourceUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {t("addons.source")}
-                </a>
-              )}
-              {project.issuesUrl && (
-                <a
-                  className="btn btn-sm btn-outline-secondary"
-                  href={project.issuesUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {t("addons.issues")}
-                </a>
-              )}
-              {project.wikiUrl && (
-                <a
-                  className="btn btn-sm btn-outline-secondary"
-                  href={project.wikiUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {t("addons.wiki")}
-                </a>
-              )}
-              {project.discordUrl && (
-                <a
-                  className="btn btn-sm btn-outline-secondary"
-                  href={project.discordUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Discord
-                </a>
-              )}
-            </Stack>
+            {tab === "versions" && (
+              <>
+                {versionsLoading && (
+                  <div className="text-center py-4 text-secondary">
+                    <Spinner size="sm" className="me-2" />
+                    {t("addons.loadingVersions")}
+                  </div>
+                )}
+                {!versionsLoading && versions.length === 0 && (
+                  <div className="text-secondary small">
+                    {t("addons.noBuildsFor", { version: "" })}
+                  </div>
+                )}
+                {!versionsLoading && versions.length > 0 && (
+                  <ListGroup variant="flush" className="border rounded">
+                    {versions.map((v, index) => (
+                      <ListGroup.Item
+                        key={v.versionId}
+                        className="d-flex justify-content-between align-items-start gap-3 flex-wrap"
+                      >
+                        <div className="min-w-0">
+                          <div className="fw-semibold d-flex flex-wrap align-items-center gap-1">
+                            <span>{v.versionNumber}</span>
+                            {index === 0 && (
+                              <Badge bg="primary">{t("addons.latest")}</Badge>
+                            )}
+                            <Badge bg={channelBadge(v.releaseChannel)}>
+                              {v.releaseChannel}
+                            </Badge>
+                          </div>
+                          <div className="small text-secondary">
+                            {v.gameVersions.slice(0, 6).join(", ")}
+                            {v.gameVersions.length > 6
+                              ? ` +${v.gameVersions.length - 6}`
+                              : ""}
+                            {v.fileSize > 0 ? ` · ${formatBytes(v.fileSize)}` : ""}
+                            {v.datePublished
+                              ? ` · ${formatWhen(v.datePublished)}`
+                              : ""}
+                          </div>
+                        </div>
+                        {canUpdate && (
+                          <Button
+                            size="sm"
+                            variant="primary"
+                            disabled={installing}
+                            onClick={() => installVersion(v.versionId)}
+                          >
+                            {installing ? (
+                              <Spinner size="sm" />
+                            ) : (
+                              t("addons.install")
+                            )}
+                          </Button>
+                        )}
+                      </ListGroup.Item>
+                    ))}
+                  </ListGroup>
+                )}
+              </>
+            )}
           </>
         )}
       </Modal.Body>
@@ -336,7 +568,8 @@ export function AddonDetailModal({
                 variant="primary"
                 disabled={installing || !project}
                 onClick={() =>
-                  project && onInstall(project.projectId, project.title, project.iconUrl)
+                  project &&
+                  onInstall(project.projectId, project.title, project.iconUrl)
                 }
               >
                 {t("addons.changeVersion")}
@@ -354,7 +587,8 @@ export function AddonDetailModal({
               variant="primary"
               disabled={installing || !project}
               onClick={() =>
-                project && onInstall(project.projectId, project.title, project.iconUrl)
+                project &&
+                onInstall(project.projectId, project.title, project.iconUrl)
               }
             >
               {installing ? t("addons.working") : t("addons.chooseVersion")}

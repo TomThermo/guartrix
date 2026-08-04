@@ -223,6 +223,7 @@ export interface AddonGalleryImage {
 export interface AddonProjectDetails {
   projectId: string;
   slug: string;
+  projectType: string;
   title: string;
   description: string;
   body: string;
@@ -271,6 +272,9 @@ export interface AddonVersionInfo {
   fileUrl: string;
   fileSize: number;
   releaseChannel: string;
+  changelog?: string | null;
+  datePublished?: string | null;
+  dependencies?: AddonDependency[];
 }
 
 export interface AddonDependency {

@@ -808,6 +808,9 @@ export function AddonPanel({
               openInstallPicker({ projectId: id, title, iconUrl, mode: "install" });
             }
           }}
+          onInstallVersion={(id, versionId) => {
+            void install(id, versionId).then(() => setDetailProjectId(null));
+          }}
           onUninstall={(id) => {
             const addon = installed.find((a) => a.projectId === id);
             void uninstall(id, addon?.title ?? id).then(() => setDetailProjectId(null));

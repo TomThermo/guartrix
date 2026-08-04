@@ -532,6 +532,9 @@ export function ModpackPanel({
               iconUrl: iconUrl ?? null,
             });
           }}
+          onInstallVersion={(id, versionId) => {
+            void installModrinth(id, versionId);
+          }}
           onError={onError}
         />
       )}

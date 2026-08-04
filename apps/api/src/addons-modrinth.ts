@@ -1,4 +1,4 @@
-import type { ServerType } from "@msm/shared";
+import type { AddonVersionInfo, ServerType } from "@msm/shared";
 
 /** Modrinth requires a descriptive UA; keep requests from hanging the panel. */
 export const MODRINTH_TIMEOUT_MS = 12_000;
@@ -21,22 +21,7 @@ function isRetryableModrinthStatus(status: number): boolean {
   return status === 429 || status === 500 || status === 502 || status === 503 || status === 504;
 }
 
-export interface AddonVersionInfo {
-  versionId: string;
-  versionNumber: string;
-  name: string;
-  gameVersions: string[];
-  loaders: string[];
-  fileName: string;
-  fileUrl: string;
-  fileSize: number;
-  releaseChannel: string;
-  dependencies: {
-    projectId: string | null;
-    versionId: string | null;
-    dependencyType: string;
-  }[];
-}
+export type { AddonVersionInfo };
 
 export type ModrinthVersion = {
   id: string;
@@ -45,6 +30,8 @@ export type ModrinthVersion = {
   game_versions: string[];
   loaders: string[];
   version_type: string;
+  changelog?: string | null;
+  date_published?: string | null;
   dependencies?: {
     project_id: string | null;
     version_id: string | null;
@@ -71,6 +58,8 @@ export function mapVersion(v: ModrinthVersion): AddonVersionInfo | null {
     fileUrl: file.url,
     fileSize: file.size,
     releaseChannel: v.version_type,
+    changelog: v.changelog ?? null,
+    datePublished: v.date_published ?? null,
     dependencies: (v.dependencies ?? []).map((d) => ({
       projectId: d.project_id,
       versionId: d.version_id,

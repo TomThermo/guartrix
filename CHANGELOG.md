@@ -7,6 +7,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.56] — 2026-08-04
+
+- Addon/modpack detail modal: Modrinth-style tabs (Description / Gallery / Changelog / Versions); install from Versions tab
+
 ## [1.0.55] — 2026-08-04
 
 - Modpacks: Modrinth category chips (adventure, magic, tech, …) + filter, matching Plugin Management

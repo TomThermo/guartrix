@@ -678,6 +678,39 @@
   overflow: auto;
 }
 
+.addon-detail-tabs {
+  gap: 0.25rem;
+  padding: 0.25rem;
+  width: fit-content;
+  max-width: 100%;
+  border-radius: 999px;
+  border: 1px solid var(--bh-border);
+  background: var(--bh-bg-raised);
+}
+
+.addon-detail-tabs .nav-link {
+  border-radius: 999px;
+  white-space: nowrap;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--bh-text);
+  padding: 0.4rem 1rem;
+}
+
+.addon-detail-tabs .nav-link:hover {
+  color: var(--bh-text);
+}
+
+.addon-detail-tabs .nav-link.active {
+  color: #fff;
+  background: var(--bh-accent, var(--bs-primary));
+}
+
+.addon-changelog-entry + .addon-changelog-entry {
+  border-top: 1px solid var(--bh-border);
+  padding-top: 1rem;
+}
+
 .addon-row-clickable {
   cursor: pointer;
 }

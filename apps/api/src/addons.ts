@@ -436,6 +436,7 @@ export async function checkInstalledAddonUpdates(opts: {
 export async function getAddonProjectDetails(projectIdOrSlug: string): Promise<{
   projectId: string;
   slug: string;
+  projectType: string;
   title: string;
   description: string;
   body: string;
@@ -465,6 +466,7 @@ export async function getAddonProjectDetails(projectIdOrSlug: string): Promise<{
   const project = await fetchJson<{
     id: string;
     slug: string;
+    project_type: string;
     title: string;
     description: string;
     body: string;
@@ -518,9 +520,20 @@ export async function getAddonProjectDetails(projectIdOrSlug: string): Promise<{
       ordering: g.ordering ?? 0,
     }));
 
+  const projectType = project.project_type || "mod";
+  const typePath =
+    projectType === "modpack"
+      ? "modpack"
+      : projectType === "plugin"
+        ? "plugin"
+        : projectType === "datapack"
+          ? "datapack"
+          : "mod";
+
   return {
     projectId: project.id,
     slug: project.slug,
+    projectType,
     title: project.title,
     description: project.description,
     body: project.body || project.description || "",
@@ -538,7 +551,7 @@ export async function getAddonProjectDetails(projectIdOrSlug: string): Promise<{
     discordUrl: project.discord_url ?? null,
     publishedAt: project.published ?? null,
     updatedAt: project.updated ?? null,
-    modrinthUrl: `https://modrinth.com/mod/${project.slug}`,
+    modrinthUrl: `https://modrinth.com/${typePath}/${project.slug}`,
     authors,
   };
 }
@@ -838,7 +851,7 @@ export async function installAddon(opts: {
       // keep filtered version
     }
 
-    const requiredDeps = version.dependencies.filter(
+    const requiredDeps = (version.dependencies ?? []).filter(
       (d) => d.dependencyType === "required" && d.projectId,
     );
     for (const dep of requiredDeps) {
