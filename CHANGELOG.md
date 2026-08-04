@@ -7,6 +7,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.66] — 2026-08-04
+
+- Admin License + license console: list every feature chip in green when all are enabled (no “All enabled” summary).
+
 ## [1.0.65] — 2026-08-04
 
 - License validate reports panel usage (nodes / Minecraft servers / RAM); operator license console shows per-key **In use** vs quota.

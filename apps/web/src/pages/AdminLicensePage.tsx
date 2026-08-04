@@ -406,23 +406,20 @@ export function AdminLicensePage() {
 
               <div className="mb-1 small text-secondary">Features</div>
               <div className="d-flex flex-wrap gap-1">
-                {info.features == null ? (
-                  <span className="small text-secondary">All enabled</span>
-                ) : (
-                  FEATURE_GROUPS.map((g) => {
-                    const enabled = info.features!.includes(g.id);
-                    return (
-                      <Badge
-                        key={g.id}
-                        bg={enabled ? "success" : "secondary"}
-                        className={`fw-normal${enabled ? "" : " opacity-50"}`}
-                        title={enabled ? "Enabled" : "Not included"}
-                      >
-                        {g.label}
-                      </Badge>
-                    );
-                  })
-                )}
+                {FEATURE_GROUPS.map((g) => {
+                  const enabled =
+                    info.features == null || info.features.includes(g.id);
+                  return (
+                    <Badge
+                      key={g.id}
+                      bg={enabled ? "success" : "secondary"}
+                      className={`fw-normal${enabled ? "" : " opacity-50"}`}
+                      title={enabled ? "Enabled" : "Not included"}
+                    >
+                      {g.label}
+                    </Badge>
+                  );
+                })}
               </div>
             </section>
 
