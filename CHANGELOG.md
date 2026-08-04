@@ -7,6 +7,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.57] — 2026-08-04
+
+- Fix addon/modpack detail tabs resetting on parent re-render (callback deps)
+- Gallery: thumbnail grid so all images are visible (was carousel-only)
+
 ## [1.0.56] — 2026-08-04
 
 - Addon/modpack detail modal: Modrinth-style tabs (Description / Gallery / Changelog / Versions); install from Versions tab

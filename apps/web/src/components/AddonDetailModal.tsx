@@ -1,12 +1,13 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { AddonProjectDetails, AddonVersionInfo } from "@msm/shared";
 import {
   Badge,
   Button,
-  Carousel,
+  Col,
   ListGroup,
   Modal,
   Nav,
+  Row,
   Spinner,
   Stack,
 } from "react-bootstrap";
@@ -182,6 +183,10 @@ export function AddonDetailModal({
   const [versions, setVersions] = useState<AddonVersionInfo[]>([]);
   const [versionsLoading, setVersionsLoading] = useState(false);
   const [versionsLoaded, setVersionsLoaded] = useState(false);
+  const onErrorRef = useRef(onError);
+  const onCloseRef = useRef(onClose);
+  onErrorRef.current = onError;
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     let cancelled = false;
@@ -191,7 +196,6 @@ export function AddonDetailModal({
     setTab("description");
     setVersions([]);
     setVersionsLoaded(false);
-    onError(null);
     void api
       .getAddonProject(serverId, projectId)
       .then((data) => {
@@ -199,8 +203,10 @@ export function AddonDetailModal({
       })
       .catch((err) => {
         if (!cancelled) {
-          onError(err instanceof Error ? err.message : t("addons.loadDetailsFailed"));
-          onClose();
+          onErrorRef.current(
+            err instanceof Error ? err.message : t("addons.loadDetailsFailed"),
+          );
+          onCloseRef.current();
         }
       })
       .finally(() => {
@@ -209,7 +215,9 @@ export function AddonDetailModal({
     return () => {
       cancelled = true;
     };
-  }, [serverId, projectId, onClose, onError, t]);
+    // Only reload when the project changes — not when parent recreates callbacks.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serverId, projectId]);
 
   useEffect(() => {
     if (tab !== "changelog" && tab !== "versions") return;
@@ -226,7 +234,7 @@ export function AddonDetailModal({
       })
       .catch((err) => {
         if (!cancelled) {
-          onError(
+          onErrorRef.current(
             err instanceof Error ? err.message : t("addons.loadingVersions"),
           );
         }
@@ -237,15 +245,8 @@ export function AddonDetailModal({
     return () => {
       cancelled = true;
     };
-  }, [
-    tab,
-    versionsLoaded,
-    versionsLoading,
-    serverId,
-    projectId,
-    onError,
-    t,
-  ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, versionsLoaded, versionsLoading, serverId, projectId]);
 
   const tabs = useMemo(() => {
     const items: { id: DetailTab; label: string; show: boolean }[] = [
@@ -428,29 +429,54 @@ export function AddonDetailModal({
             {tab === "gallery" && (
               <div className="addon-gallery">
                 {project.gallery.length === 0 ? (
-                  <div className="text-secondary small">{t("addons.noGallery")}</div>
+                  <div className="text-secondary small p-3">{t("addons.noGallery")}</div>
                 ) : (
-                  <Carousel
-                    activeIndex={galleryIndex}
-                    onSelect={(i) => setGalleryIndex(i)}
-                    interval={null}
-                  >
-                    {project.gallery.map((img) => (
-                      <Carousel.Item key={img.url}>
-                        <div className="addon-gallery-slide">
-                          <img src={img.url} alt={img.title || project.title} />
-                        </div>
-                        {(img.title || img.description) && (
-                          <Carousel.Caption className="addon-gallery-caption">
-                            {img.title && <h3 className="h6 mb-1">{img.title}</h3>}
-                            {img.description && (
-                              <p className="small mb-0">{img.description}</p>
-                            )}
-                          </Carousel.Caption>
+                  <>
+                    <div className="addon-gallery-slide">
+                      <img
+                        src={project.gallery[galleryIndex]?.url}
+                        alt={
+                          project.gallery[galleryIndex]?.title || project.title
+                        }
+                      />
+                    </div>
+                    {(project.gallery[galleryIndex]?.title ||
+                      project.gallery[galleryIndex]?.description) && (
+                      <div className="addon-gallery-caption px-3 py-2">
+                        {project.gallery[galleryIndex]?.title && (
+                          <div className="fw-semibold small">
+                            {project.gallery[galleryIndex]?.title}
+                          </div>
                         )}
-                      </Carousel.Item>
-                    ))}
-                  </Carousel>
+                        {project.gallery[galleryIndex]?.description && (
+                          <div className="small text-secondary">
+                            {project.gallery[galleryIndex]?.description}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    <div className="addon-gallery-thumbs p-2">
+                      <Row className="g-2">
+                        {project.gallery.map((img, i) => (
+                          <Col key={img.url} xs={4} sm={3} md={2}>
+                            <button
+                              type="button"
+                              className={`addon-gallery-thumb${
+                                i === galleryIndex ? " is-active" : ""
+                              }`}
+                              onClick={() => setGalleryIndex(i)}
+                              aria-label={img.title || `Image ${i + 1}`}
+                            >
+                              <img src={img.url} alt="" />
+                            </button>
+                          </Col>
+                        ))}
+                      </Row>
+                      <div className="small text-secondary text-center mt-2">
+                        {galleryIndex + 1} / {project.gallery.length}
+                      </div>
+                    </div>
+                  </>
                 )}
               </div>
             )}
