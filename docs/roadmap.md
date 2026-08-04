@@ -1,210 +1,144 @@
-# Guartrix roadmap
+# Guartrix improvement map
+
+Living overview of **what is shipped**, **what is in progress**, and **what remains optional**.
+Formerly called “roadmap”; same file, clearer name.
+
+**Live:** [guartrix.com](https://guartrix.com) · **Wiki:** [docs/wiki/README.md](wiki/README.md) · **History:** [CHANGELOG.md](../CHANGELOG.md)
+
+Last updated: **2026-08-04** · product **v1.0.73**
+
+---
+
+## At a glance
+
+| Area | Status |
+|------|--------|
+| Feature sprints 1–8 (disk/CPU → Mollie) | ✅ Complete |
+| Sprint 9 — polish (product) | ✅ Complete on this host |
+| Customer go-live (webhook/SMTP/Mollie) | Their install — not this download host |
+| P2 — eggs/nests, web Sentry, Biome strict | Optional |
+
+---
 
 ## English summary
 
-What is **already shipped**, and what is **still open**. Order = recommended sprints (Ptero/Wings ideas that fit Guartrix).
-
-**Live:** [guartrix.com](https://guartrix.com) · **Wiki:** [docs/wiki/README.md](wiki/README.md)
-
-Last updated: 2026-08-03
-
-### Done (high level)
+### Shipped (high level)
 
 - Multi-node daemon (Wings-style), SFTP, MySQL, backups, subusers, Modrinth
 - Disk quota + CPU limits, allocations, activity log, 2FA, Client/Application API
 - Node transfer, schedule chains + file archives, Mollie billing
-- License enforcement (free tier + paid caps), hosting tools, PWA shell
-- Redis multi-API HA (sessions, rate limits, transfers, scheduler lock, event bus; install + Admin status)
+- License enforcement (free tier + paid caps), hosting tools, PWA shell + Web Push
+- Redis multi-API HA (sessions, rate limits, transfers, scheduler lock, event bus)
+- i18n EN/NL, schedules in Prisma (`ScheduledTask`), node location labels
+- Admin → Settings UI, license hardening (daemon tickets), modpack/plugin Modrinth UX
+- `startOnBoot` respects user stop (`stoppedByUser` DB flag)
 
-### Still optional / later (P2+)
+### Still open
 
-- Eggs / nests (only if multi-game)
-- Schedules in Prisma, i18n, OpenAPI codegen
-
-### Shipped recently (improvement backlog)
-
-- **Extra host mounts** (shared plugins/worlds via allowlisted Docker binds)
-- Node **location** labels, file-backed rate limits, GDPR export/delete
-- Prometheus `/metrics`, optional Sentry, Docker log rotation, scrypt hash versioning
-- Dev MySQL via `docker-compose.dev.yml`
-- Stats history persist (`data/stats-history/`), light/system theme, `DOCKER_NETWORK_MODE=per_server` foundation
-
-### Next ops actions
-
-Set `ACTIVITY_WEBHOOK_URL` (and optional `ALERT_EMAIL` / `SMTP_*`) for Discord alerts, and `MOLLIE_API_KEY` if checkout should go live. Install the panel DB backup timer (`sudo bash scripts/install-panel-backup-cron.sh`).
+Optional **P2** dev polish only. Webhook, SMTP, and Mollie are **customer setup** after they install from `/download` — not required on the build/download operator host.
 
 ---
 
-## Nederlands (detail)
+## Sprint 9 — polish *(complete on download host)*
 
-Wat er **al af** is, en wat we **nog moeten doen**. Volgorde = aanbevolen sprints (Ptero/Wings-ideeën die bij Guartrix passen).
+Product polish for shipping — no new features. **This repo host** builds and publishes customer zips (`download.guartrix.com`); it is not a live hosting panel that needs Discord webhooks, SMTP, or Mollie.
 
-**Live:** [guartrix.com](https://guartrix.com) · **Wiki:** [docs/wiki/README.md](wiki/README.md)
+### Done here (build / download operator)
 
-Laatst bijgewerkt: 2026-08-03
+| Item | Status |
+|------|--------|
+| Panel DB backup timer | [x] daily ~03:15 UTC |
+| OpenAPI 165/165 + `--strict` | [x] |
+| OpenAPI version sync + stub generator | [x] |
 
----
+### Customer install (their VPS — documented, not this host)
 
-## Klaar
+After `install-panel.sh`, customers configure alerts and billing themselves:
 
-| # | Item | Status |
-|---|------|--------|
-| — | Multi-node daemon (Wings-stijl), SFTP, MySQL, backups, subusers, Modrinth | Done |
-| — | Wings-achtige Docker stats-stream → WS + cached disk | Done |
-| 1 | **Disk-quota + CPU-limit** (`diskMb`, `cpuLimit` / `--cpus`, enforce + UI) | Done |
-| 2 | **Allocations** (primary + extra ports, Docker publish, firewall, Network-tab) | Done |
-| 3 | **Activity log** (audit trail + filters, admin-overzicht, Discord/email alerts) | Done |
-| 4 | **2FA (TOTP)** (setup, recovery codes, role-required, login step) | Done |
-| 5 | **API keys / Client API** (Bearer keys, scopes, rate limit, docs) | Done |
-| 6 | **Node transfer** (stop → sync → rebind ports/DNS → start + progress UI) | Done |
-| 7 | **Schedule chains + file archives** (steps, delays; download / zip / unzip / bulk) | Done |
-| 8 | **Application API + Mollie** (plans, checkout, `gta_` keys, outbound billing webhook) | Done |
+| Item | Where |
+|------|--------|
+| Activity webhook | **Admin → Settings → Alerts** or `ACTIVITY_WEBHOOK_URL` |
+| Alert email + SMTP | **Admin → Settings → Mail** |
+| Mollie checkout | `MOLLIE_API_KEY` in `.env` (if they use billing) |
+| Panel DB backup timer | `sudo bash scripts/install-panel-backup-cron.sh` on **their** server |
 
----
+See [panel-settings.md](wiki/panel-settings.md) · [install-panel.md](wiki/install-panel.md).
 
-## Open — sprints (aanbevolen volgorde)
+### Dev polish (optional)
 
-*(Geen vaste volgende sprint — zie P2 / polish-secties hieronder.)*
-
----
-
-## Application API / Mollie — afronden / polish
-
-Sprint 8 werkt end-to-end ([application-api.md](wiki/application-api.md)); polish:
-
-- [x] Mollie recurring / subscriptions (customer + first payment + `BillingSubscription`)
-- [x] Auto-create server after paid (plan defaults + `autoCreateServer`)
-- [x] Screenshot Billing-pagina’s in panel-guide (`28` / `29` via capture script)
+| Item | Target | Status |
+|------|--------|--------|
+| OpenAPI full coverage | `npm run check:openapi --strict` | [x] 165/165 (100%) |
+| OpenAPI `info.version` sync | Match root `package.json` / `VERSION` on each release | [x] 1.0.72 |
+| Regenerate stubs after new routes | `node scripts/generate-openapi-stubs.mjs` | [x] script added |
+| Web Sentry | `VITE_SENTRY_DSN` at build time | [x] wired in apps/web |
+| Biome `noExplicitAny` | warn → error | [x] |
+| FA solid CSS subset | `npm run fa:subset` + vite build plugin | [x] |
+| OnlinePlayers WS | `/ws/servers/:id/players` + provider | [x] |
+| Screenshots after UI changes | `scripts/capture-wiki-screenshots.mjs` | [ ] when panel up |
 
 ---
 
-## Schedule chains + file archives — afronden / polish
+## Feature sprints 1–8 ✅
 
-Sprint 7 werkt end-to-end ([schedules.md](wiki/schedules.md)); polish:
+All planned Ptero/Wings-style sprints are **done**. Detail per area:
 
-- [x] Screenshot Schedules chain-builder + File Manager zip/download
-- [x] Weekday schedules (`mode: "weekly"` + `weekdays`)
-- [x] Zip-on-the-fly download (`/files/download-zip`, no temp archive on the node)
+| # | Sprint | Doc |
+|---|--------|-----|
+| 1 | Disk-quota + CPU-limit | — |
+| 2 | Allocations (ports, Network tab) | — |
+| 3 | Activity log | [activity-log.md](wiki/activity-log.md) |
+| 4 | 2FA (TOTP) + SFTP app-passwords | [accounts-and-quotas.md](wiki/accounts-and-quotas.md) |
+| 5 | Client API / API keys | [client-api.md](wiki/client-api.md) |
+| 6 | Node transfer | [node-transfer.md](wiki/node-transfer.md) |
+| 7 | Schedule chains + file archives | [schedules.md](wiki/schedules.md) |
+| 8 | Application API + Mollie | [application-api.md](wiki/application-api.md) |
 
----
-
-## Node transfer — afronden / polish
-
-Sprint 6 werkt end-to-end ([node-transfer.md](wiki/node-transfer.md)); polish:
-
-- [x] Automatische MySQL dump/restore mee verhuizen
-- [x] Screenshot Move-modal in panel-guide
-- [x] Chunked progress % (step-weighted + payload size detail in Move UI)
-
----
-
-## API keys — afronden / polish
-
-Sprint 5 werkt end-to-end ([client-api.md](wiki/client-api.md)); polish:
-
-- [x] Custom permission picker (presets + per-permission checkboxes)
-- [x] Screenshot API-keys sectie in panel-guide
-- [x] OpenAPI sketch ([openapi.yaml](openapi.yaml))
+Polish items for sprints 2–8 (screenshots, Prisma schedules, OpenAPI sketch, MySQL on transfer, …) are all checked off.
 
 ---
 
-## 2FA — afronden / polish
-
-Sprint 4 werkt end-to-end; polish:
-
-- [x] Inline QR-code bij setup (client-side, secret blijft in de browser)
-- [x] Screenshot Security-pagina + 2FA login-stap in panel-guide
-- [x] SFTP app-passwords (`gtap_…`) naast panel-wachtwoord
-
----
-
-## Activity log — afronden / polish
-
-Sprint 3 werkt end-to-end ([activity-log.md](wiki/activity-log.md)); polish:
-
-- [x] Screenshot **Activity Log**-tab + `/admin/activity` (`scripts/capture-docs-screenshots.mjs`)
-- [x] Activity per **gebruiker** vanuit de Users-pagina
-- [x] CSV/JSON-export van de huidige filterset
-- [x] `backup.download` (en `file.download`) gelogd
-
----
-
-## Allocations — afronden / polish
-
-Sprint 2 werkt end-to-end; polish:
-
-- [x] **Admin UI** voor node port-pool (range create/delete op System)
-- [x] Screenshot **Network**-tab in panel-guide (`scripts/capture-docs-screenshots.mjs`)
-- [x] Duidelijke UI-waarschuwing: extra poorten pas na **restart** in Docker
-- [x] UDP+TCP companion bij primary-assign (`alsoUdp`)
-
----
-
-## Disk / CPU (Sprint 1)
-
-Sprint 1 is compleet (`diskMb`, `cpuLimit`, enforce + UI) — geen open polish.
-
----
-
-## Security / productie (go-live)
-
-Hardening-checklist blijft leidend: [security.md](wiki/security.md).
-
-- [x] Periodieke review: symlink-jail, archive extract, rate limits, CSRF, session secure (gedocumenteerd + geverifieerd)
-- [x] Login rate-limit niet spoofbaar via `X-Forwarded-For` (`TRUSTED_PROXIES`, default localhost)
-- [x] Daemon JWT / roterende tokens (HS256, Wings-stijl; legacy bearer optioneel)
-- [x] Secret-rotatie runbook (SESSION_SECRET, daemon tokens, DB) — in [security.md](wiki/security.md)
-- [x] Alerts bij **panel**-uitval (watchdog → `ACTIVITY_WEBHOOK_URL`)
-
----
-
-## P2 — later / optioneel
+## P2 — later / optional
 
 | Item | Notitie |
 |------|---------|
-| Eggs / nests | Alleen nodig als multi-game; Guartrix = Minecraft-first |
-| ~~Extra mounts~~ | **Shipped** — `extraMounts` + `EXTRA_MOUNTS_ALLOW_PREFIX` |
-| Locations | Multi-region / locatie-labels op nodes |
-| Redis / HA panel | Pas nodig bij meerdere API-replica’s — zie [scaling.md](wiki/scaling.md) |
-
-### Post-roadmap (2026-08-03)
-
-- [x] Extra host mounts (allowlisted Docker binds for shared plugins/worlds)
-- [x] Join card (address/QR) + player moderation history
-- [x] Owner alerts (disk/OOM) + Discord status webhook
-- [x] Velocity/Bungee proxy helpers + subuser invite links
-- [x] BlueMap one-click + recommended plugin stacks + console favorites
-- [x] PWA app-shell (no push)
-
-### Post-roadmap (2026-08-01)
-
-- [x] Hosting tools: reinstall, version picker, change software type
-- [x] World reset / zip import + create-flow seed/presets
-- [x] Paper/Purpur Engine settings tab
-- [x] Modrinth/CurseForge modpacks + Geyser one-click (UDP)
-- [x] Panel license enforcement (validate API + free tier 1 node / 1 server / 10 GB; licensed product caps)
-
-### Post-roadmap (2026-07-28)
-
-- [x] Billing cancel + failed renewal revoke (quota → `DEFAULT_MAX_*`, stop servers)
-- [x] Console WebSocket auto-reconnect
-- [x] Clone modal (geen `prompt()`)
-- [x] Dashboard zoek / status / node / type filters
-- [x] File Manager uploads gestreamd, limiet 2 GiB
-- [x] Netwerk-grafieken + API ring-buffer stats history (~1u)
-- [x] Stats history persist across API restarts (`data/stats-history/`)
-- [x] Light / system theme preference (localStorage)
-- [x] `DOCKER_NETWORK_MODE=per_server` foundation (per-server bridges + shared MySQL attach)
-- [x] Node transfer zonder panel-unpack (één tar.gz stream)
-- [x] Panel DB backup script + install-timer docs; `DAEMON_JWT_TTL` typo gefixt
+| **Eggs / nests** | Deferred — multi-game only; not planned for Minecraft-first download |
+| ~~Extra mounts~~ | Shipped — `extraMounts` + `EXTRA_MOUNTS_ALLOW_PREFIX` |
+| ~~Locations~~ | Shipped — optioneel `location`-label op nodes |
+| ~~Redis / HA panel~~ | Shipped — `REDIS_ENABLED`; zie [scaling.md](wiki/scaling.md) |
+| ~~i18n~~ | Shipped — EN/NL |
+| ~~Schedules in Prisma~~ | Shipped — `ScheduledTask` |
+| OpenAPI coverage | **Done** — 165/165; stub generator `scripts/generate-openapi-stubs.mjs` |
+| Web Sentry | `VITE_SENTRY_DSN` |
 
 ---
 
-## Docs / ops hygiene (doorlopend)
+## Recent shipments (v1.0.44 – v1.0.72)
 
-- [x] Wiki + README bijhouden bij elke feature ([keep-docs-updated](../.cursor/rules/keep-docs-updated.mdc))
-- [x] Screenshots vernieuwen na UI-wijzigingen (capture-script uitgebreid)
-- [x] Roadmap afvinken + rebuild (`npm run build && bash scripts/start.sh`)
+Full release notes: [CHANGELOG.md](../CHANGELOG.md). Highlights:
+
+- **1.0.72** — `stoppedByUser`; startOnBoot skips user-stopped servers
+- **1.0.68** — Redis multi-API HA
+- **1.0.62** — Admin → Settings (General / Mail / Security / Alerts)
+- **1.0.63–65** — License hardening + usage/quota reporting
+- **1.0.45** — PWA Web Push
+- **1.0.44–48** — i18n EN/NL
+- **1.0.52–67** — Route peels, perf (dashboard N+1), modpack UX, CSS split, OpenAPI drift check
+
+Earlier backlog (Jul–Aug): extra mounts, join card, hosting tools, modpacks, license enforcement, stats persist, per-server Docker networks — see CHANGELOG ≤ 1.0.43.
+
+---
+
+## Security / productie
+
+Hardening checklist: [security.md](wiki/security.md). Code-side controls are shipped; webhook/SMTP/Mollie are optional **per customer install**.
+
+---
+
+## Docs hygiene (doorlopend)
+
+- [ ] Wiki + README bij elke feature ([keep-docs-updated](../.cursor/rules/keep-docs-updated.mdc))
+- [x] Improvement map bijgewerkt t/m v1.0.72 (2026-08-04)
 
 ---
 
@@ -216,9 +150,67 @@ Hardening-checklist blijft leidend: [security.md](wiki/security.md).
 
 ---
 
-## Volgende actie
+## Nederlands — detail (sprints 1–8, historisch)
 
-Zet `ACTIVITY_WEBHOOK_URL` (+ optioneel `ALERT_EMAIL` / `SMTP_*`) voor Discord-
-alerts, en `MOLLIE_API_KEY` als je checkout live wilt. Installeer de panel-DB
-backup-timer (`sudo bash scripts/install-panel-backup-cron.sh`). Eggs /
-locations / Redis blijven optioneel.
+Laatst bijgewerkt: 2026-08-04 · **v1.0.72**
+
+Alle sprints hieronder zijn **af**. Geen Sprint 10 gedefinieerd; zie Sprint 9 hierboven.
+
+<details>
+<summary>Sprint polish-checklists (ingeklapt — alles afgevinkt)</summary>
+
+### Application API / Mollie
+
+- [x] Mollie recurring / subscriptions
+- [x] Auto-create server after paid
+- [x] Screenshot Billing-pagina’s in panel-guide
+
+### Schedule chains + file archives
+
+- [x] Screenshot Schedules + File Manager zip/download
+- [x] Weekday schedules (`mode: "weekly"`)
+- [x] Zip-on-the-fly download
+- [x] Schedules in Prisma
+
+### Node transfer
+
+- [x] MySQL dump/restore mee verhuizen
+- [x] Screenshot Move-modal
+- [x] Chunked progress %
+
+### API keys
+
+- [x] Custom permission picker
+- [x] Screenshot API-keys sectie
+- [x] OpenAPI full coverage (165/165; `--strict` passes)
+
+### 2FA
+
+- [x] Inline QR-code bij setup
+- [x] Screenshot Security + 2FA login
+- [x] SFTP app-passwords (`gtap_…`)
+
+### Activity log
+
+- [x] Screenshot Activity Log + `/admin/activity`
+- [x] Activity per gebruiker (Users-pagina)
+- [x] CSV/JSON-export
+- [x] `backup.download` / `file.download` gelogd
+
+### Allocations
+
+- [x] Admin UI port-pool op System
+- [x] Screenshot Network-tab
+- [x] UI-waarschuwing: extra poorten na restart
+- [x] UDP+TCP companion (`alsoUdp`)
+
+### Security (code)
+
+- [x] Symlink-jail, archives, rate limits, CSRF, session secure
+- [x] Login rate-limit + `TRUSTED_PROXIES`
+- [x] Daemon JWT / roterende tokens
+- [x] Secret-rotatie runbook
+- [x] Panel-uitval alerts (watchdog → webhook)
+- [x] License hardening + CSP hardening
+
+</details>

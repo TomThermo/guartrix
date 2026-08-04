@@ -7,6 +7,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.73] — 2026-08-04
+
+- Web Sentry: optional `VITE_SENTRY_DSN` (`@sentry/react`, ErrorBoundary capture)
+- Online players WebSocket `/ws/servers/:id/players` (`player.read`); provider uses WS + HTTP fallback
+- Biome `noExplicitAny` promoted to error
+- FA solid CSS subset on production build (`npm run fa:subset`, vite PurgeCSS plugin)
+- OpenAPI 100% route stubs + `generate-openapi-stubs.mjs` (from 1.0.72 docs pass)
+
 ## [1.0.72] — 2026-08-04
 
 - DB flag `stoppedByUser`: Stop/Kill mark it, Start/Restart clear it; startOnBoot skips marked servers

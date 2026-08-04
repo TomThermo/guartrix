@@ -28,7 +28,8 @@
     "test:watch": "vitest",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
-    "check:openapi": "node scripts/check-openapi-coverage.mjs"
+    "check:openapi": "node scripts/check-openapi-coverage.mjs",
+    "fa:subset": "node scripts/fa-subset-icons.mjs"
   },
   "engines": {
     "node": ">=22"
@@ -42,5 +43,5 @@
     "typescript": "^5.8.2",
     "vitest": "^3.2.7"
   },
-  "version": "1.0.72"
+  "version": "1.0.73"
 }

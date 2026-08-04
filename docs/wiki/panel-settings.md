@@ -31,6 +31,8 @@ Other keys (registration, mail, quotas, 2FA roles, alerts, Cloudflare) apply to 
 - The Settings UI is the preferred way to change the knobs above on a running panel.
 - Do not commit `data/panel-settings.json` (under `data/`, gitignored with other operator state).
 
+Go-live checklist (webhook, SMTP, Mollie, backups): for **customer installs** after download — [Improvement map — customer install](../roadmap.md#customer-install-their-vps--documented-not-this-host).
+
 ## Nodes
 
 **Admin → Nodes** (`/admin/system`) remains node/daemon management — not panel env settings.

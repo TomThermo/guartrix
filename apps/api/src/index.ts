@@ -65,6 +65,7 @@ import { registerInviteRoutes } from "./routes/invites.js";
 import { registerTaskRoutes } from "./routes/tasks.js";
 import { registerConsoleWs } from "./ws/console.js";
 import { registerAdminLogsWs } from "./ws/admin-logs.js";
+import { registerPlayersWs } from "./ws/players.js";
 import { botManager } from "./bot-manager-proxy.js";
 import { BACKUP_UPLOAD_MAX_BYTES } from "@msm/shared";
 import { ensureLocalNode } from "./nodes.js";
@@ -361,6 +362,7 @@ async function main() {
   registerResourcePackRoutes(app);
   registerConsoleWs(app);
   registerAdminLogsWs(app);
+  registerPlayersWs(app);
 
   app.get("/api/health", async () => ({ ok: true }));
 

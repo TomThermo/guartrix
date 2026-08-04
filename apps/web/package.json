@@ -1,6 +1,6 @@
 {
   "name": "@msm/web",
-  "version": "1.0.72",
+  "version": "1.0.73",
   "private": true,
   "type": "module",
   "scripts": {
@@ -12,6 +12,7 @@
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.3.1",
     "@msm/shared": "*",
+    "@sentry/react": "^10.69.0",
     "bootstrap": "^5.3.8",
     "qrcode": "^1.5.4",
     "react": "^19.0.0",
@@ -20,6 +21,7 @@
     "react-router-dom": "^7.4.0"
   },
   "devDependencies": {
+    "@fullhuman/postcss-purgecss": "^8.0.0",
     "@types/qrcode": "^1.5.6",
     "@types/react": "^19.0.12",
     "@types/react-dom": "^19.0.4",

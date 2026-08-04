@@ -6,11 +6,75 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import type { Plugin } from "vite";
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
+import { PurgeCSS } from "purgecss";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const webDir = path.dirname(fileURLToPath(import.meta.url));
+
+function loadFaSafelist(): string[] {
+  try {
+    const raw = fs.readFileSync(path.join(webDir, "fa-safelist.json"), "utf8");
+    return JSON.parse(raw) as string[];
+  } catch {
+    return [];
+  }
+}
+
+function walkSrc(dir: string, out: string[] = []): string[] {
+  for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
+    const p = path.join(dir, ent.name);
+    if (ent.isDirectory()) walkSrc(p, out);
+    else if (/\.(tsx?|jsx?|html)$/.test(ent.name)) out.push(p);
+  }
+  return out;
+}
+
+/** Production-only: drop unused Font Awesome solid glyph rules. */
+function faSubsetPlugin(): Plugin {
+  return {
+    name: "fa-subset",
+    apply: "build",
+    enforce: "post",
+    async generateBundle(_options, bundle) {
+      const safelist = [
+        ...loadFaSafelist(),
+        "fa-solid",
+        "fa-fw",
+        "fa-spin",
+        "fa-2x",
+        "fa-lg",
+      ];
+      const content = walkSrc(path.join(webDir, "src")).map((file) => ({
+        raw: fs.readFileSync(file, "utf8"),
+        extension: path.extname(file).slice(1),
+      }));
+      content.push({
+        raw: fs.readFileSync(path.join(webDir, "index.html"), "utf8"),
+        extension: "html",
+      });
+
+      for (const chunk of Object.values(bundle)) {
+        if (chunk.type !== "asset" || !chunk.fileName.endsWith(".css")) continue;
+        if (typeof chunk.source !== "string") continue;
+        if (!chunk.source.includes(".fa-solid") || !chunk.source.includes("Font Awesome")) {
+          continue;
+        }
+        const purged = await new PurgeCSS().purge({
+          content,
+          css: [{ raw: chunk.source, name: chunk.fileName }],
+          safelist: { standard: safelist },
+          fontFace: true,
+        });
+        const next = purged[0]?.css;
+        if (next && next.length < chunk.source.length) {
+          chunk.source = next;
+        }
+      }
+    },
+  };
+}
 
 function readApiPort(): string {
-  // Prefer process env, else root .env API_PORT
   if (process.env.VITE_API_PORT) return process.env.VITE_API_PORT;
   if (process.env.API_PORT) return process.env.API_PORT;
   try {
@@ -26,11 +90,6 @@ function readApiPort(): string {
 const API_HOST = "127.0.0.1";
 const API_PORT = Number(readApiPort());
 
-
-/**
- * Stream large backup upload/download bodies to the API without Vite's
- * default http-proxy (which buffers/breaks multi‑MB request bodies).
- */
 function backupTransferProxyPlugin(): Plugin {
   const uploadChunk =
     /^\/api\/servers\/[^/]+\/backups\/upload\/[^/]+\/chunks\/\d+(?:\?|$)/;
@@ -91,12 +150,11 @@ function backupTransferProxyPlugin(): Plugin {
 }
 
 export default defineConfig(({ mode }) => {
-  // Ensure VITE_* from env files are available; also inject API port for transfers.
   loadEnv(mode, rootDir, "");
   const apiPort = readApiPort();
 
   return {
-    plugins: [react(), backupTransferProxyPlugin()],
+    plugins: [react(), backupTransferProxyPlugin(), faSubsetPlugin()],
     define: {
       "import.meta.env.VITE_API_PORT": JSON.stringify(apiPort),
     },

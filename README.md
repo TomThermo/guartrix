@@ -6,7 +6,7 @@
 |---|---|
 | **Product** | [guartrix.com](https://guartrix.com) |
 | **Source** | [github.com/TomThermo/guartrix](https://github.com/TomThermo/guartrix) |
-| **Documentation** | [Wiki](docs/wiki/README.md) · [Panel guide](docs/wiki/panel-guide.md) · [Roadmap](docs/roadmap.md) · [Changelog](CHANGELOG.md) |
+| **Documentation** | [Wiki](docs/wiki/README.md) · [Panel guide](docs/wiki/panel-guide.md) · [Improvement map](docs/roadmap.md) · [Changelog](CHANGELOG.md) |
 
 ---
 
@@ -48,7 +48,7 @@ Full UI tour: [Panel guide](docs/wiki/panel-guide.md).
 
 **Data** — backups (manual and scheduled); per-server MySQL on the node.
 
-**Platform** — registration with email verification; quotas (new accounts start at zero); optional TOTP; activity log and alerts; Client API keys; Mollie billing and Application API; license validation via `license.guartrix.com` (unlicensed free tier: 1 node, 1 server, 10 GB disk).
+**Platform** — registration with email verification; quotas (new accounts start at zero); optional TOTP; activity log and alerts; Client API keys; Mollie billing and Application API; license validation via `license.guartrix.com` (unlicensed free tier: 1 node, 1 server, 10 GB disk); i18n EN/NL; Redis HA for multi-API; Admin → Settings for mail/alerts/quotas.
 
 ---
 
@@ -198,7 +198,7 @@ Guide: [Development](docs/wiki/development.md)
 | APIs | [client-api.md](docs/wiki/client-api.md) · [application-api.md](docs/wiki/application-api.md) · [OpenAPI](docs/openapi.yaml) |
 | Licensing & releases | [licensing.md](docs/wiki/licensing.md) · [release-builds.md](docs/wiki/release-builds.md) |
 | Security & ops | [security.md](docs/wiki/security.md) · [operations.md](docs/wiki/operations.md) |
-| Roadmap | [docs/roadmap.md](docs/roadmap.md) |
+| Improvement map | [docs/roadmap.md](docs/roadmap.md) — product shipped; customer go-live in install docs |
 
 ---
 

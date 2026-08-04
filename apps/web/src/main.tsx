@@ -10,9 +10,11 @@ import { BrowserRouter } from "react-router-dom";
 import { App } from "./App";
 import { AuthProvider } from "./auth";
 import { I18nProvider } from "./i18n/react";
+import { initWebSentry } from "./sentry";
 import { applyThemePreference, readThemePreference } from "./theme";
 
 applyThemePreference(readThemePreference());
+void initWebSentry();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

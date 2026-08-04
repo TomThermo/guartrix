@@ -99,4 +99,5 @@ UI chrome across pages, server tabs/panels, and modals is keyed in both locale f
 - Shared types: `packages/shared` — rebuild when changing exports (`npm run build -w @msm/shared`).
 - Daemon logic lives in `packages/node-agent`; `apps/daemon` is the process entrypoint.
 - Docs: update [README](../../README.md) and this wiki when behaviour users rely on changes (see Cursor rule `keep-docs-updated`).
-- OpenAPI: keep [`docs/openapi.yaml`](../openapi.yaml) `info.version` in sync with the product version in root `package.json` / `VERSION` on each release bump. Drift check: `npm run check:openapi` (coverage floor + fail on stale yaml paths; `--strict` requires full coverage).
+- OpenAPI: keep [`docs/openapi.yaml`](../openapi.yaml) `info.version` in sync with the product version in root `package.json` / `VERSION` on each release bump. Drift check: `npm run check:openapi` (coverage floor + fail on stale yaml paths; `--strict` requires full coverage). After adding API routes, run `node scripts/generate-openapi-stubs.mjs` to append missing path stubs.
+- Web: `@sentry/react` when `VITE_SENTRY_DSN` is set at build; FA subset via `npm run fa:subset` + production vite plugin; online players WS at `/ws/servers/:id/players`

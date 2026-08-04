@@ -178,6 +178,13 @@ export interface ConsoleCommand {
   command: string;
 }
 
+/** Live online-player updates — `/ws/servers/:id/players` (requires `player.read`). */
+export type PlayersWsMessage =
+  | { type: "snapshot"; data: OnlinePlayersResponse }
+  | { type: "players"; players: string[]; online?: boolean }
+  | { type: "status"; online: boolean }
+  | { type: "error"; message: string };
+
 export interface ServerStats {
   running: boolean;
   cpuPercent: number;

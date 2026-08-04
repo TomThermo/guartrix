@@ -1,6 +1,7 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { Alert, Button, Container } from "react-bootstrap";
 import { t } from "./i18n/index";
+import { captureWebException } from "./sentry";
 
 type Props = {
   children: ReactNode;
@@ -23,6 +24,9 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error("[guartrix] UI error boundary:", error, info.componentStack);
+    void captureWebException(error, {
+      componentStack: info.componentStack,
+    });
   }
 
   private retry = () => {

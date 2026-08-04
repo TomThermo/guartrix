@@ -26,7 +26,7 @@ another tool on the host needs it.
 - [x] Email verification before linking pending subuser invites (requires `emailVerified`)
 - [x] When `SMTP_HOST` is set: verify-before-login for non-admin accounts
 - [x] Registration quotas default to **0** until an admin grants capacity
-- [ ] `ACTIVITY_WEBHOOK_URL` / `ALERT_EMAIL` set so crashes and failed sign-ins are noticed (optional per install)
+- [ ] `ACTIVITY_WEBHOOK_URL` / `ALERT_EMAIL` set so crashes and failed sign-ins are noticed — **per customer install** via Admin → Settings or `.env` (optional on the download/build host)
 - [x] Consider `TWO_FACTOR_REQUIRED_ROLES=ADMIN` so panel admins must use TOTP
 - [x] Login rate limits use client IP only from **trusted proxies** (`TRUSTED_PROXIES`, default localhost)
 - [x] `TRUSTED_PROXIES=*` refused unless `ALLOW_INSECURE_TRUST_PROXY=1`
