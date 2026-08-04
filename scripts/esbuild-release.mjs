@@ -5,6 +5,7 @@
  * - One minified ESM file per app (like Vite does for web)
  * - Inlines workspace packages (@msm/shared, @msm/node-agent) from TypeScript source
  * - Leaves npm deps external (Prisma, ssh2, Fastify, …)
+ * - Optional javascript-obfuscator pass (default on; RELEASE_OBFUSCATE=0 to skip)
  *
  * Usage:
  *   node scripts/esbuild-release.mjs api
@@ -15,6 +16,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import * as esbuild from "esbuild";
+import JavaScriptObfuscator from "javascript-obfuscator";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -45,6 +47,8 @@ const APPS = {
       {
         entry: "apps/api/src/bot-worker-main.ts",
         outfile: "apps/api/dist/bot-worker-main.js",
+        /** Mineflayer worker — skip obfuscation (fragile). */
+        obfuscate: false,
       },
     ],
   },
@@ -55,6 +59,10 @@ const APPS = {
     extraEntries: [],
   },
 };
+
+const obfuscateEnabled =
+  process.env.RELEASE_OBFUSCATE !== "0" &&
+  process.env.RELEASE_OBFUSCATE !== "false";
 
 function workspaceBundlePlugin() {
   return {
@@ -85,7 +93,37 @@ function workspaceBundlePlugin() {
   };
 }
 
-async function buildOne({ entry, outfile }) {
+/** Conservative Node/ESM settings — avoid selfDefending / renameGlobals. */
+function obfuscateFile(outPath) {
+  const source = fs.readFileSync(outPath, "utf8");
+  const result = JavaScriptObfuscator.obfuscate(source, {
+    compact: true,
+    controlFlowFlattening: true,
+    controlFlowFlatteningThreshold: 0.35,
+    deadCodeInjection: false,
+    debugProtection: false,
+    disableConsoleOutput: false,
+    identifierNamesGenerator: "hexadecimal",
+    renameGlobals: false,
+    selfDefending: false,
+    stringArray: true,
+    stringArrayEncoding: ["base64"],
+    stringArrayThreshold: 0.5,
+    rotateStringArray: true,
+    splitStrings: true,
+    splitStringsChunkLength: 8,
+    transformObjectKeys: false,
+    unicodeEscapeSequence: false,
+    target: "node",
+    // Preserve ESM import/export shape as much as possible
+    ignoreImports: true,
+  });
+  const banner =
+    "// Guartrix release — bundled + minified + obfuscated\n";
+  fs.writeFileSync(outPath, banner + result.getObfuscatedCode(), "utf8");
+}
+
+async function buildOne({ entry, outfile, obfuscate = true }) {
   const entryPath = path.join(rootDir, entry);
   const outPath = path.join(rootDir, outfile);
 
@@ -115,6 +153,15 @@ async function buildOne({ entry, outfile }) {
     throw new Error(`esbuild failed for ${entry}`);
   }
 
+  if (obfuscateEnabled && obfuscate !== false) {
+    obfuscateFile(outPath);
+    console.log(`[release] obfuscated ${path.relative(rootDir, outPath)}`);
+  } else if (!obfuscateEnabled) {
+    console.log(
+      `[release] obfuscation skipped (RELEASE_OBFUSCATE=0) for ${path.relative(rootDir, outPath)}`,
+    );
+  }
+
   const size = fs.statSync(outPath).size;
   console.log(
     `[release] ${path.relative(rootDir, outPath)} (${(size / 1024).toFixed(1)} KiB)`,
@@ -129,7 +176,7 @@ async function buildApp(name) {
   fs.rmSync(cleanDir, { recursive: true, force: true });
   fs.mkdirSync(cleanDir, { recursive: true });
 
-  await buildOne({ entry: cfg.entry, outfile: cfg.outfile });
+  await buildOne({ entry: cfg.entry, outfile: cfg.outfile, obfuscate: true });
   for (const extra of cfg.extraEntries ?? []) {
     await buildOne(extra);
   }

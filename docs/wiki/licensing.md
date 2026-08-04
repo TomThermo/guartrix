@@ -71,6 +71,7 @@ Hardening in place:
 - Daemon co-enforcement (ticket + public-key verify) so bypassing only the API is not enough to start extra game servers
 - Shorter default unreachable grace (12h)
 - Activity alert on repeated validate failures
+- Customer release `dist` is minified **and obfuscated** (GitHub source stays clear; see [release builds](release-builds.md))
 
 The **license issuer** (signing keys, admin UI that mints `GTRX-…` keys) is **not** part of this repository. It runs only on Guartrix operator infrastructure. Never commit `apps/license-server`, `signing-private.pem`, or issuer databases into this repo.
 

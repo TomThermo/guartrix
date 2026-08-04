@@ -7,6 +7,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.64] — 2026-08-04
+
+- Release builds: obfuscate api/daemon `dist` after minify (`javascript-obfuscator`; skip with `RELEASE_OBFUSCATE=0`; bot-worker not obfuscated)
+
 ## [1.0.63] — 2026-08-04
 
 - License hardening: panel pushes signed/free tickets to daemons; daemon gates start/restart; default unreachable grace 12h; alert after repeated validate failures

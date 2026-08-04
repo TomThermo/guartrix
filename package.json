@@ -24,12 +24,12 @@
     "start:sh": "bash scripts/start.sh",
     "prod": "npm run build && npm run start:prod",
     "prod:release": "npm run build:release && npm run start:prod",
-  "test": "vitest run",
-  "test:watch": "vitest",
-  "lint": "biome check .",
-  "lint:fix": "biome check --write .",
-  "check:openapi": "node scripts/check-openapi-coverage.mjs"
-},
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "check:openapi": "node scripts/check-openapi-coverage.mjs"
+  },
   "engines": {
     "node": ">=22"
   },
@@ -37,9 +37,10 @@
     "@biomejs/biome": "^2.0.6",
     "@playwright/test": "^1.62.1",
     "esbuild": "^0.25.0",
+    "javascript-obfuscator": "^4.2.2",
     "playwright": "^1.55.0",
     "typescript": "^5.8.2",
     "vitest": "^3.2.7"
   },
-  "version": "1.0.63"
+  "version": "1.0.64"
 }

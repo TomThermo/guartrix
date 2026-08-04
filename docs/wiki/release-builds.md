@@ -7,10 +7,12 @@ For **selling / self-hosted installs**, ship minified bundles — not TypeScript
 | Piece | Build |
 |-------|--------|
 | `apps/web` | Vite (already minified) |
-| `apps/api` | esbuild: one minified `dist/index.js` (+ `@msm/*` inlined) |
+| `apps/api` | esbuild minify + **javascript-obfuscator** → one `dist/index.js` |
 | `apps/daemon` | same |
 
 npm dependencies (Prisma, Fastify, ssh2, …) stay in `node_modules` — native modules must.
+
+Obfuscation applies only to **release** bundles (what goes in `/download` zips and `build/`). GitHub `src/` stays readable TypeScript. Skip with `RELEASE_OBFUSCATE=0`. The Mineflayer `bot-worker-main.js` is minified but **not** obfuscated (fragile).
 
 This is **not DRM**. It raises the bar for casual copying; the real control is your
 [license key / validate API](licensing.md). Determined reverse-engineering of Node JS is always possible.
