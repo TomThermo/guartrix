@@ -7,6 +7,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.65] — 2026-08-04
+
+- License validate reports panel usage (nodes / Minecraft servers / RAM); operator license console shows per-key **In use** vs quota.
+
 ## [1.0.64] — 2026-08-04
 
 - Release builds: obfuscate api/daemon `dist` after minify (`javascript-obfuscator`; skip with `RELEASE_OBFUSCATE=0`; bot-worker not obfuscated)

@@ -31,9 +31,10 @@ Activate a license under **Admin → License** to raise these caps (and unlock l
 
 | Piece | Role |
 |-------|------|
-| **Panel API** | Calls `POST /v1/validate` on a schedule; verifies **Ed25519-signed** responses; pushes a **license ticket** to every daemon |
+| **Panel API** | Calls `POST /v1/validate` on a schedule (includes **usage**: nodes / Minecraft servers / RAM); verifies **Ed25519-signed** responses; pushes a **license ticket** to every daemon |
 | **Daemon** | Verifies the same public key; refuses start/restart above free-tier (or license caps) without a valid ticket |
 | **Admin → License** | Status, license key, optional server URL override, revalidate, allowance vs in use |
+| **License console** (operator) | Per-key **In use** (nodes / servers / RAM GB vs quota), where (host + install id), last seen |
 | **Game servers** | Licensed product caps (nodes / servers / RAM); free-tier caps when invalid |
 
 ```mermaid
@@ -42,6 +43,7 @@ sequenceDiagram
   participant API as PanelAPI
   participant D as Daemon
   LS->>API: signed validate claims
+  API->>LS: usage (servers / RAM / nodes)
   API->>D: license ticket
   Note over D: verify pubkey then gate start
 ```

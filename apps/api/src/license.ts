@@ -608,6 +608,7 @@ async function doValidateLicense(): Promise<LicenseState> {
   try {
     const installId = await getInstallId();
     const base = await getLicenseServerUrl();
+    const usage = await getPanelServerUsage().catch(() => null);
     const res = await fetch(`${base}/v1/validate`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
@@ -617,6 +618,14 @@ async function doValidateLicense(): Promise<LicenseState> {
         publicHost: config.publicHost,
         publicIp: hostPublicIp() || process.env.PUBLIC_IP?.trim() || null,
         panelVersion: getProductVersion(),
+        usage: usage
+          ? {
+              serverCount: usage.serverCount,
+              memoryUsedMb: usage.memoryUsedMb,
+              nodeCount: usage.nodeCount,
+              maxServerMemoryMb: usage.maxServerMemoryMb,
+            }
+          : undefined,
       }),
       signal: AbortSignal.timeout(8_000),
     });
