@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { logActivity } from "../activity-log.js";
-import { isAuthenticated, requireServerAccess } from "../auth.js";
+import { isAuthenticated, requireServerAccess } from "../auth/auth.js";
 import {
   deleteServerIcon,
   hasServerIcon,

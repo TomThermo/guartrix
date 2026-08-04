@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import type { AddonSortIndex, ServerType } from "@msm/shared";
 import { addonKindFor } from "@msm/shared";
-import { requireServerAccess } from "../auth.js";
+import { requireServerAccess } from "../auth/auth.js";
 import { logActivity } from "../activity-log.js";
 import {
   checkInstalledAddonUpdates,

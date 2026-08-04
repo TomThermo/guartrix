@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { requireAdmin, requireAuth } from "../auth.js";
+import { requireAdmin, requireAuth } from "../auth/auth.js";
 import { logActivity } from "../activity-log.js";
 import {
   getLicenseKey,
@@ -13,7 +13,7 @@ import {
   getCachedLicenseState,
   getPanelServerUsage,
   getUnlicensedFreeTier,
-} from "../license.js";
+} from "../license/license.js";
 
 async function adminLicensePayload() {
   const [state, server, usage] = await Promise.all([

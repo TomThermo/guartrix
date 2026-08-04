@@ -9,7 +9,7 @@ import {
   type ServerPermission,
 } from "@msm/shared";
 import { prisma } from "./db.js";
-import { getCachedLicenseState, validateLicense } from "./license.js";
+import { getCachedLicenseState, validateLicense } from "./license/license.js";
 
 export function parsePermissionsJson(raw: string): string[] {
   try {

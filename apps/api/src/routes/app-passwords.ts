@@ -3,8 +3,8 @@ import type { FastifyInstance } from "fastify";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import { logActivity } from "../activity-log.js";
-import { requireSessionAuth } from "../auth.js";
-import { assertSameOrigin } from "../csrf.js";
+import { requireSessionAuth } from "../auth/auth.js";
+import { assertSameOrigin } from "../auth/csrf.js";
 import { prisma } from "../db.js";
 
 const APP_PASSWORD_MAX = 10;

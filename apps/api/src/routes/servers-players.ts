@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { requireServerAccess } from "../auth.js";
+import { requireServerAccess } from "../auth/auth.js";
 import { logActivity } from "../activity-log.js";
 import { serverDir } from "../config.js";
 import {

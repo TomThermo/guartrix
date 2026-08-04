@@ -64,6 +64,10 @@ guartrix_stage_release_tree() {
   do
     [[ -f "$ROOT/scripts/$s" ]] && cp "$ROOT/scripts/$s" "$STAGE/scripts/"
   done
+  if [[ -d "$ROOT/scripts/prod-web" ]]; then
+    mkdir -p "$STAGE/scripts/prod-web"
+    cp -a "$ROOT/scripts/prod-web/." "$STAGE/scripts/prod-web/"
+  fi
   [[ -f "$ROOT/scripts/logrotate-guartrix.conf" ]] && cp "$ROOT/scripts/logrotate-guartrix.conf" "$STAGE/scripts/"
   # Operator download gate must NEVER be copied into staged releases.
   # Live operator host keeps scripts/prod-web-download.mjs beside prod-web.mjs.

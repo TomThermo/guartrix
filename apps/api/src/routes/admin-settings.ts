@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { requireAdmin } from "../auth.js";
+import { requireAdmin } from "../auth/auth.js";
 import { logActivity } from "../activity-log.js";
 import { prisma } from "../db.js";
 import { sendMail, isSmtpConfigured } from "../mail.js";

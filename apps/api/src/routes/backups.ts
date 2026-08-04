@@ -7,7 +7,7 @@ import {
   BACKUP_UPLOAD_MAX_BYTES,
 } from "@msm/shared";
 import { logActivity } from "../activity-log.js";
-import { isAuthenticated, requireServerAccess } from "../auth.js";
+import { isAuthenticated, requireServerAccess } from "../auth/auth.js";
 import {
   abortChunkedUpload,
   completeChunkedUpload,
@@ -445,7 +445,7 @@ export function registerBackupRoutes(app: FastifyInstance): void {
       });
       if (request.body?.startAfter) {
         const { openFirewallPort } = await import("../firewall.js");
-        const { startServerIfLicensed } = await import("../license.js");
+        const { startServerIfLicensed } = await import("../license/license.js");
         await openFirewallPort(server.port, server.nodeId);
         await startServerIfLicensed(server.id);
       }

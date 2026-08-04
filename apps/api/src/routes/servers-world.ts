@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { requireServerAccess } from "../auth.js";
+import { requireServerAccess } from "../auth/auth.js";
 import { logActivity } from "../activity-log.js";
 import { importWorldZip, resetWorld } from "../server-lifecycle.js";
 

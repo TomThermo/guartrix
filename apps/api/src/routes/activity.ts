@@ -7,7 +7,7 @@ import {
   ACTIVITY_PAGE_MAX,
   type ActivityListResponse,
 } from "@msm/shared";
-import { requireAdmin, requireServerAccess } from "../auth.js";
+import { requireAdmin, requireServerAccess } from "../auth/auth.js";
 import { activityRetentionDays, toActivityRecord } from "../activity-log.js";
 import { prisma } from "../db.js";
 

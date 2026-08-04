@@ -360,7 +360,7 @@ export async function createSessionStore(
 ): Promise<PanelSessionStore> {
   const mode = (process.env.SESSION_STORE || "file").trim().toLowerCase();
   if (mode === "redis") {
-    const { getRedis } = await import("./redis.js");
+    const { getRedis } = await import("../redis.js");
     const redis = await getRedis();
     if (!redis) {
       console.warn(

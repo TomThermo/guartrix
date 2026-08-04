@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import {
   isAuthenticated,
   requireWrite,
-} from "../auth.js";
+} from "../auth/auth.js";
 import { registerServerDashboardRoutes } from "./servers-dashboard.js";
 import { registerServerPlayerRoutes } from "./servers-players.js";
 import { registerServerAddonRoutes } from "./servers-addons.js";

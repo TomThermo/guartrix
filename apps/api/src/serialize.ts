@@ -47,7 +47,6 @@ export function toMcServer(server: ServerWithRelations): McServer {
     javaVersion: normalizeJavaVersion(server.javaPath),
     startupCommand: server.startupCommand ?? null,
     serverJar: server.serverJar?.trim() || DEFAULT_SERVER_JAR,
-    javaPath: server.javaPath,
     fabricLoaderVersion: server.fabricLoaderVersion,
     forgeVersion: server.forgeVersion,
     paperBuild: server.paperBuild,

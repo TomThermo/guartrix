@@ -1,8 +1,8 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { logActivity } from "../activity-log.js";
-import { getSessionUser, requireAuth, verifyPassword } from "../auth.js";
-import { assertSameOrigin } from "../csrf.js";
+import { getSessionUser, requireAuth, verifyPassword } from "../auth/auth.js";
+import { assertSameOrigin } from "../auth/csrf.js";
 import { prisma } from "../db.js";
 import {
   generateRecoveryCodes,
@@ -10,7 +10,7 @@ import {
   otpauthUrl,
   sealTotpSecret,
   verifyTotp,
-} from "../totp.js";
+} from "../auth/totp.js";
 
 const codeSchema = z.object({
   code: z.string().min(6).max(64),

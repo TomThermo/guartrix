@@ -431,7 +431,7 @@ async function runStep(
     if (running) {
       await processManager.stop(serverId);
     }
-    const { startServerIfLicensed } = await import("./license.js");
+    const { startServerIfLicensed } = await import("./license/license.js");
     await startServerIfLicensed(serverId);
     return {};
   }

@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { requireServerAccess } from "../auth.js";
+import { requireServerAccess } from "../auth/auth.js";
 import { prisma } from "../db.js";
 import { serverListInclude, toMcServer } from "../serialize.js";
 

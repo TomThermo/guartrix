@@ -11,9 +11,9 @@ import cookie from "@fastify/cookie";
 import session from "@fastify/session";
 import websocket from "@fastify/websocket";
 import multipart from "@fastify/multipart";
-import { ensureBootstrapAdmin, registerOwnershipGuard } from "./auth.js";
+import { ensureBootstrapAdmin, registerOwnershipGuard } from "./auth/auth.js";
 import { registerAuthRoutes } from "./routes/auth.js";
-import { registerCsrfGuard, allowedOrigins } from "./csrf.js";
+import { registerCsrfGuard, allowedOrigins } from "./auth/csrf.js";
 import { config } from "./config.js";
 import { loadAndApplyPanelSettings } from "./panel-settings.js";
 import { prisma } from "./db.js";
@@ -24,7 +24,7 @@ import {
   migrateAllScheduledTasksFromJson,
   runDueScheduledTasks,
 } from "./scheduled-tasks.js";
-import { createSessionStore, ensureSessionDir } from "./session-store.js";
+import { createSessionStore, ensureSessionDir } from "./auth/session-store.js";
 import {
   createRateLimitStore,
   setActiveRateLimitStore,
@@ -107,7 +107,7 @@ async function main() {
   const sessionsDir = path.join(config.dataDir, "sessions");
   ensureSessionDir(sessionsDir);
   const sessionStore = await createSessionStore(sessionsDir);
-  const { setActiveSessionStore } = await import("./session-store.js");
+  const { setActiveSessionStore } = await import("./auth/session-store.js");
   setActiveSessionStore(sessionStore);
   setActiveRateLimitStore(await createRateLimitStore(config.dataDir));
   await ensureBootstrapAdmin();
@@ -493,7 +493,7 @@ async function main() {
   logger.info("Hydrated transfer job state from disk/redis");
 
   const { startLicenseWatcher, validateLicense, assertLicensePanelQuota } =
-    await import("./license.js");
+    await import("./license/license.js");
   startLicenseWatcher();
 
   // startOnBoot: resume servers the user did not intentionally stop
@@ -527,7 +527,7 @@ async function main() {
         { serverId: server.id, name: server.name },
         `Starting server on boot (${i + 1}/${bootServers.length})`,
       );
-      const { startServerIfLicensed } = await import("./license.js");
+      const { startServerIfLicensed } = await import("./license/license.js");
       await startServerIfLicensed(server.id);
     } catch (err) {
       app.log.error({ err, serverId: server.id }, "Failed to start server on boot");

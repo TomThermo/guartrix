@@ -7,7 +7,7 @@ import {
   type ServerDatabase,
 } from "@msm/shared";
 import { logActivity } from "../activity-log.js";
-import { requireServerAccess } from "../auth.js";
+import { requireServerAccess } from "../auth/auth.js";
 import {
   DaemonHttpError,
   daemonMysqlCreate,
@@ -21,7 +21,7 @@ import {
   unsealDatabasePassword,
 } from "../db-password.js";
 import { prisma } from "../db.js";
-import { assertCanCreateDatabase } from "../quotas.js";
+import { assertCanCreateDatabase } from "../billing/quotas.js";
 
 function serializeDatabase(row: {
   id: string;
@@ -161,10 +161,7 @@ export function registerDatabaseRoutes(app: FastifyInstance): void {
         limit: quota.limit,
         used: quota.used,
         remaining: quota.remaining,
-        // UI-friendly fallbacks when unlimited (null)
         displayLimit: quota.limit ?? "unlimited",
-        ownerUsed: quota.used,
-        ownerRemaining: remaining,
       };
     },
   );

@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import type { ServerType } from "@msm/shared";
-import { isAuthenticated, requireAdmin } from "../auth.js";
+import { isAuthenticated, requireAdmin } from "../auth/auth.js";
 import {
   ensureViaForBots,
   resolveBotClientVersion,

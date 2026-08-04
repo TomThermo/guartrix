@@ -1,12 +1,6 @@
 /** Default MySQL database quota for new non-admin users. */
 export const DEFAULT_MAX_DATABASES = 3;
 
-/** @deprecated Use DEFAULT_MAX_DATABASES / per-user maxDatabases */
-export const MAX_DATABASES_PER_SERVER = DEFAULT_MAX_DATABASES;
-
-/** @deprecated Use DEFAULT_MAX_DATABASES */
-export const MAX_DATABASES_PER_OWNER = DEFAULT_MAX_DATABASES;
-
 /** Stable server DB-user prefix, e.g. `s40903_`. */
 export function databaseNamePrefix(serverId: string): string {
   let hash = 2166136261;
@@ -42,8 +36,4 @@ export interface ServerDatabasesResponse {
   used: number;
   /** null when unlimited. */
   remaining: number | null;
-  /** @deprecated alias of used */
-  ownerUsed: number;
-  /** @deprecated */
-  ownerRemaining: number;
 }

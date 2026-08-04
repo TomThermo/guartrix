@@ -201,14 +201,6 @@ export interface AdminStatusResponse {
       rateLimitStore: string;
     };
   };
-  /** @deprecated use panel.api — kept for older clients */
-  api: {
-    ok: true;
-    pid: number;
-    uptime: number;
-    memoryRssMb: number;
-    nodeVersion: string;
-  };
   nodes: StatusNode[];
 }
 

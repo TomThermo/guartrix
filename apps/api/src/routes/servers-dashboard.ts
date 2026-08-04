@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import type { ServerType } from "@msm/shared";
 import { addonKindFor, hasPermission } from "@msm/shared";
-import { getSessionUser } from "../auth.js";
+import { getSessionUser } from "../auth/auth.js";
 import {
   getServerPermissionsBatch,
   listVisibleServerIds,
@@ -44,7 +44,7 @@ export function registerServerDashboardRoutes(app: FastifyInstance): void {
   app.get("/api/servers", async (request, reply) => {
     const user = await getSessionUser(request);
     if (!user) {
-      const { apiKeyRateLimitedMessage } = await import("../api-keys.js");
+      const { apiKeyRateLimitedMessage } = await import("../auth/api-keys.js");
       const rate = apiKeyRateLimitedMessage(request);
       if (rate) return reply.status(429).send({ error: rate });
       return reply.status(401).send({ error: "Unauthorized" });

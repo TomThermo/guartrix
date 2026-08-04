@@ -7,6 +7,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.76] — 2026-08-04
+
+- API `src/` phase 1: `auth/`, `billing/`, `license/` module folders (19 files moved)
+- StatusLinePage split: `useAdminStatus` hook + `components/status-line/*` (page ~78 LOC)
+- Removed deprecated shared types: `McServer.javaPath`, `UpdateServerRequest.javaPath`, `ServerDatabasesResponse.ownerUsed/ownerRemaining`, `AdminStatusResponse.api` duplicate, `MAX_DATABASES_PER_*` aliases
+
+## [1.0.75] — 2026-08-04
+
+- Split `scripts/prod-web.mjs` into `scripts/prod-web/` modules (config, proxy, TLS, static, router, security headers)
+- Staged customer releases now include the `scripts/prod-web/` directory
+
 ## [1.0.74] — 2026-08-04
 
 - Shared `ScheduleFields` for backup + task schedule timing UI; schedules timing i18n EN/NL

@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
-import { config } from "./config.js";
+import { config } from "../config.js";
 
 export function allowedOrigins(): Set<string> {
   const host = config.publicHost;

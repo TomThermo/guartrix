@@ -1,18 +1,18 @@
 import type { FastifyInstance } from "fastify";
 import { nanoid } from "nanoid";
 import { z } from "zod";
-import { requireApplication } from "../application-auth.js";
+import { requireApplication } from "../auth/application-auth.js";
 import { logActivity } from "../activity-log.js";
 import {
   cancelBillingSubscription,
   toPaymentRecord,
   toPlanRecord,
   toSubscriptionRecord,
-} from "../billing.js";
-import { syncMolliePayment } from "../billing-mollie-sync.js";
-import { requireAdmin, requireAuth, requireSessionAuth } from "../auth.js";
+} from "../billing/billing.js";
+import { syncMolliePayment } from "../billing/billing-mollie-sync.js";
+import { requireAdmin, requireAuth, requireSessionAuth } from "../auth/auth.js";
 import { config } from "../config.js";
-import { assertSameOrigin } from "../csrf.js";
+import { assertSameOrigin } from "../auth/csrf.js";
 import { prisma } from "../db.js";
 import {
   mapMollieStatus,
@@ -21,7 +21,7 @@ import {
   mollieCreateCustomer,
   mollieCreatePayment,
   mollieTestMode,
-} from "../mollie.js";
+} from "../billing/mollie.js";
 
 const planBodySchema = z.object({
   slug: z

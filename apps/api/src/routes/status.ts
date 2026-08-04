@@ -6,12 +6,12 @@ import type {
   StatusContainer,
   StatusNode,
 } from "@msm/shared";
-import { requireAdmin } from "../auth.js";
+import { requireAdmin } from "../auth/auth.js";
 import { config } from "../config.js";
 import { prisma } from "../db.js";
 import { daemonGetStatus } from "../daemon-client.js";
 import { nodePublicUrl } from "../nodes.js";
-import { getPanelVersionStatus } from "../license.js";
+import { getPanelVersionStatus } from "../license/license.js";
 import { getProductVersion } from "../product-version.js";
 
 function readPidFile(name: string): number | null {
@@ -251,13 +251,6 @@ export function registerStatusRoutes(app: FastifyInstance): void {
           sessionStore: redisStatus.sessionStore,
           rateLimitStore: redisStatus.rateLimitStore,
         },
-      },
-      api: {
-        ok: true,
-        pid: apiInfo.pid,
-        uptime: apiInfo.uptime,
-        memoryRssMb: apiInfo.memoryRssMb,
-        nodeVersion: apiInfo.nodeVersion,
       },
       nodes: statusNodes,
     };

@@ -4,7 +4,7 @@ import path from "node:path";
 import type { FastifyInstance } from "fastify";
 import type { ConsoleMessage } from "@msm/shared";
 import WebSocket from "ws";
-import { getSessionUser, isAuthenticated } from "../auth.js";
+import { getSessionUser, isAuthenticated } from "../auth/auth.js";
 import { config } from "../config.js";
 import { daemonWsAuthorization, getNodeToken } from "../daemon-client.js";
 import { prisma } from "../db.js";

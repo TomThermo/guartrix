@@ -8,15 +8,15 @@ import {
   verifyLicenseClaims,
 } from "@msm/shared/license-signing";
 import type { DaemonLicenseTicket } from "@msm/shared/license-ticket";
-import { config } from "./config.js";
-import { logActivity } from "./activity-log.js";
-import { hostPublicIp } from "./host-resources.js";
-import { daemonPushLicenseTicketAll } from "./daemon-client.js";
+import { config } from "../config.js";
+import { logActivity } from "../activity-log.js";
+import { hostPublicIp } from "../host-resources.js";
+import { daemonPushLicenseTicketAll } from "../daemon-client.js";
 import {
   getProductVersion,
   isUpdateAvailable,
   meetsMinVersion,
-} from "./product-version.js";
+} from "../product-version.js";
 import {
   enforceUnlicensedFreeTier,
   getPanelServerUsage,

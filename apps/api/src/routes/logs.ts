@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { isAuthenticated, requireServerAccess } from "../auth.js";
+import { isAuthenticated, requireServerAccess } from "../auth/auth.js";
 import { listLogFiles, readLogFile } from "../logs.js";
 
 export function registerLogRoutes(app: FastifyInstance): void {

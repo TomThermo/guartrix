@@ -3,7 +3,7 @@ import { nanoid } from "nanoid";
 import { z } from "zod";
 import { hasPermission } from "@msm/shared";
 import { logActivity } from "../activity-log.js";
-import { requireAdmin, requireServerAccess } from "../auth.js";
+import { requireAdmin, requireServerAccess } from "../auth/auth.js";
 import {
   createNodeAllocationRange,
   ensurePrimaryAllocation,

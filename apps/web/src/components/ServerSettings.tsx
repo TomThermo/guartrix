@@ -91,7 +91,7 @@ export function ServerSettings({
   );
   const [bluemapUrl, setBluemapUrl] = useState(server.bluemapUrl ?? "");
   const [javaVersion, setJavaVersion] = useState<JavaVersion>(
-    normalizeJavaVersion(server.javaVersion ?? server.javaPath),
+    normalizeJavaVersion(server.javaVersion),
   );
   const [startupCommand, setStartupCommand] = useState(
     server.startupCommand?.trim() ||
@@ -132,7 +132,7 @@ export function ServerSettings({
     setDiscordStatusWebhookUrl(server.discordStatusWebhookUrl ?? "");
     setDiscordStatusEnabled(server.discordStatusEnabled ?? false);
     setBluemapUrl(server.bluemapUrl ?? "");
-    setJavaVersion(normalizeJavaVersion(server.javaVersion ?? server.javaPath));
+    setJavaVersion(normalizeJavaVersion(server.javaVersion));
     setStartupCommand(
       server.startupCommand?.trim() ||
         (server.type === "FORGE" || server.type === "NEOFORGE"

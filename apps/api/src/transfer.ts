@@ -583,7 +583,7 @@ async function runTransfer(
 
     if (job.startAfter) {
       try {
-        const { startServerIfLicensed } = await import("./license.js");
+        const { startServerIfLicensed } = await import("./license/license.js");
         await startServerIfLicensed(serverId);
       } catch (err) {
         logger.warn({ err, serverId }, "transfer startAfter failed");

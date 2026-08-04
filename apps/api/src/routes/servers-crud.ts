@@ -6,7 +6,7 @@ import {
   requireServerAccess,
   requireWrite,
   verifySessionPassword,
-} from "../auth.js";
+} from "../auth/auth.js";
 import { userHasServerPermission } from "../server-access.js";
 import { logActivity } from "../activity-log.js";
 import { config } from "../config.js";
@@ -174,7 +174,7 @@ export function registerServerCrudRoutes(app: FastifyInstance): void {
     }
 
     try {
-      const { assertCanCreateServer } = await import("../quotas.js");
+      const { assertCanCreateServer } = await import("../billing/quotas.js");
       await assertCanCreateServer(user, data.memoryMb, { diskMb: data.diskMb });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -446,7 +446,7 @@ export function registerServerCrudRoutes(app: FastifyInstance): void {
       const memoryMb = parsed.data.memoryMb ?? source.memoryMb;
       const diskMb = parsed.data.diskMb ?? source.diskMb;
       try {
-        const { assertCanCreateServer } = await import("../quotas.js");
+        const { assertCanCreateServer } = await import("../billing/quotas.js");
         await assertCanCreateServer(access.user, memoryMb, { diskMb });
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);

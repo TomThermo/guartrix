@@ -1,10 +1,10 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { logActivity } from "../activity-log.js";
-import { requireAuth, verifyPassword } from "../auth.js";
-import { assertSameOrigin } from "../csrf.js";
+import { requireAuth, verifyPassword } from "../auth/auth.js";
+import { assertSameOrigin } from "../auth/csrf.js";
 import { prisma } from "../db.js";
-import { destroySessionsForUser } from "../session-store.js";
+import { destroySessionsForUser } from "../auth/session-store.js";
 
 const deleteAccountSchema = z.object({
   password: z.string().min(1).max(256),

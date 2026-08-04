@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { hasPermission } from "@msm/shared";
 import { logActivity } from "../activity-log.js";
-import { verifyPassword } from "../auth.js";
+import { verifyPassword } from "../auth/auth.js";
 import { prisma } from "../db.js";
 import { findNodeByDaemonToken } from "../nodes.js";
 import { getNodeToken } from "../daemon-client.js";

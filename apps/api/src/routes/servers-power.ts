@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { requireServerAccess } from "../auth.js";
+import { requireServerAccess } from "../auth/auth.js";
 import { logActivity } from "../activity-log.js";
 import { prisma } from "../db.js";
 import { openFirewallPort } from "../firewall.js";
@@ -19,7 +19,7 @@ export function registerServerPowerRoutes(app: FastifyInstance): void {
         assertLicenseAllowsPower,
         assertLicensePanelQuota,
         assertLicenseDiskQuota,
-      } = await import("../license.js");
+      } = await import("../license/license.js");
       await assertLicenseAllowsPower();
       await assertLicensePanelQuota(server.memoryMb, {
         excludeServerId: server.id,
@@ -48,7 +48,7 @@ export function registerServerPowerRoutes(app: FastifyInstance): void {
         where: { id: server.id },
         data: { stoppedByUser: false },
       });
-      const { startServerIfLicensed } = await import("../license.js");
+      const { startServerIfLicensed } = await import("../license/license.js");
       await startServerIfLicensed(server.id);
       const updated = await prisma.server.findUniqueOrThrow({
         where: { id: server.id },
@@ -132,7 +132,7 @@ export function registerServerPowerRoutes(app: FastifyInstance): void {
         assertLicenseAllowsPower,
         assertLicensePanelQuota,
         assertLicenseDiskQuota,
-      } = await import("../license.js");
+      } = await import("../license/license.js");
       await assertLicenseAllowsPower();
       await assertLicensePanelQuota(server.memoryMb, {
         excludeServerId: server.id,
@@ -158,7 +158,7 @@ export function registerServerPowerRoutes(app: FastifyInstance): void {
         where: { id: server.id },
         data: { stoppedByUser: false },
       });
-      const { startServerIfLicensed } = await import("../license.js");
+      const { startServerIfLicensed } = await import("../license/license.js");
       await startServerIfLicensed(server.id);
       const updated = await prisma.server.findUniqueOrThrow({
         where: { id: server.id },

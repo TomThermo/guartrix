@@ -4,7 +4,7 @@ import fsp from "node:fs/promises";
 import path from "node:path";
 import type { FastifyInstance } from "fastify";
 import { logActivity } from "../activity-log.js";
-import { isAuthenticated, requireServerAccess } from "../auth.js";
+import { isAuthenticated, requireServerAccess } from "../auth/auth.js";
 import { config, serverDir } from "../config.js";
 import { updateServerProperties, readServerProperties } from "../properties.js";
 

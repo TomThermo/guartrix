@@ -5,8 +5,8 @@ import {
   APPLICATION_API_RATE_WINDOW_MS,
   type ApplicationApiKeyRecord,
 } from "@msm/shared";
-import { prisma } from "./db.js";
-import { getRateLimitStore } from "./rate-limit-store.js";
+import { prisma } from "../db.js";
+import { getRateLimitStore } from "../rate-limit-store.js";
 
 export interface ApplicationAuthContext {
   keyId: string;

@@ -10,21 +10,21 @@ import {
 import {
   generateApplicationToken,
   toApplicationKeyRecord,
-} from "../application-keys.js";
-import { requireApplication } from "../application-auth.js";
+} from "../auth/application-keys.js";
+import { requireApplication } from "../auth/application-auth.js";
 import { logActivity } from "../activity-log.js";
 import {
   findUserByUsernameInsensitive,
   hashPassword,
   requireAdmin,
-} from "../auth.js";
-import { assertSameOrigin } from "../csrf.js";
+} from "../auth/auth.js";
+import { assertSameOrigin } from "../auth/csrf.js";
 import {
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
   passwordPolicyMessage,
   strongPasswordRefine,
-} from "../password-policy.js";
+} from "../auth/password-policy.js";
 import { prisma } from "../db.js";
 import { serverListInclude, toMcServer } from "../serialize.js";
 
@@ -343,7 +343,7 @@ export function registerApplicationRoutes(app: FastifyInstance): void {
     if (!owner) return reply.status(404).send({ error: "Owner not found" });
 
     try {
-      const { assertCanCreateServer } = await import("../quotas.js");
+      const { assertCanCreateServer } = await import("../billing/quotas.js");
       await assertCanCreateServer(
         {
           id: owner.id,

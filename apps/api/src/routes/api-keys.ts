@@ -9,9 +9,9 @@ import { logActivity } from "../activity-log.js";
 import {
   generateApiKeyToken,
   toApiKeyRecord,
-} from "../api-keys.js";
-import { requireSessionAuth } from "../auth.js";
-import { assertSameOrigin } from "../csrf.js";
+} from "../auth/api-keys.js";
+import { requireSessionAuth } from "../auth/auth.js";
+import { assertSameOrigin } from "../auth/csrf.js";
 import { prisma } from "../db.js";
 
 const createSchema = z.object({
@@ -66,7 +66,7 @@ export function registerApiKeyRoutes(app: FastifyInstance): void {
         return reply.status(400).send({ error: "serverIds cannot be empty — omit for all servers" });
       }
       // Only allow servers this user can already access.
-      const { listVisibleServerIds } = await import("../auth.js");
+      const { listVisibleServerIds } = await import("../auth/auth.js");
       const visible = new Set(await listVisibleServerIds(user));
       for (const id of parsed.data.serverIds) {
         if (!visible.has(id)) {

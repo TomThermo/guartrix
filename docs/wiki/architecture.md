@@ -28,11 +28,11 @@ Daemon :8081          @msm/node-agent
 | Path | Role |
 |------|------|
 | `apps/web` | React UI (Vite). Production build in `dist/`. |
-| `apps/api` | Fastify API, file sessions, Prisma → panel MySQL |
+| `apps/api` | Fastify API, file sessions, Prisma → panel MySQL (`src/auth/`, `src/billing/`, `src/license/`, `src/routes/`, …) |
 | `apps/daemon` | Thin HTTP wrapper around `packages/node-agent` |
 | `packages/node-agent` | Docker lifecycle, resource monitor, files, SFTP, firewall, MySQL helper |
 | `packages/shared` | Types, permissions, activity, **daemon JWT** + **license verify** helpers, password policy |
-| `scripts/` | `start.sh`, `prod-web.mjs`, installers, backups, monitor |
+| `scripts/` | `start.sh`, `prod-web.mjs` (+ `prod-web/` modules), installers, backups, monitor |
 
 **License validation** uses the public API at `LICENSE_SERVER_URL` (default
 `https://license.guartrix.com`) plus `LICENSE_KEY`. Without a valid license the

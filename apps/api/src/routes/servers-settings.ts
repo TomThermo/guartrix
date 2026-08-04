@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import type { ServerType } from "@msm/shared";
 import { hasPermission } from "@msm/shared";
-import { requireServerAccess } from "../auth.js";
+import { requireServerAccess } from "../auth/auth.js";
 import { logActivity } from "../activity-log.js";
 import { config } from "../config.js";
 import { prisma } from "../db.js";
@@ -57,7 +57,6 @@ const updateSchema = z.object({
     .optional(),
   startupCommand: z.string().max(4000).nullable().optional(),
   serverJar: z.string().min(1).max(128).nullable().optional(),
-  javaPath: z.string().nullable().optional(),
   properties: z.record(z.string()).optional(),
   autoRestart: z.boolean().optional(),
   startOnBoot: z.boolean().optional(),
@@ -260,7 +259,6 @@ export function registerServerSettingsRoutes(app: FastifyInstance): void {
       data.extraMounts !== undefined;
     const needsStartup =
       data.memoryMb !== undefined ||
-      data.javaPath !== undefined ||
       data.javaVersion !== undefined ||
       data.startupCommand !== undefined ||
       data.serverJar !== undefined ||
@@ -283,7 +281,7 @@ export function registerServerSettingsRoutes(app: FastifyInstance): void {
         if (!owner) return reply.status(400).send({ error: "Owner user not found" });
         if (data.ownerId !== server.ownerId) {
           try {
-            const { assertCanAllocateMemory } = await import("../quotas.js");
+            const { assertCanAllocateMemory } = await import("../billing/quotas.js");
             await assertCanAllocateMemory(
               owner,
               data.memoryMb ?? server.memoryMb,
@@ -311,7 +309,7 @@ export function registerServerSettingsRoutes(app: FastifyInstance): void {
             : await prisma.user.findUnique({ where: { id: ownerId } });
         if (owner) {
           try {
-            const { assertCanAllocateMemory } = await import("../quotas.js");
+            const { assertCanAllocateMemory } = await import("../billing/quotas.js");
             await assertCanAllocateMemory(owner, data.memoryMb, {
               excludeServerId: server.id,
               diskMb: data.diskMb ?? server.diskMb,
@@ -338,7 +336,7 @@ export function registerServerSettingsRoutes(app: FastifyInstance): void {
 
     if (data.diskMb !== undefined && data.diskMb !== server.diskMb) {
       try {
-        const { assertLicenseDiskQuota } = await import("../license.js");
+        const { assertLicenseDiskQuota } = await import("../license/license.js");
         await assertLicenseDiskQuota(data.diskMb);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
@@ -366,12 +364,10 @@ export function registerServerSettingsRoutes(app: FastifyInstance): void {
       );
     }
 
-    // javaVersion is stored in javaPath (major version string).
+    // javaVersion is stored in the javaPath DB column (major version string).
     let nextJavaPath: string | null | undefined = undefined;
     if (data.javaVersion !== undefined) {
       nextJavaPath = data.javaVersion;
-    } else if (data.javaPath !== undefined) {
-      nextJavaPath = data.javaPath;
     }
 
     if (data.startupCommand !== undefined && data.startupCommand !== null) {
@@ -609,7 +605,6 @@ export function registerServerSettingsRoutes(app: FastifyInstance): void {
         "cpuLimit",
         "port",
         "javaVersion",
-        "javaPath",
         "startupCommand",
         "serverJar",
         "autoRestart",

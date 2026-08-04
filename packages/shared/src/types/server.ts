@@ -68,8 +68,6 @@ export interface McServer {
   startupCommand: string | null;
   /** Jar filename to run (e.g. server.jar). */
   serverJar: string;
-  /** @deprecated use javaVersion — kept for older clients */
-  javaPath: string | null;
   fabricLoaderVersion: string | null;
   forgeVersion: string | null;
   paperBuild: number | null;
@@ -164,7 +162,6 @@ export interface UpdateServerRequest {
   javaVersion?: string | null;
   startupCommand?: string | null;
   serverJar?: string | null;
-  javaPath?: string | null;
   properties?: ServerProperties;
   autoRestart?: boolean;
   startOnBoot?: boolean;

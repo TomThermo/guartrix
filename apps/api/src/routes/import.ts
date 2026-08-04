@@ -6,7 +6,7 @@ import { nanoid } from "nanoid";
 import { z } from "zod";
 import type { ServerType } from "@msm/shared";
 import { logActivity } from "../activity-log.js";
-import { isAuthenticated, requireWrite, getSessionUser } from "../auth.js";
+import { isAuthenticated, requireWrite, getSessionUser } from "../auth/auth.js";
 import { prisma } from "../db.js";
 import { closeFirewallPort, openFirewallPort } from "../firewall.js";
 import { processManager } from "../process-manager.js";
@@ -76,7 +76,7 @@ export function registerImportRoutes(app: FastifyInstance): void {
     const data = parsed.data;
 
     try {
-      const { assertCanCreateServer } = await import("../quotas.js");
+      const { assertCanCreateServer } = await import("../billing/quotas.js");
       await assertCanCreateServer(user, data.memoryMb, {
         diskMb: data.diskMb ?? 10_240,
       });

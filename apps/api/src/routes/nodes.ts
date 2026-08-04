@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { nanoid } from "nanoid";
 import { logActivity } from "../activity-log.js";
-import { requireAdmin, requireAuth } from "../auth.js";
+import { requireAdmin, requireAuth } from "../auth/auth.js";
 import { prisma } from "../db.js";
 import {
   daemonTestNode,
@@ -72,7 +72,7 @@ export function registerNodeRoutes(app: FastifyInstance): void {
       return reply.status(400).send({ error: parsed.error.flatten() });
     }
     try {
-      const { assertLicenseNodeQuota } = await import("../license.js");
+      const { assertLicenseNodeQuota } = await import("../license/license.js");
       await assertLicenseNodeQuota();
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

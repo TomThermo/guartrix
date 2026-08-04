@@ -1,5 +1,5 @@
 import type { AuthUser, UserRole } from "@msm/shared";
-import { prisma } from "./db.js";
+import { prisma } from "../db.js";
 
 export type QuotaUser = {
   id: string;
@@ -39,7 +39,7 @@ export async function assertCanCreateServer(
   opts?: { diskMb?: number },
 ): Promise<void> {
   const { assertLicensePanelQuota, assertLicenseDiskQuota } = await import(
-    "./license.js"
+    "../license/license.js"
   );
   await assertLicensePanelQuota(memoryMb, { extraServer: true });
   // Default provision disk is 10 GB when omitted.
@@ -87,7 +87,7 @@ export async function assertCanAllocateMemory(
   },
 ): Promise<void> {
   const { assertLicensePanelQuota, assertLicenseDiskQuota } = await import(
-    "./license.js"
+    "../license/license.js"
   );
   await assertLicensePanelQuota(memoryMb, {
     excludeServerId: opts?.excludeServerId,

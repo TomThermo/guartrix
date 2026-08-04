@@ -49,7 +49,7 @@ export function DatabasesPanel({
     const data = await api.listDatabases(serverId);
     setDatabases(data.databases);
     setPrefix(data.prefix || databaseNamePrefix(serverId));
-    setUsed(data.used ?? data.ownerUsed);
+    setUsed(data.used);
     setLimit(data.limit);
     setRemaining(data.remaining);
   }, [serverId]);

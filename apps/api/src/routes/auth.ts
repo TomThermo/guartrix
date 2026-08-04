@@ -18,9 +18,9 @@ import {
   requireAuth,
   toAuthUser,
   verifyPassword,
-} from "../auth.js";
+} from "../auth/auth.js";
 import { config } from "../config.js";
-import { assertSameOrigin } from "../csrf.js";
+import { assertSameOrigin } from "../auth/csrf.js";
 import { prisma } from "../db.js";
 import {
   hostNodeName,
@@ -33,11 +33,11 @@ import {
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
   passwordPolicyMessage,
-} from "../password-policy.js";
+} from "../auth/password-policy.js";
 import { getRateLimitStore } from "../rate-limit-store.js";
 import { linkPendingSubUsers } from "../server-access.js";
-import { destroySessionsForUser } from "../session-store.js";
-import { consumeRecoveryCode, verifyTotp } from "../totp.js";
+import { destroySessionsForUser } from "../auth/session-store.js";
+import { consumeRecoveryCode, verifyTotp } from "../auth/totp.js";
 
 const quotaLimitSchema = z
   .number()

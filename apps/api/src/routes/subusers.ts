@@ -8,7 +8,7 @@ import {
   type ServerSubUser,
 } from "@msm/shared";
 import { logActivity } from "../activity-log.js";
-import { requireServerAccess } from "../auth.js";
+import { requireServerAccess } from "../auth/auth.js";
 import { config } from "../config.js";
 import { prisma } from "../db.js";
 import { sendMail } from "../mail.js";

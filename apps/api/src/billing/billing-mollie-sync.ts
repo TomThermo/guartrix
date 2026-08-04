@@ -1,12 +1,12 @@
 import { nanoid } from "nanoid";
-import { logActivity } from "./activity-log.js";
+import { logActivity } from "../activity-log.js";
 import {
   emitBillingWebhook,
   provisionPaidPayment,
   revokePlanAfterFailedRenewal,
   toPaymentRecord,
 } from "./billing.js";
-import { prisma } from "./db.js";
+import { prisma } from "../db.js";
 import { mapMollieStatus, mollieGetPayment } from "./mollie.js";
 
 /**

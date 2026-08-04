@@ -2,8 +2,8 @@ import { createHash } from "node:crypto";
 import type { FastifyInstance } from "fastify";
 import { nanoid } from "nanoid";
 import { z } from "zod";
-import { requireAuth } from "../auth.js";
-import { assertSameOrigin } from "../csrf.js";
+import { requireAuth } from "../auth/auth.js";
+import { assertSameOrigin } from "../auth/csrf.js";
 import { prisma } from "../db.js";
 import { getVapidPublicKey, isWebPushConfigured } from "../web-push.js";
 
