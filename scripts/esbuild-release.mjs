@@ -27,6 +27,10 @@ const WORKSPACE_ALIASES = {
     rootDir,
     "packages/shared/src/license-signing.ts",
   ),
+  "@msm/shared/license-ticket": path.join(
+    rootDir,
+    "packages/shared/src/license-ticket.ts",
+  ),
   "@msm/shared": path.join(rootDir, "packages/shared/src/index.ts"),
   "@msm/node-agent": path.join(rootDir, "packages/node-agent/src/index.ts"),
 };

@@ -7,11 +7,19 @@ import {
   hashLicenseKey,
   verifyLicenseClaims,
 } from "@msm/shared/license-signing";
+import type { DaemonLicenseTicket } from "@msm/shared/license-ticket";
+import {
+  UNLICENSED_MAX_DISK_MB,
+  UNLICENSED_MAX_MEMORY_MB,
+  UNLICENSED_MAX_NODES,
+  UNLICENSED_MAX_SERVERS,
+} from "@msm/shared/license-ticket";
 import { config } from "./config.js";
 import { prisma } from "./db.js";
 import { processManager } from "./process-manager.js";
 import { logActivity } from "./activity-log.js";
 import { hostPublicIp } from "./host-resources.js";
+import { daemonPushLicenseTicketAll } from "./daemon-client.js";
 import {
   getProductVersion,
   isUpdateAvailable,
@@ -60,10 +68,21 @@ const CACHE_MS = Math.max(
   60_000,
   Number(process.env.LICENSE_VALIDATE_INTERVAL_MS ?? 10 * 60 * 1000),
 );
-/** After this many ms without a successful signed validate, treat as invalid. */
+/** After this many ms without a successful signed validate, treat as invalid (default 12h). */
 const UNREACHABLE_GRACE_MS = Number(
-  process.env.LICENSE_UNREACHABLE_GRACE_MS ?? 24 * 60 * 60 * 1000,
+  process.env.LICENSE_UNREACHABLE_GRACE_MS ?? 12 * 60 * 60 * 1000,
 );
+/** Alert after this many consecutive failed validates (network/signature). */
+const VALIDATE_FAIL_ALERT_THRESHOLD = Math.max(
+  1,
+  Number(process.env.LICENSE_VALIDATE_FAIL_ALERTS ?? 3),
+);
+
+let lastSignedTicket: {
+  claims: LicenseSignedClaims;
+  signature: string;
+} | null = null;
+let consecutiveValidateFailures = 0;
 const KEY_FILE = () => path.join(config.dataDir, "license-key");
 const INSTALL_ID_FILE = () => path.join(config.dataDir, "license-install-id");
 const SERVER_URL_FILE = () => path.join(config.dataDir, "license-server-url");
@@ -272,6 +291,16 @@ export async function clearLicenseKey(): Promise<void> {
   await fs.rm(LAST_OK_FILE(), { force: true });
   cached = null;
   cachedAt = 0;
+  lastSignedTicket = null;
+  await pushDaemonLicenseTicket({
+    valid: false,
+    status: "missing",
+    message: "License key cleared",
+    expiresAt: null,
+    label: null,
+    checkedAt: new Date().toISOString(),
+    keyMasked: "",
+  });
 }
 
 export async function getInstallId(): Promise<string> {
@@ -293,11 +322,7 @@ export async function getInstallId(): Promise<string> {
  * Unlicensed / invalid license free tier for this install.
  * One node, one Minecraft server, 10 GB disk — enough to evaluate the panel.
  */
-export const UNLICENSED_MAX_NODES = 1;
-export const UNLICENSED_MAX_SERVERS = 1;
-export const UNLICENSED_MAX_DISK_MB = 10_240;
-/** Soft RAM pool for free tier (8 GB total across servers). */
-export const UNLICENSED_MAX_MEMORY_MB = 8192;
+export { UNLICENSED_MAX_NODES, UNLICENSED_MAX_SERVERS, UNLICENSED_MAX_DISK_MB, UNLICENSED_MAX_MEMORY_MB };
 
 export function getUnlicensedFreeTier(): {
   maxNodes: number;
@@ -311,6 +336,72 @@ export function getUnlicensedFreeTier(): {
     maxDiskMb: UNLICENSED_MAX_DISK_MB,
     maxMemoryMb: UNLICENSED_MAX_MEMORY_MB,
   };
+}
+
+async function pushDaemonLicenseTicket(state: LicenseState): Promise<void> {
+  let ticket: DaemonLicenseTicket;
+  if (
+    state.valid &&
+    lastSignedTicket &&
+    lastSignedTicket.claims.valid
+  ) {
+    ticket = {
+      v: 1,
+      kind: "licensed",
+      pushedAt: Date.now(),
+      claims: lastSignedTicket.claims,
+      signature: lastSignedTicket.signature,
+    };
+  } else if (
+    state.status === "unreachable" &&
+    state.valid &&
+    lastSignedTicket?.claims.valid
+  ) {
+    // Soft-valid grace: keep last signed ticket on daemons.
+    ticket = {
+      v: 1,
+      kind: "licensed",
+      pushedAt: Date.now(),
+      claims: lastSignedTicket.claims,
+      signature: lastSignedTicket.signature,
+    };
+  } else {
+    ticket = { v: 1, kind: "free", pushedAt: Date.now() };
+  }
+  try {
+    const { pushed, failed } = await daemonPushLicenseTicketAll(ticket);
+    if (failed > 0) {
+      console.warn(
+        `[license] daemon ticket push: ${pushed} ok, ${failed} failed (kind=${ticket.kind})`,
+      );
+    }
+  } catch (err) {
+    console.warn(
+      "[license] daemon ticket push error:",
+      err instanceof Error ? err.message : err,
+    );
+  }
+}
+
+function noteValidateFailure(message: string): void {
+  consecutiveValidateFailures += 1;
+  if (consecutiveValidateFailures === VALIDATE_FAIL_ALERT_THRESHOLD) {
+    logActivity({
+      action: "license.validate-failed",
+      actor: "system",
+      user: null,
+      serverId: null,
+      success: false,
+      metadata: {
+        consecutive: consecutiveValidateFailures,
+        message: message.slice(0, 500),
+      },
+    });
+  }
+}
+
+function noteValidateSuccess(): void {
+  consecutiveValidateFailures = 0;
 }
 
 function licenseQuotaError(message: string): Error & { code?: string } {
@@ -510,6 +601,7 @@ async function doValidateLicense(): Promise<LicenseState> {
     };
     cachedAt = now;
     await maybeEnforceTransition(false, cached.message);
+    await pushDaemonLicenseTicket(cached);
     return cached;
   }
 
@@ -587,6 +679,10 @@ async function doValidateLicense(): Promise<LicenseState> {
           claims.features === undefined ? null : claims.features;
         data.boundIp = claims.boundIp;
         data.boundIps = claims.boundIps ?? [];
+        lastSignedTicket = {
+          claims,
+          signature: data.signature,
+        };
       }
     }
 
@@ -617,6 +713,8 @@ async function doValidateLicense(): Promise<LicenseState> {
         };
         cachedAt = now;
         await maybeEnforceTransition(false, cached.message);
+        noteValidateFailure(cached.message);
+        await pushDaemonLicenseTicket(cached);
         return cached;
       }
       console.warn(
@@ -700,12 +798,15 @@ async function doValidateLicense(): Promise<LicenseState> {
     };
     cachedAt = now;
     await maybeEnforceTransition(cached.valid, cached.message);
+    noteValidateFailure(cached.message);
+    await pushDaemonLicenseTicket(cached);
     return cached;
   }
 
   cachedAt = now;
   await maybeEnforceTransition(cached.valid, cached.message);
   if (cached.valid) {
+    noteValidateSuccess();
     await stopServersExceedingLicenseQuota(cached).catch((err) => {
       console.warn(
         "[license] quota enforcement failed:",
@@ -713,6 +814,7 @@ async function doValidateLicense(): Promise<LicenseState> {
       );
     });
   } else {
+    noteValidateSuccess(); // contacted license server; invalid key is not a transport failure
     await enforceUnlicensedFreeTier(cached.message).catch((err) => {
       console.warn(
         "[license] free-tier enforcement failed:",
@@ -720,6 +822,7 @@ async function doValidateLicense(): Promise<LicenseState> {
       );
     });
   }
+  await pushDaemonLicenseTicket(cached);
   return cached;
 }
 

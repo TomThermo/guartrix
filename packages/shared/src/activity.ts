@@ -118,6 +118,11 @@ export const ACTIVITY_ACTIONS: Record<string, ActivityActionMeta> = {
     label: "Removed the license key",
     critical: true,
   },
+  "license.validate-failed": {
+    category: "admin",
+    label: "License validate failed repeatedly",
+    critical: true,
+  },
   "server.owner-change": {
     category: "server",
     label: "Changed the server owner",

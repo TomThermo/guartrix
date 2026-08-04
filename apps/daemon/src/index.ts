@@ -69,6 +69,42 @@ import {
 import { daemonConfig } from "./config.js";
 import { isDaemonAuthorized, requireDaemonAuth } from "./auth.js";
 import { registerDaemonMetrics } from "./metrics.js";
+import {
+  acceptLicenseTicket,
+  assertDaemonAllowsStart,
+  DaemonLicenseError,
+  getLicenseTicketStatus,
+} from "./license-gate.js";
+
+async function activeGameServerIds(): Promise<string[]> {
+  const ids = new Set<string>();
+  try {
+    const containers = await listGuartrixContainers();
+    for (const c of containers) {
+      if (c.isMysql || !c.serverId) continue;
+      const state = (c.state || "").toLowerCase();
+      if (state === "running" || state === "restarting") {
+        ids.add(c.serverId);
+      }
+    }
+  } catch {
+    /* docker may be briefly unavailable */
+  }
+  // Also trust in-memory STARTING (container not listed yet).
+  // processManager doesn't expose a list API — probe known configs via getLastConfig is incomplete.
+  // Power start path passes server id; we only need "others", so container list is enough.
+  return [...ids];
+}
+
+async function enforceStartGate(server: DaemonServerConfig): Promise<void> {
+  const others = await activeGameServerIds();
+  assertDaemonAllowsStart({
+    serverId: server.id,
+    memoryMb: server.memoryMb,
+    diskMb: server.diskMb ?? 10_240,
+    otherActiveServerIds: others,
+  });
+}
 
 async function initSentry(): Promise<void> {
   const dsn = process.env.SENTRY_DSN?.trim();
@@ -170,6 +206,21 @@ async function main() {
   registerDaemonMetrics(app);
 
   app.get("/health", async () => ({ ok: true }));
+
+  /** Panel pushes signed/free license tickets here after validate. */
+  app.post("/license/ticket", async (request, reply) => {
+    const body =
+      request.body && typeof request.body === "object"
+        ? (request.body as { ticket?: unknown }).ticket ?? request.body
+        : request.body;
+    const result = acceptLicenseTicket(body);
+    if (!result.ok) {
+      return reply.status(400).send({ error: result.error });
+    }
+    return { ok: true, mode: result.mode, status: getLicenseTicketStatus() };
+  });
+
+  app.get("/license/ticket", async () => getLicenseTicketStatus());
 
   /** Readiness: daemon process is up and Docker Engine is reachable. */
   app.get("/ready", async (_request, reply) => {
@@ -502,6 +553,7 @@ async function main() {
               .status(400)
               .send({ error: "server.id must match path :id" });
           }
+          await enforceStartGate(server as DaemonServerConfig);
           await processManager.start(server as DaemonServerConfig);
           return { ok: true, status: processManager.getStatus(id) };
         }
@@ -517,11 +569,16 @@ async function main() {
           });
         }
         const next: DaemonServerConfig = { ...cfg, id };
+        await enforceStartGate(next);
         await processManager.start(next);
         return { ok: true, status: processManager.getStatus(id) };
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
-        return reply.status(400).send({ error: message });
+        const code =
+          err instanceof DaemonLicenseError ? err.code : undefined;
+        return reply
+          .status(err instanceof DaemonLicenseError ? 403 : 400)
+          .send({ error: message, ...(code ? { code } : {}) });
       }
     },
   );

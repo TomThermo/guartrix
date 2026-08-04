@@ -17,6 +17,10 @@
     "./license-signing": {
       "types": "./dist/license-signing.d.ts",
       "import": "./dist/license-signing.js"
+    },
+    "./license-ticket": {
+      "types": "./dist/license-ticket.d.ts",
+      "import": "./dist/license-ticket.js"
     }
   },
   "scripts": {

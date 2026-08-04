@@ -71,8 +71,9 @@ Installer: `--mysql-docker` (default) or `--mysql-external` / `--database-url`. 
 | `LICENSE_INSTALL_ID` | Optional stable install id (else auto-file in `data/`) |
 | `LICENSE_VERIFY_PUBLIC_KEY` | Ed25519 public key (PEM) to verify signed validate responses; else `data/licenses/signing-public.pem` |
 | `LICENSE_ALLOW_UNSIGNED` | `1` = accept unsigned validate JSON (insecure; migration only) |
-| `LICENSE_UNREACHABLE_GRACE_MS` | Soft-valid window if license host unreachable (default `86400000` = 24h) |
+| `LICENSE_UNREACHABLE_GRACE_MS` | Soft-valid window if license host unreachable (default `43200000` = 12h); also used by daemons for ticket grace |
 | `LICENSE_VALIDATE_INTERVAL_MS` | How often the panel calls `/v1/validate` in the background (default `600000` = 10m) |
+| `LICENSE_VALIDATE_FAIL_ALERTS` | Activity alert after N consecutive validate transport/signature failures (default `3`) |
 
 The license **server** is hosted separately by Guartrix (default `https://license.guartrix.com`). Panel installs only need `LICENSE_SERVER_URL` and `LICENSE_KEY`. Without a valid key the panel runs the [free tier](licensing.md#free-tier-no-valid-license) (1 node, 1 server, 10 GB disk).
 

@@ -7,6 +7,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.63] — 2026-08-04
+
+- License hardening: panel pushes signed/free tickets to daemons; daemon gates start/restart; default unreachable grace 12h; alert after repeated validate failures
+
 ## [1.0.62] — 2026-08-04
 
 - Admin → Settings (General / Mail / Security / Alerts): domain, SMTP, HTTPS, quotas, Cloudflare, 2FA policy, alerts via `data/panel-settings.json`

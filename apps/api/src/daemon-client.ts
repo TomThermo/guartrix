@@ -317,6 +317,44 @@ export async function daemonPower(
   );
 }
 
+/** Push panel license ticket to a node (or all known nodes when nodeId omitted). */
+export async function daemonPushLicenseTicket(
+  ticket: unknown,
+  nodeId?: string | null,
+): Promise<{ ok: boolean; mode?: string }> {
+  const node = await resolveNode(nodeId);
+  return daemonJson<{ ok: boolean; mode?: string }>(node, "/license/ticket", {
+    method: "POST",
+    body: JSON.stringify({ ticket }),
+  });
+}
+
+/** Best-effort push to every node that has a vault token. */
+export async function daemonPushLicenseTicketAll(
+  ticket: unknown,
+): Promise<{ pushed: number; failed: number }> {
+  const nodes = await prisma.node.findMany({ select: { id: true } });
+  let pushed = 0;
+  let failed = 0;
+  for (const n of nodes) {
+    if (!tokenByNodeId.has(n.id)) {
+      failed += 1;
+      continue;
+    }
+    try {
+      await daemonPushLicenseTicket(ticket, n.id);
+      pushed += 1;
+    } catch (err) {
+      failed += 1;
+      console.warn(
+        `[license] ticket push failed for node ${n.id}:`,
+        err instanceof Error ? err.message : err,
+      );
+    }
+  }
+  return { pushed, failed };
+}
+
 export async function daemonSetLimits(
   serverId: string,
   limits: { diskMb: number; cpuLimit: number },
