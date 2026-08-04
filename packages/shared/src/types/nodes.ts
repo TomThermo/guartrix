@@ -38,6 +38,11 @@ export interface DaemonNode {
   sftpPort: number;
   /** Public SFTP hostname (Cloudflare A record), if configured. */
   sftpHostname: string | null;
+  /**
+   * Trusted SSH host-key fingerprint for remote-install (OpenSSH SHA256:…).
+   * Null until an admin has trusted a key via the install wizard.
+   */
+  sshHostKeyFingerprint: string | null;
   status: NodeStatus;
   lastSeenAt: string | null;
   createdAt: string;

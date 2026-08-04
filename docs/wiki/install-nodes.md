@@ -12,11 +12,14 @@ A **node** is a VPS running the Guartrix daemon. Minecraft servers are scheduled
    - Optional **Location / region** label (shown in the create-server node picker)
    - Scheme (`http` on LAN/VPS is typical) and daemon port (`8081`)
 4. On the install step, enter SSH user + password **or** private key (default SSH user often `ubuntu`; optional non-22 SSH port).
-5. Watch the **live log** from the remote server. On success the wizard **auto-tests** the daemon.
-6. If needed, click **Test connection** until status is **ONLINE**.
-7. Create a Minecraft server and select that node (admins only choose node placement).
+5. First SSH attempt prints the **host-key fingerprint** and stops until you confirm **Trust this host key** (stored on the node). Later installs must match; after a VPS rebuild use **Replace host key**.
+6. Watch the **live log** from the remote server. On success the wizard **auto-tests** the daemon.
+7. If needed, click **Test connection** until status is **ONLINE**.
+8. Create a Minecraft server and select that node (admins only choose node placement).
 
-SSH credentials are used once and **not stored**.
+SSH credentials are used once and **not stored**. The host-key fingerprint **is** stored for MITM protection.
+
+`install-daemon.sh` opens the daemon port preferably **only from the panel IP** (via ufw); SFTP and game ports stay world-reachable as needed.
 
 Remote config lives at **`/var/lib/guartrix/daemon.env`** (not `$INSTALL_DIR/data/daemon.env`). Code under `/opt/guartrix`.
 
@@ -96,13 +99,13 @@ Checklist still expects `/health` and `/ready` (Docker reachable) after changes.
 
 | Mode | When to use |
 |------|-------------|
-| **`shared`** (default) | Single-tenant hosts, trusted players, or when you want the simplest setup — every game container shares the flat `guartrix` bridge with MySQL (`guartrix-mysql` DNS works out of the box). |
-| **`per_server`** | Multi-tenant nodes or **untrusted players** — each server gets an isolated `guartrix-s-<id>` bridge so containers cannot reach each other’s IPs on the game network. |
+| **`per_server`** (default) | Multi-tenant nodes or **untrusted players** — each server gets an isolated `guartrix-s-<id>` bridge so containers cannot reach each other’s IPs on the game network. New remote installs write this automatically. |
+| **`shared`** | Single-tenant hosts, trusted players, or when you want the simplest setup — every game container shares the flat `guartrix` bridge with MySQL (`guartrix-mysql` DNS works out of the box). |
 
-Set `DOCKER_NETWORK_MODE=per_server` in the daemon env file for isolation. The daemon
-**still attaches** each game container to the shared `guartrix` bridge as a second
-network so game MySQL DNS (`guartrix-mysql`) keeps working — only peer game traffic
-is segmented on the per-server bridge.
+Set `DOCKER_NETWORK_MODE=shared` in the daemon env file only when you want the flat bridge.
+With `per_server`, the daemon **still attaches** each game container to the shared `guartrix`
+bridge as a second network so game MySQL DNS (`guartrix-mysql`) keeps working — only peer
+game traffic is segmented on the per-server bridge.
 
 Restart the daemon (and recreate running game containers) after changing the mode.
 

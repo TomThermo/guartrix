@@ -165,7 +165,10 @@ export async function safeExtractArchive(
   destDir: string,
 ): Promise<void> {
   const lower = archivePath.toLowerCase();
-  const isZip = lower.endsWith(".zip");
+  const isZip =
+    lower.endsWith(".zip") ||
+    lower.endsWith(".mrpack") ||
+    lower.endsWith(".jar");
   const members = isZip
     ? await listZipMembers(archivePath)
     : await listTarMembers(archivePath);

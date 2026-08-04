@@ -41,7 +41,7 @@ Many operator knobs (public URL, SMTP, registration, quotas, 2FA policy, alerts,
 | `DOCKER_IMAGE` | Default `eclipse-temurin:25-jre-jammy` |
 | `DOCKER_LOG_MAX_SIZE` | Docker `json-file` max-size for game containers (default `10m`; daemon env file) |
 | `DOCKER_LOG_MAX_FILE` | Docker `json-file` max-file count (default `3`) |
-| `DOCKER_NETWORK_MODE` | `shared` (default: flat `guartrix` bridge; single-tenant) or `per_server` (isolated `guartrix-s-<id>` per server — recommended multi-tenant; MySQL still on shared bridge). Set on the daemon env file (local `data/daemon.env` or remote `/var/lib/guartrix/daemon.env`) |
+| `DOCKER_NETWORK_MODE` | `per_server` (default: isolated `guartrix-s-<id>` per server; MySQL still on shared bridge) or `shared` (flat `guartrix` bridge; single-tenant). Set on the daemon env file (local `data/daemon.env` or remote `/var/lib/guartrix/daemon.env`). New remote installs write `per_server`. |
 | `MANAGE_FIREWALL` | Open/close game ports via ufw when true |
 
 ## Database (panel)

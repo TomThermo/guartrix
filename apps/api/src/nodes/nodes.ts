@@ -60,6 +60,7 @@ export function serializeNode(
     mysqlPort?: number;
     sftpPort?: number;
     sftpHostname?: string | null;
+    sshHostKeyFingerprint?: string | null;
     status: NodeStatus;
     lastSeenAt: Date | null;
     createdAt: Date;
@@ -90,6 +91,9 @@ export function serializeNode(
     mysqlPort: node.mysqlPort ?? 3306,
     sftpPort: node.sftpPort ?? DEFAULT_SFTP_PORT,
     sftpHostname: node.sftpHostname ?? null,
+    sshHostKeyFingerprint: node.sshHostKeyFingerprint?.trim()
+      ? node.sshHostKeyFingerprint.trim()
+      : null,
     status: node.status,
     lastSeenAt: node.lastSeenAt?.toISOString() ?? null,
     createdAt: node.createdAt.toISOString(),

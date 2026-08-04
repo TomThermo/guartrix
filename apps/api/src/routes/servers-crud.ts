@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import type { ServerType } from "@msm/shared";
+import { safeExtractArchive } from "@msm/node-agent";
 import {
   requireServerAccess,
   requireWrite,
@@ -31,13 +32,9 @@ import { collectServerStats } from "../servers/stats.js";
 import {
   applyCreateWorldDefaults,
 } from "../servers/server-lifecycle.js";
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-
-const execFileAsync = promisify(execFile);
 
 const SERVER_TYPES = [
   "VANILLA",
@@ -528,9 +525,7 @@ export function registerServerCrudRoutes(app: FastifyInstance): void {
         const archivePath = path.join(staging, "source.tar.gz");
         const { daemonExportArchiveToFile } = await import("../nodes/daemon-client.js");
         await daemonExportArchiveToFile(source.id, archivePath);
-        await execFileAsync("tar", ["-xzf", archivePath, "-C", staging], {
-          maxBuffer: 32 * 1024 * 1024,
-        });
+        await safeExtractArchive(archivePath, staging);
         await fs.rm(archivePath, { force: true });
         await fs.rm(path.join(staging, "logs"), { recursive: true, force: true }).catch(() => undefined);
         await fs.rm(path.join(staging, "crash-reports"), { recursive: true, force: true }).catch(() => undefined);

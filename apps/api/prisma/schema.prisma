@@ -61,6 +61,11 @@ model Node {
   sftpHostname String?
   /** DNS label under CLOUDFLARE_DOMAIN for the SFTP A record. */
   sftpDnsSlug  String?   @unique
+  /**
+   * OpenSSH-style SHA256 fingerprint of the VPS host key (remote-install TOFU).
+   * Format: SHA256:<base64 without padding>. Null until first trusted SSH install.
+   */
+  sshHostKeyFingerprint String?
   status      NodeStatus @default(UNKNOWN)
   lastSeenAt  DateTime?
   createdAt   DateTime   @default(now())

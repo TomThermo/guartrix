@@ -6,7 +6,6 @@ import {
   hasPermission,
   normalizeLicenseFeatures,
   isServerPermission,
-  normalizeLicenseFeatures,
   type AuthUser,
   type ServerPermission,
 } from "@msm/shared";
@@ -125,7 +124,7 @@ export async function getServerPermissionsBatch(
   const out = new Map<string, string[]>();
   if (servers.length === 0) return out;
 
-  let features: Parameters<typeof normalizeLicenseFeatures>[0] = null;
+  let features: string[] | null = null;
   try {
     const state = getCachedLicenseState() ?? (await validateLicense(false));
     if (state?.valid) {

@@ -21,15 +21,47 @@ async function runUfw(args: string[]): Promise<{ stdout: string; stderr: string 
   }
 }
 
-export async function openFirewallPort(
-  port: number,
-  protocol: "tcp" | "udp" = "tcp",
-): Promise<void> {
-  if (!firewallEnabled) return;
+function assertValidPort(port: number): void {
   if (port < 1024 || port > 65535) {
     throw new Error(`Invalid firewall port: ${port}`);
   }
+}
+
+/** Basic IPv4 / CIDR check for ufw `from` sources (no shell metacharacters). */
+function assertSafeFromSource(from: string): string {
+  const t = from.trim();
+  if (!/^[0-9a-fA-F.:/]+$/.test(t) || t.length > 64) {
+    throw new Error(`Invalid firewall source: ${from}`);
+  }
+  return t;
+}
+
+export async function openFirewallPort(
+  port: number,
+  protocol: "tcp" | "udp" = "tcp",
+  opts?: { from?: string },
+): Promise<void> {
+  if (!firewallEnabled) return;
+  assertValidPort(port);
   const proto = protocol === "udp" ? "udp" : "tcp";
+  if (opts?.from) {
+    const from = assertSafeFromSource(opts.from);
+    // Restrict to a single source (e.g. panel IP → daemon API).
+    await runUfw([
+      "allow",
+      "from",
+      from,
+      "to",
+      "any",
+      "port",
+      String(port),
+      "proto",
+      proto,
+      "comment",
+      COMMENT,
+    ]);
+    return;
+  }
   // Idempotent: ufw allow on an existing rule is fine
   await runUfw(["allow", `${port}/${proto}`, "comment", COMMENT]);
 }

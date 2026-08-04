@@ -137,6 +137,7 @@ DAEMON_JWT_TTL=900
 DAEMON_JWT_WS_TTL=3600
 DAEMON_JWT_LEGACY=false
 DOCKER_IMAGE=eclipse-temurin:25-jre-jammy
+DOCKER_NETWORK_MODE=per_server
 MYSQL_ROOT_PASSWORD=${MYSQL_PASS}
 MYSQL_PORT=3306
 MYSQL_IMAGE=mysql:8.4
@@ -187,14 +188,29 @@ systemctl daemon-reload
 systemctl enable --now guartrix-daemon.service
 
 if command -v ufw >/dev/null 2>&1; then
-  ufw allow "${DAEMON_PORT}/tcp" >/dev/null 2>&1 || true
+  # Prefer locking the daemon API to the panel host (JWT still required).
+  PANEL_HOST=""
+  PANEL_IP=""
+  if [[ -n "${PANEL_URL:-}" ]]; then
+    PANEL_HOST="$(printf '%s' "$PANEL_URL" | sed -E 's#^[a-zA-Z][a-zA-Z0-9+.-]*://##' | cut -d/ -f1 | cut -d: -f1)"
+    if [[ -n "$PANEL_HOST" ]]; then
+      PANEL_IP="$(getent ahostsv4 "$PANEL_HOST" 2>/dev/null | awk '{print $1; exit}')"
+    fi
+  fi
+  if [[ -n "$PANEL_IP" ]]; then
+    ufw allow from "$PANEL_IP" to any port "${DAEMON_PORT}" proto tcp comment 'Guartrix panel' >/dev/null 2>&1 || true
+    echo "[guartrix] Firewall: daemon ${DAEMON_PORT}/tcp allowed from panel ${PANEL_IP}"
+  else
+    ufw allow "${DAEMON_PORT}/tcp" >/dev/null 2>&1 || true
+    echo "[guartrix] WARN: could not resolve panel host — daemon ${DAEMON_PORT}/tcp open to the world"
+  fi
   ufw allow "${SFTP_PORT}/tcp" >/dev/null 2>&1 || true
   ufw allow 25565:25600/tcp >/dev/null 2>&1 || true
 fi
 
 sleep 1
 if systemctl is-active --quiet guartrix-daemon.service; then
-  echo "[guartrix] Daemon is running on 0.0.0.0:${DAEMON_PORT}"
+  echo "[guartrix] Daemon is running on 0.0.0.0:${DAEMON_PORT} (DOCKER_NETWORK_MODE=per_server)"
 else
   echo "[guartrix] WARN: service not active — check: journalctl -u guartrix-daemon -e" >&2
 fi
@@ -202,10 +218,11 @@ fi
 echo
 echo "Next steps in the panel (System):"
 echo "  1. Node host/FQDN must reach this machine on port ${DAEMON_PORT}"
-echo "  2. Click “Test connection”"
+echo "  2. Prefer firewall: only the panel IP should reach ${DAEMON_PORT}/tcp"
+echo "  3. Click “Test connection”"
 if [[ -n "$PANEL_URL" ]]; then
-  echo "  3. Panel: ${PANEL_URL}"
+  echo "  4. Panel: ${PANEL_URL}"
 fi
-echo "  4. Firewall: ${DAEMON_PORT}/tcp + ${SFTP_PORT}/tcp + game ports"
+echo "  5. Firewall: SFTP ${SFTP_PORT}/tcp + game ports (daemon preferably panel-only)"
 echo
 echo "Token is stored in ${ENV_FILE}"

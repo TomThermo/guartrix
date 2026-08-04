@@ -287,7 +287,8 @@ export function registerNodeRoutes(app: FastifyInstance): void {
         `DAEMON_JWT_WS_TTL=3600`,
         `DAEMON_JWT_LEGACY=false`,
         `DOCKER_IMAGE=${process.env.DOCKER_IMAGE ?? "eclipse-temurin:25-jre-jammy"}`,
-        `DOCKER_NETWORK_MODE=${(process.env.DOCKER_NETWORK_MODE ?? "shared").trim() || "shared"}`,
+        // Remote nodes default to per-server isolation (multi-tenant safe).
+        `DOCKER_NETWORK_MODE=${(process.env.DOCKER_NETWORK_MODE ?? "per_server").trim() || "per_server"}`,
         `MANAGE_FIREWALL=true`,
         "",
       ].join("\n");
@@ -309,10 +310,12 @@ export function registerNodeRoutes(app: FastifyInstance): void {
         installCommand,
         curlInstall,
         repoUrl,
+        sshHostKeyFingerprint: node.sshHostKeyFingerprint ?? null,
         steps: [
           "Easiest: fill in SSH details below and click “Install via SSH” (panel connects and installs).",
+          "First SSH: confirm the host-key fingerprint, then trust it (stored on the node).",
           "Or SSH to the VPS yourself and run the install command (curl | bash).",
-          `Open firewall ports ${node.daemonPort}/tcp (daemon) and ${sftpPort}/tcp (SFTP) if not auto-opened.`,
+          `Firewall: daemon ${node.daemonPort}/tcp is restricted to the panel host when possible; keep ${sftpPort}/tcp + game ports open.`,
           "Click “Test connection” in the panel.",
         ],
       };
@@ -324,7 +327,8 @@ export function registerNodeRoutes(app: FastifyInstance): void {
   app.post<{ Params: { id: string }; Body: unknown }>(
     "/api/admin/nodes/:id/remote-install",
     async (request, reply) => {
-      if (!(await requireAdmin(request, reply))) return;
+      const admin = await requireAdmin(request, reply);
+      if (!admin) return;
       const node = await prisma.node.findUnique({
         where: { id: request.params.id },
       });
@@ -341,6 +345,12 @@ export function registerNodeRoutes(app: FastifyInstance): void {
         sshUser: z.string().min(1).max(64),
         sshPassword: z.string().min(1).max(512).optional(),
         sshPrivateKey: z.string().min(1).max(16_000).optional(),
+        /** First contact: admin confirms the presented host-key fingerprint. */
+        trustHostKey: z.boolean().optional().default(false),
+        /** Stored fingerprint no longer matches (VPS rebuild) — replace after verify. */
+        replaceHostKey: z.boolean().optional().default(false),
+        /** Optional pin (must match presented key). */
+        expectedHostKeyFingerprint: z.string().min(16).max(128).optional(),
       });
       const parsed = schema.safeParse(request.body);
       if (!parsed.success) {
@@ -382,6 +392,22 @@ export function registerNodeRoutes(app: FastifyInstance): void {
         String((request.query as { stream?: string } | undefined)?.stream) ===
           "1";
 
+      const persistTrustedKey = async (fp: string | undefined) => {
+        if (!fp) return;
+        if (node.sshHostKeyFingerprint === fp) return;
+        await prisma.node.update({
+          where: { id: node.id },
+          data: { sshHostKeyFingerprint: fp },
+        });
+        node.sshHostKeyFingerprint = fp;
+        logActivity({
+          action: "node.ssh_host_key_trusted",
+          request,
+          user: admin,
+          metadata: { nodeId: node.id, fingerprint: fp },
+        });
+      };
+
       const runInstall = (onChunk?: Parameters<
         typeof runRemoteDaemonInstall
       >[0]["onChunk"]) =>
@@ -391,9 +417,44 @@ export function registerNodeRoutes(app: FastifyInstance): void {
           sshUser: parsed.data.sshUser,
           sshPassword: parsed.data.sshPassword,
           sshPrivateKey: parsed.data.sshPrivateKey,
+          knownHostKeyFingerprint: node.sshHostKeyFingerprint,
+          expectedHostKeyFingerprint: parsed.data.expectedHostKeyFingerprint,
+          trustHostKey: parsed.data.trustHostKey,
+          replaceHostKey: parsed.data.replaceHostKey,
           installScript,
           onChunk,
         });
+
+      const finishPayload = async (
+        result: Awaited<ReturnType<typeof runRemoteDaemonInstall>>,
+      ) => {
+        if (result.trustedHostKeyFingerprint) {
+          await persistTrustedKey(result.trustedHostKeyFingerprint);
+        }
+        let test: unknown = null;
+        if (result.ok) {
+          try {
+            test = await daemonTestNode(node.id);
+          } catch {
+            // ignore
+          }
+        }
+        return {
+          ok: result.ok,
+          message: result.ok
+            ? "Daemon installed on the remote VPS"
+            : result.error || "Remote install failed",
+          error: result.error,
+          exitCode: result.exitCode,
+          stdout: result.stdout,
+          stderr: result.stderr,
+          hostKeyFingerprint: result.hostKeyFingerprint,
+          hostKeyMismatch: result.hostKeyMismatch,
+          hostKeyNeedsTrust: result.hostKeyNeedsTrust,
+          test,
+          node: await serializeNodeWithUsage(node.id).catch(() => undefined),
+        };
+      };
 
       if (wantStream) {
         reply.hijack();
@@ -416,33 +477,14 @@ export function registerNodeRoutes(app: FastifyInstance): void {
         };
         try {
           const result = await runInstall((chunk) => writeLine(chunk));
-          let test: unknown = null;
           if (result.ok) {
             writeLine({
               type: "status",
               message: "Install OK — testing panel → daemon connection…",
             });
-            try {
-              test = await daemonTestNode(node.id);
-            } catch {
-              // ignore
-            }
           }
-          writeLine({
-            type: "done",
-            ok: result.ok,
-            message: result.ok
-              ? "Daemon installed on the remote VPS"
-              : result.error || "Remote install failed",
-            error: result.error,
-            exitCode: result.exitCode,
-            stdout: result.stdout,
-            stderr: result.stderr,
-            test,
-            node: result.ok
-              ? await serializeNodeWithUsage(node.id)
-              : undefined,
-          });
+          const payload = await finishPayload(result);
+          writeLine({ type: "done", ...payload });
         } catch (err) {
           writeLine({
             type: "done",
@@ -462,34 +504,15 @@ export function registerNodeRoutes(app: FastifyInstance): void {
       }
 
       const result = await runInstall();
+      const payload = await finishPayload(result);
 
       if (!result.ok) {
-        return reply.status(502).send({
-          ok: false,
-          error: result.error || "Remote install failed",
-          exitCode: result.exitCode,
-          stdout: result.stdout,
-          stderr: result.stderr,
-        });
+        return reply
+          .status(result.hostKeyNeedsTrust || result.hostKeyMismatch ? 409 : 502)
+          .send(payload);
       }
 
-      // Best-effort connectivity check after install
-      let test: unknown = null;
-      try {
-        test = await daemonTestNode(node.id);
-      } catch {
-        // ignore
-      }
-
-      return {
-        ok: true,
-        message: "Daemon installed on the remote VPS",
-        exitCode: result.exitCode,
-        stdout: result.stdout,
-        stderr: result.stderr,
-        test,
-        node: await serializeNodeWithUsage(node.id),
-      };
+      return payload;
     },
   );
 }

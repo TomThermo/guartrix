@@ -39,6 +39,7 @@ export const nodesApi = {
       curlInstall?: string;
       repoUrl?: string;
       steps: string[];
+      sshHostKeyFingerprint?: string | null;
       node: import("@msm/shared").DaemonNode;
     }>(`/api/admin/nodes/${id}/install`),
   remoteInstallNode: async (
@@ -49,6 +50,9 @@ export const nodesApi = {
       sshUser: string;
       sshPassword?: string;
       sshPrivateKey?: string;
+      trustHostKey?: boolean;
+      replaceHostKey?: boolean;
+      expectedHostKeyFingerprint?: string;
     },
     opts?: {
       onChunk?: (chunk: {
@@ -62,6 +66,9 @@ export const nodesApi = {
         stderr?: string;
         test?: unknown;
         node?: import("@msm/shared").DaemonNode;
+        hostKeyFingerprint?: string;
+        hostKeyMismatch?: boolean;
+        hostKeyNeedsTrust?: boolean;
       }) => void;
       signal?: AbortSignal;
     },
@@ -82,13 +89,24 @@ export const nodesApi = {
         error?: string;
         stdout?: string;
         stderr?: string;
+        hostKeyFingerprint?: string;
+        hostKeyMismatch?: boolean;
+        hostKeyNeedsTrust?: boolean;
       };
       const bits = [
         typeof data.error === "string" ? data.error : res.statusText,
         data.stdout,
         data.stderr,
       ].filter(Boolean);
-      throw new Error(bits.join("\n\n") || `HTTP ${res.status}`);
+      const err = new Error(bits.join("\n\n") || `HTTP ${res.status}`) as Error & {
+        hostKeyFingerprint?: string;
+        hostKeyMismatch?: boolean;
+        hostKeyNeedsTrust?: boolean;
+      };
+      err.hostKeyFingerprint = data.hostKeyFingerprint;
+      err.hostKeyMismatch = data.hostKeyMismatch;
+      err.hostKeyNeedsTrust = data.hostKeyNeedsTrust;
+      throw err;
     }
 
     const reader = res.body.getReader();
@@ -103,6 +121,9 @@ export const nodesApi = {
       stderr?: string;
       test?: unknown;
       node?: import("@msm/shared").DaemonNode;
+      hostKeyFingerprint?: string;
+      hostKeyMismatch?: boolean;
+      hostKeyNeedsTrust?: boolean;
     } | null = null;
 
     while (true) {
@@ -125,6 +146,9 @@ export const nodesApi = {
           stderr?: string;
           test?: unknown;
           node?: import("@msm/shared").DaemonNode;
+          hostKeyFingerprint?: string;
+          hostKeyMismatch?: boolean;
+          hostKeyNeedsTrust?: boolean;
         };
         try {
           chunk = JSON.parse(trimmed) as typeof chunk;
@@ -145,16 +169,27 @@ export const nodesApi = {
           stderr: chunk.stderr,
           test: chunk.test,
           node: chunk.node,
+          hostKeyFingerprint: chunk.hostKeyFingerprint,
+          hostKeyMismatch: chunk.hostKeyMismatch,
+          hostKeyNeedsTrust: chunk.hostKeyNeedsTrust,
         });
       }
     }
 
     if (!donePayload?.ok) {
-      throw new Error(
+      const err = new Error(
         donePayload?.error ||
           donePayload?.message ||
           "Remote install failed",
-      );
+      ) as Error & {
+        hostKeyFingerprint?: string;
+        hostKeyMismatch?: boolean;
+        hostKeyNeedsTrust?: boolean;
+      };
+      err.hostKeyFingerprint = donePayload?.hostKeyFingerprint;
+      err.hostKeyMismatch = donePayload?.hostKeyMismatch;
+      err.hostKeyNeedsTrust = donePayload?.hostKeyNeedsTrust;
+      throw err;
     }
     return donePayload;
   },

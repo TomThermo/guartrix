@@ -4,10 +4,9 @@ import path from "node:path";
 import { createWriteStream } from "node:fs";
 import { pipeline } from "node:stream/promises";
 import { Readable } from "node:stream";
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
 import type { ServerType } from "@msm/shared";
 import { addonKindFor } from "@msm/shared";
+import { safeExtractArchive } from "@msm/node-agent";
 import { createBackup } from "./backups.js";
 import { serverDir } from "../config.js";
 import { prisma } from "../db.js";
@@ -17,8 +16,6 @@ import {
   categoryLabel,
   LOADER_CATEGORY_NAMES,
 } from "./addons-modrinth.js";
-
-const execFileAsync = promisify(execFile);
 
 const MODRINTH_TIMEOUT_MS = 30_000;
 
@@ -279,9 +276,7 @@ export async function installModrinthModpack(opts: {
 
   try {
     await downloadToFile(file.url, mrpackPath);
-    await execFileAsync("unzip", ["-q", "-o", mrpackPath, "-d", extractDir], {
-      maxBuffer: 32 * 1024 * 1024,
-    });
+    await safeExtractArchive(mrpackPath, extractDir);
 
     const indexRaw = await fs.readFile(
       path.join(extractDir, "modrinth.index.json"),
@@ -469,16 +464,7 @@ export async function installCurseforgeModpack(opts: {
 
   try {
     await downloadToFile(file.downloadUrl, archivePath);
-    const lower = archivePath.toLowerCase();
-    if (lower.endsWith(".zip")) {
-      await execFileAsync("unzip", ["-q", "-o", archivePath, "-d", extractDir], {
-        maxBuffer: 64 * 1024 * 1024,
-      });
-    } else {
-      await execFileAsync("tar", ["-xzf", archivePath, "-C", extractDir], {
-        maxBuffer: 64 * 1024 * 1024,
-      });
-    }
+    await safeExtractArchive(archivePath, extractDir);
 
     // Prefer contents that look like a Minecraft server root
     async function findRoot(dir: string, depth: number): Promise<string> {

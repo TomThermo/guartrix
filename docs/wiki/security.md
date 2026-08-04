@@ -49,11 +49,11 @@ another tool on the host needs it.
 | 2FA | Optional TOTP + recovery codes; role-required via `TWO_FACTOR_REQUIRED_ROLES` — see [Accounts & quotas](accounts-and-quotas.md) |
 | Client API | Personal Bearer keys (`gt_…`), scoped permissions, per-key rate limit — see [Client API](client-api.md) |
 | Files / SFTP | Symlink jail, `O_NOFOLLOW` uploads, member-safe archive extract, sensitive `guartrix-*.json` blocked |
-| Archives | Symlinks/hardlinks rejected; zip extracted member-by-member |
-| Daemon | Short-lived HS256 JWTs on the wire (HMAC with node secret); raw bearer only if `DAEMON_JWT_LEGACY=true`; `serverId` sanitized; MySQL game users default `remote: 172.%`; containers `--cap-drop=ALL`; **`DOCKER_NETWORK_MODE=shared`** (default) for single-tenant / simple MySQL DNS; **`per_server`** recommended on multi-tenant nodes — isolated `guartrix-s-<id>` bridges with a second attach to shared `guartrix` for game MySQL only |
+| Archives | Symlinks/hardlinks rejected; zip member-by-member; File Manager + modpack/clone/import use `safeExtractArchive` |
+| Daemon | Short-lived HS256 JWTs on the wire (HMAC with node secret); raw bearer only if `DAEMON_JWT_LEGACY=true`; `serverId` sanitized; MySQL game users default `remote: 172.%`; containers `--cap-drop=ALL`; **`DOCKER_NETWORK_MODE=per_server`** (default) isolates game bridges (`guartrix-s-<id>`) with a second attach to shared `guartrix` for game MySQL; set **`shared`** only for single-tenant / simplest DNS |
 | Outbound | Webhook/download SSRF guards (`safe-url.ts`); CDN host allowlist for jars/modpacks |
 | Capacity | Shared `assertNodeCapacity` (incl. reserve) on create/PATCH |
-| Nodes | Only admins pick `nodeId` on create / clone / import |
+| Nodes | Only admins pick `nodeId` on create / clone / import; remote-install verifies SSH host keys (explicit trust + stored fingerprint; replace requires confirm); install script prefers ufw allow daemon port **from panel IP only** |
 | Invites | No temporary password in JSON — setup link emailed; accept links are hashed tokens with a 7-day TTL |
 | Audit | Activity log records actor + IP per action; secret-looking metadata keys dropped — see [Activity log](activity-log.md) |
 | Watchdog | Restarts unhealthy panel processes; Discord/webhook alert when `ACTIVITY_WEBHOOK_URL` is set |
@@ -94,15 +94,25 @@ Daemon short-lived JWT rotation is implemented (panel signs HS256 JWTs; `DAEMON_
 
 ## Docker network isolation
 
-On game nodes, **`DOCKER_NETWORK_MODE=shared`** (default) puts every game container on
-one flat `guartrix` bridge — fine for single-tenant hosts or when all players are trusted.
+On game nodes, **`DOCKER_NETWORK_MODE=per_server`** (default) gives each server its own
+`guartrix-s-<id>` bridge so containers cannot reach sibling servers on the game network.
+MySQL still runs on the shared `guartrix` bridge; the daemon attaches each game container
+to **both** networks so `guartrix-mysql` DNS keeps working.
 
-For **multi-tenant** nodes or **untrusted players**, set **`DOCKER_NETWORK_MODE=per_server`**
-in the daemon env file (`DOCKER_NETWORK_MODE=per_server`) so each server gets its own `guartrix-s-<id>` network. Game containers
-cannot reach sibling servers on that bridge. MySQL still runs on the shared bridge; the
-daemon attaches each game container to **both** networks so `guartrix-mysql` DNS keeps
-working. Restart the daemon and recreate containers after changing the mode. Details:
+For **single-tenant** hosts or the simplest shared DNS setup, set
+`DOCKER_NETWORK_MODE=shared` in the daemon env file. Restart the daemon and recreate
+containers after changing the mode. Details:
 [Install nodes — Docker networks](install-nodes.md#docker-networks).
+
+## Remote install SSH host keys
+
+The Add-node wizard verifies the VPS SSH host key:
+
+1. First connection presents the fingerprint and **rejects** until the admin confirms **Trust host key**.
+2. The fingerprint is stored on `Node.sshHostKeyFingerprint`.
+3. Later installs must match; after a VPS rebuild, use **Replace host key**.
+
+`install-daemon.sh` prefers opening the daemon port **only from the panel IP** (resolved from `PANEL_URL`) when ufw is available.
 
 ## Install script supply chain (residual risk)
 

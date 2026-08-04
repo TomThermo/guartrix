@@ -53,6 +53,13 @@ export function AddNodeModal({ existingNode, onClose, onChanged }: Props) {
   const [sshUser, setSshUser] = useState("ubuntu");
   const [sshPassword, setSshPassword] = useState("");
   const [sshKey, setSshKey] = useState("");
+  const [trustHostKey, setTrustHostKey] = useState(false);
+  const [replaceHostKey, setReplaceHostKey] = useState(false);
+  const [hostKeyFingerprint, setHostKeyFingerprint] = useState<string | null>(
+    existingNode?.sshHostKeyFingerprint ?? null,
+  );
+  const [hostKeyNeedsTrust, setHostKeyNeedsTrust] = useState(false);
+  const [hostKeyMismatch, setHostKeyMismatch] = useState(false);
   const [log, setLog] = useState("");
   const [installOk, setInstallOk] = useState(false);
   const [testSummary, setTestSummary] = useState<string | null>(null);
@@ -78,6 +85,11 @@ export function AddNodeModal({ existingNode, onClose, onChanged }: Props) {
           steps: res.steps,
         });
         setNodeLabel(existingNode.name);
+        if (res.sshHostKeyFingerprint) {
+          setHostKeyFingerprint(res.sshHostKeyFingerprint);
+        } else if (existingNode.sshHostKeyFingerprint) {
+          setHostKeyFingerprint(existingNode.sshHostKeyFingerprint);
+        }
         setSshHost(existingNode.fqdn);
         setStep("install");
       })
@@ -168,10 +180,17 @@ export function AddNodeModal({ existingNode, onClose, onChanged }: Props) {
           sshUser: sshUser.trim(),
           sshPassword: sshPassword || undefined,
           sshPrivateKey: sshKey.trim() || undefined,
+          trustHostKey: trustHostKey || undefined,
+          replaceHostKey: replaceHostKey || undefined,
         },
         {
           signal: ac.signal,
           onChunk: (chunk) => {
+            if (chunk.hostKeyFingerprint) {
+              setHostKeyFingerprint(chunk.hostKeyFingerprint);
+            }
+            if (chunk.hostKeyNeedsTrust) setHostKeyNeedsTrust(true);
+            if (chunk.hostKeyMismatch) setHostKeyMismatch(true);
             if (chunk.type === "status" && chunk.message) {
               appendLog(`\n▸ ${chunk.message}\n`);
             } else if (chunk.type === "stdout" && chunk.data) {
@@ -181,6 +200,8 @@ export function AddNodeModal({ existingNode, onClose, onChanged }: Props) {
             } else if (chunk.type === "done") {
               if (chunk.ok) {
                 setInstallOk(true);
+                setHostKeyNeedsTrust(false);
+                setHostKeyMismatch(false);
                 const test = chunk.test as
                   | { ok?: boolean; error?: string; system?: { hostname?: string } }
                   | undefined;
@@ -202,6 +223,8 @@ export function AddNodeModal({ existingNode, onClose, onChanged }: Props) {
       );
       setSshPassword("");
       setInstallOk(true);
+      setTrustHostKey(false);
+      setReplaceHostKey(false);
       if (!testSummary && res.message) {
         setTestSummary(res.message);
       }
@@ -209,6 +232,16 @@ export function AddNodeModal({ existingNode, onClose, onChanged }: Props) {
       await onChanged();
     } catch (err) {
       if (ac.signal.aborted) return;
+      const keyed = err as Error & {
+        hostKeyFingerprint?: string;
+        hostKeyMismatch?: boolean;
+        hostKeyNeedsTrust?: boolean;
+      };
+      if (keyed.hostKeyFingerprint) {
+        setHostKeyFingerprint(keyed.hostKeyFingerprint);
+      }
+      if (keyed.hostKeyNeedsTrust) setHostKeyNeedsTrust(true);
+      if (keyed.hostKeyMismatch) setHostKeyMismatch(true);
       const message = err instanceof Error ? err.message : String(err);
       setError(message);
       appendLog(`\n✖ ${message}\n`);
@@ -444,11 +477,48 @@ export function AddNodeModal({ existingNode, onClose, onChanged }: Props) {
                   </Row>
                   <Form.Text className="text-secondary d-block mb-2">
                     Password or key is enough. For key + passphrase, fill in both.
+                    The first SSH attempt shows the host-key fingerprint; confirm it,
+                    then enable trust and install again (MITM protection).
                   </Form.Text>
+                  {hostKeyFingerprint && (
+                    <Alert variant="secondary" className="py-2 small font-monospace">
+                      Host key: {hostKeyFingerprint}
+                    </Alert>
+                  )}
+                  {!hostKeyMismatch &&
+                    (hostKeyNeedsTrust ||
+                      (!!hostKeyFingerprint &&
+                        !existingNode?.sshHostKeyFingerprint)) && (
+                    <Form.Check
+                      className="mb-2"
+                      type="checkbox"
+                      id="trust-host-key"
+                      checked={trustHostKey}
+                      disabled={busy}
+                      onChange={(e) => setTrustHostKey(e.target.checked)}
+                      label="Trust this host key and store it on the node"
+                    />
+                  )}
+                  {hostKeyMismatch && (
+                    <Form.Check
+                      className="mb-2"
+                      type="checkbox"
+                      id="replace-host-key"
+                      checked={replaceHostKey}
+                      disabled={busy}
+                      onChange={(e) => setReplaceHostKey(e.target.checked)}
+                      label="Replace stored host key (only after verifying the VPS was rebuilt)"
+                    />
+                  )}
                   <Button
                     type="submit"
                     variant="success"
-                    disabled={busy || (!sshPassword && !sshKey.trim())}
+                    disabled={
+                      busy ||
+                      (!sshPassword && !sshKey.trim()) ||
+                      (hostKeyNeedsTrust && !trustHostKey) ||
+                      (hostKeyMismatch && !replaceHostKey)
+                    }
                   >
                     {busy ? (
                       <>

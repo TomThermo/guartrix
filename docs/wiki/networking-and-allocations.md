@@ -114,10 +114,10 @@ See [Install nodes](install-nodes.md) and [Daemon API](daemon-api.md).
 
 Port allocation is separate from container network topology:
 
-- `DOCKER_NETWORK_MODE=shared`
-  All game containers share one bridge.
-- `DOCKER_NETWORK_MODE=per_server`
+- `DOCKER_NETWORK_MODE=per_server` (default)
   Each server gets its own game bridge while still attaching to shared services when needed, such as node-local MySQL.
+- `DOCKER_NETWORK_MODE=shared`
+  All game containers share one bridge (single-tenant / simplest setup).
 
 This matters for multi-tenant isolation and is documented further in:
 
