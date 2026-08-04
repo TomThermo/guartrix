@@ -480,8 +480,10 @@ class ProcessManager extends EventEmitter {
             this.restartAttempts.delete(serverId);
           }
           if (clean) {
-            // Intentional stop() already announces OFF after wait — avoid duplicate lines.
-            if (this.getStatus(serverId) !== "STOPPING") {
+            // Intentional stop()/kill() already announces OFF after wait.
+            // Do not key off status===STOPPING — stopProcess may already have
+            // set STOPPED by the time this async container check finishes.
+            if (!intentional) {
               this.daemonSay(serverId, "Server marked as OFF");
             }
             this.setStatus(serverId, "STOPPED", null);
@@ -492,14 +494,14 @@ class ProcessManager extends EventEmitter {
             : `Container exited with code ${code ?? "null"} signal ${signal ?? "null"}`;
           this.daemonSay(serverId, `ERROR: ${message}`);
           this.pushConsoleLine(serverId, `[error] ${message}`, "stderr");
-          if (this.getStatus(serverId) !== "STOPPING") {
+          if (!intentional) {
             this.daemonSay(serverId, "Server marked as OFF");
           }
           this.setStatus(serverId, "ERROR", message);
           void this.maybeAutoRestart(serverId, message);
         })
         .catch(() => {
-          if (this.getStatus(serverId) !== "STOPPING") {
+          if (!this.intentionalStops.has(serverId) && this.getStatus(serverId) !== "STOPPING") {
             this.daemonSay(serverId, "Server marked as OFF");
           }
           this.setStatus(serverId, "STOPPED", null);

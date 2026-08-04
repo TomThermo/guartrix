@@ -7,6 +7,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.70] — 2026-08-04
+
+- Fix duplicate "Server marked as OFF" on intentional stop (race with attach exit handler)
+
 ## [1.0.69] — 2026-08-04
 
 - Fix admin status logs: read from DATA_DIR/logs instead of /tmp
