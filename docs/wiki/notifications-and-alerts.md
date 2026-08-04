@@ -37,7 +37,7 @@ Main anchors:
 
 Push subscriptions are stored and managed through `routes/account-push.ts` and `apps/api/src/web-push.ts`.
 
-This is account-level notification plumbing rather than a general server event stream.
+Web Push is account-level notification infrastructure, not a generic stream of all server events.
 
 ### In-panel alerts and banners
 

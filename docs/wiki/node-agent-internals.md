@@ -4,7 +4,7 @@
 
 ## Main subsystems
 
-## Runtime layout and config
+### Runtime layout and config
 
 Key files:
 
@@ -18,7 +18,7 @@ Important operator consequence:
 - node state lives under the daemon `DATA_DIR`
 - servers, backups, MySQL data, host keys, and logs are node-local assets
 
-## Process and container lifecycle
+### Process and container lifecycle
 
 Key files:
 
@@ -40,7 +40,7 @@ This subsystem handles:
 
 The panel experience around start/stop/restart depends heavily on this layer.
 
-## Resource and quota enforcement
+### Resource and quota enforcement
 
 Key files:
 
@@ -59,7 +59,7 @@ This layer is responsible for:
 
 Configured limits and observed usage are related but different; operators should document both.
 
-## Files, jail, and archive safety
+### Files, jail, and archive safety
 
 Key files:
 
@@ -78,7 +78,7 @@ This subsystem enforces:
 
 This is the core reason the web file manager and SFTP can coexist safely without giving direct shell access.
 
-## SFTP service
+### SFTP service
 
 Key files:
 
@@ -92,7 +92,7 @@ This embedded `ssh2` server:
 - maps users into jailed server paths
 - enforces read/write capability restrictions
 
-## MySQL helper
+### MySQL helper
 
 Key file:
 
@@ -107,7 +107,7 @@ Documented concerns:
 - dump/restore paths
 - connectivity model for game containers
 
-## Firewall and host integration
+### Firewall and host integration
 
 Key file:
 
@@ -115,7 +115,7 @@ Key file:
 
 This layer automates UFW open/close rules for allocations and SFTP. It is operationally sensitive because panel state and actual host exposure can diverge if firewall actions fail or are disabled.
 
-## Player history
+### Player history
 
 Key file:
 
@@ -123,7 +123,7 @@ Key file:
 
 This layer records recent player join/leave information based on server observation. It is useful for UI history and audit context, but should not be treated as an authoritative identity platform.
 
-## Default assets and helpers
+### Default assets and helpers
 
 Other notable modules:
 

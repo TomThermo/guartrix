@@ -16,7 +16,7 @@
 
 ## Overview
 
-Guartrix is a panel / daemon stack for commercial or private Minecraft hosting:
+Guartrix is a panel and daemon stack for commercial or private Minecraft hosting:
 
 - **Panel** — web UI and API for users, servers, billing hooks, and administration  
 - **Daemon** — per-machine agent that runs Docker game containers, SFTP, and node MySQL  

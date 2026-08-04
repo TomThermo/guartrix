@@ -2,7 +2,7 @@
 
 ## High-level
 
-Guartrix is a **single panel** (web + API) that controls **one or more daemons** (nodes). Each daemon runs Minecraft servers as Docker containers on its host — each with its own Docker host.
+Guartrix is a **single panel** (web + API) that controls **one or more daemons** (nodes). Each daemon runs Minecraft servers as Docker containers on its own host.
 
 ```
 Browser

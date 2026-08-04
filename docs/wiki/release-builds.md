@@ -15,7 +15,7 @@ npm dependencies (Prisma, Fastify, ssh2, …) stay in `node_modules` — native 
 Obfuscation applies only to **release** bundles (what goes in `/download` zips and `build/`). GitHub `src/` stays readable TypeScript. Skip with `RELEASE_OBFUSCATE=0`. The Mineflayer `bot-worker-main.js` is minified but **not** obfuscated (fragile).
 
 This is **not DRM**. It raises the bar for casual copying; the real control is your
-[license key / validate API](licensing.md). Determined reverse-engineering of Node JS is always possible.
+[license key / validate API](licensing.md). Determined reverse-engineering of `Node.js` applications is still possible.
 
 ## Commands (source tree / your build machine)
 

@@ -1,6 +1,6 @@
 # Player management
 
-Player-facing admin features are spread across the dashboard, server header chips, and several server tabs.
+Player-management features are spread across the dashboard, server header chips, and several server tabs.
 
 ## Included surfaces
 

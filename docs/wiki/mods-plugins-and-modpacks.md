@@ -44,7 +44,7 @@ Typical behavior:
 - install or replace the server payload
 - align the server software/runtime family with that pack
 
-Operators should expect that large modpack changes are closer to reprovisioning than to adding one plugin.
+Large modpack changes are closer to reprovisioning a server than installing a single plugin.
 
 ## Engine settings
 

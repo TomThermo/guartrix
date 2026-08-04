@@ -1,6 +1,6 @@
 # API and surface map
 
-This page is the "what exists where" index for Guartrix. It complements the user guides by mapping UI pages, API route families, daemon routes, shared contracts, and operational scripts to their main responsibilities.
+This page is a high-level index of where Guartrix features live. It complements the user guides by mapping UI pages, API route families, daemon routes, shared contracts, and operational scripts to their main responsibilities.
 
 Use this page when you need to answer "where is this feature implemented?" before diving into [Architecture](architecture.md), [Development](development.md), or a subsystem page.
 

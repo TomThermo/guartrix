@@ -43,7 +43,7 @@ Use SFTP for:
 All file access is jailed to the server directory on the node. Important protections:
 
 - symlinks are rejected or not followed
-- archive extraction is member-checked instead of blindly unpacking
+- archives are validated entry by entry before extraction
 - internal `guartrix-*` control files are blocked from normal user access
 - upload and write paths are checked against disk quotas
 

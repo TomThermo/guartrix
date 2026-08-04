@@ -63,7 +63,7 @@ bash scripts/backup-panel-db.sh
 
 `DATABASE_URL` is parsed with a real URL parser (passwords with `@` / `%` work).
 
-Install a daily timer (03:15 UTC ± jitter) on the **customer's panel host** — also [customer install checklist](../roadmap.md#customer-install-their-vps--documented-not-this-host):
+Install a daily timer (03:15 UTC ± jitter) on the panel host to back up the panel database automatically:
 
 ```bash
 sudo bash scripts/install-panel-backup-cron.sh

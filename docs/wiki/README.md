@@ -70,4 +70,4 @@ All screenshots live under [`assets/`](assets/) and are embedded in the [Panel g
 
 ## Version
 
-Docs track the **main** branch (V0.2+ soft-launch / multi-node). When behaviour or UI changes, update the relevant wiki page, screenshots (`scripts/capture-wiki-screenshots.mjs`), and the root README hub.
+These docs track the **main** branch. When behavior or UI changes, update the relevant wiki page, screenshots (`scripts/capture-wiki-screenshots.mjs`), and the root README hub.

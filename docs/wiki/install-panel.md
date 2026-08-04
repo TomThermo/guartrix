@@ -1,6 +1,6 @@
 # Install the panel
 
-Guartrix Panel runs on your own VPS. You need root (or passwordless `sudo`).
+Guartrix Panel runs on your own VPS. You need root access or passwordless `sudo` on the target VPS.
 
 This guide follows the same style as [Pterodactyl’s getting started](https://pterodactyl.io/panel/1.0/getting_started.html): pick an OS, install dependencies, download the installer, run it.
 
@@ -13,7 +13,7 @@ This guide follows the same style as [Pterodactyl’s getting started](https://p
 | Debian | 12 | Yes* | Same `apt` flow; not primary QA |
 | Other (RHEL, Fedora, Arch, OpenVZ, …) | — | No | Not supported by the installer / Docker path |
 
-Use a **fresh VPS** with a public IPv4. x86_64. Avoid OpenVZ if Docker is restricted.
+Use a **fresh x86_64 VPS** with a public IPv4 address. Avoid OpenVZ if Docker is restricted.
 
 ## Dependencies
 

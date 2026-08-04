@@ -56,17 +56,11 @@ Defines how short-lived daemon JWTs are signed and verified, including claim exp
 
 ### License verification contracts
 
-`license-signing.ts`
-`license-ticket.ts`
-
-These helpers let both the panel and daemon verify signed claims using the shipped public key, without embedding the private issuer in this repository.
+`license-signing.ts` and `license-ticket.ts` define the verification helpers that let both the panel and daemon verify signed claims using the shipped public key, without embedding the private issuer in this repository.
 
 ### API key and application contracts
 
-`api-keys.ts`
-`application-api.ts`
-
-These define token naming/shape conventions and Application API scope semantics shared across admin automation surfaces.
+`api-keys.ts` and `application-api.ts` define token naming conventions and Application API scope semantics shared across admin automation surfaces.
 
 ### Runtime policy helpers
 

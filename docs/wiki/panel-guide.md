@@ -20,15 +20,13 @@ Use this page as the visual tour. For deeper behavior, limits, and internal note
 
 ### Login
 
-Open the panel URL → sign in with your username and password. Admins open **Admin** in the top bar for **Status**, **Settings**, **Nodes**, **License**, **Activity**, **Panel billing**, and **Users**. Your account menu (username) has **Billing**, **Security**, and **Sign out**.
+Open the panel URL → sign in with your username and password. Admins open **Admin** in the top bar for **Status**, **Settings**, **Nodes**, **License**, **Activity**, **Billing**, and **Users**. Your account menu (username) has **Billing**, **Security**, and **Sign out**.
 
 ![Login](assets/01-login.png)
 
 ### Register
 
 Self-serve registration (when enabled). New accounts start with **0** servers / RAM / databases until an admin raises quotas or the user pays via **Billing** (Mollie).
-
-Navbar → **Billing** — pick a plan and pay with Mollie (when `MOLLIE_API_KEY` is set). Admins manage plans and Application API keys under **Admin → Billing**.
 
 More: [Application API & Mollie](application-api.md) · [Accounts & quotas](accounts-and-quotas.md)
 
@@ -50,11 +48,13 @@ Same page: **API keys** for scripts (`Authorization: Bearer gt_…`). Create wit
 
 More: [Accounts & quotas](accounts-and-quotas.md) · [Client API](client-api.md) · [Application API & Mollie](application-api.md) · [SFTP](sftp.md)
 
+### Billing
+
 Navbar → **Billing** — pick a plan and pay with Mollie (when configured).
 
 ![Billing](assets/28-account-billing.png)
 
-Admins manage plans (including auto-create / recurring) and Application API keys under **Admin → Billing**.
+Admins manage plans, Application API keys, and recent payments under **Admin → Billing**.
 
 ![Admin billing](assets/29-admin-billing.png)
 
@@ -120,8 +120,8 @@ More: [Install nodes](install-nodes.md)
 ## Admin: License
 
 **License** (`/admin/license`) — panel license status, expiry, masked key,
-**allowance vs in use** (nodes / servers / total RAM / largest server vs license caps),
-enabled **features** (green = on, red = not included), revalidate, change key,
+**licensed limits vs current usage** (nodes / servers / total RAM / largest server vs license caps),
+enabled **features** (green means enabled; red means not included in the current license), revalidate, change key,
 **remove license** (drops to the free tier), and
 **license server URL** (typically `https://license.guartrix.com`). Quotas and
 features are set on your license by Guartrix; they apply after revalidate (or the
@@ -152,7 +152,7 @@ More: [Activity log](activity-log.md)
 
 ---
 
-## Statusline
+## Status
 
 **Status** — health of web, API, watchdog, and every node (CPU/RAM overview).
 
