@@ -2,6 +2,10 @@
 
 **Self-hosted Minecraft hosting panel** — provision and operate game servers as Docker containers across one or more nodes.
 
+> **AI-generated project disclaimer**
+>
+> This project was created as an experiment to see how far a product can be built with **100% AI using Cursor AI**. The full codebase was generated with AI assistance, so mistakes can exist. Expect rough edges, bugs, broken behavior, and possible security vulnerabilities or exploits. Review everything carefully before using this project in production or exposing it to the public internet.
+
 | | |
 |---|---|
 | **Product** | [guartrix.com](https://guartrix.com) |
