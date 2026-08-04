@@ -251,6 +251,7 @@ export const serversApi = {
     opts: {
       q?: string;
       source?: string;
+      category?: string;
       index?: string;
       offset?: number;
       limit?: number;
@@ -259,6 +260,7 @@ export const serversApi = {
     const params = new URLSearchParams();
     if (opts.q) params.set("q", opts.q);
     if (opts.source) params.set("source", opts.source);
+    if (opts.category) params.set("category", opts.category);
     if (opts.index) params.set("index", opts.index);
     if (opts.offset != null) params.set("offset", String(opts.offset));
     if (opts.limit != null) params.set("limit", String(opts.limit));
@@ -269,6 +271,10 @@ export const serversApi = {
       configured?: boolean;
     }>(`/api/servers/${id}/modpacks/search${qs ? `?${qs}` : ""}`);
   },
+  listModpackCategories: (id: string) =>
+    request<{ categories: Array<{ name: string; label: string }> }>(
+      `/api/servers/${id}/modpacks/categories`,
+    ),
   installModpack: (
     id: string,
     body: {

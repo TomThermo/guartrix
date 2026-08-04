@@ -13,6 +13,10 @@ import { serverDir } from "./config.js";
 import { prisma } from "./db.js";
 import { processManager } from "./process-manager.js";
 import { syncLocalDirToNode } from "./server-files.js";
+import {
+  categoryLabel,
+  LOADER_CATEGORY_NAMES,
+} from "./addons-modrinth.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -73,10 +77,34 @@ const MODPACK_SORT = [
 ] as const;
 type ModpackSortIndex = (typeof MODPACK_SORT)[number];
 
+export async function listModpackCategories(): Promise<
+  Array<{ name: string; label: string }>
+> {
+  const tags = await fetchJson<{ name: string; project_type: string; header: string }[]>(
+    "https://api.modrinth.com/v2/tag/category",
+  );
+  const filtered = tags.filter(
+    (t) =>
+      t.project_type === "modpack" &&
+      t.header === "categories" &&
+      !LOADER_CATEGORY_NAMES.has(t.name),
+  );
+  const seen = new Set<string>();
+  const out: Array<{ name: string; label: string }> = [];
+  for (const tag of filtered) {
+    if (seen.has(tag.name)) continue;
+    seen.add(tag.name);
+    out.push({ name: tag.name, label: categoryLabel(tag.name) });
+  }
+  out.sort((a, b) => a.label.localeCompare(b.label));
+  return out;
+}
+
 export async function searchModrinthModpacks(opts: {
   type: ServerType;
   mcVersion: string;
   query?: string;
+  category?: string;
   index?: string;
   offset?: number;
   limit?: number;
@@ -92,14 +120,24 @@ export async function searchModrinthModpacks(opts: {
   )
     ? (opts.index as ModpackSortIndex)
     : "relevance";
+  const category = opts.category?.trim() || "";
+  const categoryFacet =
+    category && !LOADER_CATEGORY_NAMES.has(category)
+      ? [`categories:${category}`]
+      : null;
   // Prefer version-matched packs; fall back without version so the tab is never empty.
   const facetAttempts: string[][][] = [
     [
       loaders.map((l) => `categories:${l}`),
       [`versions:${opts.mcVersion}`],
       ["project_type:modpack"],
+      ...(categoryFacet ? [categoryFacet] : []),
     ],
-    [loaders.map((l) => `categories:${l}`), ["project_type:modpack"]],
+    [
+      loaders.map((l) => `categories:${l}`),
+      ["project_type:modpack"],
+      ...(categoryFacet ? [categoryFacet] : []),
+    ],
   ];
   // Empty string browses the catalog (Modrinth returns 0 for query=" ").
   const query = (opts.query ?? "").trim();
@@ -118,7 +156,9 @@ export async function searchModrinthModpacks(opts: {
         hits: Array<Record<string, unknown>>;
         total_hits: number;
       }>(`https://api.modrinth.com/v2/search?${params}`);
-      if (data.hits.length > 0 || facets.length < 3) {
+      // With a category filter, empty is a valid result — don't fall through
+      // and drop the category (would surprise the user).
+      if (data.hits.length > 0 || categoryFacet || facets.length < 3) {
         return { hits: data.hits, totalHits: data.total_hits };
       }
     } catch (err) {

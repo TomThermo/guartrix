@@ -261,11 +261,30 @@ export function registerServerAddonRoutes(app: FastifyInstance): void {
     return { stackId: stack.id, installed, errors };
   });
 
+  app.get<{ Params: { id: string } }>(
+    "/api/servers/:id/modpacks/categories",
+    async (request, reply) => {
+      const access = await requireServerAccess(request, reply, request.params.id, {
+        permission: "addon.read",
+      });
+      if (!access) return;
+      try {
+        const { listModpackCategories } = await import("../modpacks.js");
+        const categories = await listModpackCategories();
+        return { categories };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        return reply.status(400).send({ error: message });
+      }
+    },
+  );
+
   app.get<{
     Params: { id: string };
     Querystring: {
       q?: string;
       source?: string;
+      category?: string;
       index?: string;
       offset?: string;
       limit?: string;
@@ -294,11 +313,16 @@ export function registerServerAddonRoutes(app: FastifyInstance): void {
         type: access.server.type as ServerType,
         mcVersion: access.server.mcVersion,
         query: request.query.q,
+        category: request.query.category,
         index: request.query.index,
         offset: Number(request.query.offset ?? 0) || 0,
         limit: Number(request.query.limit ?? 24) || 24,
       });
-      return { ...result, configured: true };
+      return {
+        ...result,
+        category: request.query.category?.trim() || null,
+        configured: true,
+      };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       return reply.status(400).send({ error: message });

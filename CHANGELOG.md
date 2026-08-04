@@ -7,6 +7,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.55] — 2026-08-04
+
+- Modpacks: Modrinth category chips (adventure, magic, tech, …) + filter, matching Plugin Management
+
 ## [1.0.54] — 2026-08-04
 
 - Modpacks: same install UX as plugins — detail modal + version picker (MC version + build); install uses chosen `versionId`

@@ -80,6 +80,19 @@ function normalizeHit(hit: Record<string, unknown>, source: Source): ModpackHit 
     : Array.isArray(hit.display_categories)
       ? (hit.display_categories as string[]).filter(Boolean)
       : [];
+  const loaders = new Set([
+    "fabric",
+    "forge",
+    "neoforge",
+    "quilt",
+    "bukkit",
+    "spigot",
+    "paper",
+    "purpur",
+    "folia",
+    "rift",
+    "liteloader",
+  ]);
   return {
     key: String(hit.project_id ?? hit.slug ?? hit.id ?? ""),
     projectId: String(hit.project_id ?? hit.slug ?? ""),
@@ -89,7 +102,7 @@ function normalizeHit(hit: Record<string, unknown>, source: Source): ModpackHit 
     follows: Number(hit.follows ?? 0),
     author: String(hit.author ?? ""),
     iconUrl: typeof hit.icon_url === "string" ? hit.icon_url : null,
-    categories,
+    categories: categories.filter((c) => !loaders.has(c)),
   };
 }
 
@@ -103,6 +116,10 @@ export function ModpackPanel({
   const [source, setSource] = useState<Source>("modrinth");
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<AddonSortIndex>("relevance");
+  const [category, setCategory] = useState("");
+  const [categories, setCategories] = useState<
+    Array<{ name: string; label: string }>
+  >([]);
   const [hits, setHits] = useState<ModpackHit[]>([]);
   const [totalHits, setTotalHits] = useState(0);
   const [offset, setOffset] = useState(0);
@@ -139,6 +156,8 @@ export function ModpackPanel({
         const res = await api.searchModpacks(server.id, {
           q: query,
           source,
+          category:
+            source === "modrinth" && category ? category : undefined,
           index: source === "modrinth" ? sort : undefined,
           offset: nextOffset,
           limit,
@@ -160,17 +179,26 @@ export function ModpackPanel({
         if (seq === browseSeqRef.current) setSearching(false);
       }
     },
-    [supports, server.id, query, source, sort, onError, t],
+    [supports, server.id, query, source, category, sort, onError, t],
   );
 
   useEffect(() => {
     if (!supports) return;
+    void api
+      .listModpackCategories(server.id)
+      .then((data) => setCategories(data.categories))
+      .catch(() => setCategories([]));
+  }, [supports, server.id]);
+
+  useEffect(() => {
+    if (!supports) return;
+    if (source === "curseforge" && category) setCategory("");
     void browse(0, false);
     return () => {
       browseAbortRef.current?.abort();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- reload when source/sort change
-  }, [supports, source, sort, server.id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reload when filters change
+  }, [supports, source, sort, category, server.id]);
 
   async function onSearch(e: FormEvent) {
     e.preventDefault();
@@ -330,6 +358,28 @@ export function ModpackPanel({
         <Alert variant="warning">{t("modpacks.curseforgeMissing")}</Alert>
       )}
 
+      {source === "modrinth" && (
+        <Stack direction="horizontal" gap={2} className="flex-wrap mb-3">
+          <Button
+            size="sm"
+            variant={category === "" ? "primary" : "outline-secondary"}
+            onClick={() => setCategory("")}
+          >
+            {t("common.all")}
+          </Button>
+          {categories.map((cat) => (
+            <Button
+              key={cat.name}
+              size="sm"
+              variant={category === cat.name ? "primary" : "outline-secondary"}
+              onClick={() => setCategory(cat.name)}
+            >
+              {cat.label}
+            </Button>
+          ))}
+        </Stack>
+      )}
+
       {searching && hits.length === 0 && (
         <Alert variant="light" className="border small py-2 mb-3">
           <Spinner size="sm" className="me-2" />
@@ -405,7 +455,21 @@ export function ModpackPanel({
                       className="flex-wrap mt-1"
                     >
                       {h.categories.slice(0, 4).map((c) => (
-                        <Badge key={c} bg="secondary">
+                        <Badge
+                          key={c}
+                          bg="secondary"
+                          className={
+                            source === "modrinth" ? "cursor-pointer" : undefined
+                          }
+                          onClick={
+                            source === "modrinth"
+                              ? (e) => {
+                                  e.stopPropagation();
+                                  setCategory(c);
+                                }
+                              : undefined
+                          }
+                        >
                           {c}
                         </Badge>
                       ))}
