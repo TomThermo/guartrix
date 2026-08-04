@@ -2,6 +2,47 @@ import type { WikiArticle } from "./wiki-types";
 
 export const wikiArticles: WikiArticle[] = [
   {
+    slug: "overview",
+    title: "Guartrix overview",
+    summary:
+      "A high-level introduction to the panel, daemon, supported server types, architecture, requirements, and documentation entry points.",
+    category: "Overview",
+    keywords: ["overview", "readme", "panel", "daemon", "architecture", "requirements"],
+    sourcePath: "README.md",
+    relatedSlugs: ["install-panel", "panel-guide", "api-surface-map"],
+    sections: [
+      {
+        title: "What Guartrix is",
+        paragraphs: [
+          "Guartrix is a self-hosted panel and daemon stack for Minecraft hosting across one or more nodes.",
+          "The panel provides the web UI and API, while daemons on nodes run Docker-backed game servers, SFTP, and optional node-local MySQL services.",
+        ],
+      },
+      {
+        title: "Supported server families",
+        bullets: [
+          "Vanilla",
+          "Paper",
+          "Purpur",
+          "Fabric",
+          "Quilt",
+          "Forge",
+          "NeoForge",
+        ],
+      },
+      {
+        title: "Main documentation areas",
+        bullets: [
+          "Install and node setup",
+          "Accounts, quotas, and security",
+          "Server management, files, backups, and networking",
+          "Client API, Application API, billing, and licensing",
+          "Operations, scaling, and internal architecture",
+        ],
+      },
+    ],
+  },
+  {
     slug: "install-panel",
     title: "Install the panel",
     summary:
@@ -185,7 +226,7 @@ export const wikiArticles: WikiArticle[] = [
     category: "Using the panel",
     keywords: ["servers", "create", "import", "clone", "reinstall", "transfer", "power"],
     sourcePath: "docs/wiki/server-management.md",
-    relatedSlugs: ["files-backups", "networking-allocations", "mods-modpacks"],
+    relatedSlugs: ["files-backups", "networking-allocations", "mods-plugins-and-modpacks"],
     sections: [
       {
         title: "Lifecycle actions",
@@ -242,6 +283,74 @@ export const wikiArticles: WikiArticle[] = [
           "Create manual backups or schedule them later.",
           "Download, upload, restore, and delete backup archives from the panel.",
           "Safety-sensitive flows like reinstall and transfer can create backups before destructive actions.",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "player-management",
+    title: "Player management",
+    summary:
+      "Manage online players, whitelist entries, bans, moderation actions, and recent player history from the server UI.",
+    category: "Using the panel",
+    keywords: ["players", "whitelist", "bans", "moderation", "online players", "history"],
+    sourcePath: "docs/wiki/player-management.md",
+    relatedSlugs: ["server-management", "activity-log", "mods-plugins-and-modpacks"],
+    sections: [
+      {
+        title: "Main player tools",
+        bullets: [
+          "Online player list and live presence",
+          "Whitelist toggle and manager",
+          "Kick, ban, pardon, and other moderation actions",
+          "Recent moderation and join/leave context",
+        ],
+      },
+      {
+        title: "What the data means",
+        paragraphs: [
+          "Some player presence data is derived from daemon observation and console/event parsing rather than a direct Mojang identity source.",
+          "Whitelist state, moderation history, and current presence are related but not the same thing.",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "mods-plugins-and-modpacks",
+    title: "Mods, plugins, and modpacks",
+    summary:
+      "Install compatible addons, browse modpacks, use engine-specific tooling, and manage software-family compatibility.",
+    category: "Using the panel",
+    keywords: ["mods", "plugins", "modpacks", "modrinth", "engine", "resource pack"],
+    sourcePath: "docs/wiki/mods-plugins-and-modpacks.md",
+    relatedSlugs: ["server-management", "player-management", "networking-allocations"],
+    sections: [
+      {
+        title: "Supported families",
+        bullets: [
+          "Vanilla",
+          "Paper",
+          "Purpur",
+          "Fabric",
+          "Quilt",
+          "Forge",
+          "NeoForge",
+        ],
+      },
+      {
+        title: "What the panel can do",
+        bullets: [
+          "Browse compatible addons from supported sources such as Modrinth",
+          "Install, update, remove, and sync mods or plugins",
+          "Browse and install modpacks for compatible families",
+          "Expose engine-specific settings for Paper and Purpur style stacks",
+        ],
+      },
+      {
+        title: "Compatibility note",
+        paragraphs: [
+          "Changing software family is a high-impact action because plugin ecosystems and mod ecosystems are not interchangeable.",
+          "Large modpack changes are closer to reprovisioning a server than installing a single plugin.",
         ],
       },
     ],
@@ -373,6 +482,31 @@ export const wikiArticles: WikiArticle[] = [
           "Read or write files if the key includes the matching permissions.",
           "Inspect or run scheduled tasks.",
         ],
+        code: [
+          {
+            label: "Auth header",
+            language: "http",
+            content: "Authorization: Bearer gt_…",
+          },
+          {
+            label: "Core endpoints",
+            language: "http",
+            content:
+              "GET  /api/servers\nGET  /api/servers/:id\nPOST /api/servers/:id/start\nPOST /api/servers/:id/stop\nPOST /api/servers/:id/restart\nPOST /api/servers/:id/kill",
+          },
+          {
+            label: "File endpoints",
+            language: "http",
+            content:
+              "GET    /api/servers/:id/files?path=.\nGET    /api/servers/:id/files/content?path=server.properties\nGET    /api/servers/:id/files/download?path=server.properties\nPUT    /api/servers/:id/files/content\nPOST   /api/servers/:id/files/mkdir\nPOST   /api/servers/:id/files/compress\nPOST   /api/servers/:id/files/decompress\nDELETE /api/servers/:id/files?path=…",
+          },
+          {
+            label: "Schedule endpoints",
+            language: "http",
+            content:
+              "GET  /api/servers/:id/tasks\nPOST /api/servers/:id/tasks\nPOST /api/servers/:id/tasks/:taskId/run",
+          },
+        ],
       },
       {
         title: "Security model",
@@ -380,6 +514,14 @@ export const wikiArticles: WikiArticle[] = [
           "Treat `gt_` keys like passwords.",
           "Use least privilege and revoke unused keys quickly.",
           "Keys do not replace browser-only account management actions.",
+        ],
+        code: [
+          {
+            label: "Curl example",
+            language: "bash",
+            content:
+              "export GT_KEY='gt_…'\nexport PANEL='https://guartrix.com'\n\ncurl -sS -H \"Authorization: Bearer $GT_KEY\" \"$PANEL/api/servers\" | jq '.[].name'\n\ncurl -sS -X POST -H \"Authorization: Bearer $GT_KEY\" \\\n  \"$PANEL/api/servers/SERVER_ID/restart\"",
+          },
         ],
       },
     ],
@@ -407,12 +549,454 @@ export const wikiArticles: WikiArticle[] = [
           "Plans define pricing, quotas, recurring behavior, and optional auto-create-server defaults.",
           "Payments ultimately change the same quota model used by admins.",
         ],
+        code: [
+          {
+            label: "Mollie webhook URL",
+            language: "text",
+            content: "https://<PUBLIC_HOST>/api/public/billing/mollie",
+          },
+          {
+            label: "Application API user and server endpoints",
+            language: "http",
+            content:
+              "GET   /api/application/users\nPOST  /api/application/users\nPATCH /api/application/users/:id\n\nGET   /api/application/servers\nPOST  /api/application/servers\n\nGET   /api/application/plans\nPOST  /api/application/plans\nGET   /api/application/payments",
+          },
+        ],
       },
       {
         title: "Operational expectations",
         bullets: [
           "Mollie webhooks must be reachable from the public internet.",
           "Recurring plans can create local subscription state and later revoke entitlements on failed renewal flows.",
+        ],
+        code: [
+          {
+            label: "External automation example",
+            language: "bash",
+            content:
+              "export GTA='gta_…'\nexport PANEL='https://guartrix.com'\n\ncurl -sS -X PATCH -H \"Authorization: Bearer $GTA\" -H \"Content-Type: application/json\" \\\n  -d '{\"maxServers\":1,\"maxMemoryMb\":4096,\"maxDatabases\":3}' \\\n  \"$PANEL/api/application/users/USER_ID\"",
+          },
+        ],
+      },
+    ],
+  },
+  {
+    slug: "panel-settings",
+    title: "Panel settings",
+    summary:
+      "Configure public URLs, registration, SMTP, security flags, Redis visibility, and alert sinks from Admin -> Settings.",
+    category: "Operations",
+    keywords: ["settings", "smtp", "registration", "redis", "alerts", "public host"],
+    sourcePath: "docs/wiki/panel-settings.md",
+    relatedSlugs: ["security", "operations", "notifications-alerts"],
+    sections: [
+      {
+        title: "What it controls",
+        bullets: [
+          "General settings like public host, base URL, registration, and default quotas.",
+          "Mail settings including SMTP and test mail.",
+          "Security settings such as HTTPS flags and 2FA-required roles.",
+          "Alert delivery settings such as activity webhook and alert email.",
+        ],
+      },
+      {
+        title: "Storage and apply behavior",
+        paragraphs: [
+          "Overrides are stored in `data/panel-settings.json` and merged on top of `.env`.",
+          "Public host, base URL, HTTPS, and session-secure changes also patch `.env` and require a restart, while many other values apply immediately to the API.",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "activity-log",
+    title: "Activity log",
+    summary:
+      "Track power actions, settings changes, files, backups, subusers, auth events, and node/system activity across the platform.",
+    category: "Operations",
+    keywords: ["activity", "audit", "events", "filters", "alerts", "retention"],
+    sourcePath: "docs/wiki/activity-log.md",
+    relatedSlugs: ["notifications-alerts", "security", "server-management"],
+    sections: [
+      {
+        title: "What is recorded",
+        paragraphs: [
+          "Guartrix records actor, target, IP, success/failure, and action metadata for many server, account, and admin operations.",
+          "The same underlying activity stream feeds the per-server Activity tab and the global admin Activity page.",
+        ],
+      },
+      {
+        title: "Operational behavior",
+        bullets: [
+          "Retention is controlled by `ACTIVITY_LOG_RETENTION_DAYS`.",
+          "Critical actions can also trigger webhook or email notifications.",
+          "Shared action keys live in the shared package so labels stay consistent between API and UI.",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "schedules",
+    title: "Schedules",
+    summary:
+      "Run timed chains like backup, wait, restart, and command through the server schedule system.",
+    category: "Using the panel",
+    keywords: ["schedules", "tasks", "backup", "restart", "automation"],
+    sourcePath: "docs/wiki/schedules.md",
+    relatedSlugs: ["files-backups", "client-api", "operations"],
+    sections: [
+      {
+        title: "What schedules do",
+        paragraphs: [
+          "Schedules let you automate server maintenance as ordered step chains rather than only a single recurring action.",
+          "Typical sequences include backup, wait, restart, and command execution.",
+        ],
+      },
+      {
+        title: "API and automation",
+        code: [
+          {
+            label: "Schedule endpoints",
+            language: "http",
+            content:
+              "GET  /api/servers/:id/tasks\nPOST /api/servers/:id/tasks\nPOST /api/servers/:id/tasks/:taskId/run",
+          },
+        ],
+      },
+    ],
+  },
+  {
+    slug: "node-transfer",
+    title: "Move between nodes",
+    summary:
+      "Transfer a stopped server from one node to another, including data, allocations, and database handling.",
+    category: "Using the panel",
+    keywords: ["transfer", "move", "nodes", "allocations", "database", "stopped server"],
+    sourcePath: "docs/wiki/node-transfer.md",
+    relatedSlugs: ["server-management", "networking-allocations", "install-nodes"],
+    sections: [
+      {
+        title: "Transfer flow",
+        bullets: [
+          "The server must be stopped before transfer starts.",
+          "The panel streams an archive from source daemon to destination daemon.",
+          "Allocations, firewall state, and optional DNS-related behavior are rebound on the destination.",
+          "MySQL data is dumped and restored as part of the move flow when needed.",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "scaling",
+    title: "Scaling and Redis",
+    summary:
+      "Understand the supported scale model, when Redis is needed, and how sessions, rate limits, transfers, and event fan-out behave.",
+    category: "Operations",
+    keywords: ["scaling", "redis", "multi-api", "ha", "sessions", "rate limits"],
+    sourcePath: "docs/wiki/scaling.md",
+    relatedSlugs: ["install-panel", "security", "operations"],
+    sections: [
+      {
+        title: "Default scale model",
+        paragraphs: [
+          "The normal supported pattern is one panel and one or more daemon nodes.",
+          "You only need Redis when you move beyond a single panel API process and want multi-API high availability.",
+        ],
+      },
+      {
+        title: "What Redis covers",
+        bullets: [
+          "Shared sessions",
+          "Shared rate limits",
+          "Transfer state",
+          "Scheduler leader lock",
+          "Console and event pub/sub across API replicas",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "development",
+    title: "Development",
+    summary:
+      "Run the monorepo locally, understand where features live, and use the build, test, and OpenAPI maintenance workflows.",
+    category: "Reference",
+    keywords: ["development", "dev", "vite", "fastify", "tests", "openapi"],
+    sourcePath: "docs/wiki/development.md",
+    relatedSlugs: ["api-surface-map", "build-release-internals", "daemon-api"],
+    sections: [
+      {
+        title: "Local workflow",
+        code: [
+          {
+            label: "Run locally",
+            language: "bash",
+            content:
+              "cp .env.example .env\nnpm install\nnpm run db:generate && bash scripts/db-migrate.sh\n\nnpm run dev:api\nnpm run dev:web\nnpm run dev:daemon",
+          },
+        ],
+      },
+      {
+        title: "Important paths",
+        bullets: [
+          "`apps/web/src/pages` for route-level UI pages",
+          "`apps/api/src/routes` plus domain folders for backend behavior",
+          "`apps/daemon/src` as the daemon entrypoint",
+          "`packages/node-agent` and `packages/shared` for shared runtime and contracts",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "daemon-api",
+    title: "Daemon API",
+    summary:
+      "See how the node-local daemon handles files, MySQL, firewall actions, WebSockets, health, and authenticated control traffic.",
+    category: "Reference",
+    keywords: ["daemon", "api", "health", "ready", "files", "mysql", "firewall", "websocket"],
+    sourcePath: "docs/wiki/daemon-api.md",
+    relatedSlugs: ["install-nodes", "node-agent-internals", "auth-session-internals"],
+    sections: [
+      {
+        title: "Responsibilities",
+        bullets: [
+          "Container lifecycle and commands",
+          "Console and event streams",
+          "File access and archives",
+          "Node-local MySQL operations",
+          "Firewall open/close actions",
+          "SFTP hosting",
+          "Resource reporting and license gating",
+        ],
+      },
+      {
+        title: "Health and trust boundaries",
+        bullets: [
+          "`/health` and `/ready` expose daemon status and Docker readiness.",
+          "The broader control surface is protected by daemon auth rather than being public.",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "node-agent-internals",
+    title: "Node-agent internals",
+    summary:
+      "Understand the host runtime behind the daemon: Docker lifecycle, quotas, jailed files, SFTP, firewall, and player history.",
+    category: "Reference",
+    keywords: ["node-agent", "docker", "sftp", "jail", "quota", "mysql", "firewall"],
+    sourcePath: "docs/wiki/node-agent-internals.md",
+    relatedSlugs: ["daemon-api", "files-backups", "networking-allocations"],
+    sections: [
+      {
+        title: "Subsystems",
+        bullets: [
+          "Runtime layout and config",
+          "Process and container lifecycle",
+          "Resource and quota enforcement",
+          "Files, archive safety, and SFTP jail",
+          "MySQL helper and firewall integration",
+          "Player history",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "shared-contracts",
+    title: "Shared contracts",
+    summary:
+      "Explore the shared types, permissions, activity taxonomy, daemon JWTs, and license verification helpers used across services.",
+    category: "Reference",
+    keywords: ["shared", "contracts", "permissions", "activity", "daemon jwt", "license ticket"],
+    sourcePath: "docs/wiki/shared-contracts.md",
+    relatedSlugs: ["api-surface-map", "auth-session-internals", "license-flow"],
+    sections: [
+      {
+        title: "What is shared",
+        bullets: [
+          "Server, node, file/stat, database, schedule, and auth payload shapes",
+          "Permission names for subusers and API keys",
+          "Activity categories and action keys",
+          "Daemon JWT verification helpers",
+          "License claim and ticket verification helpers",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "auth-session-internals",
+    title: "Auth and session internals",
+    summary:
+      "See how sessions, TOTP, invites, reset tokens, API keys, app passwords, and daemon auth fit together.",
+    category: "Reference",
+    keywords: ["auth", "sessions", "2fa", "invites", "app passwords", "daemon jwt"],
+    sourcePath: "docs/wiki/auth-and-session-internals.md",
+    relatedSlugs: ["accounts-quotas", "client-api", "application-billing"],
+    sections: [
+      {
+        title: "Auth surfaces",
+        bullets: [
+          "Session cookie for the browser UI",
+          "Personal `gt_` keys for end-user automation",
+          "App passwords for SFTP and desktop clients",
+          "Machine `gta_` keys for external admin automation",
+          "Short-lived daemon JWTs for panel-to-node traffic",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "billing-internals",
+    title: "Billing internals",
+    summary:
+      "Understand plan templates, Mollie payment state, quota application, subscriptions, and machine-facing provisioning flows.",
+    category: "Reference",
+    keywords: ["billing", "plans", "mollie", "subscriptions", "payments", "quotas"],
+    sourcePath: "docs/wiki/billing-internals.md",
+    relatedSlugs: ["application-billing", "accounts-quotas", "licensing"],
+    sections: [
+      {
+        title: "Core domains",
+        bullets: [
+          "Plan templates",
+          "Payment rows and statuses",
+          "Quota application",
+          "Recurring subscription lifecycle",
+          "Machine-driven user and server provisioning",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "license-flow",
+    title: "License flow internals",
+    summary:
+      "Follow the signed validate flow from panel usage reporting to daemon ticket verification and free-tier fallback.",
+    category: "Reference",
+    keywords: ["license flow", "validate", "ticket", "free tier", "claims", "public key"],
+    sourcePath: "docs/wiki/license-flow-internals.md",
+    relatedSlugs: ["licensing", "daemon-api", "shared-contracts"],
+    sections: [
+      {
+        title: "Flow overview",
+        bullets: [
+          "The panel reports usage to the public license API.",
+          "The API returns signed claims.",
+          "The panel verifies those claims and pushes daemon tickets.",
+          "Daemons verify the ticket locally and gate starts accordingly.",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "api-surface-map",
+    title: "API and surface map",
+    summary:
+      "Find where Guartrix features live across UI pages, API route families, daemon routes, shared packages, scripts, and data-model domains.",
+    category: "Reference",
+    keywords: ["surface map", "routes", "ui pages", "daemon routes", "scripts", "prisma"],
+    sourcePath: "docs/wiki/api-surface-map.md",
+    relatedSlugs: ["daemon-api", "shared-contracts", "development"],
+    sections: [
+      {
+        title: "What it maps",
+        bullets: [
+          "Web UI pages",
+          "API route families",
+          "Daemon route families",
+          "Node-agent and shared package subsystems",
+          "Operational script families",
+          "Prisma model domains",
+        ],
+      },
+      {
+        title: "Route families you can look up",
+        code: [
+          {
+            label: "Examples of route groups",
+            language: "text",
+            content:
+              "auth, two-factor, invites, api-keys, app-passwords,\nservers, servers-dashboard, servers-power, servers-settings,\nfiles, backups, databases, sftp-auth,\nnodes, allocations, status, activity,\nbilling, application, license, bots",
+          },
+        ],
+      },
+    ],
+  },
+  {
+    slug: "build-release-internals",
+    title: "Build and release internals",
+    summary:
+      "See how Guartrix creates build trees, release tarballs, customer packages, and downloadable bundles.",
+    category: "Reference",
+    keywords: ["build", "release", "build-out", "staging", "tarball", "download bundle"],
+    sourcePath: "docs/wiki/build-and-release-internals.md",
+    relatedSlugs: ["operations", "prod-web-downloads", "development"],
+    sections: [
+      {
+        title: "Main outputs",
+        bullets: [
+          "Normal development `dist/` builds",
+          "Runnable `build/` trees",
+          "Release archives and downloadable package bundles",
+        ],
+      },
+      {
+        title: "Main scripts",
+        bullets: [
+          "`scripts/build-out.sh`",
+          "`scripts/esbuild-release.mjs`",
+          "`scripts/lib-stage-release.sh`",
+          "`scripts/package-release.sh`",
+          "download-bundle packaging flow",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "prod-web-downloads",
+    title: "Prod-web and downloads",
+    summary:
+      "Understand the production edge server, static serving, reverse proxy, TLS handling, and optional `/download` integration.",
+    category: "Reference",
+    keywords: ["prod-web", "download", "reverse proxy", "tls", "static", "edge"],
+    sourcePath: "docs/wiki/prod-web-and-downloads.md",
+    relatedSlugs: ["build-release-internals", "operations", "install-panel"],
+    sections: [
+      {
+        title: "What prod-web does",
+        bullets: [
+          "Serve the built web UI",
+          "Proxy `/api` and `/ws`",
+          "Handle HTTP/HTTPS behavior and TLS cert loading",
+          "Optionally expose the password-protected `/download` surface on the operator host",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "notifications-alerts",
+    title: "Notifications and alerts",
+    summary:
+      "See how Guartrix uses email, webhooks, Web Push, and in-panel warnings for operational and account notifications.",
+    category: "Reference",
+    keywords: ["notifications", "alerts", "webhook", "email", "push", "activity"],
+    sourcePath: "docs/wiki/notifications-and-alerts.md",
+    relatedSlugs: ["activity-log", "panel-settings", "security"],
+    sections: [
+      {
+        title: "Notification channels",
+        bullets: [
+          "Email for verification, reset, invites, and optional alerts",
+          "Activity webhook for critical events and watchdog incidents",
+          "Web Push for account-level browser/device notifications",
+          "In-panel banners for license, restart-required, and validation warnings",
+        ],
+      },
+      {
+        title: "Operational relevance",
+        paragraphs: [
+          "Alert delivery settings live partly in panel settings and partly in environment-backed runtime behavior.",
+          "Webhook and email notifications help operators notice crashes, node issues, license failures, and other critical platform events quickly.",
         ],
       },
     ],
