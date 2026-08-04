@@ -7,6 +7,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.59] — 2026-08-04
+
+- CSP: move theme boot to `/theme-boot.js` (no inline script); allow Cloudflare Web Analytics (`static.cloudflareinsights.com`); optional `CSP_SCRIPT_SRC_EXTRA` / `CSP_ALLOW_UNSAFE_INLINE_SCRIPT`
+
 ## [1.0.58] — 2026-08-04
 
 - Detail modal: Supported environments (Client-side / Server-side / Client and server)

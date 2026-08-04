@@ -57,6 +57,8 @@ Installer: `--mysql-docker` (default) or `--mysql-external` / `--database-url`. 
 | `SESSION_STORE` | `file` (default, `data/sessions`) or `redis` (needs `REDIS_URL` + optional `ioredis`) |
 | `REDIS_URL` | Redis URL when `SESSION_STORE=redis` (multi-API session sharing) |
 | `CSP_REPORT_ONLY` | `1` = prod-web also sends CSP Report-Only (stricter `style-src 'self'`) for violation telemetry |
+| `CSP_SCRIPT_SRC_EXTRA` | Extra `script-src` tokens (space-separated hosts/hashes) appended to the enforcing CSP |
+| `CSP_ALLOW_UNSAFE_INLINE_SCRIPT` | `1` = allow `'unsafe-inline'` in `script-src` (needed for some Cloudflare Email Obfuscation / Bot Fight injects; prefer disabling those CF features) |
 | `MOLLIE_API_KEY` | Mollie Payments API key (`test_…` / `live_…`); enables checkout |
 | `BILLING_WEBHOOK_URL` | Optional outbound JSON webhook on payment paid / provisioned / subscription events |
 | `CURSEFORGE_API_KEY` | Optional CurseForge API key for Modpacks tab search/install |

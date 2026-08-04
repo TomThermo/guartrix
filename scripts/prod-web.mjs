@@ -816,6 +816,20 @@ function withSecurityHeaders(handler) {
     // rewriting every Vite/Bootstrap stylesheet injection — leave for a
     // dedicated CSP pass. style-src-attr mirrors style-src so attribute
     // styles stay allowed while we keep script-src strict (no unsafe-inline).
+    //
+    // Theme boot lives in /theme-boot.js (not inline). Cloudflare Web Analytics
+    // injects static.cloudflareinsights.com when enabled on the zone.
+    // Optional extras:
+    //   CSP_SCRIPT_SRC_EXTRA="https://example.com 'sha256-…'"
+    //   CSP_ALLOW_UNSAFE_INLINE_SCRIPT=1  — for Cloudflare Email Obfuscation /
+    //     Bot Fight Mode inline loaders (prefer turning those features off).
+    const scriptSrcExtra = (process.env.CSP_SCRIPT_SRC_EXTRA || "")
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+    const allowUnsafeInlineScript =
+      process.env.CSP_ALLOW_UNSAFE_INLINE_SCRIPT === "1" ||
+      process.env.CSP_ALLOW_UNSAFE_INLINE_SCRIPT === "true";
     const cspDirectives = [
       "default-src 'self'",
       "base-uri 'self'",
@@ -825,8 +839,14 @@ function withSecurityHeaders(handler) {
       "font-src 'self' data:",
       "style-src 'self' 'unsafe-inline'",
       "style-src-attr 'unsafe-inline'",
-      "script-src 'self'",
-      "connect-src 'self' wss: https:",
+      [
+        "script-src",
+        "'self'",
+        "https://static.cloudflareinsights.com",
+        ...(allowUnsafeInlineScript ? ["'unsafe-inline'"] : []),
+        ...scriptSrcExtra,
+      ].join(" "),
+      "connect-src 'self' wss: https: https://cloudflareinsights.com",
       "frame-src 'self' https:",
       "form-action 'self'",
     ];
