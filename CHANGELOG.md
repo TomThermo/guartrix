@@ -7,6 +7,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.61] — 2026-08-04
+
+- CSP: per-request script nonce on `index.html` so Cloudflare Bot JS detections can run without `'unsafe-inline'`
+
 ## [1.0.60] — 2026-08-04
 
 - Fix addon detail Changelog / Versions tabs stuck on “Loading…” (effect cancelled itself via `versionsLoading` dep)

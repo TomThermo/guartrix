@@ -11,6 +11,7 @@ import http from "node:http";
 import https from "node:https";
 import tls from "node:tls";
 import path from "node:path";
+import crypto from "node:crypto";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { spawn, spawnSync } from "node:child_process";
 
@@ -216,14 +217,33 @@ function sendFile(res, filePath) {
   // Fixed-name WASM (and similar) must not be immutable forever — a wrong MIME
   // once cached breaks WebAssembly.instantiateStreaming for a year.
   const isVersionedAsset = ext === ".wasm";
+  const cacheControl = isHtml
+    ? "no-store, no-cache, must-revalidate"
+    : isSocialPreview || isVersionedAsset
+      ? "public, max-age=3600"
+      : "public, max-age=31536000, immutable";
+
+  // Stamp our <script> tags with the per-request CSP nonce so they still run
+  // when script-src uses nonces (Cloudflare Bot JS detections also copy this
+  // nonce onto scripts it injects).
+  if (isHtml && res.cspNonce) {
+    let html = fs.readFileSync(filePath, "utf8");
+    const nonceAttr = ` nonce="${res.cspNonce}"`;
+    html = html.replace(/<script(?![^>]*\bnonce=)/gi, `<script${nonceAttr}`);
+    const body = Buffer.from(html, "utf8");
+    res.writeHead(200, {
+      "Content-Type": contentType(filePath),
+      "Content-Length": body.length,
+      "Cache-Control": cacheControl,
+    });
+    res.end(body);
+    return;
+  }
+
   res.writeHead(200, {
     "Content-Type": contentType(filePath),
     "Content-Length": st.size,
-    "Cache-Control": isHtml
-      ? "no-store, no-cache, must-revalidate"
-      : isSocialPreview || isVersionedAsset
-        ? "public, max-age=3600"
-        : "public, max-age=31536000, immutable",
+    "Cache-Control": cacheControl,
   });
   fs.createReadStream(filePath).pipe(res);
 }
@@ -817,12 +837,13 @@ function withSecurityHeaders(handler) {
     // dedicated CSP pass. style-src-attr mirrors style-src so attribute
     // styles stay allowed while we keep script-src strict (no unsafe-inline).
     //
-    // Theme boot lives in /theme-boot.js (not inline). Cloudflare Web Analytics
-    // injects static.cloudflareinsights.com when enabled on the zone.
+    // Per-request script nonce: stamped onto index.html <script> tags and
+    // advertised in script-src. Cloudflare Bot JS detections copy this nonce
+    // onto scripts they inject (see CF CSP docs). Theme boot is /theme-boot.js.
     // Optional extras:
     //   CSP_SCRIPT_SRC_EXTRA="https://example.com 'sha256-…'"
-    //   CSP_ALLOW_UNSAFE_INLINE_SCRIPT=1  — for Cloudflare Email Obfuscation /
-    //     Bot Fight Mode inline loaders (prefer turning those features off).
+    //   CSP_ALLOW_UNSAFE_INLINE_SCRIPT=1  — last resort for Scrape Shield Email
+    //     Obfuscation if you cannot disable it (hashes change; prefer off).
     const scriptSrcExtra = (process.env.CSP_SCRIPT_SRC_EXTRA || "")
       .trim()
       .split(/\s+/)
@@ -830,6 +851,8 @@ function withSecurityHeaders(handler) {
     const allowUnsafeInlineScript =
       process.env.CSP_ALLOW_UNSAFE_INLINE_SCRIPT === "1" ||
       process.env.CSP_ALLOW_UNSAFE_INLINE_SCRIPT === "true";
+    const cspNonce = crypto.randomBytes(16).toString("base64url");
+    res.cspNonce = cspNonce;
     const cspDirectives = [
       "default-src 'self'",
       "base-uri 'self'",
@@ -842,7 +865,10 @@ function withSecurityHeaders(handler) {
       [
         "script-src",
         "'self'",
+        `'nonce-${cspNonce}'`,
         "https://static.cloudflareinsights.com",
+        // With a nonce present, browsers ignore 'unsafe-inline' for scripts
+        // (CSP2+). Keep the flag for operators who strip nonces / older CF.
         ...(allowUnsafeInlineScript ? ["'unsafe-inline'"] : []),
         ...scriptSrcExtra,
       ].join(" "),

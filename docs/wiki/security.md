@@ -40,6 +40,7 @@ another tool on the host needs it.
 | Area | Control |
 |------|---------|
 | Proxy | `X-Forwarded-*` overwritten from the socket by prod-web; API trusts XFF only from `TRUSTED_PROXIES` |
+| CSP | prod-web sends `script-src` with a **per-request nonce** (stamped on `index.html` scripts). Cloudflare Bot JS detections can reuse that nonce; Web Analytics needs `static.cloudflareinsights.com`. Prefer turning off **Email Address Obfuscation** (Scrape Shield) rather than `'unsafe-inline'` |
 | CSRF | Origin/Referer check on cookie-auth mutating `/api` routes |
 | Sessions | `httpOnly` + `SameSite=Lax`; regenerate on login; purge on password reset |
 | Rate limits | Login / API-key / SFTP counters via `RATE_LIMIT_STORE` (`file` default under `data/rate-limits/`, or `memory`) |
