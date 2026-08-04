@@ -7,7 +7,7 @@ Operator and developer documentation for the Guartrix Minecraft hosting panel.
 > Guartrix was built as a Cursor AI experiment to test how far a **100% AI-generated** project could go. Because of that, the code and documentation may contain mistakes, bugs, incomplete behavior, or security issues. Do not assume production safety without doing your own review, testing, and hardening.
 
 **Live panel:** [https://guartrix.com](https://guartrix.com)  
-**Public wiki:** `/wiki` on the panel web app  
+**Public wiki:** `/wiki` on the panel web app (left topic menu + search)  
 **Source:** [github.com/TomThermo/guartrix](https://github.com/TomThermo/guartrix)  
 **Short overview:** [../../README.md](../../README.md)
 

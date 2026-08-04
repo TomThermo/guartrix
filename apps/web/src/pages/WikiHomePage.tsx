@@ -1,88 +1,75 @@
 import { useMemo, useState } from "react";
-import { Badge, Button, Card, Col, Row } from "react-bootstrap";
-import { WikiArticleCard } from "../components/wiki/WikiArticleCard";
+import { Link } from "react-router-dom";
+import { Card } from "react-bootstrap";
 import { WikiLayout } from "../components/wiki/WikiLayout";
 import { WikiSearchBox } from "../components/wiki/WikiSearchBox";
 import { searchWikiArticles, wikiArticles, wikiCategories } from "../wiki/wiki-content";
 
 export function WikiHomePage() {
   const [query, setQuery] = useState("");
-  const [category, setCategory] = useState("All");
 
-  const filtered = useMemo(
-    () => searchWikiArticles(query, category),
-    [category, query],
-  );
-
-  const topArticles = useMemo(() => wikiArticles.slice(0, 4), []);
+  const filtered = useMemo(() => searchWikiArticles(query), [query]);
+  const searching = query.trim().length > 0;
 
   return (
     <WikiLayout
       title="Guartrix wiki"
-      subtitle="Search setup guides, server workflows, security notes, and API references from one public help hub."
+      subtitle="Setup guides, server workflows, security notes, and API references."
     >
-      <Card className="wiki-search-panel mb-4">
-        <Card.Body>
-          <div className="wiki-search-header">
-            <div>
-              <h2 className="h5 mb-1">Find documentation fast</h2>
+      <div className="wiki-search-panel mb-4">
+        <WikiSearchBox value={query} onChange={setQuery} />
+        {searching && (
+          <p className="wiki-search-count mt-2 mb-0">
+            {filtered.length} result{filtered.length === 1 ? "" : "s"}
+          </p>
+        )}
+      </div>
+
+      {searching ? (
+        filtered.length === 0 ? (
+          <Card className="wiki-empty-state">
+            <Card.Body>
+              <h2 className="h5 mb-2">No matches yet</h2>
               <p className="text-secondary mb-0">
-                Search by topic, route, workflow, or operational area.
+                Try broader words like <code>install</code>, <code>nodes</code>,{" "}
+                <code>security</code>, <code>files</code>, or <code>API</code>.
               </p>
-            </div>
-            <Badge bg="secondary">{filtered.length} results</Badge>
-          </div>
-          <div className="mt-3">
-            <WikiSearchBox value={query} onChange={setQuery} />
-          </div>
-          <div className="wiki-filter-row mt-3">
-            {["All", ...wikiCategories].map((item) => (
-              <Button
-                key={item}
-                size="sm"
-                variant={category === item ? "primary" : "outline-secondary"}
-                onClick={() => setCategory(item)}
-              >
-                {item}
-              </Button>
+            </Card.Body>
+          </Card>
+        ) : (
+          <ul className="wiki-result-list">
+            {filtered.map((article) => (
+              <li key={article.slug}>
+                <Link to={`/wiki/${article.slug}`} className="wiki-result-link">
+                  <span className="wiki-result-category">{article.category}</span>
+                  <strong>{article.title}</strong>
+                  <span className="wiki-result-summary">{article.summary}</span>
+                </Link>
+              </li>
             ))}
-          </div>
-        </Card.Body>
-      </Card>
-
-      {!query && category === "All" && (
-        <Card className="wiki-highlight-panel mb-4">
-          <Card.Body>
-            <h2 className="h5 mb-3">Popular starting points</h2>
-            <Row className="g-3">
-              {topArticles.map((article) => (
-                <Col key={article.slug} md={6} xl={3}>
-                  <WikiArticleCard article={article} />
-                </Col>
-              ))}
-            </Row>
-          </Card.Body>
-        </Card>
-      )}
-
-      <Row className="g-3">
-        {filtered.map((article) => (
-          <Col key={article.slug} md={6} xl={4}>
-            <WikiArticleCard article={article} />
-          </Col>
-        ))}
-      </Row>
-
-      {filtered.length === 0 && (
-        <Card className="wiki-empty-state mt-4">
-          <Card.Body>
-            <h2 className="h5 mb-2">No matches yet</h2>
-            <p className="text-secondary mb-0">
-              Try broader words like <code>install</code>, <code>nodes</code>,{" "}
-              <code>security</code>, <code>files</code>, or <code>API</code>.
-            </p>
-          </Card.Body>
-        </Card>
+          </ul>
+        )
+      ) : (
+        <div className="wiki-overview">
+          {wikiCategories.map((category) => {
+            const articles = wikiArticles.filter((article) => article.category === category);
+            return (
+              <section key={category} className="wiki-overview-section">
+                <h2 className="wiki-overview-title">{category}</h2>
+                <ul className="wiki-overview-list">
+                  {articles.map((article) => (
+                    <li key={article.slug}>
+                      <Link to={`/wiki/${article.slug}`} className="wiki-overview-link">
+                        <strong>{article.title}</strong>
+                        <span>{article.summary}</span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            );
+          })}
+        </div>
       )}
     </WikiLayout>
   );
