@@ -121,8 +121,9 @@ export const accountApi = {
     request<{ ok: boolean }>(`/api/users/${id}`, { method: "DELETE" }),
   getInvite: (token: string) =>
     request<{
-      email: string;
-      serverId: string;
+      email: string | null;
+      emailHint: string;
+      serverId: string | null;
       serverName: string;
       expiresAt: string | null;
       alreadyLinked: boolean;

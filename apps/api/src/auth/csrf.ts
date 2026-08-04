@@ -22,8 +22,8 @@ export function allowedOrigins(): Set<string> {
 /**
  * Same-origin check for cookie-authenticated mutating requests.
  * Browsers send Origin (or Referer) on cross-site POSTs; reject strangers.
- * Same-origin form posts and tools without Origin (curl) are allowed when
- * Origin/Referer are absent — session cookies are still SameSite=Lax.
+ * Missing Origin and Referer is rejected unless CSRF_ALLOW_MISSING_ORIGIN=1
+ * (local curl debugging). Prefer Bearer API keys for non-browser clients.
  */
 export function assertSameOrigin(request: FastifyRequest): string | null {
   const origin = request.headers.origin;
@@ -41,11 +41,15 @@ export function assertSameOrigin(request: FastifyRequest): string | null {
       if (!allowedOrigins().has(refOrigin)) {
         return "Invalid referer";
       }
+      return null;
     } catch {
       return "Invalid referer";
     }
   }
-  return null;
+  if (process.env.CSRF_ALLOW_MISSING_ORIGIN === "1") {
+    return null;
+  }
+  return "Missing origin";
 }
 
 const MUTATING = new Set(["POST", "PUT", "PATCH", "DELETE"]);

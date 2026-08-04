@@ -41,7 +41,7 @@ another tool on the host needs it.
 |------|---------|
 | Proxy | `X-Forwarded-*` overwritten from the socket by prod-web; API trusts XFF only from `TRUSTED_PROXIES` |
 | CSP | prod-web sends `script-src` with a **per-request nonce** (stamped on `index.html` scripts). Cloudflare Bot JS detections can reuse that nonce; Web Analytics needs `static.cloudflareinsights.com`. Prefer turning off **Email Address Obfuscation** (Scrape Shield) rather than `'unsafe-inline'` |
-| CSRF | Origin/Referer check on cookie-auth mutating `/api` routes |
+| CSRF | Origin/Referer required on cookie-auth mutating `/api` routes (missing both rejected unless `CSRF_ALLOW_MISSING_ORIGIN=1`; Bearer + `/api/public/*` exempt) |
 | Sessions | `httpOnly` + `SameSite=Lax`; regenerate on login; purge on password reset |
 | Rate limits | Login / API-key / SFTP counters via `RATE_LIMIT_STORE` (`file` default under `data/rate-limits/`, or `memory`) |
 | Passwords | Versioned scrypt hashes (`scrypt$v1$…`); legacy `salt:hash` still verifies and upgrades on login |
@@ -87,8 +87,9 @@ Re-check after upgrades:
 
 - File Manager + SFTP resolve paths under the server jail; symlinks and `guartrix-*.json` stay blocked.
 - Zip/tar extract rejects symlink members.
-- Cookie mutating routes still fail without a matching Origin/Referer (Bearer and `/api/public/*` exempt).
-- `TRUST_PROXY` + `TRUSTED_PROXIES` still match your edge (default localhost via prod-web).
+- Cookie mutating routes still fail without a matching Origin/Referer (Bearer and `/api/public/*` exempt). Missing Origin **and** Referer is rejected unless `CSRF_ALLOW_MISSING_ORIGIN=1`.
+- Public invite peek returns a masked `emailHint` only; full invite email requires a signed-in session.
+- Mollie webhook is rate-limited and only syncs `tr_*` ids that exist in the local Payment table.
 
 Daemon short-lived JWT rotation is implemented (panel signs HS256 JWTs; `DAEMON_TOKEN` stays the shared secret). Raw bearer is off by default (`DAEMON_JWT_LEGACY=false`).
 

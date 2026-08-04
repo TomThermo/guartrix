@@ -61,7 +61,7 @@ Details: [Client API](client-api.md)
 ## Subusers
 
 - Server owners invite by email with fine-grained permissions.
-- Every invite generates a copyable **invite link** (`/invite/:token`, valid **7 days**) shown in the Subusers panel and included in the invite mail. The recipient signs in (or registers) with the invited email and accepts on that page. **Invite link** on a pending row regenerates the token and resends.
+- Every invite generates a copyable **invite link** (`/invite/:token`, valid **7 days**) shown in the Subusers panel and included in the invite mail. The recipient signs in (or registers) with the invited email and accepts on that page. Before sign-in the page only shows a **masked** email hint; the full address appears after login. **Invite link** on a pending row regenerates the token and resends.
 - If no account exists, Guartrix creates a `VIEWER` with **0** quotas and emails a **password setup link** (no temporary password in the API JSON).
 - Invitees use SFTP/panel with their own credentials once the password is set.
 - `activity.read` grants the server's [Activity log](activity-log.md) tab; subusers who already had `audit.read` (Log Files) keep access.

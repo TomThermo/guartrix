@@ -27,6 +27,7 @@ Many operator knobs (public URL, SMTP, registration, quotas, 2FA policy, alerts,
 | `TRUST_PROXY` | `true` behind Cloudflare / prod-web HTTPS; usually `false` for direct IP HTTP |
 | `TRUSTED_PROXIES` | Peer IPs allowed to set `X-Forwarded-For` (default `127.0.0.1,::1`). `*` requires `ALLOW_INSECURE_TRUST_PROXY=1` |
 | `ALLOW_INSECURE_TRUST_PROXY` | Must be `1`/`true` to allow `TRUSTED_PROXIES=*` (re-enables XFF spoofing) |
+| `CSRF_ALLOW_MISSING_ORIGIN` | `1` allows cookie-auth mutating `/api` without Origin/Referer (default off — use Bearer keys for scripts) |
 | `PUBLIC_HOST` | Canonical hostname or IP (also HTTPS redirect target when TLS on) |
 | `PUBLIC_IP` | Public IP when useful for players/DNS |
 | `PUBLIC_BASE_URL` | Full origin, e.g. `https://guartrix.com` or `http://203.0.113.10` |

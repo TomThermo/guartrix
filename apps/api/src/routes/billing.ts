@@ -14,6 +14,7 @@ import { requireAdmin, requireAuth, requireSessionAuth } from "../auth/auth.js";
 import { config } from "../config.js";
 import { assertSameOrigin } from "../auth/csrf.js";
 import { prisma } from "../db.js";
+import { getRateLimitStore } from "../rate-limit-store.js";
 import {
   mapMollieStatus,
   mollieCheckoutUrl,
@@ -23,6 +24,8 @@ import {
   mollieTestMode,
 } from "../billing/mollie.js";
 
+const MOLLIE_WEBHOOK_WINDOW_MS = 60_000;
+const MOLLIE_WEBHOOK_MAX = 60;
 const planBodySchema = z.object({
   slug: z
     .string()
@@ -337,6 +340,15 @@ export function registerBillingRoutes(app: FastifyInstance): void {
       return reply.status(503).send({ error: "Mollie not configured" });
     }
 
+    const rl = await getRateLimitStore().hit(
+      `mollie-webhook:${request.ip || "unknown"}`,
+      MOLLIE_WEBHOOK_WINDOW_MS,
+      MOLLIE_WEBHOOK_MAX,
+    );
+    if (rl.limited) {
+      return reply.status(429).send({ error: "Too many webhook requests" });
+    }
+
     let mollieId: string | null = null;
     const body = request.body as unknown;
     if (body && typeof body === "object" && "id" in body) {
@@ -357,6 +369,15 @@ export function registerBillingRoutes(app: FastifyInstance): void {
 
     if (!mollieId?.startsWith("tr_")) {
       return reply.status(400).send({ error: "Missing Mollie payment id" });
+    }
+
+    // Only sync ids we created — ignore probes without calling Mollie.
+    const known = await prisma.payment.findFirst({
+      where: { mollieId },
+      select: { id: true },
+    });
+    if (!known) {
+      return { ok: true };
     }
 
     try {

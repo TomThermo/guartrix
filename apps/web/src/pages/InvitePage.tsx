@@ -12,8 +12,9 @@ export function InvitePage() {
   const { t } = useI18n();
   const navigate = useNavigate();
   const [info, setInfo] = useState<{
-    email: string;
-    serverId: string;
+    email: string | null;
+    emailHint: string;
+    serverId: string | null;
     serverName: string;
     expiresAt: string | null;
     alreadyLinked: boolean;
@@ -29,7 +30,7 @@ export function InvitePage() {
       .catch((err) =>
         setError(err instanceof Error ? err.message : t("auth.inviteNotFound")),
       );
-  }, [token, t]);
+  }, [token, t, user?.id]);
 
   async function accept() {
     if (!token) return;
@@ -58,7 +59,7 @@ export function InvitePage() {
           <p className="mb-2">
             {t("auth.inviteJoin", {
               server: info.serverName,
-              email: info.email,
+              email: info.email ?? info.emailHint,
             })}
             {info.expiresAt
               ? ` ${t("auth.inviteExpires", {

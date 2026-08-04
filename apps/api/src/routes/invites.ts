@@ -4,6 +4,17 @@ import { prisma } from "../db.js";
 import { hashInviteToken } from "../servers/server-access.js";
 import { logActivity } from "../activity-log.js";
 
+/** Public invite peek: never leak the full invite email without a session. */
+function maskEmail(email: string): string {
+  const trimmed = email.trim().toLowerCase();
+  const at = trimmed.indexOf("@");
+  if (at <= 0) return "***";
+  const local = trimmed.slice(0, at);
+  const domain = trimmed.slice(at + 1);
+  const keep = local.length <= 1 ? 1 : 1;
+  return `${local.slice(0, keep)}***@${domain}`;
+}
+
 export function registerInviteRoutes(app: FastifyInstance): void {
   app.get<{ Params: { token: string } }>(
     "/api/invites/:token",
@@ -22,8 +33,26 @@ export function registerInviteRoutes(app: FastifyInstance): void {
         },
       });
       if (!row) return reply.status(404).send({ error: "Invite not found or expired" });
+
+      const authed = isAuthenticated(request);
+      const sessionUser = authed ? await getSessionUser(request) : null;
+      const emailHint = maskEmail(row.email);
+
+      // Unauthenticated: no full email, no serverId (reduces phishing / enum context).
+      if (!sessionUser) {
+        return {
+          email: null,
+          emailHint,
+          serverId: null,
+          serverName: row.server.name,
+          expiresAt: row.inviteExpiresAt?.toISOString() ?? null,
+          alreadyLinked: Boolean(row.userId),
+        };
+      }
+
       return {
         email: row.email,
+        emailHint,
         serverId: row.server.id,
         serverName: row.server.name,
         expiresAt: row.inviteExpiresAt?.toISOString() ?? null,
@@ -59,7 +88,8 @@ export function registerInviteRoutes(app: FastifyInstance): void {
       const email = dbUser?.email?.trim().toLowerCase();
       if (!email || email !== row.email.toLowerCase()) {
         return reply.status(403).send({
-          error: `Sign in with ${row.email} to accept this invite`,
+          error: `Sign in with the invited email address to accept this invite`,
+          emailHint: maskEmail(row.email),
         });
       }
 
