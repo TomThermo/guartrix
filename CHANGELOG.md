@@ -7,6 +7,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.60] — 2026-08-04
+
+- Fix addon detail Changelog / Versions tabs stuck on “Loading…” (effect cancelled itself via `versionsLoading` dep)
+
 ## [1.0.59] — 2026-08-04
 
 - CSP: move theme boot to `/theme-boot.js` (no inline script); allow Cloudflare Web Analytics (`static.cloudflareinsights.com`); optional `CSP_SCRIPT_SRC_EXTRA` / `CSP_ALLOW_UNSAFE_INLINE_SCRIPT`

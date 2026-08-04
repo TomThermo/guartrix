@@ -221,7 +221,7 @@ export function AddonDetailModal({
 
   useEffect(() => {
     if (tab !== "changelog" && tab !== "versions") return;
-    if (versionsLoaded || versionsLoading) return;
+    if (versionsLoaded) return;
     let cancelled = false;
     setVersionsLoading(true);
     void api
@@ -245,8 +245,9 @@ export function AddonDetailModal({
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab, versionsLoaded, versionsLoading, serverId, projectId]);
+    // Do not depend on versionsLoading — setState(true) would re-run + cancel
+    // the in-flight fetch (React Strict Mode), leaving the tabs stuck loading.
+  }, [tab, versionsLoaded, serverId, projectId, t]);
 
   const tabs = useMemo(() => {
     const items: { id: DetailTab; label: string; show: boolean }[] = [
