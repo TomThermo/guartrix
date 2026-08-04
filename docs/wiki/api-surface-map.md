@@ -151,7 +151,7 @@ See [Shared contracts](shared-contracts.md).
 |---------------|-----------|---------|
 | Install/bootstrap | `install.sh`, `install-panel.sh`, `install-daemon.sh`, `db-migrate.sh` | Fresh panel/node install, migration bootstrap |
 | Runtime and watchdog | `start.sh`, `monitor.sh`, `backup-panel-db.sh`, `install-panel-backup-cron.sh` | Start, health supervision, panel DB backups |
-| Release/build | `build-out.sh`, `esbuild-release.mjs`, `package-release.sh`, `package-download-bundle.sh`, `lib-stage-release.sh` | Build staging, minified bundles, download packaging |
+| Release/build | `build-out.sh`, `esbuild-release.mjs`, `package-release.sh`, download-bundle packaging, `lib-stage-release.sh` | Build staging, minified bundles, release and download packaging |
 | Prod web / edge | `prod-web.mjs`, `prod-web/*.mjs`, `prod-web-download.mjs` | Static serving, reverse proxy, TLS, `/download` integration |
 | Hardening / host ops | `install-host-hardening.sh`, `install-daemon-le-cert.sh`, `install-download-le-cert.sh`, `logrotate-guartrix.conf` | Firewall cleanup, LE cert hooks, log rotation |
 | Docs maintenance | `check-openapi-coverage.mjs`, `generate-openapi-stubs.mjs`, `capture-wiki-screenshots.mjs`, `fa-subset-icons.mjs` | OpenAPI and docs assets maintenance |

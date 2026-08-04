@@ -20,7 +20,7 @@ Guartrix has three practical build outputs:
 | `scripts/esbuild-release.mjs` | Bundle/minify API and daemon for shipping builds |
 | `scripts/lib-stage-release.sh` | Shared staging logic and denylist enforcement |
 | `scripts/package-release.sh` | Produce tarball releases |
-| `scripts/package-download-bundle.sh` | Produce downloadable zips and publish manifests |
+| Download bundle packaging script | Produce downloadable zips and publish manifests |
 
 ## `build/` semantics
 
@@ -52,7 +52,7 @@ This staging boundary is one of the most important maintainer concepts because p
 
 ### Download bundle release
 
-`package-download-bundle.sh` creates:
+The download-bundle packaging step creates:
 
 - per-component zips
 - a combined master zip
