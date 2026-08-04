@@ -129,7 +129,7 @@ async function pickFreePort(nodeId: string): Promise<number> {
   });
   if (freeAlloc) return freeAlloc.port;
 
-  const { processManager } = await import("../process-manager.js");
+  const { processManager } = await import("../servers/process-manager.js");
   for (let port = 25565; port < 26000; port += 1) {
     if (await processManager.isPortFree(port, undefined, nodeId)) return port;
   }
@@ -175,7 +175,7 @@ export async function autoCreateServerForPayment(paymentId: string): Promise<{
       { diskMb: plan.defaultDiskMb },
     );
 
-    const { assertNodeCapacity, resolveCreateNodeId } = await import("../nodes.js");
+    const { assertNodeCapacity, resolveCreateNodeId } = await import("../nodes/nodes.js");
     const nodeId = await resolveCreateNodeId(undefined);
     await assertNodeCapacity(nodeId, plan.defaultMemoryMb);
     const port = await pickFreePort(nodeId);
@@ -204,7 +204,7 @@ export async function autoCreateServerForPayment(paymentId: string): Promise<{
     const id = nanoid(12);
     const name = `${plan.slug}-${id.slice(0, 6)}`;
 
-    const { provisionPreparedServer } = await import("../server-provision.js");
+    const { provisionPreparedServer } = await import("../servers/server-provision.js");
     await provisionPreparedServer({
       id,
       name,
@@ -512,7 +512,7 @@ export async function revokePlanAfterFailedRenewal(opts: {
     where: { ownerId: opts.userId },
     select: { id: true, name: true, status: true },
   });
-  const { processManager } = await import("../process-manager.js");
+  const { processManager } = await import("../servers/process-manager.js");
   const stopped: string[] = [];
   for (const s of servers) {
     if (

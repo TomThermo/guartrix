@@ -14,7 +14,7 @@ import {
   renamePath,
   saveUpload,
   writeFileContent,
-} from "../files.js";
+} from "../servers/files.js";
 
 const compressSchema = z.object({
   paths: z.array(z.string().min(1).max(512)).min(1).max(100),

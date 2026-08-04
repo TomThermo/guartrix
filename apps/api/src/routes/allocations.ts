@@ -9,11 +9,11 @@ import {
   ensurePrimaryAllocation,
   ensureUdpCompanion,
   serializeAllocation,
-} from "../allocations.js";
-import { changeFirewallPort, closeFirewallPort, openFirewallPort } from "../firewall.js";
+} from "../servers/allocations.js";
+import { changeFirewallPort, closeFirewallPort, openFirewallPort } from "../nodes/firewall.js";
 import { prisma } from "../db.js";
-import { processManager } from "../process-manager.js";
-import { updateServerProperties } from "../properties.js";
+import { processManager } from "../servers/process-manager.js";
+import { updateServerProperties } from "../servers/properties.js";
 
 const protocolSchema = z.enum(["tcp", "udp"]);
 

@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { isAuthenticated, requireServerAccess } from "../auth/auth.js";
-import { listLogFiles, readLogFile } from "../logs.js";
+import { listLogFiles, readLogFile } from "../servers/logs.js";
 
 export function registerLogRoutes(app: FastifyInstance): void {
   app.addHook("preHandler", async (request, reply) => {

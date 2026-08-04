@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import client from "prom-client";
 import { prisma } from "./db.js";
-import { countTransferJobsInMemory } from "./transfer.js";
+import { countTransferJobsInMemory } from "./servers/transfer.js";
 
 const register = new client.Registry();
 client.collectDefaultMetrics({ register, prefix: "guartrix_api_" });

@@ -9,7 +9,7 @@ import {
   listScheduledTasks,
   runScheduledTaskNow,
   updateScheduledTask,
-} from "../scheduled-tasks.js";
+} from "../servers/scheduled-tasks.js";
 
 const stepSchema = z.object({
   kind: z.enum(["command", "restart", "backup", "wait"]),

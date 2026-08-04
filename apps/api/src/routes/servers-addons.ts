@@ -13,9 +13,9 @@ import {
   searchAddons,
   syncInstalledAddons,
   uninstallAddon,
-} from "../addons.js";
+} from "../servers/addons.js";
 import { serverDir } from "../config.js";
-import { fixDataOwnership } from "../process-manager.js";
+import { fixDataOwnership } from "../servers/process-manager.js";
 import { invalidateAddonUpdateCache } from "./servers-dashboard.js";
 
 /** Addon / modpack / geyser routes (split from servers.ts). */
@@ -269,7 +269,7 @@ export function registerServerAddonRoutes(app: FastifyInstance): void {
       });
       if (!access) return;
       try {
-        const { listModpackCategories } = await import("../modpacks.js");
+        const { listModpackCategories } = await import("../servers/modpacks.js");
         const categories = await listModpackCategories();
         return { categories };
       } catch (err) {
@@ -299,7 +299,7 @@ export function registerServerAddonRoutes(app: FastifyInstance): void {
       const {
         searchModrinthModpacks,
         searchCurseforgeModpacks,
-      } = await import("../modpacks.js");
+      } = await import("../servers/modpacks.js");
       if (source === "curseforge") {
         return await searchCurseforgeModpacks({
           type: access.server.type as ServerType,
@@ -348,7 +348,7 @@ export function registerServerAddonRoutes(app: FastifyInstance): void {
       const {
         installModrinthModpack,
         installCurseforgeModpack,
-      } = await import("../modpacks.js");
+      } = await import("../servers/modpacks.js");
       let result: { title: string; versionNumber: string; filesInstalled: number };
       if (source === "curseforge") {
         const modId = Number(request.body?.modId);
@@ -402,7 +402,7 @@ export function registerServerAddonRoutes(app: FastifyInstance): void {
     });
     if (!access) return;
     try {
-      const { installGeyserBundle } = await import("../geyser.js");
+      const { installGeyserBundle } = await import("../servers/geyser.js");
       const result = await installGeyserBundle({
         serverId: access.server.id,
         withFloodgate: request.body?.withFloodgate !== false,

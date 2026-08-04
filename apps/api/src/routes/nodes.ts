@@ -8,7 +8,7 @@ import {
   daemonTestNode,
   setNodeToken,
   clearNodeToken,
-} from "../daemon-client.js";
+} from "../nodes/daemon-client.js";
 import {
   generateDaemonToken,
   hashDaemonToken,
@@ -16,7 +16,7 @@ import {
   removeNodeSftpDns,
   syncNodeSftpDns,
   writeLocalDaemonEnvIfLocal,
-} from "../nodes.js";
+} from "../nodes/nodes.js";
 
 const locationSchema = z
   .union([z.string().max(64), z.null()])
@@ -255,13 +255,13 @@ export function registerNodeRoutes(app: FastifyInstance): void {
         where: { id: request.params.id },
       });
       if (!node) return reply.status(404).send({ error: "Not found" });
-      const { getNodeToken } = await import("../daemon-client.js");
-      const { nodePublicUrl } = await import("../nodes.js");
+      const { getNodeToken } = await import("../nodes/daemon-client.js");
+      const { nodePublicUrl } = await import("../nodes/nodes.js");
       const {
         defaultRepoUrl,
         panelPublicBase,
         buildDaemonInstallScript,
-      } = await import("../remote-install.js");
+      } = await import("../nodes/remote-install.js");
       const token = getNodeToken(node.id);
       if (!token) {
         return reply.status(409).send({
@@ -352,13 +352,13 @@ export function registerNodeRoutes(app: FastifyInstance): void {
           .send({ error: "Provide sshPassword and/or sshPrivateKey" });
       }
 
-      const { getNodeToken } = await import("../daemon-client.js");
+      const { getNodeToken } = await import("../nodes/daemon-client.js");
       const {
         defaultRepoUrl,
         panelPublicBase,
         buildDaemonInstallScript,
         runRemoteDaemonInstall,
-      } = await import("../remote-install.js");
+      } = await import("../nodes/remote-install.js");
       const token = getNodeToken(node.id);
       if (!token) {
         return reply.status(409).send({

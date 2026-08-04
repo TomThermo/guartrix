@@ -6,7 +6,7 @@ import type { FastifyInstance } from "fastify";
 import { logActivity } from "../activity-log.js";
 import { isAuthenticated, requireServerAccess } from "../auth/auth.js";
 import { config, serverDir } from "../config.js";
-import { updateServerProperties, readServerProperties } from "../properties.js";
+import { updateServerProperties, readServerProperties } from "../servers/properties.js";
 
 function packPath(serverId: string): string {
   return path.join(serverDir(serverId), "guartrix-resource-pack.zip");

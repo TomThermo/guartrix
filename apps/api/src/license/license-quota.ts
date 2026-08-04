@@ -5,7 +5,7 @@ import {
   UNLICENSED_MAX_SERVERS,
 } from "@msm/shared/license-ticket";
 import { prisma } from "../db.js";
-import { processManager } from "../process-manager.js";
+import { processManager } from "../servers/process-manager.js";
 import { validateLicense } from "./license-validate.js";
 import type { LicenseState } from "./license-validate.js";
 

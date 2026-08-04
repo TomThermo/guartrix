@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { getSessionUser, isAuthenticated } from "../auth/auth.js";
 import { prisma } from "../db.js";
-import { hashInviteToken } from "../server-access.js";
+import { hashInviteToken } from "../servers/server-access.js";
 import { logActivity } from "../activity-log.js";
 
 export function registerInviteRoutes(app: FastifyInstance): void {

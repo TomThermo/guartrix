@@ -1,7 +1,7 @@
 import type { Bot } from "mineflayer";
 import pathfinderPkg from "mineflayer-pathfinder";
 import { Vec3 } from "vec3";
-import { clearPathToward, scaffoldToward } from "../bot-survival.js";
+import { clearPathToward, scaffoldToward } from "../bots/bot-survival.js";
 import { clearTimers, ensurePathfinder, sleep, type ManagedBot } from "./shared.js";
 
 const { goals } = pathfinderPkg;

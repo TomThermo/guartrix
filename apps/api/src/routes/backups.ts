@@ -14,7 +14,7 @@ import {
   getChunkedUploadStatus,
   initChunkedUpload,
   saveUploadChunk,
-} from "../backup-transfer.js";
+} from "../servers/backup-transfer.js";
 import {
   assertBackupExists,
   createBackup,
@@ -24,7 +24,7 @@ import {
   readBackupSchedule,
   restoreBackup,
   writeBackupSchedule,
-} from "../backups.js";
+} from "../servers/backups.js";
 import { prisma } from "../db.js";
 
 const scheduleSchema = z.object({
@@ -110,7 +110,7 @@ export function registerBackupRoutes(app: FastifyInstance): void {
         listBackups(server.id),
         readBackupSchedule(server.id),
       ]);
-      const { isBackupEncryptionEnabled } = await import("../backup-crypto.js");
+      const { isBackupEncryptionEnabled } = await import("../servers/backup-crypto.js");
       return {
         backups,
         schedule,
@@ -444,16 +444,16 @@ export function registerBackupRoutes(app: FastifyInstance): void {
         backupId: request.params.backupId,
       });
       if (request.body?.startAfter) {
-        const { openFirewallPort } = await import("../firewall.js");
+        const { openFirewallPort } = await import("../nodes/firewall.js");
         const { startServerIfLicensed } = await import("../license/license.js");
         await openFirewallPort(server.port, server.nodeId);
         await startServerIfLicensed(server.id);
       }
       const updated = await prisma.server.findUniqueOrThrow({
         where: { id: server.id },
-        include: (await import("../serialize.js")).serverListInclude,
+        include: (await import("../servers/serialize.js")).serverListInclude,
       });
-      const { toMcServer } = await import("../serialize.js");
+      const { toMcServer } = await import("../servers/serialize.js");
       logActivity({
         action: "backup.restore",
         request,

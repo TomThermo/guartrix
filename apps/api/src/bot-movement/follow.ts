@@ -1,6 +1,6 @@
 import type { Bot } from "mineflayer";
 import pathfinderPkg from "mineflayer-pathfinder";
-import { handleSurvivalTick } from "../bot-survival.js";
+import { handleSurvivalTick } from "../bots/bot-survival.js";
 import {
   blockedAhead,
   clearTimers,

@@ -1,6 +1,6 @@
 import type { ServerStatus } from "@msm/shared";
 import { recordActivity } from "./activity-log.js";
-import { processManager } from "./process-manager.js";
+import { processManager } from "./servers/process-manager.js";
 
 /**
  * Turns daemon status transitions into activity events. A panel-issued stop

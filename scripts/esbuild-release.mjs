@@ -45,7 +45,7 @@ const APPS = {
     /** Extra forked Mineflayer worker (must sit next to index.js). */
     extraEntries: [
       {
-        entry: "apps/api/src/bot-worker-main.ts",
+        entry: "apps/api/src/bots/bot-worker-main.ts",
         outfile: "apps/api/dist/bot-worker-main.js",
         /** Mineflayer worker — skip obfuscation (fragile). */
         obfuscate: false,

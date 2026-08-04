@@ -15,8 +15,8 @@ import {
   removeWhitelist,
   updateIpBan,
   updatePlayerBan,
-} from "../players.js";
-import { fixDataOwnership } from "../process-manager.js";
+} from "../servers/players.js";
+import { fixDataOwnership } from "../servers/process-manager.js";
 
 /** Player whitelist / ops / bans routes (split from servers.ts). */
 export function registerServerPlayerRoutes(app: FastifyInstance): void {

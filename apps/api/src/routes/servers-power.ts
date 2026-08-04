@@ -2,9 +2,9 @@ import type { FastifyInstance } from "fastify";
 import { requireServerAccess } from "../auth/auth.js";
 import { logActivity } from "../activity-log.js";
 import { prisma } from "../db.js";
-import { openFirewallPort } from "../firewall.js";
-import { processManager } from "../process-manager.js";
-import { serverListInclude, toMcServer } from "../serialize.js";
+import { openFirewallPort } from "../nodes/firewall.js";
+import { processManager } from "../servers/process-manager.js";
+import { serverListInclude, toMcServer } from "../servers/serialize.js";
 
 /** Start / stop / kill / restart routes (split from servers.ts). */
 export function registerServerPowerRoutes(app: FastifyInstance): void {
@@ -42,7 +42,7 @@ export function registerServerPowerRoutes(app: FastifyInstance): void {
         .send({ error: "Server is busy — wait for the current operation to finish" });
     }
     try {
-      const { openServerAllocationFirewalls } = await import("../allocations.js");
+      const { openServerAllocationFirewalls } = await import("../servers/allocations.js");
       await openServerAllocationFirewalls(server.id, server.nodeId);
       await prisma.server.update({
         where: { id: server.id },

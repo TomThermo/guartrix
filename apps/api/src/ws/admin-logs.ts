@@ -6,9 +6,9 @@ import type { ConsoleMessage } from "@msm/shared";
 import WebSocket from "ws";
 import { getSessionUser, isAuthenticated } from "../auth/auth.js";
 import { config } from "../config.js";
-import { daemonWsAuthorization, getNodeToken } from "../daemon-client.js";
+import { daemonWsAuthorization, getNodeToken } from "../nodes/daemon-client.js";
 import { prisma } from "../db.js";
-import { nodePublicUrl } from "../nodes.js";
+import { nodePublicUrl } from "../nodes/nodes.js";
 
 /** Match scripts/lib.sh: logs live under DATA_DIR/logs (not /tmp). */
 function logDir(): string {

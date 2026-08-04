@@ -10,8 +10,8 @@ import {
 import type { DaemonLicenseTicket } from "@msm/shared/license-ticket";
 import { config } from "../config.js";
 import { logActivity } from "../activity-log.js";
-import { hostPublicIp } from "../host-resources.js";
-import { daemonPushLicenseTicketAll } from "../daemon-client.js";
+import { hostPublicIp } from "../nodes/host-resources.js";
+import { daemonPushLicenseTicketAll } from "../nodes/daemon-client.js";
 import {
   getProductVersion,
   isUpdateAvailable,

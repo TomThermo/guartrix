@@ -7,30 +7,30 @@ import {
   requireWrite,
   verifySessionPassword,
 } from "../auth/auth.js";
-import { userHasServerPermission } from "../server-access.js";
+import { userHasServerPermission } from "../servers/server-access.js";
 import { logActivity } from "../activity-log.js";
 import { config } from "../config.js";
 import { prisma } from "../db.js";
 import { destroyServerDatabases } from "./databases.js";
 import {
   openFirewallPort,
-} from "../firewall.js";
+} from "../nodes/firewall.js";
 import {
   readPlayers,
-} from "../players.js";
+} from "../servers/players.js";
 import { listVersions } from "../providers/jars.js";
-import { getOnlinePlayers } from "../online-players.js";
-import { processManager } from "../process-manager.js";
-import { readServerProperties, updateServerProperties } from "../properties.js";
+import { getOnlinePlayers } from "../servers/online-players.js";
+import { processManager } from "../servers/process-manager.js";
+import { readServerProperties, updateServerProperties } from "../servers/properties.js";
 import {
   syncLocalDirToNode,
   wipeServerEverywhere,
-} from "../server-files.js";
-import { serverListInclude, toMcServer, toServerDetail } from "../serialize.js";
-import { collectServerStats } from "../stats.js";
+} from "../servers/server-files.js";
+import { serverListInclude, toMcServer, toServerDetail } from "../servers/serialize.js";
+import { collectServerStats } from "../servers/stats.js";
 import {
   applyCreateWorldDefaults,
-} from "../server-lifecycle.js";
+} from "../servers/server-lifecycle.js";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import fs from "node:fs/promises";
@@ -105,7 +105,7 @@ export function registerServerCrudRoutes(app: FastifyInstance): void {
     async (request, reply) => {
       const access = await requireServerAccess(request, reply, request.params.id);
       if (!access) return;
-      const { getStatsHistory } = await import("../stats-history.js");
+      const { getStatsHistory } = await import("../servers/stats-history.js");
       return { samples: getStatsHistory(access.server.id) };
     },
   );
@@ -165,7 +165,7 @@ export function registerServerCrudRoutes(app: FastifyInstance): void {
       | undefined;
     if (data.extraMounts !== undefined) {
       try {
-        const { parseExtraMounts } = await import("../extra-mounts.js");
+        const { parseExtraMounts } = await import("../servers/extra-mounts.js");
         validatedExtraMounts = parseExtraMounts(data.extraMounts);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
@@ -188,7 +188,7 @@ export function registerServerCrudRoutes(app: FastifyInstance): void {
     let nodeId: string;
     try {
       const { assertNodeCapacity, resolveCreateNodeId } = await import(
-        "../nodes.js"
+        "../nodes/nodes.js"
       );
       nodeId = await resolveCreateNodeId(
         user.role === "ADMIN" ? data.nodeId : undefined,
@@ -200,7 +200,7 @@ export function registerServerCrudRoutes(app: FastifyInstance): void {
     }
 
     try {
-      const { provisionPreparedServer } = await import("../server-provision.js");
+      const { provisionPreparedServer } = await import("../servers/server-provision.js");
       const { server: updated } = await provisionPreparedServer({
         name: data.name,
         type: data.type as ServerType,
@@ -308,7 +308,7 @@ export function registerServerCrudRoutes(app: FastifyInstance): void {
       const {
         closeServerAllocationFirewalls,
         releaseServerAllocations,
-      } = await import("../allocations.js");
+      } = await import("../servers/allocations.js");
       await closeServerAllocationFirewalls(server.id, nodeId).catch(() => undefined);
       await destroyServerDatabases(server.id).catch(() => undefined);
       await wipeServerEverywhere(server.id).catch(() => undefined);
@@ -323,7 +323,7 @@ export function registerServerCrudRoutes(app: FastifyInstance): void {
         metadata: { serverId: server.id, port: server.port, node: nodeId },
       });
       try {
-        const { deleteServerSubdomain } = await import("../cloudflare-dns.js");
+        const { deleteServerSubdomain } = await import("../nodes/cloudflare-dns.js");
         await deleteServerSubdomain(subdomain);
       } catch (dnsErr) {
         const msg = dnsErr instanceof Error ? dnsErr.message : String(dnsErr);
@@ -354,7 +354,7 @@ export function registerServerCrudRoutes(app: FastifyInstance): void {
     if (!access) return;
     const server = access.server;
     const properties = await readServerProperties(server.id);
-    const { hostPublicIp } = await import("../host-resources.js");
+    const { hostPublicIp } = await import("../nodes/host-resources.js");
     const publicIp = hostPublicIp();
     const directIp =
       /^\d{1,3}(\.\d{1,3}){3}$/.test(config.publicHost)
@@ -418,7 +418,7 @@ export function registerServerCrudRoutes(app: FastifyInstance): void {
       permission: "settings.read",
     });
     if (!access) return;
-    const { daemonDisk } = await import("../daemon-client.js");
+    const { daemonDisk } = await import("../nodes/daemon-client.js");
     return daemonDisk(access.server.id);
   });
 
@@ -456,7 +456,7 @@ export function registerServerCrudRoutes(app: FastifyInstance): void {
       let nodeId: string;
       try {
         const { assertNodeCapacity, resolveCreateNodeId } = await import(
-          "../nodes.js"
+          "../nodes/nodes.js"
         );
         nodeId = await resolveCreateNodeId(
           access.user.role === "ADMIN"
@@ -513,11 +513,11 @@ export function registerServerCrudRoutes(app: FastifyInstance): void {
         path.join(os.tmpdir(), `guartrix-clone-${id}-`),
       );
       const { tryEnsureServerSubdomain, cleanupFailedProvision } = await import(
-        "../server-provision.js"
+        "../servers/server-provision.js"
       );
       try {
         await openFirewallPort(parsed.data.port, nodeId);
-        const { ensurePrimaryAllocation } = await import("../allocations.js");
+        const { ensurePrimaryAllocation } = await import("../servers/allocations.js");
         await ensurePrimaryAllocation({
           serverId: id,
           nodeId,
@@ -526,7 +526,7 @@ export function registerServerCrudRoutes(app: FastifyInstance): void {
 
         // Pull source files via daemon export (stream to disk — avoid OOM on large worlds)
         const archivePath = path.join(staging, "source.tar.gz");
-        const { daemonExportArchiveToFile } = await import("../daemon-client.js");
+        const { daemonExportArchiveToFile } = await import("../nodes/daemon-client.js");
         await daemonExportArchiveToFile(source.id, archivePath);
         await execFileAsync("tar", ["-xzf", archivePath, "-C", staging], {
           maxBuffer: 32 * 1024 * 1024,

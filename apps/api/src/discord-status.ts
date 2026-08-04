@@ -1,7 +1,7 @@
 import { prisma } from "./db.js";
-import { processManager } from "./process-manager.js";
+import { processManager } from "./servers/process-manager.js";
 import { config } from "./config.js";
-import { readServerProperties } from "./properties.js";
+import { readServerProperties } from "./servers/properties.js";
 import {
   assertSafeOutboundUrl,
   DISCORD_WEBHOOK_HOST_SUFFIXES,

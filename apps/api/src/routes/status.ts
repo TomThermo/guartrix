@@ -9,8 +9,8 @@ import type {
 import { requireAdmin } from "../auth/auth.js";
 import { config } from "../config.js";
 import { prisma } from "../db.js";
-import { daemonGetStatus } from "../daemon-client.js";
-import { nodePublicUrl } from "../nodes.js";
+import { daemonGetStatus } from "../nodes/daemon-client.js";
+import { nodePublicUrl } from "../nodes/nodes.js";
 import { getPanelVersionStatus } from "../license/license.js";
 import { getProductVersion } from "../product-version.js";
 

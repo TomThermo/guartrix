@@ -24,7 +24,7 @@ import {
   getServerPermissions,
   isServerOwner,
   userCanAccessServer,
-} from "../server-access.js";
+} from "../servers/server-access.js";
 
 export { hashPassword, needsRehash, verifyPassword } from "./password-hash.js";
 
@@ -288,7 +288,7 @@ export async function requireServerAccess(
 export {
   listVisibleServerIds,
   listVisibleServers,
-} from "../server-access.js";
+} from "../servers/server-access.js";
 
 /** Guard all /api/servers/:serverId/* routes by ownership or subuser access. */
 export function registerOwnershipGuard(app: FastifyInstance): void {

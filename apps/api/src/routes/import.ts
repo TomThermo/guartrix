@@ -8,16 +8,16 @@ import type { ServerType } from "@msm/shared";
 import { logActivity } from "../activity-log.js";
 import { isAuthenticated, requireWrite, getSessionUser } from "../auth/auth.js";
 import { prisma } from "../db.js";
-import { closeFirewallPort, openFirewallPort } from "../firewall.js";
-import { processManager } from "../process-manager.js";
+import { closeFirewallPort, openFirewallPort } from "../nodes/firewall.js";
+import { processManager } from "../servers/process-manager.js";
 import { prepareServerFiles } from "../providers/jars.js";
-import { updateServerProperties } from "../properties.js";
+import { updateServerProperties } from "../servers/properties.js";
 import { safeExtractArchive } from "@msm/node-agent";
 import {
   syncLocalDirToNode,
   wipeServerEverywhere,
-} from "../server-files.js";
-import { serverListInclude, toMcServer } from "../serialize.js";
+} from "../servers/server-files.js";
+import { serverListInclude, toMcServer } from "../servers/serialize.js";
 
 const SERVER_TYPES = [
   "VANILLA",
@@ -94,7 +94,7 @@ export function registerImportRoutes(app: FastifyInstance): void {
     let nodeId: string;
     try {
       const { assertNodeCapacity, resolveCreateNodeId } = await import(
-        "../nodes.js"
+        "../nodes/nodes.js"
       );
       nodeId = await resolveCreateNodeId(
         user.role === "ADMIN" ? data.nodeId : undefined,
@@ -147,7 +147,7 @@ export function registerImportRoutes(app: FastifyInstance): void {
 
     try {
       await openFirewallPort(data.port, nodeId);
-      const { ensurePrimaryAllocation } = await import("../allocations.js");
+      const { ensurePrimaryAllocation } = await import("../servers/allocations.js");
       await ensurePrimaryAllocation({
         serverId: id,
         nodeId,

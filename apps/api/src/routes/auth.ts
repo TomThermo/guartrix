@@ -27,7 +27,7 @@ import {
   hostPublicIp,
   hostTotalMemoryGb,
   hostTotalMemoryMb,
-} from "../host-resources.js";
+} from "../nodes/host-resources.js";
 import { isSmtpConfigured, sendMail } from "../mail.js";
 import {
   PASSWORD_MAX_LENGTH,
@@ -35,7 +35,7 @@ import {
   passwordPolicyMessage,
 } from "../auth/password-policy.js";
 import { getRateLimitStore } from "../rate-limit-store.js";
-import { linkPendingSubUsers } from "../server-access.js";
+import { linkPendingSubUsers } from "../servers/server-access.js";
 import { destroySessionsForUser } from "../auth/session-store.js";
 import { consumeRecoveryCode, verifyTotp } from "../auth/totp.js";
 
@@ -625,7 +625,7 @@ export function registerAuthRoutes(app: FastifyInstance): void {
   app.get("/api/system", async (request, reply) => {
     if (!(await requireAuth(request, reply))) return;
     try {
-      const { daemonGetSystem } = await import("../daemon-client.js");
+      const { daemonGetSystem } = await import("../nodes/daemon-client.js");
       const sys = await daemonGetSystem();
       return {
         totalMemoryMb: sys.totalMemoryMb,

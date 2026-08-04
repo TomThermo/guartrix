@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { requireServerAccess } from "../auth/auth.js";
 import { logActivity } from "../activity-log.js";
-import { importWorldZip, resetWorld } from "../server-lifecycle.js";
+import { importWorldZip, resetWorld } from "../servers/server-lifecycle.js";
 
 /** World seed / reset / import routes (split from servers.ts). */
 export function registerServerWorldRoutes(app: FastifyInstance): void {
@@ -12,7 +12,7 @@ export function registerServerWorldRoutes(app: FastifyInstance): void {
         permission: "settings.read",
       });
       if (!access) return;
-      const { getWorldSeedInfo } = await import("../world-seed.js");
+      const { getWorldSeedInfo } = await import("../servers/world-seed.js");
       const wantConsole =
         request.query?.console === "1" || request.query?.console === "true";
       try {
@@ -35,7 +35,7 @@ export function registerServerWorldRoutes(app: FastifyInstance): void {
         permission: "control.console",
       });
       if (!access) return;
-      const { getWorldSeedInfo } = await import("../world-seed.js");
+      const { getWorldSeedInfo } = await import("../servers/world-seed.js");
       try {
         const info = await getWorldSeedInfo({
           serverId: access.server.id,

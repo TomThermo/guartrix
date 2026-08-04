@@ -1,9 +1,9 @@
 import type { FastifyInstance } from "fastify";
 import type { OnlinePlayersResponse, PlayersWsMessage } from "@msm/shared";
 import { getSessionUser, isAuthenticated } from "../auth/auth.js";
-import { getOnlinePlayers } from "../online-players.js";
-import { processManager } from "../process-manager.js";
-import { hasServerPermission, resolveServerAccess } from "../server-access.js";
+import { getOnlinePlayers } from "../servers/online-players.js";
+import { processManager } from "../servers/process-manager.js";
+import { hasServerPermission, resolveServerAccess } from "../servers/server-access.js";
 
 function namesToPayload(
   names: string[],

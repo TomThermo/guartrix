@@ -16,23 +16,23 @@ import {
   changeFirewallPort,
   closeFirewallPort,
   openFirewallPort,
-} from "../firewall.js";
+} from "../nodes/firewall.js";
 import {
   readPlayers,
-} from "../players.js";
-import { processManager } from "../process-manager.js";
-import { readServerProperties, updateServerProperties } from "../properties.js";
-import { serverListInclude, toMcServer, toServerDetail } from "../serialize.js";
+} from "../servers/players.js";
+import { processManager } from "../servers/process-manager.js";
+import { readServerProperties, updateServerProperties } from "../servers/properties.js";
+import { serverListInclude, toMcServer, toServerDetail } from "../servers/serialize.js";
 import {
   applyServerUpdate,
   checkServerUpdate,
-} from "../updates.js";
+} from "../servers/updates.js";
 import {
   applyVersionChangeViaRuntime,
   changeServerType,
   changeTypeRequiresWipeAddons,
   reinstallServer,
-} from "../server-lifecycle.js";
+} from "../servers/server-lifecycle.js";
 
 const SERVER_TYPES = [
   "VANILLA",
@@ -323,7 +323,7 @@ export function registerServerSettingsRoutes(app: FastifyInstance): void {
 
       if (server.nodeId) {
         try {
-          const { assertNodeCapacity } = await import("../nodes.js");
+          const { assertNodeCapacity } = await import("../nodes/nodes.js");
           await assertNodeCapacity(server.nodeId, data.memoryMb, {
             excludeServerId: server.id,
           });
@@ -457,7 +457,7 @@ export function registerServerSettingsRoutes(app: FastifyInstance): void {
       | undefined;
     if (data.extraMounts !== undefined) {
       try {
-        const { parseExtraMounts } = await import("../extra-mounts.js");
+        const { parseExtraMounts } = await import("../servers/extra-mounts.js");
         nextExtraMounts = parseExtraMounts(data.extraMounts);
       } catch (err) {
         return reply.status(400).send({
@@ -488,7 +488,7 @@ export function registerServerSettingsRoutes(app: FastifyInstance): void {
       });
     }
 
-    const { extraMountsForPrisma } = await import("../extra-mounts.js");
+    const { extraMountsForPrisma } = await import("../servers/extra-mounts.js");
 
     const updated = await prisma.server.update({
       where: { id: server.id },
@@ -528,7 +528,7 @@ export function registerServerSettingsRoutes(app: FastifyInstance): void {
 
     if (data.diskMb !== undefined || data.cpuLimit !== undefined) {
       try {
-        const { daemonSetLimits } = await import("../daemon-client.js");
+        const { daemonSetLimits } = await import("../nodes/daemon-client.js");
         await daemonSetLimits(server.id, {
           diskMb: updated.diskMb,
           cpuLimit: updated.cpuLimit,
@@ -542,7 +542,7 @@ export function registerServerSettingsRoutes(app: FastifyInstance): void {
       try {
         await changeFirewallPort(server.port, data.port!, server.nodeId);
         if (server.nodeId) {
-          const { ensurePrimaryAllocation } = await import("../allocations.js");
+          const { ensurePrimaryAllocation } = await import("../servers/allocations.js");
           await ensurePrimaryAllocation({
             serverId: server.id,
             nodeId: server.nodeId,
@@ -558,7 +558,7 @@ export function registerServerSettingsRoutes(app: FastifyInstance): void {
         await closeFirewallPort(data.port!, server.nodeId).catch(() => undefined);
         await openFirewallPort(server.port, server.nodeId).catch(() => undefined);
         if (server.nodeId) {
-          const { ensurePrimaryAllocation } = await import("../allocations.js");
+          const { ensurePrimaryAllocation } = await import("../servers/allocations.js");
           await ensurePrimaryAllocation({
             serverId: server.id,
             nodeId: server.nodeId,
@@ -574,10 +574,10 @@ export function registerServerSettingsRoutes(app: FastifyInstance): void {
       if (updated.subdomain) {
         try {
           const { ensureServerSubdomain, cloudflareConfigured } = await import(
-            "../cloudflare-dns.js"
+            "../nodes/cloudflare-dns.js"
           );
           if (cloudflareConfigured()) {
-            const { hostPublicIp } = await import("../host-resources.js");
+            const { hostPublicIp } = await import("../nodes/host-resources.js");
             const ipv4 = /^\d{1,3}(\.\d{1,3}){3}$/.test(config.publicHost)
               ? config.publicHost
               : hostPublicIp();
@@ -674,7 +674,7 @@ export function registerServerSettingsRoutes(app: FastifyInstance): void {
         permission: "settings.read",
       });
       if (!access) return;
-      const { getEngineSettings } = await import("../engine-config.js");
+      const { getEngineSettings } = await import("../servers/engine-config.js");
       return getEngineSettings(access.server.id, access.server.type as ServerType);
     },
   );
@@ -689,7 +689,7 @@ export function registerServerSettingsRoutes(app: FastifyInstance): void {
     if (!access) return;
     const updates = request.body?.updates ?? {};
     try {
-      const { updateEngineSettings } = await import("../engine-config.js");
+      const { updateEngineSettings } = await import("../servers/engine-config.js");
       const result = await updateEngineSettings(
         access.server.id,
         access.server.type as ServerType,
@@ -716,7 +716,7 @@ export function registerServerSettingsRoutes(app: FastifyInstance): void {
         permission: "control.console",
       });
       if (!access) return;
-      const { getConsoleFavorites } = await import("../console-favorites.js");
+      const { getConsoleFavorites } = await import("../servers/console-favorites.js");
       return { commands: await getConsoleFavorites(access.server.id) };
     },
   );
@@ -731,7 +731,7 @@ export function registerServerSettingsRoutes(app: FastifyInstance): void {
       const commands = Array.isArray(request.body?.commands)
         ? request.body!.commands!
         : [];
-      const { setConsoleFavorites } = await import("../console-favorites.js");
+      const { setConsoleFavorites } = await import("../servers/console-favorites.js");
       return { commands: await setConsoleFavorites(access.server.id, commands) };
     },
   );
@@ -743,7 +743,7 @@ export function registerServerSettingsRoutes(app: FastifyInstance): void {
         permission: "settings.read",
       });
       if (!access) return;
-      const { getProxySetup } = await import("../proxy-setup.js");
+      const { getProxySetup } = await import("../servers/proxy-setup.js");
       return getProxySetup(access.server.id, access.server.type as ServerType);
     },
   );
@@ -761,7 +761,7 @@ export function registerServerSettingsRoutes(app: FastifyInstance): void {
       return reply.status(400).send({ error: "Invalid proxy mode" });
     }
     try {
-      const { applyProxySetup } = await import("../proxy-setup.js");
+      const { applyProxySetup } = await import("../servers/proxy-setup.js");
       const result = await applyProxySetup(
         access.server.id,
         access.server.type as ServerType,

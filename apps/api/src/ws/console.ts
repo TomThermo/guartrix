@@ -2,8 +2,8 @@ import type { FastifyInstance } from "fastify";
 import type { ConsoleCommand, ConsoleMessage } from "@msm/shared";
 import { logActivity } from "../activity-log.js";
 import { getSessionUser, isAuthenticated } from "../auth/auth.js";
-import { processManager } from "../process-manager.js";
-import { hasServerPermission, resolveServerAccess } from "../server-access.js";
+import { processManager } from "../servers/process-manager.js";
+import { hasServerPermission, resolveServerAccess } from "../servers/server-access.js";
 
 export function registerConsoleWs(app: FastifyInstance): void {
   app.get<{ Params: { id: string } }>(

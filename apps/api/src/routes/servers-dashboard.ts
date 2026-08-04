@@ -6,14 +6,14 @@ import {
   getServerPermissionsBatch,
   listVisibleServerIds,
   listVisibleServers,
-} from "../server-access.js";
-import { checkInstalledAddonUpdates } from "../addons.js";
+} from "../servers/server-access.js";
+import { checkInstalledAddonUpdates } from "../servers/addons.js";
 import { serverDir } from "../config.js";
-import { getAllOnlinePlayers } from "../online-players.js";
-import { processManager } from "../process-manager.js";
-import { toMcServer } from "../serialize.js";
-import { emptyServerStats } from "../stats.js";
-import { checkAllServerUpdates } from "../updates.js";
+import { getAllOnlinePlayers } from "../servers/online-players.js";
+import { processManager } from "../servers/process-manager.js";
+import { toMcServer } from "../servers/serialize.js";
+import { emptyServerStats } from "../servers/stats.js";
+import { checkAllServerUpdates } from "../servers/updates.js";
 
 type AddonUpdateCacheEntry = {
   available: number;

@@ -4,8 +4,8 @@ import { hasPermission } from "@msm/shared";
 import { logActivity } from "../activity-log.js";
 import { verifyPassword } from "../auth/auth.js";
 import { prisma } from "../db.js";
-import { findNodeByDaemonToken } from "../nodes.js";
-import { getNodeToken } from "../daemon-client.js";
+import { findNodeByDaemonToken } from "../nodes/nodes.js";
+import { getNodeToken } from "../nodes/daemon-client.js";
 import {
   daemonJwtLegacyBearerEnabled,
   looksLikeJwt,
@@ -14,7 +14,7 @@ import {
 import { verifyUserAppPassword } from "./app-passwords.js";
 import {
   getServerPermissions,
-} from "../server-access.js";
+} from "../servers/server-access.js";
 import { getRateLimitStore } from "../rate-limit-store.js";
 
 const authBodySchema = z.object({

@@ -2,8 +2,8 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { logActivity } from "../activity-log.js";
 import { requireServerAccess } from "../auth/auth.js";
-import { listModerationEvents, recordModerationEvent } from "../moderation.js";
-import { processManager } from "../process-manager.js";
+import { listModerationEvents, recordModerationEvent } from "../servers/moderation.js";
+import { processManager } from "../servers/process-manager.js";
 
 const PLAYER_NAME = /^[A-Za-z0-9_]{3,16}$/;
 const ITEM_ID = /^[a-z0-9_.:]+$/i;

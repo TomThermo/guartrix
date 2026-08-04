@@ -26,7 +26,7 @@ import {
   strongPasswordRefine,
 } from "../auth/password-policy.js";
 import { prisma } from "../db.js";
-import { serverListInclude, toMcServer } from "../serialize.js";
+import { serverListInclude, toMcServer } from "../servers/serialize.js";
 
 function toAppUser(user: {
   id: string;
@@ -362,7 +362,7 @@ export function registerApplicationRoutes(app: FastifyInstance): void {
 
     let nodeId: string;
     try {
-      const { assertNodeCapacity, resolveCreateNodeId } = await import("../nodes.js");
+      const { assertNodeCapacity, resolveCreateNodeId } = await import("../nodes/nodes.js");
       nodeId = await resolveCreateNodeId(data.nodeId);
       await assertNodeCapacity(nodeId, data.memoryMb);
     } catch (err) {
@@ -371,7 +371,7 @@ export function registerApplicationRoutes(app: FastifyInstance): void {
     }
 
     try {
-      const { provisionPreparedServer } = await import("../server-provision.js");
+      const { provisionPreparedServer } = await import("../servers/server-provision.js");
       const { id, server: updated } = await provisionPreparedServer({
         name: data.name,
         type: data.type,

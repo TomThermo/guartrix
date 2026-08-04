@@ -20,7 +20,7 @@ import {
   parsePermissionsJson,
   serializePermissions,
   usernameFromEmail,
-} from "../server-access.js";
+} from "../servers/server-access.js";
 
 function hashPw(password: string): string {
   const salt = randomBytes(16).toString("hex");

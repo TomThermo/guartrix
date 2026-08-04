@@ -14,7 +14,7 @@ import {
   daemonMysqlDelete,
   daemonMysqlEnsure,
   resolveNodeForServer,
-} from "../daemon-client.js";
+} from "../nodes/daemon-client.js";
 import {
   isSealedDatabasePassword,
   sealDatabasePassword,

@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { requireServerAccess } from "../auth/auth.js";
 import { prisma } from "../db.js";
-import { serverListInclude, toMcServer } from "../serialize.js";
+import { serverListInclude, toMcServer } from "../servers/serialize.js";
 
 const transferSchema = z.object({
   nodeId: z.string().min(1),
@@ -32,7 +32,7 @@ export function registerServerTransferRoutes(app: FastifyInstance): void {
 
       try {
         const { startServerTransfer, getTransferJob } = await import(
-          "../transfer.js"
+          "../servers/transfer.js"
         );
         const job = await startServerTransfer({
           serverId: access.server.id,
@@ -63,7 +63,7 @@ export function registerServerTransferRoutes(app: FastifyInstance): void {
         ownerOnly: true,
       });
       if (!access) return;
-      const { getTransferJob } = await import("../transfer.js");
+      const { getTransferJob } = await import("../servers/transfer.js");
       const job = getTransferJob(access.server.id);
       if (!job) {
         return {

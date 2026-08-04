@@ -6,7 +6,7 @@ import { Readable } from "node:stream";
 import { spawn } from "node:child_process";
 import type { ServerType } from "@msm/shared";
 import { config } from "../config.js";
-import { DEFAULT_SERVER_ICON_PATH } from "../default-icon.js";
+import { DEFAULT_SERVER_ICON_PATH } from "../servers/default-icon.js";
 
 const USER_AGENT = "Guartrix/1.0 (MinecraftServerManager; contact@localhost)";
 

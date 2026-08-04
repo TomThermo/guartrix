@@ -6,7 +6,7 @@ import {
   hasServerIcon,
   readServerIcon,
   saveServerIcon,
-} from "../server-icon.js";
+} from "../servers/server-icon.js";
 
 export function registerIconRoutes(app: FastifyInstance): void {
   app.addHook("preHandler", async (request, reply) => {

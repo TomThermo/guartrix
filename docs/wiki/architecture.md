@@ -28,7 +28,7 @@ Daemon :8081          @msm/node-agent
 | Path | Role |
 |------|------|
 | `apps/web` | React UI (Vite). Production build in `dist/`. |
-| `apps/api` | Fastify API, file sessions, Prisma → panel MySQL (`src/auth/`, `src/billing/`, `src/license/`, `src/routes/`, …) |
+| `apps/api` | Fastify API, file sessions, Prisma → panel MySQL (`src/auth/`, `billing/`, `license/`, `servers/`, `nodes/`, `bots/`, `routes/`, …) |
 | `apps/daemon` | Thin HTTP wrapper around `packages/node-agent` |
 | `packages/node-agent` | Docker lifecycle, resource monitor, files, SFTP, firewall, MySQL helper |
 | `packages/shared` | Types, permissions, activity, **daemon JWT** + **license verify** helpers, password policy |

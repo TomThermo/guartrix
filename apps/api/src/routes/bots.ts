@@ -5,11 +5,11 @@ import { isAuthenticated, requireAdmin } from "../auth/auth.js";
 import {
   ensureViaForBots,
   resolveBotClientVersion,
-} from "../bot-compat.js";
-import { botManager, DEFAULT_COUNT } from "../bot-manager-proxy.js";
+} from "../bots/bot-compat.js";
+import { botManager, DEFAULT_COUNT } from "../bots/bot-manager-proxy.js";
 import { prisma } from "../db.js";
-import { processManager } from "../process-manager.js";
-import { readServerProperties } from "../properties.js";
+import { processManager } from "../servers/process-manager.js";
+import { readServerProperties } from "../servers/properties.js";
 import { serverDir } from "../config.js";
 
 const spawnSchema = z.object({

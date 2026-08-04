@@ -18,12 +18,12 @@ import { config } from "./config.js";
 import { loadAndApplyPanelSettings } from "./panel-settings.js";
 import { prisma } from "./db.js";
 import { migrateLegacyBrandFiles } from "./brand-migrate.js";
-import { processManager } from "./process-manager.js";
-import { runDueBackupSchedules } from "./backups.js";
+import { processManager } from "./servers/process-manager.js";
+import { runDueBackupSchedules } from "./servers/backups.js";
 import {
   migrateAllScheduledTasksFromJson,
   runDueScheduledTasks,
-} from "./scheduled-tasks.js";
+} from "./servers/scheduled-tasks.js";
 import { createSessionStore, ensureSessionDir } from "./auth/session-store.js";
 import {
   createRateLimitStore,
@@ -32,7 +32,7 @@ import {
 import { pruneActivityLog } from "./activity-log.js";
 import { startActivityWatch } from "./activity-watch.js";
 import { startDiscordStatusWorker } from "./discord-status.js";
-import { startDiskWatch } from "./disk-watch.js";
+import { startDiskWatch } from "./servers/disk-watch.js";
 import { registerActivityRoutes } from "./routes/activity.js";
 import { registerAccountGdprRoutes } from "./routes/account-gdpr.js";
 import { registerAccountPushRoutes } from "./routes/account-push.js";
@@ -66,19 +66,19 @@ import { registerTaskRoutes } from "./routes/tasks.js";
 import { registerConsoleWs } from "./ws/console.js";
 import { registerAdminLogsWs } from "./ws/admin-logs.js";
 import { registerPlayersWs } from "./ws/players.js";
-import { botManager } from "./bot-manager-proxy.js";
+import { botManager } from "./bots/bot-manager-proxy.js";
 import { BACKUP_UPLOAD_MAX_BYTES } from "@msm/shared";
-import { ensureLocalNode } from "./nodes.js";
+import { ensureLocalNode } from "./nodes/nodes.js";
 import {
   setNodeToken,
   loadPersistedNodeTokens,
   daemonCleanupContainers,
   daemonIsRunning,
-} from "./daemon-client.js";
+} from "./nodes/daemon-client.js";
 import {
   startDaemonEventBridge,
   stopDaemonEventBridge,
-} from "./daemon-events.js";
+} from "./nodes/daemon-events.js";
 import { genReqId, logger } from "./logger.js";
 import { registerMetrics } from "./metrics.js";
 import type { FastifyBaseLogger } from "fastify";
@@ -132,7 +132,7 @@ async function main() {
   }
 
   try {
-    const { migratePrimaryAllocations } = await import("./allocations.js");
+    const { migratePrimaryAllocations } = await import("./servers/allocations.js");
     const n = await migratePrimaryAllocations();
     if (n > 0) {
       logger.info({ count: n }, "Backfilled primary allocation(s)");
@@ -455,7 +455,7 @@ async function main() {
     stopDaemonEventBridge();
     app.log.info("Shutting down — stopping bots (Minecraft stays with daemon)…");
     try {
-      const { flushStatsHistory } = await import("./stats-history.js");
+      const { flushStatsHistory } = await import("./servers/stats-history.js");
       await flushStatsHistory();
     } catch {
       // ignore persist errors on shutdown
@@ -488,7 +488,7 @@ async function main() {
   void startDaemonEventBridge();
   const { startPanelEventBus } = await import("./redis.js");
   await startPanelEventBus();
-  const { hydrateTransferJobsFromDisk } = await import("./transfer.js");
+  const { hydrateTransferJobsFromDisk } = await import("./servers/transfer.js");
   await hydrateTransferJobsFromDisk();
   logger.info("Hydrated transfer job state from disk/redis");
 
