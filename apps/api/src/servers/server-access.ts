@@ -4,7 +4,9 @@ import {
   ALL_PERMISSIONS_WILDCARD,
   applyLicenseFeatureCeiling,
   hasPermission,
+  normalizeLicenseFeatures,
   isServerPermission,
+  normalizeLicenseFeatures,
   type AuthUser,
   type ServerPermission,
 } from "@msm/shared";
@@ -78,12 +80,38 @@ export async function getServerPermissions(
   try {
     const state = getCachedLicenseState() ?? (await validateLicense(false));
     if (state?.valid) {
-      granted = applyLicenseFeatureCeiling(granted, state.features ?? null);
+      granted = applyLicenseFeatureCeiling(
+        granted,
+        normalizeLicenseFeatures(state.features ?? null),
+      );
     }
   } catch {
     /* license check failure should not widen permissions */
   }
   return granted;
+}
+
+/** Explain when license feature groups block an owner/admin action. */
+export function permissionDeniedMessage(
+  user: AuthUser,
+  server: Pick<Server, "ownerId">,
+  permissions: string[],
+): string {
+  const elevated = user.role === "ADMIN" || server.ownerId === user.id;
+  if (!elevated) return "Missing permission";
+  try {
+    const state = getCachedLicenseState();
+    const features = normalizeLicenseFeatures(state?.features ?? null);
+    if (state?.valid && features != null && permissions.length === 0) {
+      return "Missing permission: the license has no feature groups enabled. Open Admin → License or the license admin GUI and set All permissions.";
+    }
+    if (state?.valid && features != null) {
+      return "Missing permission: not included in the current license feature groups. Enable the required group(s) on the license or set All permissions.";
+    }
+  } catch {
+    /* ignore */
+  }
+  return "Missing permission";
 }
 
 /**
@@ -97,16 +125,18 @@ export async function getServerPermissionsBatch(
   const out = new Map<string, string[]>();
   if (servers.length === 0) return out;
 
-  let features: Parameters<typeof applyLicenseFeatureCeiling>[1] = null;
+  let features: Parameters<typeof normalizeLicenseFeatures>[0] = null;
   try {
     const state = getCachedLicenseState() ?? (await validateLicense(false));
-    if (state?.valid) features = state.features ?? null;
+    if (state?.valid) {
+      features = normalizeLicenseFeatures(state.features ?? null);
+    }
   } catch {
     /* ignore */
   }
 
   const ceiling = (granted: string[]) =>
-    features ? applyLicenseFeatureCeiling(granted, features) : granted;
+    applyLicenseFeatureCeiling(granted, features);
 
   if (user.role === "ADMIN") {
     for (const s of servers) out.set(s.id, ceiling([ALL_PERMISSIONS_WILDCARD]));

@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { nanoid } from "nanoid";
 import type { PanelVersionStatus } from "@msm/shared";
+import { normalizeLicenseFeatures } from "@msm/shared";
 import type { LicenseSignedClaims } from "@msm/shared/license-signing";
 import {
   hashLicenseKey,
@@ -512,8 +513,9 @@ async function doValidateLicense(): Promise<LicenseState> {
         data.maxNodes = claims.maxNodes;
         data.maxMemoryMb = claims.maxMemoryMb;
         data.maxMemoryMbPerServer = claims.maxMemoryMbPerServer;
-        data.features =
-          claims.features === undefined ? null : claims.features;
+        data.features = normalizeLicenseFeatures(
+          claims.features === undefined ? null : claims.features,
+        );
         data.boundIp = claims.boundIp;
         data.boundIps = claims.boundIps ?? [];
         lastSignedTicket = {
@@ -597,8 +599,9 @@ async function doValidateLicense(): Promise<LicenseState> {
         data.maxMemoryMbPerServer === undefined
           ? null
           : data.maxMemoryMbPerServer,
-      features:
+      features: normalizeLicenseFeatures(
         data.features === undefined ? null : data.features,
+      ),
       boundIp: data.boundIp ?? null,
       boundIps: Array.isArray(data.boundIps)
         ? data.boundIps

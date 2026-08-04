@@ -23,6 +23,7 @@ import {
 import {
   getServerPermissions,
   isServerOwner,
+  permissionDeniedMessage,
   userCanAccessServer,
 } from "../servers/server-access.js";
 
@@ -261,7 +262,9 @@ export async function requireServerAccess(
     const need = opts.permission;
     const ok = hasPermission(permissions, need);
     if (!ok) {
-      await reply.status(403).send({ error: "Missing permission" });
+      await reply.status(403).send({
+        error: permissionDeniedMessage(user, server, permissions),
+      });
       return null;
     }
   } else if (opts?.write) {

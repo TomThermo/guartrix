@@ -19,42 +19,53 @@ function loadFaSafelist(): string[] {
   }
 }
 
-/** Drop unused FA7 glyph rules (.fa-* { --fa: … }) without touching Bootstrap/app CSS. */
+/**
+ * Drop unused FA7 glyph rules without touching Bootstrap/app CSS.
+ * FA7 often groups aliases: `.fa-user,.fa-user-alt,.fa-user-large{--fa:"…"}`.
+ * Matching only the last `.fa-*{` corrupts selectors (orphans merge into the
+ * next rule and steal the wrong glyph). Keep whole groups, then trim to
+ * safelisted class names.
+ */
 function subsetFaGlyphRules(css: string, keep: Set<string>): string {
-  return css.replace(/\.fa-[a-z0-9-]+\{--fa:[^}]+\}/g, (rule) => {
-    const m = /^\.(fa-[a-z0-9-]+)/.exec(rule);
-    if (!m) return rule;
-    return keep.has(m[1]!) ? rule : "";
-  });
+  return css.replace(
+    /(?:\.fa-[a-z0-9-]+\s*,\s*)*\.fa-[a-z0-9-]+\s*\{--fa:[^}]+\}/g,
+    (rule) => {
+      const classes = [
+        ...rule.matchAll(/\.fa-([a-z0-9-]+)/g),
+      ].map((m) => `fa-${m[1]}`);
+      const kept = [...new Set(classes.filter((c) => keep.has(c)))];
+      if (kept.length === 0) return "";
+      const faBody = /\{--fa:[^}]+\}/.exec(rule)?.[0];
+      if (!faBody) return "";
+      return kept.map((c) => `.${c}`).join(",") + faBody;
+    },
+  );
 }
 
-/** Production-only: drop unused Font Awesome solid glyph rules. */
+/** Production-only: drop unused Font Awesome solid glyph rules before hashing. */
 function faSubsetPlugin(): Plugin {
+  const keep = new Set([
+    ...loadFaSafelist(),
+    "fa-solid",
+    "fa-fw",
+    "fa-spin",
+    "fa-2x",
+    "fa-lg",
+  ]);
+
   return {
     name: "fa-subset",
     apply: "build",
-    enforce: "post",
-    generateBundle(_options, bundle) {
-      const keep = new Set([
-        ...loadFaSafelist(),
-        "fa-solid",
-        "fa-fw",
-        "fa-spin",
-        "fa-2x",
-        "fa-lg",
-      ]);
-
-      for (const chunk of Object.values(bundle)) {
-        if (chunk.type !== "asset" || !chunk.fileName.endsWith(".css")) continue;
-        if (typeof chunk.source !== "string") continue;
-        if (!chunk.source.includes(".fa-solid") || !chunk.source.includes("Font Awesome")) {
-          continue;
-        }
-        const next = subsetFaGlyphRules(chunk.source, keep);
-        if (next.length < chunk.source.length) {
-          chunk.source = next;
-        }
-      }
+    // Transform FA CSS modules so the emitted asset hash matches subset output
+    // (generateBundle mutations keep the old hash and stick clients on stale CSS).
+    transform(code, id) {
+      const norm = id.replace(/\\/g, "/");
+      if (!norm.includes("@fortawesome/fontawesome-free")) return null;
+      if (!norm.endsWith(".css")) return null;
+      if (!code.includes("--fa:")) return null;
+      const next = subsetFaGlyphRules(code, keep);
+      if (next === code) return null;
+      return { code: next, map: null };
     },
   };
 }

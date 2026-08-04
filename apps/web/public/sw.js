@@ -1,5 +1,5 @@
 /* Guartrix app-shell service worker — offline shell + Web Push alerts. */
-const CACHE = "guartrix-shell-v2";
+const CACHE = "guartrix-shell-v3";
 const SHELL = ["/", "/index.html", "/site.webmanifest"];
 
 self.addEventListener("install", (event) => {
@@ -31,19 +31,31 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  event.respondWith(
-    caches.match(request).then((cached) => {
-      const network = fetch(request)
+  // Network-first for hashed assets so FA/CSS updates are not stuck behind
+  // a stale Cache Storage entry after deploys.
+  const isAsset =
+    url.pathname.startsWith("/assets/") ||
+    url.pathname.endsWith(".css") ||
+    url.pathname.endsWith(".js") ||
+    url.pathname.endsWith(".woff2");
+
+  if (isAsset) {
+    event.respondWith(
+      fetch(request)
         .then((res) => {
-          if (res.ok && (url.pathname.startsWith("/assets/") || url.pathname.endsWith(".css") || url.pathname.endsWith(".js"))) {
+          if (res.ok) {
             const copy = res.clone();
             void caches.open(CACHE).then((cache) => cache.put(request, copy));
           }
           return res;
         })
-        .catch(() => cached);
-      return cached || network;
-    }),
+        .catch(() => caches.match(request)),
+    );
+    return;
+  }
+
+  event.respondWith(
+    caches.match(request).then((cached) => cached || fetch(request)),
   );
 });
 
