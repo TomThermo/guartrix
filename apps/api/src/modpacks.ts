@@ -64,10 +64,20 @@ function loaderFacet(type: ServerType): string[] {
   }
 }
 
+const MODPACK_SORT = [
+  "relevance",
+  "downloads",
+  "follows",
+  "newest",
+  "updated",
+] as const;
+type ModpackSortIndex = (typeof MODPACK_SORT)[number];
+
 export async function searchModrinthModpacks(opts: {
   type: ServerType;
   mcVersion: string;
   query?: string;
+  index?: string;
   offset?: number;
   limit?: number;
 }): Promise<{ hits: Array<Record<string, unknown>>; totalHits: number }> {
@@ -77,23 +87,46 @@ export async function searchModrinthModpacks(opts: {
   }
   const limit = Math.min(Math.max(opts.limit ?? 24, 1), 50);
   const offset = Math.max(opts.offset ?? 0, 0);
-  const facets = [
-    loaders.map((l) => `categories:${l}`),
-    [`versions:${opts.mcVersion}`],
-    ["project_type:modpack"],
+  const index: ModpackSortIndex = MODPACK_SORT.includes(
+    opts.index as ModpackSortIndex,
+  )
+    ? (opts.index as ModpackSortIndex)
+    : "relevance";
+  // Prefer version-matched packs; fall back without version so the tab is never empty.
+  const facetAttempts: string[][][] = [
+    [
+      loaders.map((l) => `categories:${l}`),
+      [`versions:${opts.mcVersion}`],
+      ["project_type:modpack"],
+    ],
+    [loaders.map((l) => `categories:${l}`), ["project_type:modpack"]],
   ];
-  const params = new URLSearchParams({
-    query: (opts.query ?? "").trim() || " ",
-    limit: String(limit),
-    offset: String(offset),
-    index: "downloads",
-    facets: JSON.stringify(facets),
-  });
-  const data = await fetchJson<{
-    hits: Array<Record<string, unknown>>;
-    total_hits: number;
-  }>(`https://api.modrinth.com/v2/search?${params}`);
-  return { hits: data.hits, totalHits: data.total_hits };
+  // Empty string browses the catalog (Modrinth returns 0 for query=" ").
+  const query = (opts.query ?? "").trim();
+
+  let lastError: Error | null = null;
+  for (const facets of facetAttempts) {
+    const params = new URLSearchParams({
+      query,
+      limit: String(limit),
+      offset: String(offset),
+      index,
+      facets: JSON.stringify(facets),
+    });
+    try {
+      const data = await fetchJson<{
+        hits: Array<Record<string, unknown>>;
+        total_hits: number;
+      }>(`https://api.modrinth.com/v2/search?${params}`);
+      if (data.hits.length > 0 || facets.length < 3) {
+        return { hits: data.hits, totalHits: data.total_hits };
+      }
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+    }
+  }
+  if (lastError) throw lastError;
+  return { hits: [], totalHits: 0 };
 }
 
 type MrpackIndex = {

@@ -263,7 +263,13 @@ export function registerServerAddonRoutes(app: FastifyInstance): void {
 
   app.get<{
     Params: { id: string };
-    Querystring: { q?: string; source?: string; offset?: string; limit?: string };
+    Querystring: {
+      q?: string;
+      source?: string;
+      index?: string;
+      offset?: string;
+      limit?: string;
+    };
   }>("/api/servers/:id/modpacks/search", async (request, reply) => {
     const access = await requireServerAccess(request, reply, request.params.id, {
       permission: "addon.read",
@@ -288,6 +294,7 @@ export function registerServerAddonRoutes(app: FastifyInstance): void {
         type: access.server.type as ServerType,
         mcVersion: access.server.mcVersion,
         query: request.query.q,
+        index: request.query.index,
         offset: Number(request.query.offset ?? 0) || 0,
         limit: Number(request.query.limit ?? 24) || 24,
       });

@@ -234,7 +234,7 @@ export async function searchAddons(
 
   const limit = Math.min(Math.max(opts.limit ?? 24, 1), 50);
   const offset = Math.max(opts.offset ?? 0, 0);
-  const index: AddonSortIndex = opts.index ?? "downloads";
+  const index: AddonSortIndex = opts.index ?? "relevance";
   const category = opts.category?.trim() || "";
 
   const projectTypeFacet =
@@ -269,7 +269,9 @@ export async function searchAddons(
     ],
   ];
 
-  const query = (opts.query ?? "").trim() || " ";
+  // Empty string browses the catalog. A lone space used to be a workaround but
+  // Modrinth now returns 0 hits for query=" " (see modrinth.com search).
+  const query = (opts.query ?? "").trim();
   type SearchPayload = {
     hits: {
       project_id: string;

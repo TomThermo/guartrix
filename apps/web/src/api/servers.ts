@@ -248,11 +248,18 @@ export const serversApi = {
     }),
   searchModpacks: (
     id: string,
-    opts: { q?: string; source?: string; offset?: number; limit?: number },
+    opts: {
+      q?: string;
+      source?: string;
+      index?: string;
+      offset?: number;
+      limit?: number;
+    },
   ) => {
     const params = new URLSearchParams();
     if (opts.q) params.set("q", opts.q);
     if (opts.source) params.set("source", opts.source);
+    if (opts.index) params.set("index", opts.index);
     if (opts.offset != null) params.set("offset", String(opts.offset));
     if (opts.limit != null) params.set("limit", String(opts.limit));
     const qs = params.toString();

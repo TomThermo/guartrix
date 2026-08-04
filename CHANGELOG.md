@@ -7,6 +7,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.53] — 2026-08-04
+
+- Fix Modrinth browse returning 0 hits: empty search no longer sends `query=" "` (API treats space as no matches)
+- Plugins/mods: default sort **Relevance** (Modrinth-style); catalog loads on open
+- Modpacks tab: same list UI as plugins (icons, author, downloads, sort, load more); Relevance default + version facet fallback
+
 ## [1.0.52] — 2026-08-04
 
 - API: finish `servers.ts` peel — `servers-settings` / `servers-crud` / `servers-transfer` (orchestrator ~38 LOC)

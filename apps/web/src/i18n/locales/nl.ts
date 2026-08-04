@@ -672,9 +672,13 @@ export const nl: Messages = {
     search: "Modpacks zoeken…",
     install: "Installeren",
     empty: "Geen modpack geïnstalleerd",
+    noResults: "Geen modpacks gevonden",
+    browse: "Bladeren op Modrinth",
+    source: "Bron",
+    searchingLibrary: "Modpacks zoeken…",
     unsupported:
       "Modpacks zijn beschikbaar op Fabric-, Quilt-, Forge- en NeoForge-servers.",
-    help: "Blader en installeer server-side modpacks. Stop de server eerst; er wordt automatisch een back-up gemaakt.",
+    help: "Blader en installeer server-side modpacks van Modrinth (en CurseForge als geconfigureerd). Resultaten laden meteen — dezelfde catalogusstijl als plugins. Stop de server vóór installatie; er wordt automatisch een back-up gemaakt.",
     curseforgeMissing:
       "CurseForge is niet geconfigureerd. Stel CURSEFORGE_API_KEY in op de paneelhost.",
     noticeInstalled:

@@ -37,9 +37,9 @@ interface Props {
 }
 
 const SORT_OPTIONS: { value: AddonSortIndex; labelKey: string }[] = [
+  { value: "relevance", labelKey: "addons.sortRelevance" },
   { value: "downloads", labelKey: "addons.sortDownloads" },
   { value: "follows", labelKey: "addons.sortFollows" },
-  { value: "relevance", labelKey: "addons.sortRelevance" },
   { value: "newest", labelKey: "addons.sortNewest" },
   { value: "updated", labelKey: "addons.sortUpdated" },
 ];
@@ -57,7 +57,7 @@ export function AddonPanel({
   const kind = addonKindFor(serverType);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<string>("");
-  const [sort, setSort] = useState<AddonSortIndex>("downloads");
+  const [sort, setSort] = useState<AddonSortIndex>("relevance");
   const [categories, setCategories] = useState<AddonCategory[]>([]);
   const [hits, setHits] = useState<AddonSearchHit[]>([]);
   const [totalHits, setTotalHits] = useState(0);

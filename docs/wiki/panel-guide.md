@@ -252,13 +252,13 @@ Guided toggles for common `paper-global.yml` / `spigot.yml` / `purpur.yml` keys.
 
 ### Modpacks
 
-On Fabric/Quilt/Forge/NeoForge: browse **Modrinth** (and **CurseForge** when `CURSEFORGE_API_KEY` is set), install a pack into the server (pre-backup). Restart required.
+On Fabric/Quilt/Forge/NeoForge: the **Modpacks** tab browses [Modrinth](https://modrinth.com/) modpacks in the same list style as Plugin Management (icon, author, downloads, description). Results load immediately with sort **Relevance** (also downloads / likes / newest / updated). **CurseForge** is available when `CURSEFORGE_API_KEY` is set. Install runs a pre-backup; stop the server first. Restart required after install.
 
 ![Modpacks](assets/33-server-modpacks.png)
 
 ### Plugin Management (Modrinth)
 
-The tab is labelled **Plugin Management** for both mods (Fabric/Quilt/Forge/NeoForge → `mods/`) and plugins (Paper/Purpur → `plugins/`). Browse Modrinth, install compatible builds, remove installed addons. Restart required after changes. Browse requests time out after about 12 seconds if Modrinth is slow or unreachable; changing sort/category cancels the previous search so the spinner does not stick.
+The tab is labelled **Plugin Management** for both mods (Fabric/Quilt/Forge/NeoForge → `mods/`) and plugins (Paper/Purpur → `plugins/`). Browse Modrinth, install compatible builds, remove installed addons. The catalog loads on open (no empty search required) with default sort **Relevance**, matching Modrinth’s browse UX. Restart required after changes. Browse requests time out after about 12 seconds if Modrinth is slow or unreachable; changing sort/category cancels the previous search so the spinner does not stick.
 
 The installed list is stored in `guartrix-addons.json`. Jars copied via **Files** / **SFTP** do not appear until you click **Sync from disk**, which scans `mods/` or `plugins/`, matches SHA-512 hashes on Modrinth, and lists unmatched jars as **local**.
 

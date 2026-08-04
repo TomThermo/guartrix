@@ -668,9 +668,13 @@ export const en = {
     search: "Search modpacks…",
     install: "Install",
     empty: "No modpack installed",
+    noResults: "No modpacks found",
+    browse: "Browse Modrinth",
+    source: "Source",
+    searchingLibrary: "Searching modpacks…",
     unsupported:
       "Modpacks are available on Fabric, Quilt, Forge, and NeoForge servers.",
-    help: "Browse and install server-side modpacks. Stop the server first; a backup runs automatically.",
+    help: "Browse and install server-side modpacks from Modrinth (and CurseForge when configured). Results load immediately — same catalog style as plugins. Stop the server before installing; a backup runs automatically.",
     curseforgeMissing:
       "CurseForge is not configured. Set CURSEFORGE_API_KEY on the panel host.",
     noticeInstalled:
