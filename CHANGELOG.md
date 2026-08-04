@@ -7,6 +7,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.69] — 2026-08-04
+
+- Fix admin status logs: read from DATA_DIR/logs instead of /tmp
+
 ## [1.0.68] — 2026-08-04
 
 - Redis multi-API HA: shared client, installer Docker/external Redis, Admin Status/Settings, Redis rate limits, transfer keys, scheduler lock, console event pub/sub

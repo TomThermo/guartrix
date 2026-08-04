@@ -5,23 +5,33 @@ import type { FastifyInstance } from "fastify";
 import type { ConsoleMessage } from "@msm/shared";
 import WebSocket from "ws";
 import { getSessionUser, isAuthenticated } from "../auth.js";
+import { config } from "../config.js";
 import { daemonWsAuthorization, getNodeToken } from "../daemon-client.js";
 import { prisma } from "../db.js";
 import { nodePublicUrl } from "../nodes.js";
 
-const LOG_DIR = process.env.LOG_DIR?.trim() || "/tmp";
+/** Match scripts/lib.sh: logs live under DATA_DIR/logs (not /tmp). */
+function logDir(): string {
+  const override = process.env.LOG_DIR?.trim();
+  if (override) return override;
+  return path.join(config.dataDir, "logs");
+}
 
 const FILE_SOURCES = {
-  daemon: path.join(LOG_DIR, "guartrix-daemon.log"),
-  api: path.join(LOG_DIR, "guartrix-api.log"),
-  web: path.join(LOG_DIR, "guartrix-web.log"),
-  monitor: path.join(LOG_DIR, "guartrix-monitor.log"),
+  daemon: "guartrix-daemon.log",
+  api: "guartrix-api.log",
+  web: "guartrix-web.log",
+  monitor: "guartrix-monitor.log",
 } as const;
 
 type FileSource = keyof typeof FILE_SOURCES;
 type LogSource = FileSource | "mysql";
 
 const ALL_SOURCES = new Set<string>([...Object.keys(FILE_SOURCES), "mysql"]);
+
+function logFile(source: FileSource): string {
+  return path.join(logDir(), FILE_SOURCES[source]);
+}
 
 function send(socket: { send: (data: string) => void }, msg: ConsoleMessage): void {
   try {
@@ -171,7 +181,7 @@ export function registerAdminLogsWs(app: FastifyInstance): void {
         return;
       }
 
-      const file = FILE_SOURCES[source];
+      const file = logFile(source);
       const lines = readTail(file, tail);
       send(socket, { type: "history", lines });
 
@@ -183,7 +193,7 @@ export function registerAdminLogsWs(app: FastifyInstance): void {
         });
       }
 
-      // Follow new lines (creates the file if missing so we don't exit).
+      // Follow new lines (-F retries if the file appears later).
       const child = spawn("tail", ["-n", "0", "-F", file], {
         env: process.env,
       });
