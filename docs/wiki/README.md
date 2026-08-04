@@ -20,6 +20,7 @@ Operator and developer documentation for the Guartrix Minecraft hosting panel.
 |------|-------------|
 | [Architecture](architecture.md) | Monorepo layout, request flow, panel ↔ daemon |
 | [Environment variables](env-reference.md) | `.env` / `daemon.env` knobs |
+| [Panel settings (Admin UI)](panel-settings.md) | Domain, SMTP, HTTPS, quotas, alerts via Admin → Settings |
 | [Accounts & quotas](accounts-and-quotas.md) | Register, verify, reset, quotas, subusers |
 | [SFTP](sftp.md) | Per-node SFTP, username format, permissions |
 | [Operations](operations.md) | Start/stop, watchdog, backups, logs, ports |

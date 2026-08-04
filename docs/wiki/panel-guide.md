@@ -10,7 +10,7 @@ Visual walkthrough of everything you can do in the Guartrix web panel. Screensho
 
 ### Login
 
-Open the panel URL → sign in with your username and password. Admins open **Admin** in the top bar for **Status**, **System**, **License**, **Activity**, **Panel billing**, and **Users**. Your account menu (username) has **Billing**, **Security**, and **Sign out**.
+Open the panel URL → sign in with your username and password. Admins open **Admin** in the top bar for **Status**, **Settings**, **Nodes**, **License**, **Activity**, **Panel billing**, and **Users**. Your account menu (username) has **Billing**, **Security**, and **Sign out**.
 
 ![Login](assets/01-login.png)
 
@@ -78,9 +78,17 @@ The same page has an **Import archive** tab to create a server from an existing 
 
 ---
 
-## Admin: System (nodes)
+## Admin: Settings
 
-**System** — local + remote daemon nodes, online status, optional **location/region**, memory, SFTP hostname,
+**Settings** — panel-wide configuration (domain / public URL, registration & default quotas,
+Cloudflare DNS, SMTP mail + test send, HTTPS / session flags, 2FA-required roles, activity alerts).
+Overrides are stored in `data/panel-settings.json`; HTTPS/URL changes also update `.env` and need a panel restart.
+
+More: [Panel settings](panel-settings.md)
+
+## Admin: Nodes
+
+**Nodes** — local + remote daemon nodes, online status, optional **location/region**, memory, SFTP hostname,
 rename, **edit daemon URL** (pencil next to `http://…:8081`), Test connection, Install daemon.
 
 ![System / nodes](assets/05-system-nodes.png)

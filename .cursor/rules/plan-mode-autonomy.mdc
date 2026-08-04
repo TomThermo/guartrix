@@ -1,0 +1,27 @@
+---
+description: Agent may freely enter Plan mode for large or architectural work
+alwaysApply: true
+---
+
+# Plan mode autonomy
+
+The agent **may and should** call `SwitchMode` → `plan` on its own when a task is large, ambiguous, or architectural — without waiting for the user to ask for Plan mode first.
+
+## When to switch to Plan
+
+- New admin surfaces, multi-file design, or significant trade-offs
+- Unclear requirements that would otherwise need several clarifying questions
+- Refactors that touch many routes/pages or change ops behaviour
+
+## What still needs the user
+
+- Opening Plan does **not** skip confirmation of the **plan document** — implement only after the user accepts the plan (or explicitly says to proceed).
+- After plan approval: switch back to Agent and execute.
+
+## Example
+
+```text
+User: “Maak admin settings zoals Pterodactyl”
+→ Agent switches to Plan, drafts approach, waits for plan accept
+→ Then implements in Agent mode
+```

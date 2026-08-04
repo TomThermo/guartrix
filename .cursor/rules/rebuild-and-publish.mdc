@@ -1,0 +1,56 @@
+---
+description: After product changes, bump version, rebuild build/, republish /download, restart
+alwaysApply: true
+---
+
+# Rebuild, version bump & download publish
+
+On this **operator host**, after finishing a task that changes shippable product code or release packaging, **do a release pass in the same task** before stopping.
+
+## When
+
+Do this if you changed any of:
+
+- `apps/` / `packages/` / `scripts/` that affect runtime or installs
+- Download packaging, env examples, install READMEs
+- Panel/daemon/license behaviour users or customers get via `/download` or `build/`
+
+**Skip** for: docs-only / wiki-only, Cursor rules only, pure comments, or when the user says not to publish/restart.
+
+## Steps (in order)
+
+1. **Bump version (patch)** unless the user asked for minor/major:
+   - Root [`package.json`](package.json) `"version"`
+   - `apps/api`, `apps/web`, `apps/daemon`, `apps/license-server` `package.json` (keep in sync)
+   - [`VERSION`](VERSION) file (same string, no `v` prefix)
+2. **Rebuild live tree:** `bash scripts/build-out.sh`
+3. **Restore operator-only scripts** wiped by staging (not in customer zips):
+   - `cp -a scripts/prod-web-download.mjs build/scripts/`
+   - Also copy if present: `install-license-le-cert.sh`, `install-daemon-le-cert.sh`, `package-download-bundle.sh`
+4. **Publish downloads:** `bash scripts/package-download-bundle.sh --skip-build`  
+   (or without `--skip-build` if dists were not just built)
+5. **Restart:** `bash build/start.sh`
+6. **Smoke:** `curl` API `/api/health`, daemon `/health`, web `:80` (and public hosts if this task touched them)
+7. **Commit + push to GitHub** (this operator host tracks `origin` on `main`):
+ - Stage shippable changes only (no `.env`, `data/daemon.env`, secrets, `build/`, `dist-download/`)
+ - Commit with a short message (version + why)
+ - `git push origin HEAD` — auth is a GitHub PAT stored in `~/.git-credentials` (git `credential.helper store`, user TomThermo). If the token expired, ask the user for a new one and update that file; **never** paste the token into repo files or rules (GitHub auto-revokes leaked PATs)
+
+## Notes
+
+- Download zips pick the version from root `package.json` → filenames like `guartrix-panel-1.0.1.zip`.
+- Keep `DAEMON_PORT=8081` in `data/daemon.env` if a public node URL uses port 443 behind prod-web.
+- Live publish/restart/push may need user approval (Auto-review); still attempt the full pass and ask if blocked.
+- Do **not** force-push unless the user explicitly requests it.
+
+## Example
+
+```text
+Changed: node1 HTTPS proxy + download INSTALL.txt
+→ version 1.0.0 → 1.0.1 (package.json × apps + VERSION)
+→ bash scripts/build-out.sh
+→ restore prod-web-download.mjs (+ LE/download scripts)
+→ bash scripts/package-download-bundle.sh --skip-build
+→ bash build/start.sh
+→ commit + `git push origin HEAD`
+```

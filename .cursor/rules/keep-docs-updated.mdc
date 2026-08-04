@@ -1,0 +1,40 @@
+---
+description: Keep README and wiki in sync whenever product behaviour or ops flow changes
+alwaysApply: true
+---
+
+# Keep README & wiki up to date
+
+After any change that affects how operators or developers use Guartrix, **check and update docs in the same task** before finishing.
+
+## When to update
+
+Update docs if you change any of:
+
+- Install / start / ports / env vars / systemd
+- Auth, registration, quotas, mail, subusers
+- Nodes, remote install, SFTP, daemon behaviour
+- Security controls, public URLs, architecture, scaling assumptions
+- User-facing UI flows that docs describe (e.g. Add node wizard)
+
+Skip docs-only noise for pure refactors with **no** behaviour or ops change.
+
+## What to touch
+
+1. **[README.md](README.md)** — short hub: features, quick start, links. Keep it accurate; put detail in the wiki.
+2. **[docs/wiki/](docs/wiki/)** — update the relevant page(s). Add a new page + link from `docs/wiki/README.md` if a topic is new.
+3. If `.env.example` changes, sync **[docs/wiki/env-reference.md](docs/wiki/env-reference.md)** **and the live [`.env`](.env)** — see [keep-env-synced](keep-env-synced.mdc).
+
+## How
+
+- Prefer editing existing sections over duplicating long guides in the README.
+- Match reality (commands, paths, defaults like `DEFAULT_MAX_SERVERS=0`, email verify, SSH modal).
+- Do not leave “TODO” stubs in shipped docs.
+
+## Example
+
+```text
+Changed: invite no longer returns temporaryPassword
+→ Update docs/wiki/accounts-and-quotas.md (and security.md if listed)
+→ Skim README “Accounts & quotas” blurb for stale wording
+```

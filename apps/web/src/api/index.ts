@@ -7,6 +7,9 @@ import { addonsApi } from "./addons";
 import { filesApi } from "./files";
 import { backupsApi } from "./backups";
 import { billingApi } from "./billing";
+import { adminSettingsApi } from "./admin-settings";
+
+export type { PanelSettings, PanelSettingsPatch } from "./admin-settings";
 
 export const api = {
   ...authApi,
@@ -17,4 +20,5 @@ export const api = {
   ...filesApi,
   ...backupsApi,
   ...billingApi,
+  ...adminSettingsApi,
 };

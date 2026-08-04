@@ -266,6 +266,15 @@ export const ACTIVITY_ACTIONS: Record<string, ActivityActionMeta> = {
     label: "Revoked an Application API key",
     critical: true,
   },
+  "admin.settings.update": {
+    category: "admin",
+    label: "Updated panel settings",
+    critical: true,
+  },
+  "admin.settings.test-mail": {
+    category: "admin",
+    label: "Sent a panel test mail",
+  },
 
   // Billing / Mollie
   "billing.checkout": { category: "billing", label: "Started a Mollie checkout" },

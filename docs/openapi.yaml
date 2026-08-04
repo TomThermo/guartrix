@@ -426,6 +426,39 @@ paths:
       responses:
         "200":
           description: "{ registrationEnabled, passwordMinLength, … }"
+  /api/admin/settings:
+    get:
+      tags: [Admin]
+      summary: Effective panel settings (secrets masked)
+      security: [{ SessionCookie: [] }]
+      responses:
+        "200":
+          description: Panel settings view
+        "403":
+          description: Admin only
+    put:
+      tags: [Admin]
+      summary: Update panel settings (writes data/panel-settings.json; may sync .env)
+      security: [{ SessionCookie: [] }]
+      responses:
+        "200":
+          description: "{ …settings, restartRequired?, envChanged? }"
+        "400":
+          description: Validation error
+        "403":
+          description: Admin only
+  /api/admin/settings/test-mail:
+    post:
+      tags: [Admin]
+      summary: Send a test mail to the admin account email
+      security: [{ SessionCookie: [] }]
+      responses:
+        "200":
+          description: "{ ok, delivered, to, outboxPath }"
+        "400":
+          description: SMTP not configured / no email
+        "403":
+          description: Admin only
   /api/license/status:
     get:
       tags: [Account]

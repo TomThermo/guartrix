@@ -2,6 +2,8 @@
 
 Copy `.env.example` → `.env` (repo root). Secrets must stay gitignored. The local daemon also reads `data/daemon.env` (generated/updated by start scripts; template: [`data/daemon.env.example`](../../data/daemon.env.example)).
 
+Many operator knobs (public URL, SMTP, registration, quotas, 2FA policy, alerts, Cloudflare, HTTPS flags) can also be managed in **Admin → Settings**, which stores overrides in `data/panel-settings.json` and may sync selected keys back into `.env` (restart needed for HTTPS / public URL). See [Panel settings](panel-settings.md).
+
 ## Core panel
 
 | Variable | Purpose |

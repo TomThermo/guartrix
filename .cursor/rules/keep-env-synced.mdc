@@ -1,0 +1,30 @@
+---
+description: Keep .env in sync when adding or changing environment variables
+alwaysApply: true
+---
+
+# Keep real `.env` in sync with `.env.example`
+
+Whenever you add, rename, remove, or change the meaning of an env var, **update both** in the same task:
+
+1. **[`.env.example`](.env.example)** — commented template for operators / git
+2. **[`.env`](.env)** — the live panel config on this host (uncomment / set real values)
+3. **[docs/wiki/env-reference.md](docs/wiki/env-reference.md)** — short purpose table (also required by keep-docs-updated)
+
+## How
+
+- New optional knobs: add a commented line in `.env.example`, and the same key in `.env` with a **sensible production default** (or commented empty if a secret/URL must be filled by the operator, e.g. `ACTIVITY_WEBHOOK_URL`).
+- New required behaviour (e.g. `TWO_FACTOR_REQUIRED_ROLES=ADMIN`): set it actively in `.env`, not only in the example.
+- Never invent secrets (SMTP passwords, Discord webhooks, tokens). Leave those blank/commented in `.env` and tell the user what to fill.
+- Do **not** commit `.env` (it stays gitignored). Still edit it on this machine so restarts pick up the change.
+- After changing `.env`, remind the user that **`bash scripts/start.sh`** (or at least an API restart) is needed to load new values.
+
+## Example
+
+```text
+Changed: added TWO_FACTOR_REQUIRED_ROLES to config
+→ .env.example: commented template
+→ .env: TWO_FACTOR_REQUIRED_ROLES=ADMIN
+→ docs/wiki/env-reference.md: one-line purpose
+→ note: restart panel to apply
+```

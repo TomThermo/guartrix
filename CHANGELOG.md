@@ -7,6 +7,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.62] — 2026-08-04
+
+- Admin → Settings (General / Mail / Security / Alerts): domain, SMTP, HTTPS, quotas, Cloudflare, 2FA policy, alerts via `data/panel-settings.json`
+- Cursor rule: Plan mode may be opened autonomously for large/architectural work
+
 ## [1.0.61] — 2026-08-04
 
 - CSP: per-request script nonce on `index.html` so Cloudflare Bot JS detections can run without `'unsafe-inline'`

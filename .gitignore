@@ -7,8 +7,10 @@ build/
 .DS_Store
 *.log
 
-# Local Cursor agent rules / skills (operator machine only — not for GitHub)
-.cursor/
+# Local Cursor agent state (not for GitHub). Project rules under rules/ are tracked.
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/**
 
 # Secrets & local env
 .env

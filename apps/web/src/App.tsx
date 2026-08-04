@@ -84,6 +84,11 @@ const SystemSettingsPage = lazy(() =>
     default: m.SystemSettingsPage,
   })),
 );
+const AdminSettingsPage = lazy(() =>
+  import("./pages/AdminSettingsPage").then((m) => ({
+    default: m.AdminSettingsPage,
+  })),
+);
 const AdminLicensePage = lazy(() =>
   import("./pages/AdminLicensePage").then((m) => ({
     default: m.AdminLicensePage,
@@ -248,11 +253,19 @@ function Shell({ children }: { children: ReactNode }) {
                     </Dropdown.Item>
                     <Dropdown.Item
                       as={Link}
+                      to="/admin/settings"
+                      onClick={closeNav}
+                    >
+                      <i className="fa-solid fa-sliders fa-fw me-2 text-secondary" />
+                      {t("nav.settings")}
+                    </Dropdown.Item>
+                    <Dropdown.Item
+                      as={Link}
                       to="/admin/system"
                       onClick={closeNav}
                     >
                       <i className="fa-solid fa-server fa-fw me-2 text-secondary" />
-                      {t("nav.system")}
+                      {t("nav.nodes")}
                     </Dropdown.Item>
                     <Dropdown.Item
                       as={Link}
@@ -494,6 +507,16 @@ export function App() {
               element={
                 user?.role === "ADMIN" ? (
                   <AdminBillingPage />
+                ) : (
+                  <Navigate to="/" replace />
+                )
+              }
+            />
+            <Route
+              path="/admin/settings"
+              element={
+                user?.role === "ADMIN" ? (
+                  <AdminSettingsPage />
                 ) : (
                   <Navigate to="/" replace />
                 )
