@@ -1,0 +1,233 @@
+/* Extracted from styles.css · theme.css */
+/* Guartrix — Bootstrap + original moss/green palette */
+
+:root,
+[data-bs-theme="dark"] {
+  color-scheme: dark;
+
+  --bh-bg-deep: #0d1210;
+  --bh-bg: #141a17;
+  --bh-bg-raised: #1c2420;
+  --bh-bg-hover: #24302a;
+  --bh-border: #2f3d35;
+  --bh-text: #e8f0ea;
+  --bh-muted: #8fa396;
+  --bh-accent: #5dba6a;
+  --bh-accent-dim: #3d7a48;
+  --bh-accent-glow: rgba(93, 186, 106, 0.18);
+  --bh-danger: #e07070;
+  --bh-warn: #d4a84b;
+  --bh-stone: #6b7c72;
+  --bh-console-bg: #0a0e0c;
+  --bh-console-fg: #cfe3d4;
+  --bh-surface-glass: rgba(20, 26, 23, 0.92);
+  --bh-footer-bg: rgba(16, 22, 19, 0.92);
+  --bh-side-nav-bg: rgba(12, 16, 14, 0.35);
+  --bh-online-bar-bg: rgba(16, 22, 19, 0.72);
+  --bh-body-gradient-end: #101612;
+  --bh-card-shadow: rgba(0, 0, 0, 0.18);
+  --bh-on-accent: #0d1210;
+
+  --bs-primary: #5dba6a;
+  --bs-primary-rgb: 93, 186, 106;
+  --bs-success: #5dba6a;
+  --bs-success-rgb: 93, 186, 106;
+  --bs-info: #6b9e8a;
+  --bs-info-rgb: 107, 158, 138;
+  --bs-warning: #d4a84b;
+  --bs-warning-rgb: 212, 168, 75;
+  --bs-danger: #e07070;
+  --bs-danger-rgb: 224, 112, 112;
+  --bs-secondary: #6b7c72;
+  --bs-secondary-rgb: 107, 124, 114;
+
+  --bs-body-bg: #141a17;
+  --bs-body-bg-rgb: 20, 26, 23;
+  --bs-body-color: #e8f0ea;
+  --bs-body-color-rgb: 232, 240, 234;
+  --bs-emphasis-color: #e8f0ea;
+  --bs-secondary-color: #8fa396;
+  --bs-secondary-color-rgb: 143, 163, 150;
+  --bs-tertiary-color: #6b7c72;
+  --bs-secondary-bg: #1c2420;
+  --bs-tertiary-bg: #1c2420;
+  --bs-border-color: #2f3d35;
+  --bs-border-color-translucent: rgba(232, 240, 234, 0.12);
+
+  --bs-link-color: #5dba6a;
+  --bs-link-hover-color: #7dce88;
+  --bs-link-color-rgb: 93, 186, 106;
+  --bs-code-color: #9fd4a8;
+
+  --bs-heading-color: #e8f0ea;
+  --bs-highlight-bg: rgba(93, 186, 106, 0.18);
+
+  --bs-focus-ring-color: rgba(93, 186, 106, 0.4);
+
+  --bs-form-valid-color: #5dba6a;
+  --bs-form-valid-border-color: #5dba6a;
+  --bs-form-invalid-color: #e07070;
+  --bs-form-invalid-border-color: #e07070;
+}
+
+[data-bs-theme="light"] {
+  color-scheme: light;
+
+  --bh-bg-deep: #e4e9e6;
+  --bh-bg: #eef2ef;
+  --bh-bg-raised: #ffffff;
+  --bh-bg-hover: #e2e8e4;
+  --bh-border: #c5cfc8;
+  --bh-text: #1a221e;
+  --bh-muted: #5a6b62;
+  --bh-accent: #3d8f4a;
+  --bh-accent-dim: #2f6e39;
+  --bh-accent-glow: rgba(61, 143, 74, 0.14);
+  --bh-danger: #c44c4c;
+  --bh-warn: #b8860b;
+  --bh-stone: #6b7c72;
+  --bh-console-bg: #1a221e;
+  --bh-console-fg: #cfe3d4;
+  --bh-surface-glass: rgba(255, 255, 255, 0.92);
+  --bh-footer-bg: rgba(232, 236, 233, 0.95);
+  --bh-side-nav-bg: rgba(228, 233, 230, 0.65);
+  --bh-online-bar-bg: rgba(232, 236, 233, 0.9);
+  --bh-body-gradient-end: #dfe6e2;
+  --bh-card-shadow: rgba(26, 34, 30, 0.08);
+  --bh-on-accent: #ffffff;
+
+  --bs-primary: #3d8f4a;
+  --bs-primary-rgb: 61, 143, 74;
+  --bs-success: #3d8f4a;
+  --bs-success-rgb: 61, 143, 74;
+  --bs-info: #4a7a68;
+  --bs-info-rgb: 74, 122, 104;
+  --bs-warning: #b8860b;
+  --bs-warning-rgb: 184, 134, 11;
+  --bs-danger: #c44c4c;
+  --bs-danger-rgb: 196, 76, 76;
+  --bs-secondary: #6b7c72;
+  --bs-secondary-rgb: 107, 124, 114;
+
+  --bs-body-bg: #eef2ef;
+  --bs-body-bg-rgb: 238, 242, 239;
+  --bs-body-color: #1a221e;
+  --bs-body-color-rgb: 26, 34, 30;
+  --bs-emphasis-color: #1a221e;
+  --bs-secondary-color: #5a6b62;
+  --bs-secondary-color-rgb: 90, 107, 98;
+  --bs-tertiary-color: #6b7c72;
+  --bs-secondary-bg: #ffffff;
+  --bs-tertiary-bg: #e4e9e6;
+  --bs-border-color: #c5cfc8;
+  --bs-border-color-translucent: rgba(26, 34, 30, 0.12);
+
+  --bs-link-color: #2f6e39;
+  --bs-link-hover-color: #3d8f4a;
+  --bs-link-color-rgb: 47, 110, 57;
+  --bs-code-color: #2f6e39;
+
+  --bs-heading-color: #1a221e;
+  --bs-highlight-bg: rgba(61, 143, 74, 0.14);
+
+  --bs-focus-ring-color: rgba(61, 143, 74, 0.35);
+
+  --bs-form-valid-color: #3d8f4a;
+  --bs-form-valid-border-color: #3d8f4a;
+  --bs-form-invalid-color: #c44c4c;
+  --bs-form-invalid-border-color: #c44c4c;
+}
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(1000px 480px at 8% -12%, var(--bh-accent-glow), transparent 55%),
+    radial-gradient(800px 420px at 100% 0%, rgba(61, 122, 72, 0.12), transparent 50%),
+    linear-gradient(180deg, var(--bh-bg-deep), var(--bh-bg) 40%, var(--bh-body-gradient-end));
+  color: var(--bh-text);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Wider than Bootstrap’s default 1320px (xxl) so main + navbar align. */
+@media (min-width: 1400px) {
+  .container,
+  .container-lg,
+  .container-md,
+  .container-sm,
+  .container-xl,
+  .container-xxl {
+    max-width: 100%;
+  }
+}
+
+.app-main {
+  flex: 1 0 auto;
+  padding-top: 1.25rem;
+  padding-bottom: 2.5rem;
+}
+
+.main-footer {
+  flex-shrink: 0;
+  border-top: 1px solid var(--bh-border);
+  background: var(--bh-footer-bg);
+  color: var(--bh-muted);
+  font-size: 0.875rem;
+  padding: 0.85rem 0;
+  margin-top: auto;
+}
+
+.main-footer-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1.25rem;
+}
+
+.main-footer-dedication {
+  order: 2;
+  margin-left: auto;
+  color: var(--bh-text);
+  opacity: 0.85;
+}
+
+.main-footer-copy {
+  order: 1;
+}
+
+.main-footer a {
+  color: var(--bh-accent);
+  text-decoration: none;
+}
+
+.main-footer a:hover {
+  text-decoration: underline;
+  color: #6fc97b;
+}
+
+.main-footer strong {
+  color: var(--bh-text);
+  font-weight: 600;
+}
+
+@media (max-width: 575.98px) {
+  .main-footer-inner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .main-footer-dedication {
+    order: 0;
+    margin-left: 0;
+  }
+}
+

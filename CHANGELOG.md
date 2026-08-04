@@ -7,6 +7,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.52] — 2026-08-04
+
+- API: finish `servers.ts` peel — `servers-settings` / `servers-crud` / `servers-transfer` (orchestrator ~38 LOC)
+- API: extract Modrinth HTTP helpers to `addons-modrinth.ts` (`addons.ts` 1394→1188)
+- Web: modularize `styles.css` into `styles/{theme,layout,components,dashboard,mobile,pages}.css`
+- OpenAPI: create/patch/delete + transfer/clone/reinstall/versions stubs; `npm run check:openapi` drift script
+
 ## [1.0.51] — 2026-08-03
 
 - API: extract `servers-addons`, `servers-power`, `servers-world` (`servers.ts` 2195→1440)

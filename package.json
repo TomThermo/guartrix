@@ -24,11 +24,12 @@
     "start:sh": "bash scripts/start.sh",
     "prod": "npm run build && npm run start:prod",
     "prod:release": "npm run build:release && npm run start:prod",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "lint": "biome check .",
-    "lint:fix": "biome check --write ."
-  },
+  "test": "vitest run",
+  "test:watch": "vitest",
+  "lint": "biome check .",
+  "lint:fix": "biome check --write .",
+  "check:openapi": "node scripts/check-openapi-coverage.mjs"
+},
   "engines": {
     "node": ">=22"
   },
@@ -40,5 +41,5 @@
     "typescript": "^5.8.2",
     "vitest": "^3.2.7"
   },
-  "version": "1.0.51"
+  "version": "1.0.52"
 }

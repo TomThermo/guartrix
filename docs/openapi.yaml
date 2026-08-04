@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Guartrix API
-  version: "1.0.51"
+  version: "1.0.52"
   description: |
     Machine-readable surface for the Guartrix panel.
 
@@ -93,6 +93,15 @@ paths:
       responses:
         "200":
           description: Server list (array or `{ servers }`)
+    post:
+      tags: [Client]
+      summary: Create server
+      security: [{ ClientApiKey: [] }, { SessionCookie: [] }]
+      responses:
+        "201":
+          description: Created server
+        "403":
+          description: Quota / permission denied
   /api/servers/{id}:
     get:
       tags: [Client]
@@ -103,6 +112,28 @@ paths:
       responses:
         "200":
           description: Server detail + permissions
+    patch:
+      tags: [Client]
+      summary: Update settings / startup / properties
+      security: [{ ClientApiKey: [] }, { SessionCookie: [] }]
+      parameters:
+        - $ref: "#/components/parameters/ServerId"
+      responses:
+        "200":
+          description: Updated server detail
+        "403":
+          description: Missing permission
+    delete:
+      tags: [Client]
+      summary: Delete server (owner + password confirm)
+      security: [{ ClientApiKey: [] }, { SessionCookie: [] }]
+      parameters:
+        - $ref: "#/components/parameters/ServerId"
+      responses:
+        "204":
+          description: Deleted
+        "403":
+          description: Incorrect password / not owner
   /api/servers/{id}/start:
     post:
       tags: [Client]
@@ -541,3 +572,58 @@ paths:
       responses:
         "200":
           description: Connection details
+  /api/servers/{id}/transfer:
+    get:
+      tags: [Client]
+      summary: Transfer job status (owner)
+      security: [{ ClientApiKey: [] }, { SessionCookie: [] }]
+      parameters:
+        - $ref: "#/components/parameters/ServerId"
+      responses:
+        "200":
+          description: "{ transfer, server }"
+    post:
+      tags: [Client]
+      summary: Move server to another node (admin)
+      security: [{ ClientApiKey: [] }, { SessionCookie: [] }]
+      parameters:
+        - $ref: "#/components/parameters/ServerId"
+      responses:
+        "202":
+          description: Transfer started
+        "403":
+          description: Not admin
+  /api/servers/{id}/clone:
+    post:
+      tags: [Client]
+      summary: Clone server files to a new instance
+      security: [{ ClientApiKey: [] }, { SessionCookie: [] }]
+      parameters:
+        - $ref: "#/components/parameters/ServerId"
+      responses:
+        "201":
+          description: Cloned server
+        "409":
+          description: Source still running
+  /api/servers/{id}/reinstall:
+    post:
+      tags: [Client]
+      summary: Reinstall jar / optionally wipe world or addons
+      security: [{ ClientApiKey: [] }, { SessionCookie: [] }]
+      parameters:
+        - $ref: "#/components/parameters/ServerId"
+      responses:
+        "200":
+          description: "{ server }"
+  /api/versions:
+    get:
+      tags: [Client]
+      summary: List installable Minecraft versions for a type
+      security: [{ ClientApiKey: [] }, { SessionCookie: [] }]
+      parameters:
+        - name: type
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: "{ type, versions }"
