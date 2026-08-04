@@ -2,6 +2,11 @@ export type WikiSection = {
   title: string;
   paragraphs?: string[];
   bullets?: string[];
+  images?: {
+    src: string;
+    alt: string;
+    caption?: string;
+  }[];
   code?: {
     label?: string;
     language?: string;

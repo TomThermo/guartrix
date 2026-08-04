@@ -64,6 +64,20 @@ export function WikiArticlePage() {
                     </pre>
                   </div>
                 ))}
+                {section.images && (
+                  <div className="wiki-image-grid">
+                    {section.images.map((image) => (
+                      <figure key={`${section.title}-${image.src}`} className="wiki-image-card">
+                        <img src={image.src} alt={image.alt} className="wiki-image" loading="lazy" />
+                        {(image.caption || image.alt) && (
+                          <figcaption className="wiki-image-caption">
+                            {image.caption ?? image.alt}
+                          </figcaption>
+                        )}
+                      </figure>
+                    ))}
+                  </div>
+                )}
               </section>
             ))}
           </Card.Body>

@@ -1,5 +1,14 @@
 import type { WikiArticle } from "./wiki-types";
 
+const wikiAssetUrls = import.meta.glob("../../../docs/wiki/assets/*.png", {
+  eager: true,
+  import: "default",
+}) as Record<string, string>;
+
+function wikiAsset(name: string): string {
+  return wikiAssetUrls[`../../../docs/wiki/assets/${name}`] ?? "";
+}
+
 export const wikiArticles: WikiArticle[] = [
   {
     slug: "overview",
@@ -166,6 +175,38 @@ export const wikiArticles: WikiArticle[] = [
           "Account -> Security includes TOTP, API keys, app passwords, push settings, and appearance options.",
           "Account -> Billing covers plan purchases and subscription visibility.",
         ],
+        images: [
+          {
+            src: wikiAsset("01-login.png"),
+            alt: "Login page",
+            caption: "Login page with the public sign-in flow.",
+          },
+          {
+            src: wikiAsset("17-register.png"),
+            alt: "Register page",
+            caption: "Register flow for self-service account creation.",
+          },
+          {
+            src: wikiAsset("23-forgot-password.png"),
+            alt: "Forgot password page",
+            caption: "Password reset request form.",
+          },
+          {
+            src: wikiAsset("27-account-security.png"),
+            alt: "Account security page",
+            caption: "Security page with TOTP, API keys, and app passwords.",
+          },
+          {
+            src: wikiAsset("28-account-billing.png"),
+            alt: "Account billing page",
+            caption: "User billing page for plans and payment history.",
+          },
+          {
+            src: wikiAsset("29-admin-billing.png"),
+            alt: "Admin billing page",
+            caption: "Admin billing page for plans, application keys, and payments.",
+          },
+        ],
       },
       {
         title: "Admin surfaces",
@@ -173,12 +214,161 @@ export const wikiArticles: WikiArticle[] = [
           "Admins get Status, Settings, System, License, Activity, Billing, and Users.",
           "These pages cover health, panel settings, node management, licensing, payments, and account administration.",
         ],
+        images: [
+          {
+            src: wikiAsset("04-users.png"),
+            alt: "Users admin page",
+            caption: "User administration with roles and quota controls.",
+          },
+          {
+            src: wikiAsset("05-system-nodes.png"),
+            alt: "System nodes page",
+            caption: "Node overview with connection status and install actions.",
+          },
+          {
+            src: wikiAsset("06-add-node-modal.png"),
+            alt: "Add node modal",
+            caption: "Remote node install wizard with SSH-based setup.",
+          },
+          {
+            src: wikiAsset("31-admin-license.png"),
+            alt: "Admin license page",
+            caption: "License status, limits, and enabled features.",
+          },
+          {
+            src: wikiAsset("26-admin-activity.png"),
+            alt: "Admin activity page",
+            caption: "Global activity log across users and servers.",
+          },
+          {
+            src: wikiAsset("07-statusline.png"),
+            alt: "Status page",
+            caption: "Panel, watchdog, and node health overview.",
+          },
+        ],
       },
       {
         title: "Server workspace",
         paragraphs: [
           "The server detail page is the main operating surface for console, files, SFTP, databases, network, backups, schedules, activity, and game-specific tools.",
           "Header actions expose version changes, software-family changes, reinstall, clone, transfer, and ownership changes.",
+        ],
+        images: [
+          {
+            src: wikiAsset("34-server-clone-modal.png"),
+            alt: "Clone server modal",
+            caption: "Clone flow from the server header actions.",
+          },
+          {
+            src: wikiAsset("35-whitelist-toggle-modal.png"),
+            alt: "Whitelist toggle modal",
+            caption: "Quick whitelist toggle from header chips.",
+          },
+          {
+            src: wikiAsset("25-server-move-modal.png"),
+            alt: "Move server modal",
+            caption: "Move a stopped server to another node.",
+          },
+          {
+            src: wikiAsset("08-server-console.png"),
+            alt: "Server console",
+            caption: "Live console with resource and power controls.",
+          },
+          {
+            src: wikiAsset("09-server-files.png"),
+            alt: "Server file manager",
+            caption: "Browser-based file manager with edit, upload, and archive actions.",
+          },
+          {
+            src: wikiAsset("10-server-sftp.png"),
+            alt: "Server SFTP tab",
+            caption: "SFTP connection details for external clients.",
+          },
+          {
+            src: wikiAsset("13-server-databases.png"),
+            alt: "Server databases tab",
+            caption: "Per-server MySQL database management.",
+          },
+          {
+            src: wikiAsset("24-server-network.png"),
+            alt: "Server network tab",
+            caption: "Primary and secondary allocation management.",
+          },
+          {
+            src: wikiAsset("11-server-backups.png"),
+            alt: "Server backups tab",
+            caption: "Create, restore, upload, and download backups.",
+          },
+          {
+            src: wikiAsset("16-server-subusers.png"),
+            alt: "Server subusers tab",
+            caption: "Invite and permission-manage subusers.",
+          },
+          {
+            src: wikiAsset("15-server-settings.png"),
+            alt: "Server settings tab",
+            caption: "Server properties, startup settings, and world tools.",
+          },
+          {
+            src: wikiAsset("14-server-players.png"),
+            alt: "Server players tab",
+            caption: "Online players and recent player visibility.",
+          },
+          {
+            src: wikiAsset("18-server-whitelist.png"),
+            alt: "Server whitelist tab",
+            caption: "Whitelist manager with quick add/remove controls.",
+          },
+          {
+            src: wikiAsset("19-server-bans.png"),
+            alt: "Server bans tab",
+            caption: "Ban list and moderation actions.",
+          },
+          {
+            src: wikiAsset("20-server-schedules.png"),
+            alt: "Server schedules tab",
+            caption: "Scheduled tasks such as backups and restarts.",
+          },
+          {
+            src: wikiAsset("30-server-activity.png"),
+            alt: "Server activity tab",
+            caption: "Per-server activity and audit stream.",
+          },
+          {
+            src: wikiAsset("22-server-resources.png"),
+            alt: "Server resources tab",
+            caption: "Disk usage breakdown and resource visibility.",
+          },
+          {
+            src: wikiAsset("32-server-engine.png"),
+            alt: "Server engine settings",
+            caption: "Engine-specific settings for supported software families.",
+          },
+          {
+            src: wikiAsset("12-server-addons.png"),
+            alt: "Server addons tab",
+            caption: "Plugin and addon browser and installer.",
+          },
+          {
+            src: wikiAsset("36-addon-version-picker.png"),
+            alt: "Addon version picker",
+            caption: "Select a specific addon version before install.",
+          },
+          {
+            src: wikiAsset("33-server-modpacks.png"),
+            alt: "Server modpacks tab",
+            caption: "Modpack browser for compatible server families.",
+          },
+          {
+            src: wikiAsset("38-server-bots.png"),
+            alt: "Server bots tab",
+            caption: "Optional bot management surface.",
+          },
+          {
+            src: wikiAsset("37-import-server.png"),
+            alt: "Import server flow",
+            caption: "Import an archive into a new server from the create flow.",
+          },
         ],
       },
     ],
