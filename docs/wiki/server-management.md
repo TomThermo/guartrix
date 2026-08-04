@@ -75,7 +75,31 @@ The server detail page is the main workspace. Tabs are grouped roughly as:
 - Activity Log
 - Log Files
 - Resources
-- Bots (admin/license dependent)
+- Bots (admin-only)
+
+## World tools and resource packs
+
+### World reset / upload
+
+**Server Properties → World** (`WorldToolsCard`):
+
+- Reset selected dimensions (overworld / nether / end)
+- Upload a `.zip` world archive
+
+The server must be **stopped**. Confirm prompts warn about data loss — take a backup first ([Files and backups](files-and-backups.md)).
+
+### Resource pack
+
+**Server Properties → Access / Network**:
+
+- Require resource pack, prompt message, pack URL, SHA-1
+- Optional **upload** from the panel (stores pack and sets `resource-pack` + `resource-pack-sha1`)
+
+Minecraft clients must reach the pack URL. Set `PUBLIC_BASE_URL` to a URL players can open (see [env-reference](env-reference.md)).
+
+### World Map / BlueMap
+
+Sidebar **World Map** — seed preview plus optional BlueMap install (TCP **8100**). Details: [Networking](networking-and-allocations.md#bluemap-live-web-map).
 
 ## Header actions
 
@@ -128,6 +152,8 @@ This page is the hub; use these focused references for deeper detail:
 
 - [Files and backups](files-and-backups.md)
 - [Networking and allocations](networking-and-allocations.md)
+- [Databases](databases.md)
+- [Bots](bots.md)
 - [Player management](player-management.md)
 - [Mods, plugins, and modpacks](mods-plugins-and-modpacks.md)
 - [Install nodes](install-nodes.md)

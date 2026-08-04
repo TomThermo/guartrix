@@ -33,6 +33,17 @@ Main anchors:
 - `apps/api/src/activity-log.ts`
 - `scripts/monitor.sh`
 
+### Per-server owner alerts & Discord status
+
+**Server Properties → General** (owner / permitted users):
+
+- Optional owner Discord webhook and/or email for crash, OOM, disk-high, offline, backup-failed
+- **Discord status** — keeps one channel message updated (webhook only, no bot token) with online/offline and player count
+
+This is separate from the global `ACTIVITY_WEBHOOK_URL` audit feed.
+
+See [Panel guide](panel-guide.md#owner-alerts--discord-status).
+
 ### Web Push
 
 Push subscriptions are stored and managed through `routes/account-push.ts` and `apps/api/src/web-push.ts`.

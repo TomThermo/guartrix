@@ -11,12 +11,14 @@ A **node** is a VPS running the Guartrix daemon. Minecraft servers are scheduled
    - **Host / FQDN** — IP or hostname the **panel** uses to reach this VPS
    - Optional **Location / region** label (shown in the create-server node picker)
    - Scheme (`http` on LAN/VPS is typical) and daemon port (`8081`)
-4. On the install step, enter SSH user + password **or** private key.
-5. Watch the **live log** from the remote server.
-6. When finished, click **Test connection** until status is **ONLINE**.
+4. On the install step, enter SSH user + password **or** private key (default SSH user often `ubuntu`; optional non-22 SSH port).
+5. Watch the **live log** from the remote server. On success the wizard **auto-tests** the daemon.
+6. If needed, click **Test connection** until status is **ONLINE**.
 7. Create a Minecraft server and select that node (admins only choose node placement).
 
 SSH credentials are used once and **not stored**.
+
+Remote config lives at **`/var/lib/guartrix/daemon.env`** (not `$INSTALL_DIR/data/daemon.env`). Code under `/opt/guartrix`.
 
 ![System — nodes](assets/05-system-nodes.png)
 
@@ -37,11 +39,12 @@ sudo bash /tmp/guartrix-daemon.sh \
   --node-id NODE_ID \
   --fqdn NODE_PUBLIC_IP \
   --port 8081 \
+  --sftp-port 2022 \
   --panel https://YOUR_PANEL \
   --repo https://github.com/TomThermo/guartrix.git
 ```
 
-`NODE_TOKEN`, `NODE_ID`, and the exact command are shown in the panel install modal.
+Download the script, then run it (do not pipe curl into bash). `NODE_TOKEN`, `NODE_ID`, and the exact command are shown in the panel install modal. The installer writes **`/var/lib/guartrix/daemon.env`**.
 
 Open firewall ports on the node:
 
@@ -61,7 +64,8 @@ install user). That is root-equivalent on the host if the daemon process is comp
 Hardening options (pick one):
 
 1. **Docker group** — add the daemon user to `docker`, drop the sudoers docker rule, and
-   set `DOCKER_BIN=docker` (no sudo) in `data/daemon.env`. Understand that group membership
+   set `DOCKER_BIN=docker` (no sudo) in `/var/lib/guartrix/daemon.env` (remote) or
+   `$INSTALL_DIR/data/daemon.env` (local). Understand that group membership
    is still effectively root via the Docker socket.
 2. **Rootless Docker** — run Engine as the daemon user (best isolation; some
    networking / publish modes differ). Concrete outline:
@@ -73,9 +77,9 @@ Hardening options (pick one):
    - Point clients at the user socket, e.g.
      `DOCKER_HOST=unix:///run/user/UID/docker.sock`
      (`UID` = that user’s numeric id; also exported by the rootless helper).
-   - In `data/daemon.env` set `DOCKER_BIN=docker` (no `sudo`) and ensure the
+   - In the daemon env file set `DOCKER_BIN=docker` (no `sudo`) and ensure the
      daemon process inherits `DOCKER_HOST` (systemd `Environment=` / `EnvironmentFile=`
-     for the Guartrix daemon unit, or a wrapper).
+     — remote units load `/var/lib/guartrix/daemon.env`).
    - Confirm with `docker info` / daemon `/ready` as that user.
    - **SELinux:** volume mounts often need `:z` / `:Z` (or equivalent context
      relabel) so rootless containers can write host bind mounts; without it you
@@ -88,14 +92,14 @@ Checklist still expects `/health` and `/ready` (Docker reachable) after changes.
 ## Docker networks
 
 `DOCKER_NETWORK_MODE` controls how game containers are networked on a node
-(`data/daemon.env`):
+(daemon env file — remote: `/var/lib/guartrix/daemon.env`):
 
 | Mode | When to use |
 |------|-------------|
 | **`shared`** (default) | Single-tenant hosts, trusted players, or when you want the simplest setup — every game container shares the flat `guartrix` bridge with MySQL (`guartrix-mysql` DNS works out of the box). |
 | **`per_server`** | Multi-tenant nodes or **untrusted players** — each server gets an isolated `guartrix-s-<id>` bridge so containers cannot reach each other’s IPs on the game network. |
 
-Set `DOCKER_NETWORK_MODE=per_server` in `data/daemon.env` for isolation. The daemon
+Set `DOCKER_NETWORK_MODE=per_server` in the daemon env file for isolation. The daemon
 **still attaches** each game container to the shared `guartrix` bridge as a second
 network so game MySQL DNS (`guartrix-mysql`) keeps working — only peer game traffic
 is segmented on the per-server bridge.

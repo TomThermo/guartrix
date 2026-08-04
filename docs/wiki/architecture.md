@@ -116,14 +116,14 @@ Disk walks use a **30s cache** (stale-while-revalidate) so UI polls never block 
 ## Prometheus & errors (optional)
 
 - **Metrics:** API exposes Prometheus text at `GET /api/metrics` and `GET /metrics` (`prom-client`: process defaults, HTTP counter/histogram, servers-by-status gauge cached 15s, in-memory transfer job count). Daemon exposes `GET /metrics` (process defaults + Docker reachable gauge). Auth: `METRICS_TOKEN` as `Authorization: Bearer …` or `?token=`; if unset, loopback only (daemon also accepts a normal daemon JWT).
-- **Sentry:** set `SENTRY_DSN` to enable `@sentry/node` on API and daemon (`tracesSampleRate: 0.1`). Browser/Vite (`VITE_SENTRY_DSN`) is not wired yet.
+- **Sentry:** set `SENTRY_DSN` for `@sentry/node` on API and daemon (`tracesSampleRate: 0.1`). Set `VITE_SENTRY_DSN` at **web build time** for the browser SDK (`apps/web/src/sentry.ts`).
 
 ## Data flow notes
 
 - **Sessions:** default `FileSessionStore` under `data/sessions/*.json` (survive API restart on the same host). For multi-API HA, enable Redis at install or set `SESSION_STORE=redis` + `RATE_LIMIT_STORE=redis` + `REDIS_URL` — shared sessions, rate limits, transfer jobs, scheduler leader lock, and console event pub/sub. See [Scaling](scaling.md). Session cookies use `rolling: false` so routine GETs/polls do not rewrite the session every request (expiry still follows `maxAge` from login).
 - **Scheduled tasks:** MySQL `ScheduledTask` (JSON columns for schedule + steps); one-time import from legacy `guartrix-scheduled-tasks.json`.
 - **Dashboard online counts:** `GET /api/servers/online` uses the daemon/console player cache only (no Minecraft query ping), scoped to servers the user can see.
-- **Daemon tokens:** long-lived shared secret per node (vault + `data/daemon.env`). On the wire the panel sends **short-lived HS256 JWTs** (`aud=daemon`, `nid`, `exp`) signed with that secret. Raw bearer is rejected unless `DAEMON_JWT_LEGACY=true`. SFTP callbacks use `aud=panel` JWTs.
+- **Daemon tokens:** long-lived shared secret per node (vault + daemon env file). **Local full-panel** node: `$INSTALL_DIR/data/daemon.env` (often `/opt/guartrix/data/daemon.env`). **Remote daemon-only** install: `/var/lib/guartrix/daemon.env` (systemd `EnvironmentFile`). On the wire the panel sends **short-lived HS256 JWTs** (`aud=daemon`, `nid`, `exp`) signed with that secret. Raw bearer is rejected unless `DAEMON_JWT_LEGACY=true`. SFTP callbacks use `aud=panel` JWTs.
 - **Server files:** on the node under `data/servers/<serverId>/` (or daemon `DATA_DIR`). File **list/read** does not run a recursive `chown`; ownership is fixed on start and on write/upload/SFTP paths.
 - **Console:** browser connects to the **panel** WebSocket; the panel fans out daemon event streams (output, status, stats).
 - **Mineflayer bots:** run in a **forked API child** (`bot-worker-main`) so physics/event loops stay out of the Fastify process. The panel proxies spawn/list/command over IPC; `BOT_WORKER=0` forces in-process emergency mode.

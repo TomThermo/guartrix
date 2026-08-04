@@ -18,7 +18,7 @@ export const wikiArticles: WikiArticle[] = [
     category: "Overview",
     keywords: ["overview", "readme", "panel", "daemon", "architecture", "requirements", "stack", "node", "vite", "mysql", "docker", "react", "fastify"],
     sourcePath: "README.md",
-    relatedSlugs: ["install-panel", "panel-guide", "api-surface-map"],
+    relatedSlugs: ["install-panel", "architecture", "panel-guide", "api-surface-map"],
     sections: [
       {
         title: "What Guartrix is",
@@ -54,6 +54,17 @@ export const wikiArticles: WikiArticle[] = [
         ],
       },
       {
+        title: "Notable product features",
+        bullets: [
+          "Geyser one-click + Velocity/Bungee backend helpers (proxy not hosted by Guartrix)",
+          "BlueMap / World Map, world reset & zip upload, resource packs",
+          "Per-server MySQL databases, schedules, node transfer",
+          "Admin Mineflayer bots (online-mode=false)",
+          "Client API (`gt_`) and Application API / Mollie (`gta_`)",
+          "Free tier without license: 1 node, 1 server, 10 GB disk",
+        ],
+      },
+      {
         title: "Main documentation areas",
         bullets: [
           "Install and node setup",
@@ -61,6 +72,222 @@ export const wikiArticles: WikiArticle[] = [
           "Server management, files, backups, and networking",
           "Client API, Application API, billing, and licensing",
           "Operations, scaling, and internal architecture",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "architecture",
+    title: "Architecture",
+    summary:
+      "Tech stack, monorepo layout, panel ↔ daemon flow, MySQL/Redis/Sentry notes, and trust boundaries.",
+    category: "Overview",
+    keywords: ["architecture", "stack", "vite", "fastify", "prisma", "docker", "redis", "sentry"],
+    sourcePath: "docs/wiki/architecture.md",
+    relatedSlugs: ["overview", "env-reference", "daemon-api", "scaling"],
+    sections: [
+      {
+        title: "Stack",
+        bullets: [
+          "Node.js 22+ / TypeScript monorepo",
+          "Web: React 19, Vite 6, Bootstrap",
+          "API: Fastify 5, Prisma → MySQL",
+          "Daemon: Fastify + node-agent (Docker, SFTP, game MySQL)",
+          "Optional Redis, SMTP, Mollie, Sentry (API/daemon + VITE_SENTRY_DSN for browser), Prometheus metrics",
+        ],
+      },
+      {
+        title: "Request path",
+        paragraphs: [
+          "Browsers hit prod-web (:80/:443), which serves the Vite build and proxies `/api` and `/ws` to the API on localhost :3001.",
+          "The API talks to daemons with short-lived HS256 JWTs. Game servers run as Docker containers on each node.",
+        ],
+      },
+      {
+        title: "MySQL layout",
+        paragraphs: [
+          "On a full Docker install, panel and game databases often share one `guartrix-mysql` container/volume — recreate carefully.",
+          "Remote nodes run their own game MySQL. Local daemon env is under `data/daemon.env`; remote daemon-only uses `/var/lib/guartrix/daemon.env`.",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "env-reference",
+    title: "Environment variables",
+    summary:
+      "Panel `.env` and daemon env file knobs — paths differ for local vs remote nodes.",
+    category: "Reference",
+    keywords: ["env", "environment", "DATABASE_URL", "REDIS", "daemon.env", "registration"],
+    sourcePath: "docs/wiki/env-reference.md",
+    relatedSlugs: ["install-panel", "architecture", "operations"],
+    sections: [
+      {
+        title: "Where config lives",
+        bullets: [
+          "Panel: repo root `.env` (from `.env.example`)",
+          "Local daemon: `$INSTALL_DIR/data/daemon.env`",
+          "Remote daemon-only: `/var/lib/guartrix/daemon.env`",
+          "`REGISTRATION_ENABLED` controls open signup; `LETSENCRYPT_EMAIL` for LE helper scripts",
+        ],
+      },
+      {
+        title: "Common groups",
+        bullets: [
+          "Public URL / TLS: PUBLIC_*, HTTPS_*, SESSION_SECURE, TRUST_PROXY, TLS_*",
+          "Database: DATABASE_URL / MYSQL_*",
+          "Redis HA: REDIS_URL, SESSION_STORE, RATE_LIMIT_STORE",
+          "License: LICENSE_SERVER_URL, LICENSE_KEY",
+          "Bots: BOT_WORKER",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "sftp",
+    title: "SFTP",
+    summary:
+      "Per-node SFTP on port 2022 — username format, permissions, and FileZilla notes.",
+    category: "Using the panel",
+    keywords: ["sftp", "ftp", "files", "2022", "filezilla"],
+    sourcePath: "docs/wiki/sftp.md",
+    relatedSlugs: ["files-backups", "accounts-quotas", "security"],
+    sections: [
+      {
+        title: "Connection",
+        bullets: [
+          "Protocol: SFTP (not FTP)",
+          "Port: 2022",
+          "Username: `{panelUsername}.{serverId}`",
+          "Password: panel account password (or app password when required)",
+        ],
+      },
+      {
+        title: "Jail",
+        paragraphs: [
+          "Sessions are jailed to that server’s files directory. Subuser permissions still apply to what the panel allows over SFTP.",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "release-builds",
+    title: "Release builds and downloads",
+    summary:
+      "Minified customer bundles, password-protected /download zips, and what is stripped from ship trees.",
+    category: "Reference",
+    keywords: ["release", "download", "obfuscate", "zip", "customer"],
+    sourcePath: "docs/wiki/release-builds.md",
+    relatedSlugs: ["prod-web-downloads", "build-release-internals", "licensing"],
+    sections: [
+      {
+        title: "Shipping",
+        bullets: [
+          "`build:release` / `build-out.sh` produce minified API/daemon bundles",
+          "Operator download packaging publishes versioned zips for `/download`",
+          "Customer trees omit git, sources, and the private license issuer",
+        ],
+      },
+      {
+        title: "Download portal",
+        paragraphs: [
+          "Optional DNS-only `DOWNLOAD_PUBLIC_HOST` avoids Cloudflare bot challenges on zip downloads.",
+          "Set `DOWNLOAD_PASSWORD` and restart web after changing download env.",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "databases",
+    title: "Game databases",
+    summary:
+      "Create per-server MySQL databases on the node, understand quotas, and the shared Docker MySQL layout.",
+    category: "Using the panel",
+    keywords: ["mysql", "databases", "guartrix-mysql", "quota"],
+    sourcePath: "docs/wiki/databases.md",
+    relatedSlugs: ["server-management", "accounts-quotas", "install-panel"],
+    sections: [
+      {
+        title: "Basics",
+        bullets: [
+          "Server → Databases creates a prefixed DB + user on the node MySQL",
+          "Plugins usually connect to host `guartrix-mysql` inside Docker",
+          "Owner quota `maxDatabases` (defaults often 0 until an admin raises it)",
+        ],
+        images: [
+          {
+            src: wikiAsset("13-server-databases.png"),
+            alt: "Databases tab",
+            caption: "Create and copy credentials for per-server MySQL databases.",
+          },
+        ],
+      },
+      {
+        title: "Shared volume warning",
+        paragraphs: [
+          "On a full-panel Docker install, panel and game DBs often share `guartrix-mysql` and `data/mysql`. Wiping that volume deletes both.",
+          "If panel MySQL is already on localhost:3306 externally, game MySQL publishes on host port 3307.",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "bots",
+    title: "Bots (Mineflayer)",
+    summary:
+      "Admin-only in-game bots — online-mode=false, Via*, BOT_WORKER, and available orders.",
+    category: "Using the panel",
+    keywords: ["bots", "mineflayer", "viaversion", "admin", "offline"],
+    sourcePath: "docs/wiki/bots.md",
+    relatedSlugs: ["server-management", "networking-allocations", "security"],
+    sections: [
+      {
+        title: "Requirements",
+        bullets: [
+          "Admin-only tab",
+          "Server must be RUNNING",
+          "`online-mode=false`",
+          "Via* recommended for non-native protocol versions",
+          "`BOT_WORKER=1` (default) runs bots in a forked API child",
+        ],
+        images: [
+          {
+            src: wikiAsset("38-server-bots.png"),
+            alt: "Bots tab",
+            caption: "Spawn and command Mineflayer bots from the panel.",
+          },
+        ],
+      },
+      {
+        title: "Orders",
+        bullets: ["ai", "follow", "guard", "chop", "wander", "goto", "collect", "dig", "attack", "say", "stop", "quit"],
+      },
+    ],
+  },
+  {
+    slug: "statusline",
+    title: "Status overview",
+    summary:
+      "Admin → Status health board for web, API, watchdog, Redis, and every game node.",
+    category: "Operations",
+    keywords: ["status", "statusline", "health", "watchdog", "nodes"],
+    sourcePath: "docs/wiki/statusline.md",
+    relatedSlugs: ["operations", "install-nodes", "scaling"],
+    sections: [
+      {
+        title: "What you see",
+        bullets: [
+          "Architecture strip and version vs license channel",
+          "Web, API, watchdog, and Redis cards",
+          "Per-node reachability, containers, CPU/RAM, MySQL",
+          "System log tails",
+        ],
+        images: [
+          {
+            src: wikiAsset("07-statusline.png"),
+            alt: "Admin Status page",
+            caption: "Live health overview for the panel stack and nodes.",
+          },
         ],
       },
     ],
@@ -86,9 +313,12 @@ export const wikiArticles: WikiArticle[] = [
         title: "Installer flow",
         bullets: [
           "Download `install-panel.sh` instead of piping it directly into bash.",
-          "Choose full panel, panel-only, or daemon-only mode.",
-          "Pick HTTP or HTTPS, then configure panel MySQL and optional Redis.",
-          "Let the script write `.env`, build the app, and enable systemd services.",
+          "Choose full panel, panel-only, or daemon-only mode (flags: `--full` / `--panel-only` / `--daemon-only`).",
+          "Pick HTTP or HTTPS (installer does not run Certbot — place Origin/TLS certs yourself).",
+          "Configure panel MySQL (Docker default shares game DBs on full installs) and optional Redis.",
+          "UFW opens 22/80 (and 443 if HTTPS; plus 2022 and 25565-25600 when a local daemon is installed).",
+          "Let the script write `.env`, build the app, and enable systemd units `guartrix-api` / `guartrix-web` / `guartrix-daemon`.",
+          "Blank license key → free tier (1 node, 1 server, 10 GB disk) until Admin → License.",
         ],
         code: [
           {
@@ -134,15 +364,17 @@ export const wikiArticles: WikiArticle[] = [
         title: "Admin wizard",
         paragraphs: [
           "Admins can create a node from the System page, fill in connection details, and run the remote install wizard over SSH.",
-          "SSH credentials are used once for installation and are not stored by the panel.",
+          "SSH credentials are used once for installation and are not stored by the panel. Default SSH user is often `ubuntu`; non-22 SSH ports are supported.",
+          "On success the wizard auto-tests the daemon. Remote config is written to `/var/lib/guartrix/daemon.env`.",
         ],
       },
       {
         title: "Manual install",
         bullets: [
-          "Run `install-daemon.sh` on the remote VPS.",
-          "Pass the node token, node id, panel URL, and public host values.",
+          "Download `install-daemon.sh` from your panel, then run it (do not pipe curl into bash).",
+          "Pass the node token, node id, panel URL, public host, and optional `--sftp-port`.",
           "Expose the daemon API, SFTP, and assigned game ports through the firewall.",
+          "Edit Docker knobs in `/var/lib/guartrix/daemon.env` (not `/opt/guartrix/data/daemon.env`).",
         ],
         code: [
           {
@@ -154,7 +386,7 @@ export const wikiArticles: WikiArticle[] = [
             label: "Run the remote installer",
             language: "bash",
             content:
-              "sudo bash /tmp/guartrix-daemon.sh \\\n  --token NODE_TOKEN \\\n  --node-id NODE_ID \\\n  --fqdn NODE_PUBLIC_IP \\\n  --port 8081 \\\n  --panel https://YOUR_PANEL",
+              "sudo bash /tmp/guartrix-daemon.sh \\\n  --token NODE_TOKEN \\\n  --node-id NODE_ID \\\n  --fqdn NODE_PUBLIC_IP \\\n  --port 8081 \\\n  --sftp-port 2022 \\\n  --panel https://YOUR_PANEL",
           },
         ],
       },
@@ -430,7 +662,7 @@ export const wikiArticles: WikiArticle[] = [
     category: "Using the panel",
     keywords: ["servers", "create", "import", "clone", "reinstall", "transfer", "power"],
     sourcePath: "docs/wiki/server-management.md",
-    relatedSlugs: ["files-backups", "networking-allocations", "mods-plugins-and-modpacks"],
+    relatedSlugs: ["files-backups", "networking-allocations", "databases", "bots", "mods-plugins-and-modpacks"],
     sections: [
       {
         title: "Lifecycle actions",
@@ -478,6 +710,14 @@ export const wikiArticles: WikiArticle[] = [
         ],
       },
       {
+        title: "World tools and resource packs",
+        bullets: [
+          "Server Properties → World: reset dimensions or upload a `.zip` world (server must be stopped).",
+          "Access/Network: resource pack URL, SHA-1, require-pack, optional upload (`PUBLIC_BASE_URL` must reach players).",
+          "World Map tab: seed preview; Paper/Purpur can install BlueMap (TCP 8100).",
+        ],
+      },
+      {
         title: "State model",
         paragraphs: [
           "Visible states like OFFLINE, STARTING, RUNNING, STOPPING, ERROR, and TRANSFERRING reflect coordination between the panel and the daemon.",
@@ -494,7 +734,7 @@ export const wikiArticles: WikiArticle[] = [
     category: "Using the panel",
     keywords: ["files", "sftp", "upload", "download", "backups", "restore", "archives"],
     sourcePath: "docs/wiki/files-and-backups.md",
-    relatedSlugs: ["server-management", "networking-allocations", "operations"],
+    relatedSlugs: ["server-management", "sftp", "operations", "databases"],
     sections: [
       {
         title: "File manager",
@@ -686,10 +926,19 @@ export const wikiArticles: WikiArticle[] = [
         ],
       },
       {
+        title: "Geyser, BlueMap, Velocity helpers",
+        bullets: [
+          "Paper/Purpur Network tab: Install Geyser + Floodgate and a UDP companion on the game port.",
+          "World Map: Install BlueMap and expose TCP 8100 for the live web map.",
+          "Server Properties → Access: Velocity or BungeeCord one-click backend prep (online-mode=false + forwarding). Guartrix does not host the proxy process.",
+          "Restart after helper changes so Docker republishes ports.",
+        ],
+      },
+      {
         title: "Node connectivity",
         paragraphs: [
           "Node records also store daemon connection details and optional public/SFTP hostnames.",
-          "Those values affect remote install commands, health checks, and how the panel reaches each node.",
+          "Remote daemon-only nodes store config in `/var/lib/guartrix/daemon.env` (not `/opt/guartrix/data/daemon.env`).",
         ],
       },
     ],
@@ -1293,6 +1542,7 @@ export const wikiArticles: WikiArticle[] = [
         bullets: [
           "Email for verification, reset, invites, and optional alerts",
           "Activity webhook for critical events and watchdog incidents",
+          "Per-server owner Discord webhook / Discord status message (Server Properties → General)",
           "Web Push for account-level browser/device notifications",
           "In-panel banners for license, restart-required, and validation warnings",
         ],
@@ -1319,8 +1569,9 @@ export const wikiArticles: WikiArticle[] = [
       {
         title: "Canonical restart flow",
         paragraphs: [
-          "Build the project and use `bash scripts/start.sh` for normal production restarts.",
-          "That script handles preflight checks, process startup, and watchdog attachment.",
+          "On systemd installs: `systemctl restart guartrix-api guartrix-web guartrix-daemon`.",
+          "On operator checkouts: build and use `bash scripts/start.sh` (preflight, processes, watchdog).",
+          "Do not mix systemd restarts with the start.sh watchdog on the same host.",
         ],
       },
       {
@@ -1329,13 +1580,15 @@ export const wikiArticles: WikiArticle[] = [
           "The watchdog checks API and daemon liveness/readiness.",
           "It restarts unhealthy panel processes without intentionally killing Minecraft containers.",
           "Webhook alerts can fire when restart loops or critical backoff events happen.",
+          "Admin → Status (`/statusline`) shows web, API, Redis, and per-node health.",
         ],
       },
       {
         title: "Data and backups",
         bullets: [
           "Panel DB backups can be run manually or via an installed daily timer.",
-          "Runtime data such as logs, sessions, node credentials, and backup archives live under `data/`.",
+          "Local daemon env: `$INSTALL_DIR/data/daemon.env`. Remote: `/var/lib/guartrix/daemon.env`.",
+          "Full Docker MySQL volume can hold panel + game DBs together — wipe carefully.",
         ],
       },
     ],

@@ -1,6 +1,15 @@
 # Environment variables
 
-Copy `.env.example` → `.env` (repo root). Secrets must stay gitignored. The local daemon also reads `data/daemon.env` (generated/updated by start scripts; template: [`data/daemon.env.example`](../../data/daemon.env.example)).
+Copy `.env.example` → `.env` (repo root). Secrets must stay gitignored.
+
+Daemon env file (token, MySQL root for game DBs, Docker knobs) — template: [`data/daemon.env.example`](../../data/daemon.env.example):
+
+| Install type | Path |
+|--------------|------|
+| Local daemon on a full / panel+daemon install | `$INSTALL_DIR/data/daemon.env` (e.g. `/opt/guartrix/data/daemon.env`) |
+| Remote **daemon-only** node (`install-daemon.sh` / Add node) | `/var/lib/guartrix/daemon.env` (override with `--data`) |
+
+Editing the wrong path on a remote node has no effect — systemd loads `/var/lib/guartrix/daemon.env`.
 
 Many operator knobs (public URL, SMTP, registration, quotas, 2FA policy, alerts, Cloudflare, HTTPS flags) can also be managed in **Admin → Settings**, which stores overrides in `data/panel-settings.json` and may sync selected keys back into `.env` (restart needed for HTTPS / public URL). See [Panel settings](panel-settings.md).
 
@@ -30,9 +39,9 @@ Many operator knobs (public URL, SMTP, registration, quotas, 2FA policy, alerts,
 | `WEB_HOST` | Web bind address (default `0.0.0.0`) |
 | `JAVA_PATH` | Host Java binary (fallback when not using the per-server Java picker) |
 | `DOCKER_IMAGE` | Default `eclipse-temurin:25-jre-jammy` |
-| `DOCKER_LOG_MAX_SIZE` | Docker `json-file` max-size for game containers (default `10m`; daemon/`data/daemon.env`) |
+| `DOCKER_LOG_MAX_SIZE` | Docker `json-file` max-size for game containers (default `10m`; daemon env file) |
 | `DOCKER_LOG_MAX_FILE` | Docker `json-file` max-file count (default `3`) |
-| `DOCKER_NETWORK_MODE` | `shared` (default: flat `guartrix` bridge; single-tenant) or `per_server` (isolated `guartrix-s-<id>` per server — recommended multi-tenant; MySQL still on shared bridge). Set on daemon / `data/daemon.env` |
+| `DOCKER_NETWORK_MODE` | `shared` (default: flat `guartrix` bridge; single-tenant) or `per_server` (isolated `guartrix-s-<id>` per server — recommended multi-tenant; MySQL still on shared bridge). Set on the daemon env file (local `data/daemon.env` or remote `/var/lib/guartrix/daemon.env`) |
 | `MANAGE_FIREWALL` | Open/close game ports via ufw when true |
 
 ## Database (panel)
@@ -42,7 +51,9 @@ Many operator knobs (public URL, SMTP, registration, quotas, 2FA policy, alerts,
 | `DATABASE_URL` | Prisma MySQL URL (optional pool params: `connection_limit`, `pool_timeout`, `connect_timeout`) |
 | `MYSQL_HOST` / `MYSQL_PORT` / `MYSQL_DATABASE` / `MYSQL_USER` / `MYSQL_PASSWORD` | Same connection, split fields (installer / docs) |
 
-Installer: `--mysql-docker` (default) or `--mysql-external` / `--database-url`. Game-server MySQL is separate (`data/daemon.env`, Docker `guartrix-mysql`).
+Installer: `--mysql-docker` (default) or `--mysql-external` / `--database-url`.
+
+**Full-panel Docker default:** one Docker container `guartrix-mysql` on `127.0.0.1:3306` holds the **panel** database *and* is reused by the local daemon for **per-server game DBs** (same volume `$INSTALL_DIR/data/mysql`). Recreating/wiping that volume deletes both. When the panel uses **external** MySQL already bound on localhost `:3306`, the installer sets game MySQL Docker to host port **`3307`** (`MYSQL_PORT` in `data/daemon.env`) to avoid the clash.
 
 ## Registration & mail
 
@@ -89,7 +100,7 @@ The license **server** is hosted separately by Guartrix (default `https://licens
 | `DAEMON_PUBLIC_HOST` | Hostname prod-web routes to the local daemon (e.g. `node1.guartrix.com`). Empty = disabled |
 | `DAEMON_PROXY_HOST` / `DAEMON_PROXY_PORT` | Upstream for that host (default `127.0.0.1:$DAEMON_PORT`) |
 | `DAEMON_TLS_CERT_FILE` / `DAEMON_TLS_KEY_FILE` | Optional SNI cert for the daemon host (default Let’s Encrypt `node1.$PUBLIC_HOST`) |
-| `DAEMON_TOKEN` | Optional override; else `data/daemon.env` (HMAC secret + legacy bearer) |
+| `DAEMON_TOKEN` | Optional override; else the daemon env file (HMAC secret + legacy bearer) |
 | `DAEMON_NODE_ID` | Panel node id (written into `daemon.env`; JWT `nid` claim) |
 | `DAEMON_JWT_TTL` | Access JWT lifetime seconds (default `900`) |
 | `DAEMON_JWT_WS_TTL` | WebSocket JWT lifetime seconds (default `3600`) |

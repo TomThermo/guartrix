@@ -28,11 +28,14 @@ Addon management is driven by:
 
 What the panel can do:
 
-- browse supported content sources
+- browse supported content sources (Modrinth; optional **CurseForge** when `CURSEFORGE_API_KEY` is set)
 - install supported plugins or mods
 - check for updates
 - remove or update installed entries
+- recommended stacks (Essentials, moderation, BlueMap, …) on Paper/Purpur
 - surface recommended helpers such as Geyser/Floodgate in compatible cases
+
+Set `CURSEFORGE_API_KEY` in `.env` for CurseForge modpack search (see [env-reference](env-reference.md)).
 
 ## Modpacks
 
@@ -58,9 +61,10 @@ Relevant anchor:
 
 Adjacent content-management features include:
 
-- resource-pack settings via `routes/resource-pack.ts`
-- world seed/map helpers via `servers/world-seed.ts` and shared seed URL helpers
-- proxy/gameplay convenience toggles such as Geyser for cross-platform access
+- resource-pack settings + upload via `routes/resource-pack.ts` (clients need reachable `PUBLIC_BASE_URL`)
+- world reset / zip upload under Server Properties → World ([server management](server-management.md#world-tools-and-resource-packs))
+- world seed/map helpers via `servers/world-seed.ts` and World Map / BlueMap ([networking](networking-and-allocations.md#bluemap-live-web-map))
+- proxy/gameplay convenience toggles such as Geyser and Velocity/Bungee helpers ([networking](networking-and-allocations.md#geyser-bluemap-and-proxy-helpers))
 
 ## Cross-family changes
 

@@ -97,6 +97,20 @@ POST /api/servers/:id/tasks/:taskId/run
 
 Needs `schedule.*`. Details: [Schedules](schedules.md).
 
+### Databases, backups, world, allocations
+
+These routes accept the same Bearer key when the key’s scopes allow them (see OpenAPI for full schemas):
+
+| Area | Examples (permission-gated) |
+|------|------------------------------|
+| Databases | `GET/POST/DELETE /api/servers/:id/databases…` |
+| Backups | list / create / restore / delete under `/api/servers/:id/backups…` |
+| World | reset dimensions / upload zip under world tools routes |
+| Allocations | list / assign extras under `/api/servers/:id/allocations…` |
+| Resource pack | upload / settings when `settings.*` allows |
+
+Prefer OpenAPI + the panel Network tab for allocation edge cases (UDP companions, Geyser). Machine-to-machine admin automation uses **Application** keys (`gta_…`) — see [Application API](application-api.md).
+
 ## Example (curl)
 
 ```bash

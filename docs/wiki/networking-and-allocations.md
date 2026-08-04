@@ -46,17 +46,51 @@ Important rules:
 - extra allocations can carry protocol information
 - some helper flows can attach a UDP companion on the same numeric port
 
-## Geyser and proxy helpers
+## Geyser, BlueMap, and proxy helpers
 
-The Network tab is also where operator convenience features appear for networking-sensitive stacks:
+### Geyser / Floodgate (Bedrock)
 
-- one-click Geyser/Floodgate helper flows
-- UDP companion allocation for Bedrock/query style traffic
-- daemon/SFTP hostname information for node access
+On **Paper / Purpur**, the **Network** tab offers **Install Geyser**:
+
+1. Installs Geyser + Floodgate from Modrinth.
+2. Creates a **UDP companion** allocation on the same numeric port as the primary TCP game port (if missing).
+3. Restart the server so Docker republishes UDP.
+
+Bedrock clients join `host:UDP_port` (same number as Java TCP). Firewall must allow that UDP port on the node.
+
+Code: `apps/api/src/servers/geyser.ts`, Network / Allocations UI.
+
+### BlueMap (live web map)
+
+On **Paper / Purpur**, **World Map** (`?tab=seedmap`) can **Install BlueMap**:
+
+1. Install the plugin (or use Recommended stacks under Plugin Management).
+2. Assign an extra TCP allocation for port **8100** (or your BlueMap listen port).
+3. Save the public map URL in the World Map card; restart so Docker publishes 8100.
+
+The seed preview itself uses [mcseedmap.net](https://mcseedmap.net/); BlueMap is the in-world explored map.
+
+### Velocity / BungeeCord helpers
+
+**Server Properties → Access** (Paper/Purpur only) — one-click backend prep for an *external* proxy:
+
+| Helper | Effect |
+|--------|--------|
+| Velocity | `online-mode=false`, modern forwarding + secret, `prevent-proxy-connections=false` |
+| BungeeCord | `online-mode=false`, Bungee forwarding flag |
+| Clear | Restores online-mode / clears proxy flags |
+
+**Restart required.** Guartrix does **not** host a Velocity/Bungee process — these helpers only configure the backend Minecraft server. See `apps/api/src/servers/proxy-setup.ts`.
+
+Also on Network:
+
+- UDP companion allocation for query / Geyser-style traffic
+- daemon / SFTP hostname hints for the node
 
 Some of this logic is split across:
 
 - `apps/api/src/servers/geyser.ts`
+- `apps/api/src/servers/proxy-setup.ts`
 - `apps/api/src/nodes/cloudflare-dns.ts`
 - `apps/api/src/nodes/firewall.ts`
 
@@ -97,3 +131,5 @@ This matters for multi-tenant isolation and is documented further in:
 - [Install nodes](install-nodes.md)
 - [Move between nodes](node-transfer.md)
 - [Node-agent internals](node-agent-internals.md)
+- [Databases](databases.md)
+- [Panel guide](panel-guide.md)

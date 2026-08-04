@@ -106,6 +106,7 @@ Set `GUARTRIX_NONINTERACTIVE=1` to never prompt.
 ### Panel MySQL
 
 **Docker (default)** — installer starts `guartrix-mysql` on `127.0.0.1:3306` and writes `DATABASE_URL`.
+On a **full** install (panel + local daemon) this same container/volume is reused for **per-server game databases**. Recreating the volume (`data/mysql`) wipes panel **and** game DBs.
 On re-install it reuses the password from the existing container (MySQL only applies `MYSQL_PASSWORD` on first volume init). If credentials no longer match, it recreates the container + data volume.
 
 ```bash
@@ -118,6 +119,10 @@ sudo bash /tmp/guartrix-install.sh --http --ip YOUR.PUBLIC.IP --mysql-docker
 sudo bash /tmp/guartrix-install.sh --mysql-external --mysql-host 10.0.0.5 \
   --mysql-user guartrix --mysql-password '…' --mysql-database guartrix_panel
 ```
+
+If external panel MySQL is already on **localhost:3306**, the installer publishes game MySQL Docker on host port **`3307`** so the two do not clash (`MYSQL_PORT` in `data/daemon.env`).
+
+Game DB UI: [Databases](databases.md).
 
 ### Optional Redis (multi-API HA)
 
@@ -137,7 +142,25 @@ sudo bash /tmp/guartrix-install.sh --redis-external --redis-url 'redis://10.0.0.
 
 See [Scaling](scaling.md) for what Redis covers (sessions, rate limits, transfers, scheduler lock, event bus).
 
-### Flags / automation notes
+### Flags / automation
+
+Passing any flag skips the full wizard; unset values may still be prompted when a TTY is available.
+Set `GUARTRIX_NONINTERACTIVE=1` to never prompt.
+
+| Flag | Purpose |
+|------|---------|
+| `--role full\|panel\|daemon` | Install role (`--full` / `--panel-only` / `--daemon-only` / `--no-daemon` aliases) |
+| `--domain HOST` · `--ip ADDR` | Public hostname / IPv4 |
+| `--https` · `--http` / `--no-https` | TLS mode |
+| `--mysql-docker` · `--mysql-external` · `--mysql-host/port/database/user/password` · `--database-url` | Panel DB |
+| `--redis-docker` · `--redis-external` · `--redis-url` · `--redis-skip` / `--no-redis` | Optional Redis |
+| `--admin-password` · `--license-key` | First admin + license (password is written as given; enforce strength yourself) |
+| `--token` · `--node-id` · `--panel` · `--daemon-port` | Daemon-only role |
+| `--dir` · `--repo` · `--branch` · `--skip-start` | Install location, git source, skip process start |
+| `-h` / `--help` | Full help |
+
+Env overrides (non-interactive): `GUARTRIX_NONINTERACTIVE`, `GUARTRIX_HTTPS`, `GUARTRIX_PUBLIC_IP`, `GUARTRIX_DOMAIN`, `GUARTRIX_ADMIN_PASSWORD`, `GUARTRIX_LICENSE_KEY`, `GUARTRIX_INSTALL_DIR`, `GUARTRIX_REPO_URL`, `GUARTRIX_BRANCH`, `GUARTRIX_INSTALL_ROLE`, `GUARTRIX_MYSQL_*`, `GUARTRIX_REDIS_*`, `GUARTRIX_DAEMON_*`.
+
 ```bash
 sudo bash /tmp/guartrix-install.sh --http --ip YOUR.PUBLIC.IP \
   --mysql-external \
@@ -159,14 +182,27 @@ export GUARTRIX_LICENSE_KEY='GTRX-…'   # optional
 sudo bash /tmp/guartrix-install.sh
 ```
 
+### Firewall (UFW)
+
+When UFW is available, the installer opens:
+
+| Port | When |
+|------|------|
+| `22/tcp` (or OpenSSH profile) | Always |
+| `80/tcp` | Always |
+| `443/tcp` | HTTPS installs |
+| `2022/tcp` · `25565:25600/tcp` | Local daemon present (`full` role; not panel-only) |
+
 ### TLS (HTTPS mode only)
 
-Place a Cloudflare Origin certificate:
+The installer **does not** run Certbot / Let’s Encrypt for the panel. Place a certificate you already have (typically a **Cloudflare Origin** cert):
 
 - `/opt/guartrix/cert/<your-domain>.crt`
 - `/opt/guartrix/cert/<your-domain>.key`
 
-Or set `TLS_CERT_FILE` / `TLS_KEY_FILE` in `.env`. Without a trusted cert, the installer may fall back to self-signed (browsers will warn).
+Or set `TLS_CERT_FILE` / `TLS_KEY_FILE` in `.env`. Without a trusted cert, **prod-web** may fall back to a self-signed cert on start (browsers will warn).
+
+Separate helpers (not part of the panel wizard): `scripts/install-daemon-le-cert.sh`, `scripts/install-download-le-cert.sh` (`LETSENCRYPT_EMAIL`).
 
 ## Existing git checkout
 
@@ -192,13 +228,16 @@ Requirements: Node **22+**, Docker with passwordless `sudo docker`, image `eclip
 
 1. Open the URL printed by the installer (`http://IP` or `https://domain`) and sign in as `admin`.  
 2. Activate your license under **Admin → License** (if `LICENSE_KEY` was not passed). Until then the [free tier](licensing.md#free-tier-no-valid-license) applies: 1 node, 1 server, 10 GB disk.  
-3. Confirm Status / System shows the local node **ONLINE**.  
+3. Confirm **Admin → Status** shows the local node **ONLINE** ([Status overview](statusline.md)).  
 4. Optionally harden the host: `bash scripts/install-host-hardening.sh`  
 5. Add remote capacity: [Install nodes](install-nodes.md)
+
+Systemd units (when enabled): `guartrix-api`, `guartrix-web`, `guartrix-daemon` — see [Operations](operations.md).
 
 ## Related
 
 - [Environment variables](env-reference.md)  
 - [Operations](operations.md)  
 - [Licensing](licensing.md)
+- [Databases](databases.md)
 - [Build and release internals](build-and-release-internals.md)

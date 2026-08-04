@@ -146,7 +146,7 @@ normalize_https_flag() {
 
 # Interactive prompts. Prefer the real stdin/stdout TTY (when started via
 # `script` or `bash /tmp/gp.sh`). Fall back to /dev/tty for odd redirects.
-INSTALLER_VERSION="1.0.22"
+INSTALLER_VERSION="1.0.92"
 
 can_prompt() {
   [[ -t 0 && -t 1 ]] || [[ -r /dev/tty && -w /dev/tty ]]

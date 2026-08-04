@@ -169,7 +169,7 @@ Open a server from the dashboard. Sidebar groups:
 | Group | Tabs |
 |-------|------|
 | Manage service | Console, File Manager, **SFTP**, Databases, **Network**, Backups, Subusers |
-| Game | Server Properties, **World Map**, **Engine** (Paper/Purpur), **Plugin Management**, **Modpacks** (Fabric/Forge…), Whitelist, Online Players, Bans |
+| Game | Server Properties, **World Map**, **Engine** (Paper/Purpur), **Plugin Management**, **Modpacks** (Fabric/Forge…), Whitelist, Online Players, Bans, **Bots** (admin) |
 | Management | Schedules, **Activity Log**, Log Files, Resources |
 
 This page is the visual overview. Use these deeper references for the full behavior:
@@ -367,7 +367,8 @@ Live meters plus the disk usage breakdown for the instance (World / mods·plugin
 ### Bots (admin)
 
 Admin-only tab to attach / control in-game bots for this server. Bots run in a
-forked API worker process (not inside Fastify); require `online-mode=false`.
+forked API worker process by default (`BOT_WORKER`); require `online-mode=false`.
+Full guide: [Bots](bots.md).
 
 ![Bots](assets/38-server-bots.png)
 

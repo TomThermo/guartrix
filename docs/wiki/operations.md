@@ -2,11 +2,22 @@
 
 ## Preferred restart
 
+On customer installs with **systemd** (`guartrix-api`, `guartrix-web`, `guartrix-daemon`):
+
+```bash
+sudo systemctl restart guartrix-api guartrix-web guartrix-daemon
+sudo systemctl status guartrix-api guartrix-web guartrix-daemon
+```
+
+On a **source/operator** checkout (or when units are not used), prefer the process manager:
+
 ```bash
 npm run build              # after code changes (readable tsc)
 # or: npm run build:release   # minified Node bundles (see release-builds.md)
 bash scripts/start.sh      # stop old procs → health-check → watchdog
 ```
+
+Do **not** mix: restarting only the API with `systemctl` while `scripts/start.sh`’s watchdog is also running can fight over PIDs. Pick one supervision model per host.
 
 Alternatives: `npm run prod` or `npm run build && npm run start:prod`.
 
@@ -16,6 +27,7 @@ Operational internals reference:
 - [Build and release internals](build-and-release-internals.md)
 - [Daemon API](daemon-api.md)
 - [Node-agent internals](node-agent-internals.md)
+- [Status overview](statusline.md)
 
 ## Ports
 
@@ -24,9 +36,10 @@ Operational internals reference:
 | Web HTTP | `0.0.0.0:80` | Redirects to HTTPS when TLS on |
 | Web HTTPS | `0.0.0.0:443` | Origin cert in `cert/` or `TLS_*` |
 | API | `127.0.0.1:3001` | Not public — proxied by web |
-| Daemon (local) | `127.0.0.1:8081` | Token in `data/daemon.env` |
+| Daemon (local) | `127.0.0.1:8081` | Token in `$INSTALL_DIR/data/daemon.env` |
+| Daemon (remote) | `0.0.0.0:8081` | Token in `/var/lib/guartrix/daemon.env` |
 | SFTP | `0.0.0.0:2022` | Per node |
-| MySQL | `127.0.0.1:3306` | Panel (+ game DB container on nodes) |
+| MySQL | `127.0.0.1:3306` (or `3307`) | Full Docker install: panel + game DBs share `guartrix-mysql`; game port becomes `3307` when panel MySQL is already on localhost `:3306` |
 
 Binding ports &lt; 1024 needs passwordless sudo, or set `WEB_PORT=8080`.
 
@@ -93,10 +106,11 @@ bash build/start.sh
 | `data/backups/` | Server archives + panel SQL dumps + license tarballs |
 | `data/licenses/` | `licenses.json`, channel, signing PEMs |
 | `data/sessions/` | File session store |
-| `data/daemon.env` | Daemon token, MySQL root, etc. |
+| `data/daemon.env` | Local daemon token, MySQL root, etc. (`/opt/guartrix/data/daemon.env`) |
+| `/var/lib/guartrix/daemon.env` | Remote daemon-only node config (systemd `EnvironmentFile`) |
 | `data/mail-outbox/` | Outbound mail when SMTP unset |
 | `data/logs/` | daemon / api / web / monitor |
-| `data/mysql/` | MySQL volume if used on host |
+| `data/mysql/` | Docker MySQL volume (panel + game DBs on full Docker installs) |
 | `cert/` | TLS cert + key |
 | `.env` | Secrets |
 

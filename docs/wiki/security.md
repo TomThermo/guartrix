@@ -73,8 +73,8 @@ Rotate these in order when a secret may have leaked:
 
 1. **`SESSION_SECRET`** — generate a new long random value in `.env`.  
    This secret keys the encrypted node-token vault (`data/node-tokens.json`), sealed TOTP secrets, and sealed game MySQL passwords (`Database.password`). After changing it, regenerate daemon tokens for every node (System → node → reinstall / rotate token) and update remote `daemon.env`. Existing sealed TOTP / DB passwords become unreadable until re-enrolled or passwords are rotated — prefer rotating game DB passwords from the panel after a secret change. Restart with `bash scripts/start.sh`.
-2. **Daemon bearer (`DAEMON_TOKEN` / per-node tokens)** — rotate via the panel (new token → update `data/daemon.env` or remote install). Old hash on `Node.tokenHash` is replaced; restart daemon.
-3. **MySQL passwords** — panel DB (`MYSQL_PASSWORD` / `DATABASE_URL`) and game MySQL root in `data/daemon.env`. Update env, restart, and recreate game DB users if needed. Game-server DB user passwords in the panel are stored sealed; recreate those databases (or change passwords on the node MySQL) after a `SESSION_SECRET` change.
+2. **Daemon bearer (`DAEMON_TOKEN` / per-node tokens)** — rotate via the panel (new token → update the daemon env file: local `$INSTALL_DIR/data/daemon.env`, remote `/var/lib/guartrix/daemon.env`). Old hash on `Node.tokenHash` is replaced; restart daemon.
+3. **MySQL passwords** — panel DB (`MYSQL_PASSWORD` / `DATABASE_URL`) and game MySQL root in the daemon env file. On a **full Docker** install these often share one `guartrix-mysql` volume — rotating/recreating carefully. Update env, restart, and recreate game DB users if needed. Game-server DB user passwords in the panel are stored sealed; recreate those databases (or change passwords on the node MySQL) after a `SESSION_SECRET` change.
 4. **Application / Client API keys** — revoke compromised `gta_` / `gt_` keys in Admin → Billing / Security; issue new ones.
 5. **Mollie / Cloudflare / SMTP** — rotate at the provider console, then update `.env`.
 6. **TLS private key** — replace `cert/*.key` (or `TLS_KEY_FILE`) and reload web.
@@ -98,7 +98,7 @@ On game nodes, **`DOCKER_NETWORK_MODE=shared`** (default) puts every game contai
 one flat `guartrix` bridge — fine for single-tenant hosts or when all players are trusted.
 
 For **multi-tenant** nodes or **untrusted players**, set **`DOCKER_NETWORK_MODE=per_server`**
-in `data/daemon.env` so each server gets its own `guartrix-s-<id>` network. Game containers
+in the daemon env file (`DOCKER_NETWORK_MODE=per_server`) so each server gets its own `guartrix-s-<id>` network. Game containers
 cannot reach sibling servers on that bridge. MySQL still runs on the shared bridge; the
 daemon attaches each game container to **both** networks so `guartrix-mysql` DNS keeps
 working. Restart the daemon and recreate containers after changing the mode. Details:
