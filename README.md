@@ -208,4 +208,4 @@ Guide: [Development](docs/wiki/development.md)
 
 ## License
 
-Copyright © 2026 Guartrix. All rights reserved.
+Licensed under the MIT License. See [`LICENSE`](LICENSE).
