@@ -319,19 +319,71 @@ export function AddonDetailModal({
                 <i className="fa-solid fa-heart me-1" />
                 {formatCount(project.follows)}
               </Badge>
-              {project.projectType !== "modpack" && (
-                <>
-                  <Badge bg="secondary">
-                    {t("addons.clientSide", { side: project.clientSide })}
-                  </Badge>
-                  <Badge bg="secondary">
-                    {t("addons.serverSide", { side: project.serverSide })}
-                  </Badge>
-                </>
-              )}
               {project.license && (
                 <Badge bg="secondary">License: {project.license}</Badge>
               )}
+            </div>
+
+            <div className="addon-environments mb-3">
+              <div className="small text-secondary fw-semibold mb-2">
+                {t("addons.supportedEnvironments")}
+              </div>
+              <Stack direction="horizontal" gap={2} className="flex-wrap">
+                {(["client", "server", "both"] as const).map((env) => {
+                  const client = (project.clientSide || "").toLowerCase();
+                  const server = (project.serverSide || "").toLowerCase();
+                  const clientOk =
+                    client === "required" || client === "optional";
+                  const serverOk =
+                    server === "required" || server === "optional";
+                  const active =
+                    env === "client"
+                      ? clientOk && !serverOk
+                      : env === "server"
+                        ? serverOk && !clientOk
+                        : clientOk && serverOk;
+                  const label =
+                    env === "client"
+                      ? t("addons.envClient")
+                      : env === "server"
+                        ? t("addons.envServer")
+                        : t("addons.envBoth");
+                  const icon =
+                    env === "client"
+                      ? "fa-desktop"
+                      : env === "server"
+                        ? "fa-server"
+                        : "fa-globe";
+                  return (
+                    <span
+                      key={env}
+                      className={`addon-env-chip${active ? " is-active" : ""}`}
+                      title={
+                        env === "client"
+                          ? t("addons.envSideDetail", {
+                              side: t("addons.envClient"),
+                              value: project.clientSide,
+                            })
+                          : env === "server"
+                            ? t("addons.envSideDetail", {
+                                side: t("addons.envServer"),
+                                value: project.serverSide,
+                              })
+                            : t("addons.envBothDetail", {
+                                client: project.clientSide,
+                                server: project.serverSide,
+                              })
+                      }
+                    >
+                      <i className={`fa-solid ${icon}`} aria-hidden />
+                      {label}
+                      {active && (
+                        <i className="fa-solid fa-check addon-env-check" aria-hidden />
+                      )}
+                    </span>
+                  );
+                })}
+              </Stack>
             </div>
 
             {project.authors.length > 0 && (

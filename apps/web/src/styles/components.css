@@ -664,6 +664,43 @@
   border-color: var(--bh-accent, var(--bs-primary));
 }
 
+.addon-environments {
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--bh-border);
+  border-radius: 0.65rem;
+  background: var(--bh-bg-raised);
+}
+
+.addon-env-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--bh-border);
+  background: var(--bh-bg);
+  color: var(--bh-muted, var(--bs-secondary-color));
+  font-size: 0.82rem;
+  font-weight: 600;
+  opacity: 0.55;
+}
+
+.addon-env-chip i {
+  font-size: 0.78rem;
+}
+
+.addon-env-chip.is-active {
+  opacity: 1;
+  color: var(--bh-text);
+  border-color: var(--bh-accent, var(--bs-primary));
+  background: color-mix(in srgb, var(--bh-accent, var(--bs-primary)) 14%, transparent);
+}
+
+.addon-env-check {
+  color: var(--bh-accent, var(--bs-primary));
+  margin-left: 0.1rem;
+}
+
 .addon-markdown {
   font-size: 0.92rem;
   line-height: 1.55;

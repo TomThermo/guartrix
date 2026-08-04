@@ -7,6 +7,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.58] — 2026-08-04
+
+- Detail modal: Supported environments (Client-side / Server-side / Client and server)
+
 ## [1.0.57] — 2026-08-04
 
 - Fix addon/modpack detail tabs resetting on parent re-render (callback deps)
