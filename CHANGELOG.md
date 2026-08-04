@@ -7,6 +7,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.67] — 2026-08-04
+
+- Improvement cut: peel daemon routes, bot-movement, addons install/sync, FileManager toolbar, AddonPanel sections, DashboardServerRow, process/sftp helpers, license validate/quota; Mollie sync tests; shared world-seed URLs; schedule migrate boot-only; SFTP legacy deprecation warn; biome noExplicitAny warn.
+
 ## [1.0.66] — 2026-08-04
 
 - Admin License + license console: list every feature chip in green when all are enabled (no “All enabled” summary).

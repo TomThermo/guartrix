@@ -21,6 +21,8 @@ import { api } from "../api";
 import { useI18n } from "../i18n/react";
 import { formatBytes, formatWhen } from "../utils";
 import { ConfirmModal } from "./ConfirmModal";
+import { EmptyState } from "./EmptyState";
+import { TabLoading } from "./TabLoading";
 
 interface Props {
   serverId: string;
@@ -333,12 +335,7 @@ export function BackupPanel({
   }
 
   if (loading || !schedule) {
-    return (
-      <div className="text-center py-4 text-secondary">
-        <Spinner animation="border" size="sm" className="me-2" />
-        {t("common.loading")}…
-      </div>
-    );
+    return <TabLoading py="md" />;
   }
 
   return (
@@ -529,7 +526,9 @@ export function BackupPanel({
       </h3>
       <ListGroup>
         {backups.length === 0 && (
-          <ListGroup.Item className="text-secondary">{t("backups.empty")}</ListGroup.Item>
+          <ListGroup.Item>
+            <EmptyState message={t("backups.empty")} />
+          </ListGroup.Item>
         )}
         {backups.map((b) => {
           const badge = triggerBadge(b.trigger, t);

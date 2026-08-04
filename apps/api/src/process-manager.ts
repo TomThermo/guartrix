@@ -1,5 +1,6 @@
 import { EventEmitter } from "node:events";
 import type { ServerStats, ServerStatus, ServerType } from "@msm/shared";
+import type { DaemonServerConfig } from "@msm/node-agent";
 import {
   daemonChown,
   daemonCommand,
@@ -12,25 +13,7 @@ import {
 import { prisma } from "./db.js";
 import { serverDir } from "./config.js";
 
-export interface DaemonServerConfig {
-  id: string;
-  type: ServerType;
-  mcVersion: string;
-  port: number;
-  memoryMb: number;
-  autoRestart: boolean;
-  javaVersion?: string | null;
-  startupCommand?: string | null;
-  serverJar?: string | null;
-  diskMb?: number;
-  cpuLimit?: number;
-  ports?: Array<{ port: number; protocol: "tcp" | "udp" }>;
-  extraMounts?: Array<{
-    host: string;
-    container: string;
-    readOnly?: boolean;
-  }> | null;
-}
+export type { DaemonServerConfig };
 
 /** Chown server data dir via daemon (accepts serverId or absolute dir ending with id). */
 export async function fixDataOwnership(dirOrServerId: string): Promise<void> {

@@ -1,20 +1,15 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
-import type { DiskUsageBreakdown, FileEntry } from "@msm/shared";
-import {
-  Button,
-  Col,
-  Form,
-  InputGroup,
-  Row,
-} from "react-bootstrap";
+import type { FileEntry } from "@msm/shared";
+import { Col, Row } from "react-bootstrap";
 import { api } from "../api";
 import { useI18n } from "../i18n/react";
-import { useVisibleInterval } from "../hooks/useVisibleInterval";
 import { ConfirmModal } from "./ConfirmModal";
 import { DiskUsageCard } from "./DiskUsageCard";
 import { FileBrowserTable } from "./file-manager/FileBrowserTable";
 import { FileEditorPane } from "./file-manager/FileEditorPane";
+import { FileManagerToolbar } from "./file-manager/FileManagerToolbar";
 import { joinPath, parentPath } from "./file-manager/paths";
+import { useFileDiskPoll } from "./file-manager/useFileDiskPoll";
 import { PromptModal } from "./PromptModal";
 
 type Dialog =
@@ -74,7 +69,7 @@ export function FileManager({
   const [editDirty, setEditDirty] = useState(false);
   const [newFolder, setNewFolder] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [disk, setDisk] = useState<DiskUsageBreakdown | null>(null);
+  const disk = useFileDiskPoll(serverId, active);
   const [dialog, setDialog] = useState<Dialog>(null);
   const [dialogBusy, setDialogBusy] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -99,17 +94,6 @@ export function FileManager({
       setDialogBusy(false);
     }
   }
-
-  const loadDisk = useCallback(async () => {
-    try {
-      const next = await api.getDiskUsage(serverId);
-      setDisk(next);
-    } catch {
-      // non-fatal — file list still works
-    }
-  }, [serverId]);
-
-  useVisibleInterval(() => void loadDisk(), 30_000, active);
 
   const load = useCallback(
     async (path: string) => {
@@ -437,122 +421,24 @@ export function FileManager({
       {disk && (
         <DiskUsageCard disk={disk} limitMb={diskMb} compact />
       )}
-      <div className="file-toolbar border rounded bg-body-tertiary p-2 mb-3">
-        <div className="d-flex flex-wrap align-items-center gap-2">
-          <Button
-            size="sm"
-            variant="outline-secondary"
-            disabled={busy || cwd === "." || !cwd}
-            title="Up one folder"
-            onClick={() => void goTo(parentPath(cwd))}
-          >
-            <i className="fa-solid fa-arrow-up" />
-          </Button>
-          <Button
-            size="sm"
-            variant="outline-secondary"
-            disabled={busy}
-            title="Root"
-            onClick={() => void goTo(".")}
-          >
-            <i className="fa-solid fa-house" />
-          </Button>
-
-          <div className="file-path flex-grow-1 min-w-0">
-            <button
-              type="button"
-              className="file-path-seg"
-              disabled={busy}
-              onClick={() => void goTo(".")}
-            >
-              /
-            </button>
-            {crumbs.map((part, i) => {
-              const path = crumbs.slice(0, i + 1).join("/");
-              const last = i === crumbs.length - 1;
-              return (
-                <span key={path} className="file-path-wrap">
-                  <span className="file-path-sep text-secondary">/</span>
-                  {last ? (
-                    <span className="file-path-current">{part}</span>
-                  ) : (
-                    <button
-                      type="button"
-                      className="file-path-seg"
-                      disabled={busy}
-                      onClick={() => void goTo(path)}
-                    >
-                      {part}
-                    </button>
-                  )}
-                </span>
-              );
-            })}
-          </div>
-
-          {canArchive && someSelected && (
-            <>
-              <Button
-                size="sm"
-                variant="outline-secondary"
-                disabled={busy}
-                title="Zip selected into this folder"
-                onClick={() => void onCompressSelected()}
-              >
-                <i className="fa-solid fa-file-zipper me-1" />
-                Zip
-              </Button>
-              {canDownload && (
-                <Button
-                  size="sm"
-                  variant="outline-secondary"
-                  disabled={busy}
-                  title="Zip and download selected"
-                  onClick={() => void onDownloadSelectedArchive()}
-                >
-                  <i className="fa-solid fa-download me-1" />
-                  Download zip
-                </Button>
-              )}
-            </>
-          )}
-
-          {canCreate && (
-            <Form onSubmit={(e) => void onMkdir(e)} className="file-mkdir">
-              <InputGroup size="sm">
-                <Form.Control
-                  placeholder={t("files.newFolder")}
-                  value={newFolder}
-                  onChange={(e) => setNewFolder(e.target.value)}
-                  disabled={busy}
-                />
-                <Button type="submit" variant="outline-secondary" disabled={busy || !newFolder.trim()}>
-                  <i className="fa-solid fa-folder-plus" />
-                </Button>
-              </InputGroup>
-            </Form>
-          )}
-          {canUpload && (
-            <>
-              <Button
-                size="sm"
-                variant="primary"
-                disabled={busy}
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <i className="fa-solid fa-upload me-1" />
-                {t("files.upload")}
-              </Button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                className="file-upload-input"
-                onChange={(e) => void onUpload(e.target.files)}
-              />
-            </>
-          )}
-        </div>
-      </div>
+      <FileManagerToolbar
+        cwd={cwd}
+        crumbs={crumbs}
+        busy={busy}
+        someSelected={someSelected}
+        newFolder={newFolder}
+        fileInputRef={fileInputRef}
+        canCreate={canCreate}
+        canUpload={canUpload}
+        canDownload={canDownload}
+        canArchive={canArchive}
+        onGoTo={(path) => void goTo(path)}
+        onNewFolderChange={setNewFolder}
+        onMkdir={(e) => void onMkdir(e)}
+        onUpload={(files) => void onUpload(files)}
+        onCompressSelected={() => void onCompressSelected()}
+        onDownloadSelectedArchive={() => void onDownloadSelectedArchive()}
+      />
 
       <Row className="g-3">
         <Col lg={editing ? 6 : 12}>

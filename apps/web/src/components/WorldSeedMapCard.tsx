@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import type { McServer } from "@msm/shared";
-import { addonKindFor } from "@msm/shared";
+import {
+  addonKindFor,
+  buildExternalSeedMapUrl,
+  buildSeedMapUrl,
+} from "@msm/shared";
 import {
   Alert,
   Button,
@@ -27,51 +31,6 @@ interface Props {
   canQueryConsole: boolean;
   onNotice: (message: string | null) => void;
   onError: (message: string | null) => void;
-}
-
-/** mcseedmap.net path version: `1.21.4-Java` / `26.2.0-Java`. */
-function mcseedmapVersion(mcVersion: string): string {
-  const m = /^(\d+)\.(\d+)(?:\.(\d+))?/.exec(mcVersion.trim());
-  if (!m) return "1.21.4-Java";
-  const major = Number(m[1]);
-  const minor = Number(m[2]);
-  const patch = m[3] != null ? Number(m[3]) : 0;
-  return `${major}.${minor}.${patch}-Java`;
-}
-
-function mcseedmapUrl(seed: string, mcVersion: string): string {
-  const version = encodeURIComponent(mcseedmapVersion(mcVersion));
-  const seedSeg = encodeURIComponent(seed);
-  return `https://mcseedmap.net/${version}/${seedSeg}`;
-}
-
-function chunkbaseUrl(seed: string, mcVersion: string): string {
-  const m = /^(\d+)\.(\d+)(?:\.(\d+))?/.exec(mcVersion.trim());
-  let platform = "java_1_21";
-  if (m) {
-    const major = Number(m[1]);
-    const minor = Number(m[2]);
-    const patch = m[3] != null ? Number(m[3]) : 0;
-    if (major >= 26) {
-      platform =
-        minor >= 3 ? "java_26_3" : minor >= 2 ? "java_26_2" : "java_26_1";
-    } else if (major === 1 && minor === 21) {
-      if (patch >= 5) platform = "java_1_21_5";
-      else if (patch === 4) platform = "java_1_21_4";
-      else platform = "java_1_21";
-    } else if (major === 1 && minor === 20) platform = "java_1_20";
-    else if (major === 1 && minor >= 7 && minor <= 19) {
-      platform = `java_1_${minor}`;
-    }
-  }
-  const hash = [
-    `seed=${encodeURIComponent(seed)}`,
-    `platform=${encodeURIComponent(platform)}`,
-    "dimension=overworld",
-    "showBiomes=true",
-    "terrain=true",
-  ].join("&");
-  return `https://www.chunkbase.com/apps/seed-map#${hash}`;
 }
 
 export function WorldSeedMapCard({
@@ -132,12 +91,12 @@ export function WorldSeedMapCard({
     (formSeed?.trim() || info?.propertiesSeed || null);
 
   const mapUrl = displaySeed
-    ? mcseedmapUrl(displaySeed, server.mcVersion)
+    ? buildSeedMapUrl(displaySeed, server.mcVersion)
     : null;
   const externalUrl = displaySeed
     ? info?.externalMapUrl && info.seed === displaySeed
       ? info.externalMapUrl
-      : chunkbaseUrl(displaySeed, server.mcVersion)
+      : buildExternalSeedMapUrl(displaySeed, server.mcVersion)
     : null;
 
   async function load(fromConsole: boolean) {

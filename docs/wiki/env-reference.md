@@ -90,7 +90,7 @@ The license **server** is hosted separately by Guartrix (default `https://licens
 | `DAEMON_NODE_ID` | Panel node id (written into `daemon.env`; JWT `nid` claim) |
 | `DAEMON_JWT_TTL` | Access JWT lifetime seconds (default `900`) |
 | `DAEMON_JWT_WS_TTL` | WebSocket JWT lifetime seconds (default `3600`) |
-| `DAEMON_JWT_LEGACY` | `false` (default) = JWT only; set `true` temporarily for old daemons that still send the raw token |
+| `DAEMON_JWT_LEGACY` | `false` (default) = JWT only; `true` temporarily for old daemons (deprecated — logs a warning when used; remove after all nodes use JWT) |
 | `EXTRA_MOUNTS_ALLOW_PREFIX` | Comma-separated host path prefixes allowed for server extra mounts (default `/var/lib/guartrix/shared,/opt/guartrix/shared`) |
 | `SFTP_PORT` / `SFTP_ENABLED` | Embedded SFTP per node |
 | `PANEL_URL` | URL the daemon uses for SFTP password checks |

@@ -18,6 +18,8 @@ tags:
   - name: Client
   - name: Application
   - name: Account
+  - name: Admin
+  - name: Billing
   - name: Health
   - name: Metrics
 components:
@@ -381,6 +383,151 @@ paths:
       responses:
         "200":
           description: Payments
+  /api/billing/mollie-status:
+    get:
+      tags: [Billing]
+      summary: Whether Mollie is configured (and test mode)
+      security: [{ SessionCookie: [] }]
+      responses:
+        "200":
+          description: "{ configured, testMode }"
+  /api/billing/plans:
+    get:
+      tags: [Billing]
+      summary: Enabled plan templates (checkout catalog)
+      security: [{ SessionCookie: [] }]
+      responses:
+        "200":
+          description: "{ plans }"
+  /api/billing/payments:
+    get:
+      tags: [Billing]
+      summary: Own payment history
+      security: [{ SessionCookie: [] }]
+      responses:
+        "200":
+          description: "{ payments }"
+  /api/billing/subscriptions:
+    get:
+      tags: [Billing]
+      summary: Own subscriptions
+      security: [{ SessionCookie: [] }]
+      responses:
+        "200":
+          description: "{ subscriptions }"
+  /api/billing/subscriptions/{id}/cancel:
+    post:
+      tags: [Billing]
+      summary: Cancel a subscription (owner or admin)
+      security: [{ SessionCookie: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: "{ subscription }"
+        "404":
+          description: Subscription not found
+  /api/billing/checkout:
+    post:
+      tags: [Billing]
+      summary: Start a Mollie checkout for a plan
+      security: [{ SessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [planSlug]
+              properties:
+                planSlug: { type: string }
+                redirectUrl: { type: string, format: uri }
+      responses:
+        "201":
+          description: "{ payment, checkoutUrl }"
+        "503":
+          description: Mollie not configured
+  /api/billing/payments/{id}/sync:
+    post:
+      tags: [Billing]
+      summary: Re-sync one payment's status from Mollie (after redirect)
+      security: [{ SessionCookie: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: "{ payment }"
+        "404":
+          description: Payment not found
+  /api/public/billing/mollie:
+    post:
+      tags: [Billing]
+      summary: Mollie webhook (public, CSRF-exempt)
+      responses:
+        "200":
+          description: "{ ok: true } (200 even on internal errors, so Mollie stops retrying)"
+        "503":
+          description: Mollie not configured
+  /api/admin/plans:
+    get:
+      tags: [Admin]
+      summary: All plan templates, including disabled
+      security: [{ SessionCookie: [] }]
+      responses:
+        "200":
+          description: "{ plans }"
+    post:
+      tags: [Admin]
+      summary: Create a plan template
+      security: [{ SessionCookie: [] }]
+      responses:
+        "201":
+          description: "{ plan }"
+        "409":
+          description: Slug already exists
+  /api/admin/plans/{id}:
+    patch:
+      tags: [Admin]
+      summary: Update a plan template
+      security: [{ SessionCookie: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: "{ plan }"
+        "404":
+          description: Plan not found
+    delete:
+      tags: [Admin]
+      summary: Delete a plan template
+      security: [{ SessionCookie: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: "{ ok: true }"
+        "404":
+          description: Plan not found
+  /api/admin/payments:
+    get:
+      tags: [Admin]
+      summary: All payments across users
+      security: [{ SessionCookie: [] }]
+      responses:
+        "200":
+          description: "{ payments }"
   /api/metrics:
     get:
       tags: [Metrics]
@@ -473,6 +620,74 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /api/admin/license:
+    get:
+      tags: [Admin]
+      summary: Admin license state (force-revalidates) + free-tier usage
+      security: [{ SessionCookie: [] }]
+      responses:
+        "200":
+          description: License state + panel usage + license-server URL info
+        "403":
+          description: Admin only
+    put:
+      tags: [Admin]
+      summary: Set / replace the license key
+      security: [{ SessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [key]
+              properties:
+                key: { type: string }
+      responses:
+        "200":
+          description: Updated license state
+        "400":
+          description: Missing key
+    delete:
+      tags: [Admin]
+      summary: Remove the license key — drops to the unlicensed free tier
+      security: [{ SessionCookie: [] }]
+      responses:
+        "200":
+          description: Updated license state
+  /api/admin/license/server:
+    put:
+      tags: [Admin]
+      summary: Override the license server URL (blank clears back to default)
+      security: [{ SessionCookie: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                url: { type: string, nullable: true }
+      responses:
+        "200":
+          description: Updated license state
+        "400":
+          description: Invalid URL
+  /api/admin/license/revalidate:
+    post:
+      tags: [Admin]
+      summary: Force a fresh license-server check now
+      security: [{ SessionCookie: [] }]
+      responses:
+        "200":
+          description: Updated license state
+  /api/admin/license/status:
+    get:
+      tags: [Admin]
+      summary: Cached license status (for the admin nav banner)
+      security: [{ SessionCookie: [] }]
+      responses:
+        "200":
+          description: "{ valid, status, message, expiresAt, code? }"
   /api/servers/stats:
     get:
       tags: [Client]

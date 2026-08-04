@@ -3,16 +3,12 @@ import { EventEmitter } from "node:events";
 import fs from "node:fs";
 import fsp from "node:fs/promises";
 import path from "node:path";
-import net from "node:net";
-import type { ServerStatus, ServerType } from "@msm/shared";
+import type { ServerStatus } from "@msm/shared";
 import {
   assertSafeStartupCommand,
   dockerImageForJava,
-  jvmArgsFromStartupCommand,
   normalizeJavaVersion,
   normalizeServerJar,
-  resolveStartupCommand,
-  startupCommandToArgs,
 } from "@msm/shared";
 import { config, serverDir } from "./config.js";
 import {
@@ -29,7 +25,7 @@ import {
   connectContainerToSharedNetwork,
   resolveGameNetwork,
 } from "./mysql.js";
-import { getDiskUsageCached, invalidateDiskUsage } from "./disk-usage.js";
+import { invalidateDiskUsage } from "./disk-usage.js";
 import { resourceMonitor } from "./resource-monitor.js";
 import {
   writeServerLimits,
@@ -44,119 +40,33 @@ import {
 import { ensureDefaultServerIcon } from "./default-icon.js";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import {
+  stopProcess,
+  killProcess,
+  sendProcessCommand,
+  stopAllProcesses,
+} from "./process-lifecycle.js";
+import {
+  buildDockerRunArgs,
+  checkPortFree,
+  computeDiskUsageMessage,
+  fixDataOwnership,
+  resolveJavaCommand,
+  writeForgeJvmArgsFile,
+} from "./process-start.js";
+import type {
+  DaemonPortPublish,
+  DaemonServerConfig,
+  ManagedProcess,
+} from "./process-types.js";
+
+export type { DaemonPortPublish, DaemonServerConfig } from "./process-types.js";
+export { fixDataOwnership } from "./process-start.js";
 
 const execFileAsync = promisify(execFile);
 
-export interface DaemonPortPublish {
-  port: number;
-  protocol: "tcp" | "udp";
-}
-
-export interface DaemonServerConfig {
-  id: string;
-  type: ServerType;
-  mcVersion: string;
-  port: number;
-  memoryMb: number;
-  autoRestart: boolean;
-  /** Major Java version ("8"|"11"|"17"|"21"|"25"). */
-  javaVersion?: string | null;
-  /** Startup template; null = default. */
-  startupCommand?: string | null;
-  /** Jar filename; null = server.jar. */
-  serverJar?: string | null;
-  /** Disk quota MB (0 = unlimited). */
-  diskMb?: number;
-  /** CPU percent of one core (100 = 1.0); 0 = unlimited. */
-  cpuLimit?: number;
-  /** All host ports to publish (primary + extras). Defaults to primary TCP. */
-  ports?: DaemonPortPublish[];
-  /** Extra host→container binds (shared plugins/worlds). */
-  extraMounts?: Array<{
-    host: string;
-    container: string;
-    readOnly?: boolean;
-  }> | null;
-}
-
-function extraVolumeArgs(
-  mounts:
-    | Array<{ host: string; container: string; readOnly?: boolean }>
-    | null
-    | undefined,
-): string[] {
-  if (!mounts?.length) return [];
-  const args: string[] = [];
-  for (const m of mounts) {
-    const host = m.host?.trim();
-    const container = m.container?.trim();
-    if (!host || !container) continue;
-    if (!host.startsWith("/") || !container.startsWith("/")) continue;
-    if (container === "/data" || container.startsWith("/data/")) continue;
-    if (host.includes("..") || container.includes("..")) continue;
-    args.push("-v", m.readOnly ? `${host}:${container}:ro` : `${host}:${container}`);
-  }
-  return args;
-}
-
-export async function fixDataOwnership(dir: string): Promise<boolean> {
-  const uid = typeof process.getuid === "function" ? process.getuid() : 1000;
-  const gid = typeof process.getgid === "function" ? process.getgid() : 1000;
-  try {
-    await fsp.mkdir(dir, { recursive: true, mode: 0o700 });
-    await execFileAsync("sudo", ["-n", "chown", "-R", `${uid}:${gid}`, dir], {
-      timeout: 30_000,
-    });
-    // Owner-only: no group/other read (panel users access only via API auth)
-    await execFileAsync(
-      "sudo",
-      ["-n", "chmod", "-R", "u+rwX,go-rwx", dir],
-      { timeout: 30_000 },
-    );
-    await execFileAsync("sudo", ["-n", "chmod", "700", dir], {
-      timeout: 10_000,
-    }).catch(() => undefined);
-    return true;
-  } catch {
-    try {
-      await fsp.chmod(dir, 0o700).catch(() => undefined);
-    } catch {
-      // ignore
-    }
-    return false;
-  }
-}
-
-function formatDiskM(bytes: number): string {
-  return `${Math.max(0, Math.round(bytes / (1024 * 1024)))}M`;
-}
-
-async function filesystemSizeBytes(dir: string): Promise<number | null> {
-  try {
-    const { stdout } = await execFileAsync("df", ["-B1", "--output=size", dir], {
-      timeout: 10_000,
-    });
-    const lines = stdout
-      .trim()
-      .split(/\r?\n/)
-      .map((l) => l.trim())
-      .filter(Boolean);
-    const n = Number(lines[lines.length - 1]?.replace(/\D/g, "") || "");
-    return Number.isFinite(n) && n > 0 ? n : null;
-  } catch {
-    return null;
-  }
-}
-
 const MAX_HISTORY = 500;
-const STOP_TIMEOUT_MS = 20_000;
 const CONSOLE_HISTORY_FILE = "guartrix-console-history.json";
-
-interface ManagedProcess {
-  process: ChildProcessWithoutNullStreams;
-  container: string;
-  onlinePlayers: Set<string>;
-}
 
 /**
  * Kill leftover `docker run` / `docker attach` client processes for a
@@ -254,16 +164,22 @@ function loadLatestLogTail(serverId: string): string[] {
 }
 
 class ProcessManager extends EventEmitter {
-  private processes = new Map<string, ManagedProcess>();
+  // Note: `processes` / `intentionalStops` / `restartAttempts` and the
+  // daemonSay/setStatus/persistHistory methods below are intentionally not
+  // `private` — process-lifecycle.ts (stop/kill/sendCommand) needs to read
+  // and mutate them via the LifecycleHost interface. This class remains the
+  // only place that constructs/owns that state; nothing outside this package
+  // touches them.
+  processes = new Map<string, ManagedProcess>();
   /** Survives stop/exit so the console still shows output when the server is offline. */
   private histories = new Map<string, string[]>();
   private persistTimers = new Map<string, ReturnType<typeof setTimeout>>();
   /** Last start config per server — used for auto-restart without a DB. */
   private lastConfigs = new Map<string, DaemonServerConfig>();
-  private restartAttempts = new Map<string, { count: number; at: number }>();
+  restartAttempts = new Map<string, { count: number; at: number }>();
   private statuses = new Map<string, ServerStatus>();
   /** Panel-issued stop/kill — never treat the following exit as a crash. */
-  private intentionalStops = new Set<string>();
+  intentionalStops = new Set<string>();
 
   isRunning(serverId: string): boolean {
     return this.processes.has(serverId);
@@ -309,7 +225,7 @@ class ProcessManager extends EventEmitter {
     );
   }
 
-  private persistHistory(serverId: string): void {
+  persistHistory(serverId: string): void {
     const lines = this.histories.get(serverId);
     if (!lines) return;
     try {
@@ -396,7 +312,7 @@ class ProcessManager extends EventEmitter {
     this.schedulePersistHistory(serverId);
   }
 
-  private setStatus(
+  setStatus(
     serverId: string,
     status: ServerStatus,
     errorMessage?: string | null,
@@ -415,14 +331,7 @@ class ProcessManager extends EventEmitter {
   }
 
   async isPortFree(port: number): Promise<boolean> {
-    return new Promise((resolve) => {
-      const server = net.createServer();
-      server.once("error", () => resolve(false));
-      server.once("listening", () => {
-        server.close(() => resolve(true));
-      });
-      server.listen(port, "0.0.0.0");
-    });
+    return checkPortFree(port);
   }
 
   private formatDaemonStamp(at = new Date()): string {
@@ -446,7 +355,7 @@ class ProcessManager extends EventEmitter {
     this.emit("output", serverId, line, stream);
   }
 
-  private daemonSay(serverId: string, message: string): void {
+  daemonSay(serverId: string, message: string): void {
     if (!this.histories.has(serverId)) {
       this.histories.set(serverId, loadPersistedConsoleHistory(serverId));
     }
@@ -458,19 +367,8 @@ class ProcessManager extends EventEmitter {
 
   private async emitDiskUsage(serverId: string): Promise<void> {
     this.daemonSay(serverId, "Checking size of server data directory...");
-    try {
-      const usage = await getDiskUsageCached(serverId);
-      const limit =
-        (await filesystemSizeBytes(serverDir(serverId))) ??
-        80 * 1024 * 1024 * 1024;
-      this.daemonSay(
-        serverId,
-        `Disk Usage: ${formatDiskM(usage.totalBytes)} / ${formatDiskM(limit)}`,
-      );
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      this.daemonSay(serverId, `Disk Usage: unavailable (${message})`);
-    }
+    const message = await computeDiskUsageMessage(serverId, serverDir(serverId));
+    this.daemonSay(serverId, message);
   }
 
   private async emitStartupBanner(
@@ -812,53 +710,16 @@ class ProcessManager extends EventEmitter {
     const gid = typeof process.getgid === "function" ? process.getgid() : 1000;
 
     if (isForgeRuntime) {
-      const resolvedJvm = resolveStartupCommand(
-        server.startupCommand?.trim()
-          ? server.startupCommand
-          : "java -Xms{{MEMORY}}M -Xmx{{MEMORY}}M",
-        server.memoryMb,
-        jarName,
-      );
-      let jvmArgs = jvmArgsFromStartupCommand(resolvedJvm);
-      if (jvmArgs.includes("-XX:+AlwaysPreTouch")) {
-        jvmArgs = jvmArgs.filter((a) => a !== "-XX:+AlwaysPreTouch");
-        this.daemonSay(
-          serverId,
-          "Removed -XX:+AlwaysPreTouch from user_jvm_args.txt (Docker OOM risk).",
-        );
-      }
-      const lines =
-        jvmArgs.length > 0
-          ? jvmArgs
-          : [`-Xms${server.memoryMb}M`, `-Xmx${server.memoryMb}M`];
-      await fsp.writeFile(
-        path.join(dir, "user_jvm_args.txt"),
-        `# JVM args managed by Guartrix\n${lines.join("\n")}\n`,
-        "utf8",
-      );
+      const { warnings } = await writeForgeJvmArgsFile(dir, server, jarName);
+      for (const warning of warnings) this.daemonSay(serverId, warning);
     }
 
-    let javaCmd: string[];
-    if (isForgeRuntime) {
-      javaCmd = ["sh", "run.sh", "nogui"];
-    } else {
-      const resolved = resolveStartupCommand(
-        server.startupCommand,
-        server.memoryMb,
-        jarName,
-      );
-      javaCmd = startupCommandToArgs(resolved);
-    }
-
-    // AlwaysPreTouch + full Xms=Xmx commits the entire heap immediately and often
-    // gets the container OOM-killed (exit 137). Strip it for Docker runs.
-    if (javaCmd.includes("-XX:+AlwaysPreTouch")) {
-      javaCmd = javaCmd.filter((a) => a !== "-XX:+AlwaysPreTouch");
-      this.daemonSay(
-        serverId,
-        "Removed -XX:+AlwaysPreTouch (unsafe with Docker memory limits; causes OOM).",
-      );
-    }
+    const { javaCmd, warnings: javaCmdWarnings } = resolveJavaCommand(
+      server,
+      jarName,
+      isForgeRuntime,
+    );
+    for (const warning of javaCmdWarnings) this.daemonSay(serverId, warning);
 
     this.daemonSay(
       serverId,
@@ -876,47 +737,22 @@ class ProcessManager extends EventEmitter {
     const logMaxSize = process.env.DOCKER_LOG_MAX_SIZE?.trim() || "10m";
     const logMaxFile = process.env.DOCKER_LOG_MAX_FILE?.trim() || "3";
     await docker(
-      [
-        "run",
-        "-d",
-        "--rm",
-        "--name",
+      buildDockerRunArgs({
         name,
-        "--user",
-        `${uid}:${gid}`,
-        "--network",
+        uid,
+        gid,
         gameNetwork,
-        "--security-opt",
-        "no-new-privileges:true",
-        "--cap-drop",
-        "ALL",
-        "--pids-limit",
-        "512",
-        "--log-driver",
-        "json-file",
-        "--log-opt",
-        `max-size=${logMaxSize}`,
-        "--log-opt",
-        `max-file=${logMaxFile}`,
-        "--label",
-        "guartrix=1",
-        "--label",
-        `guartrix.server=${serverId}`,
-        "--memory",
-        `${containerMemoryMb}m`,
-        "--memory-swap",
-        `${containerMemoryMb}m`,
-        ...cpuArgs,
-        ...publishArgs,
-        "-v",
-        `${dir}:/data`,
-        ...extraVolumeArgs(server.extraMounts),
-        "-w",
-        "/data",
-        "-i",
+        containerMemoryMb,
+        cpuArgs,
+        publishArgs,
+        dir,
+        extraMounts: server.extraMounts,
         image,
-        ...javaCmd,
-      ],
+        javaCmd,
+        serverId,
+        logMaxSize,
+        logMaxFile,
+      }),
       { timeout: 60_000 },
     );
 
@@ -1018,118 +854,22 @@ class ProcessManager extends EventEmitter {
     }
   }
 
+  /** Graceful stop: `stop` console command, falls back to `docker stop`. */
   async stop(serverId: string): Promise<void> {
-    const managed = this.processes.get(serverId);
-    const name = managed?.container ?? containerName(serverId);
-
-    this.intentionalStops.add(serverId);
-    this.restartAttempts.delete(serverId);
-
-    if (!managed) {
-      this.daemonSay(serverId, "Server marked as OFF");
-      await removeContainer(serverId);
-      this.setStatus(serverId, "STOPPED", null);
-      this.intentionalStops.delete(serverId);
-      return;
-    }
-
-    this.setStatus(serverId, "STOPPING");
-    this.daemonSay(serverId, "Server marked as STOPPING");
-
-    try {
-      managed.process.stdin.write("stop\n");
-    } catch {
-      // ignore
-    }
-
-    await new Promise<void>((resolve) => {
-      const timeout = setTimeout(() => {
-        void docker(["stop", "-t", "5", name]).finally(() => {
-          try {
-            managed.process.kill("SIGTERM");
-          } catch {
-            // ignore
-          }
-          setTimeout(() => {
-            void removeContainer(serverId).finally(resolve);
-          }, 2000);
-        });
-      }, STOP_TIMEOUT_MS);
-
-      managed.process.once("exit", () => {
-        clearTimeout(timeout);
-        resolve();
-      });
-    });
-
-    this.processes.delete(serverId);
-    this.persistHistory(serverId);
-    await removeContainer(serverId);
-    this.daemonSay(serverId, "Server marked as OFF");
-    this.setStatus(serverId, "STOPPED", null);
-    // Keep the flag briefly so a late attach-exit handler cannot auto-restart.
-    setTimeout(() => this.intentionalStops.delete(serverId), 60_000);
+    return stopProcess(this, serverId);
   }
 
   /** Immediate force-stop: docker kill + remove, no graceful `stop` command. */
   async kill(serverId: string): Promise<void> {
-    const managed = this.processes.get(serverId);
-    const name = managed?.container ?? containerName(serverId);
-
-    this.intentionalStops.add(serverId);
-    this.restartAttempts.delete(serverId);
-    this.setStatus(serverId, "STOPPING");
-    this.daemonSay(serverId, "Server marked as KILLING");
-    this.daemonSay(serverId, "Force-killing Docker container...");
-
-    // Drop from map first so the exit handler does not auto-restart
-    this.processes.delete(serverId);
-
-    try {
-      await docker(["kill", name], { timeout: 15_000 });
-    } catch {
-      try {
-        await docker(["rm", "-f", name], { timeout: 15_000 });
-      } catch {
-        // already gone
-      }
-    }
-
-    if (managed) {
-      try {
-        managed.process.kill("SIGKILL");
-      } catch {
-        // ignore
-      }
-    }
-
-    this.persistHistory(serverId);
-    await removeContainer(serverId);
-    this.daemonSay(serverId, "Server marked as OFF");
-    this.setStatus(serverId, "STOPPED", null);
-    setTimeout(() => this.intentionalStops.delete(serverId), 60_000);
+    return killProcess(this, serverId);
   }
 
   async sendCommand(serverId: string, command: string): Promise<void> {
-    const cleaned = command.replace(/[\r\n]/g, "").trim();
-    if (!cleaned) return;
-    if (/[;&|`$<>\\]/.test(cleaned)) {
-      throw new Error("Invalid characters in command");
-    }
-
-    if (!this.processes.has(serverId)) {
-      const ok = await this.adoptRunning(serverId);
-      if (!ok) throw new Error("Server is not running");
-    }
-
-    const managed = this.processes.get(serverId);
-    if (!managed) throw new Error("Server is not running");
-    managed.process.stdin.write(cleaned + "\n");
+    return sendProcessCommand(this, serverId, command);
   }
 
   async stopAll(): Promise<void> {
-    const ids = [...this.processes.keys()];
-    await Promise.all(ids.map((id) => this.stop(id)));
+    return stopAllProcesses(this);
   }
 
   /**

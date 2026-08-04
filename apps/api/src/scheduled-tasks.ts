@@ -317,7 +317,6 @@ export async function migrateAllScheduledTasksFromJson(): Promise<number> {
 }
 
 export async function listScheduledTasks(serverId: string): Promise<ScheduledTask[]> {
-  await migrateScheduledTasksFromJson(serverId);
   const rows = await prisma.scheduledTask.findMany({ where: { serverId } });
   const tasks = rows.map(rowToTask);
   return tasks.sort((a, b) => (a.nextRunAt || "").localeCompare(b.nextRunAt || ""));
@@ -344,7 +343,6 @@ export async function createScheduledTask(
   serverId: string,
   input: Partial<ScheduledTask>,
 ): Promise<ScheduledTask> {
-  await migrateScheduledTasksFromJson(serverId);
   const task = normalizeTask({ ...input, enabled: input.enabled ?? true });
   validateSteps(task.steps);
   validateScheduleTiming(task);
@@ -357,7 +355,6 @@ export async function updateScheduledTask(
   taskId: string,
   patch: Partial<ScheduledTask>,
 ): Promise<ScheduledTask> {
-  await migrateScheduledTasksFromJson(serverId);
   const row = await prisma.scheduledTask.findFirst({
     where: { id: taskId, serverId },
   });
@@ -370,7 +367,6 @@ export async function updateScheduledTask(
 }
 
 export async function deleteScheduledTask(serverId: string, taskId: string): Promise<void> {
-  await migrateScheduledTasksFromJson(serverId);
   const result = await prisma.scheduledTask.deleteMany({
     where: { id: taskId, serverId },
   });

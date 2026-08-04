@@ -1,7 +1,9 @@
 import type { FileEntry } from "@msm/shared";
-import { Button, Form, Spinner, Stack, Table } from "react-bootstrap";
+import { Button, Form, Stack, Table } from "react-bootstrap";
 import { useI18n } from "../../i18n/react";
 import { formatBytes } from "../../utils";
+import { EmptyState } from "../EmptyState";
+import { TabLoading } from "../TabLoading";
 import { isArchiveName, parentPath } from "./paths";
 
 interface Props {
@@ -51,12 +53,7 @@ export function FileBrowserTable({
   const colSpan = 5;
 
   if (loading) {
-    return (
-      <div className="text-secondary py-3">
-        <Spinner size="sm" className="me-2" />
-        {t("common.loading")}…
-      </div>
-    );
+    return <TabLoading py="sm" />;
   }
 
   return (
@@ -190,8 +187,8 @@ export function FileBrowserTable({
           ))}
           {!entries.length && (
             <tr>
-              <td colSpan={colSpan} className="text-secondary">
-                {t("files.empty")}
+              <td colSpan={colSpan}>
+                <EmptyState message={t("files.empty")} />
               </td>
             </tr>
           )}

@@ -66,6 +66,9 @@ async function resolveDaemonNodeFromBearer(token: string) {
     return prisma.node.findUnique({ where: { id: nid } });
   }
   if (!daemonJwtLegacyBearerEnabled()) return null;
+  console.warn(
+    "[sftp-auth] legacy daemon bearer accepted (DAEMON_JWT_LEGACY=true) — migrate nodes to JWT and set DAEMON_JWT_LEGACY=false",
+  );
   return findNodeByDaemonToken(token);
 }
 

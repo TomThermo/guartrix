@@ -8,21 +8,12 @@ import type {
   ServerType,
 } from "@msm/shared";
 import { addonKindFor, RECOMMENDED_PLUGIN_STACKS } from "@msm/shared";
-import {
-  Alert,
-  Badge,
-  Button,
-  Col,
-  Form,
-  ListGroup,
-  Row,
-  Spinner,
-  Stack,
-} from "react-bootstrap";
+import { Alert, Button, Spinner, Stack } from "react-bootstrap";
 import { api } from "../api";
 import { useI18n } from "../i18n/react";
-import { formatCount } from "../utils";
 import { AddonDetailModal } from "./AddonDetailModal";
+import { AddonSearch } from "./addon-panel/AddonSearch";
+import { InstalledAddonsList } from "./addon-panel/InstalledAddonsList";
 import { AddonVersionPickerModal } from "./AddonVersionPickerModal";
 
 interface Props {
@@ -35,14 +26,6 @@ interface Props {
   /** Notify parent (sidebar badge) when the available update count changes. */
   onUpdateCountChange?: (count: number) => void;
 }
-
-const SORT_OPTIONS: { value: AddonSortIndex; labelKey: string }[] = [
-  { value: "relevance", labelKey: "addons.sortRelevance" },
-  { value: "downloads", labelKey: "addons.sortDownloads" },
-  { value: "follows", labelKey: "addons.sortFollows" },
-  { value: "newest", labelKey: "addons.sortNewest" },
-  { value: "updated", labelKey: "addons.sortUpdated" },
-];
 
 export function AddonPanel({
   serverId,
@@ -439,352 +422,59 @@ export function AddonPanel({
         </Alert>
       )}
 
-      <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-        <h3 className="h6 mb-0">
-          <i className="fa-solid fa-box-archive me-2" />
-          {t("addons.installed")} ({installed.length})
-          {checkingUpdates && (
-            <span className="small text-secondary fw-normal ms-2">
-              <Spinner size="sm" className="me-1" />
-              {t("addons.checkingUpdates")}
-            </span>
-          )}
-          {!checkingUpdates && updateCount > 0 && (
-            <Badge bg="warning" text="dark" className="ms-2 align-middle">
-              {updateCount === 1
-                ? t("common.updateOne", { count: updateCount })
-                : t("common.updateMany", { count: updateCount })}
-            </Badge>
-          )}
-        </h3>
-        <div className="d-flex flex-wrap gap-2">
-          {canUpdate && updateCount > 0 && (
-            <Button
-              size="sm"
-              variant="warning"
-              disabled={updatingAll || syncing || busyId !== null}
-              onClick={() => void upgradeAll()}
-            >
-              {updatingAll ? (
-                <>
-                  <Spinner size="sm" className="me-2" />
-                  {t("addons.updating")}
-                </>
-              ) : (
-                <>
-                  <i className="fa-solid fa-arrow-up me-1" />
-                  {t("addons.updateAll", { count: updateCount })}
-                </>
-              )}
-            </Button>
-          )}
-          {canUpdate && (
-            <Button
-              size="sm"
-              variant="outline-secondary"
-              disabled={syncing || busyId !== null || updatingAll}
-              onClick={() => void syncFromDisk()}
-              title={t("addons.syncTitle", {
-                folder: kind === "plugin" ? "plugins" : "mods",
-              })}
-            >
-              {syncing ? (
-                <>
-                  <Spinner size="sm" className="me-2" />
-                  {t("addons.syncing")}
-                </>
-              ) : (
-                <>
-                  <i className="fa-solid fa-arrows-rotate me-1" />
-                  {t("addons.syncFromDisk")}
-                </>
-              )}
-            </Button>
-          )}
-        </div>
-      </div>
-      {installed.length === 0 ? (
-        <div className="text-secondary small mb-4">{t("addons.empty")}</div>
-      ) : (
-        <Row className="g-2 mb-4 installed-addons-grid">
-          {installed.map((a) => {
-            const update = updates[a.projectId];
-            const hasUpdate = Boolean(update?.available);
-            return (
-            <Col key={`${a.projectId}:${a.fileName}`} xs={12} sm={6} lg={4}>
-              <div
-                className={`installed-addon-card${a.source === "modrinth" ? " addon-row-clickable" : ""}${hasUpdate ? " has-update" : ""}`}
-                onClick={
-                  a.source === "modrinth"
-                    ? () => setDetailProjectId(a.projectId)
-                    : undefined
-                }
-                role={a.source === "modrinth" ? "button" : undefined}
-                tabIndex={a.source === "modrinth" ? 0 : undefined}
-                onKeyDown={
-                  a.source === "modrinth"
-                    ? (e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          setDetailProjectId(a.projectId);
-                        }
-                      }
-                    : undefined
-                }
-              >
-                {a.iconUrl ? (
-                  <img className="addon-icon" src={a.iconUrl} alt="" width={36} height={36} />
-                ) : (
-                  <div className="addon-icon addon-icon-fallback d-grid place-items-center">
-                    <i className="fa-solid fa-puzzle-piece text-secondary" />
-                  </div>
-                )}
-                <div className="installed-addon-copy min-w-0">
-                  <div className="fw-semibold text-truncate" title={a.title}>
-                    {a.title}
-                    {a.source === "local" && (
-                      <Badge bg="secondary" className="ms-2 align-middle">
-                        {t("addons.local")}
-                      </Badge>
-                    )}
-                    {hasUpdate && (
-                      <Badge bg="warning" text="dark" className="ms-2 align-middle">
-                        {t("addons.updateBadge")}
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="small text-secondary text-truncate">
-                    {a.source === "local" ? a.fileName : a.versionNumber}
-                    {hasUpdate && update
-                      ? ` → ${update.latestVersionNumber}`
-                      : a.author
-                        ? ` · ${a.author}`
-                        : ""}
-                  </div>
-                </div>
-                {canUpdate && (
-                  <div className="installed-addon-actions">
-                    {a.source === "modrinth" && (
-                      <Button
-                        size="sm"
-                        variant="outline-secondary"
-                        className="installed-addon-remove"
-                        disabled={busyId === a.projectId || updatingAll}
-                        title={t("serverDetail.changeVersion")}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openInstallPicker({
-                            projectId: a.projectId,
-                            title: a.title,
-                            iconUrl: a.iconUrl,
-                            mode: "change",
-                            currentVersionId: a.versionId,
-                          });
-                        }}
-                      >
-                        <i className="fa-solid fa-code-branch" />
-                      </Button>
-                    )}
-                    {hasUpdate && (
-                      <Button
-                        size="sm"
-                        variant="warning"
-                        className="installed-addon-remove"
-                        disabled={busyId === a.projectId || updatingAll}
-                        title={t("addons.updateTo", {
-                          version: update?.latestVersionNumber ?? "",
-                        })}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          void upgradeAddon(a);
-                        }}
-                      >
-                        {busyId === a.projectId ? (
-                          <Spinner size="sm" />
-                        ) : (
-                          <i className="fa-solid fa-arrow-up" />
-                        )}
-                      </Button>
-                    )}
-                    <Button
-                      size="sm"
-                      variant="outline-danger"
-                      className="installed-addon-remove"
-                      disabled={busyId === a.projectId || updatingAll}
-                      title={t("addons.removeTitle", { title: a.title })}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        void uninstall(a.projectId, a.title);
-                      }}
-                    >
-                      <i className="fa-solid fa-trash" />
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </Col>
-            );
-          })}
-        </Row>
-      )}
+      <InstalledAddonsList
+        installed={installed}
+        updates={updates}
+        checkingUpdates={checkingUpdates}
+        updateCount={updateCount}
+        canUpdate={canUpdate}
+        busyId={busyId}
+        updatingAll={updatingAll}
+        syncing={syncing}
+        syncFolderLabel={kind === "plugin" ? "plugins" : "mods"}
+        onUpgradeAll={() => void upgradeAll()}
+        onSyncFromDisk={() => void syncFromDisk()}
+        onUpgradeAddon={(addon) => void upgradeAddon(addon)}
+        onUninstall={(projectId, title) => void uninstall(projectId, title)}
+        onOpenDetail={(projectId) => setDetailProjectId(projectId)}
+        onOpenChangeVersion={(addon) =>
+          openInstallPicker({
+            projectId: addon.projectId,
+            title: addon.title,
+            iconUrl: addon.iconUrl,
+            mode: "change",
+            currentVersionId: addon.versionId,
+          })
+        }
+      />
 
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <h3 className="h6 mb-0">
-          <i className="fa-solid fa-puzzle-piece me-2" />
-          {t("addons.browseModrinth")}
-        </h3>
-        <span className="small text-secondary">
-          {t("addons.results", { count: totalHits.toLocaleString() })}
-        </span>
-      </div>
-
-      <Form onSubmit={(e) => void onSearch(e)} className="mb-3">
-        <Row className="g-2">
-          <Col md={6}>
-            <Form.Control
-              size="sm"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={t("addons.search")}
-            />
-          </Col>
-          <Col md={4}>
-            <Form.Select
-              size="sm"
-              value={sort}
-              onChange={(e) => setSort(e.target.value as AddonSortIndex)}
-              aria-label={t("addons.sortBy")}
-            >
-              {SORT_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {t(opt.labelKey)}
-                </option>
-              ))}
-            </Form.Select>
-          </Col>
-          <Col md="auto">
-            <Button size="sm" variant="primary" type="submit" disabled={searching}>
-              {searching ? <Spinner size="sm" /> : t("common.search")}
-            </Button>
-          </Col>
-        </Row>
-      </Form>
-
-      {searching && (
-        <Alert variant="light" className="border small py-2 mb-3">
-          <Spinner size="sm" className="me-2" />
-          {t("addons.searchingLibrary")}
-        </Alert>
-      )}
-
-      <Stack direction="horizontal" gap={2} className="flex-wrap mb-3">
-        <Button
-          size="sm"
-          variant={category === "" ? "primary" : "outline-secondary"}
-          onClick={() => setCategory("")}
-        >
-          {t("common.all")}
-        </Button>
-        {categories.map((cat) => (
-          <Button
-            key={cat.name}
-            size="sm"
-            variant={category === cat.name ? "primary" : "outline-secondary"}
-            onClick={() => setCategory(cat.name)}
-          >
-            {cat.label}
-          </Button>
-        ))}
-      </Stack>
-
-      <ListGroup className="mb-3">
-        {hits.length === 0 && !searching && (
-          <ListGroup.Item className="text-secondary">
-            {t("addons.empty")}
-          </ListGroup.Item>
-        )}
-        {hits.map((h) => (
-          <ListGroup.Item
-            key={h.projectId}
-            className="d-flex justify-content-between align-items-start gap-3 flex-wrap addon-row-clickable"
-            onClick={() => setDetailProjectId(h.projectId)}
-          >
-            <div className="d-flex gap-2 min-w-0">
-              {h.iconUrl ? (
-                <img className="addon-icon" src={h.iconUrl} alt="" width={40} height={40} />
-              ) : (
-                <div className="addon-icon addon-icon-fallback d-grid place-items-center">
-                  <i className="fa-solid fa-puzzle-piece text-secondary" />
-                </div>
-              )}
-              <div className="min-w-0">
-                <div className="fw-semibold">{h.title}</div>
-                <div className="small text-secondary">
-                  {t("addons.byAuthor", { author: h.author })} ·{" "}
-                  {t("addons.downloadsCount", {
-                    count: formatCount(h.downloads),
-                  })}{" "}
-                  ·{" "}
-                  {t("addons.likesCount", { count: formatCount(h.follows) })}
-                </div>
-                {h.categories.length > 0 && (
-                  <div className="d-flex flex-wrap gap-1 mt-1">
-                    {h.categories.slice(0, 4).map((c) => (
-                      <Badge
-                        key={c}
-                        bg="secondary"
-                        className="cursor-pointer"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setCategory(c);
-                        }}
-                      >
-                        {c}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-                <p className="small text-secondary mb-0 mt-1">{h.description}</p>
-              </div>
-            </div>
-            {canUpdate && (
-              <Button
-                size="sm"
-                variant="primary"
-                disabled={busyId === h.projectId || installedIds.has(h.projectId)}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  openInstallPicker({
-                    projectId: h.projectId,
-                    title: h.title,
-                    iconUrl: h.iconUrl,
-                    mode: "install",
-                  });
-                }}
-              >
-                {installedIds.has(h.projectId)
-                  ? t("addons.installed")
-                  : busyId === h.projectId
-                    ? t("common.creating")
-                    : t("addons.install")}
-              </Button>
-            )}
-          </ListGroup.Item>
-        ))}
-      </ListGroup>
-
-      {canLoadMore && (
-        <div className="text-center">
-          <Button
-            size="sm"
-            variant="outline-secondary"
-            disabled={searching}
-            onClick={() => void browse(offset + limit, true)}
-          >
-            {searching ? t("common.loading") : t("addons.loadMore")}
-          </Button>
-        </div>
-      )}
+      <AddonSearch
+        query={query}
+        category={category}
+        sort={sort}
+        categories={categories}
+        hits={hits}
+        totalHits={totalHits}
+        searching={searching}
+        canLoadMore={canLoadMore}
+        installedIds={installedIds}
+        busyId={busyId}
+        canUpdate={canUpdate}
+        onQueryChange={setQuery}
+        onCategoryChange={setCategory}
+        onSortChange={setSort}
+        onSearch={(e) => void onSearch(e)}
+        onSelectHit={(projectId) => setDetailProjectId(projectId)}
+        onInstallHit={(hit) =>
+          openInstallPicker({
+            projectId: hit.projectId,
+            title: hit.title,
+            iconUrl: hit.iconUrl,
+            mode: "install",
+          })
+        }
+        onLoadMore={() => void browse(offset + limit, true)}
+      />
 
       {detailProjectId && (
         <AddonDetailModal
