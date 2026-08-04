@@ -51,6 +51,19 @@ export function WikiArticlePage() {
                     ))}
                   </ul>
                 )}
+                {section.code?.map((block) => (
+                  <div key={`${section.title}-${block.label ?? block.content}`} className="wiki-code-block">
+                    {block.label && (
+                      <div className="wiki-code-label">
+                        {block.label}
+                        {block.language ? ` · ${block.language}` : ""}
+                      </div>
+                    )}
+                    <pre>
+                      <code>{block.content}</code>
+                    </pre>
+                  </div>
+                ))}
               </section>
             ))}
           </Card.Body>

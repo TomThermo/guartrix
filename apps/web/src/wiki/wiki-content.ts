@@ -26,6 +26,24 @@ export const wikiArticles: WikiArticle[] = [
           "Pick HTTP or HTTPS, then configure panel MySQL and optional Redis.",
           "Let the script write `.env`, build the app, and enable systemd services.",
         ],
+        code: [
+          {
+            label: "Download the installer",
+            language: "bash",
+            content:
+              "curl -Lo /tmp/guartrix-install.sh \\\n  https://raw.githubusercontent.com/TomThermo/guartrix/main/scripts/install-panel.sh",
+          },
+          {
+            label: "Run it",
+            language: "bash",
+            content: "sudo bash /tmp/guartrix-install.sh",
+          },
+          {
+            label: "Fast HTTP setup example",
+            language: "bash",
+            content: "sudo bash /tmp/guartrix-install.sh --http --ip YOUR.PUBLIC.IP",
+          },
+        ],
       },
       {
         title: "After install",
@@ -61,6 +79,19 @@ export const wikiArticles: WikiArticle[] = [
           "Run `install-daemon.sh` on the remote VPS.",
           "Pass the node token, node id, panel URL, and public host values.",
           "Expose the daemon API, SFTP, and assigned game ports through the firewall.",
+        ],
+        code: [
+          {
+            label: "Download from your panel",
+            language: "bash",
+            content: "curl -Lo /tmp/guartrix-daemon.sh https://YOUR_PANEL/install-daemon.sh",
+          },
+          {
+            label: "Run the remote installer",
+            language: "bash",
+            content:
+              "sudo bash /tmp/guartrix-daemon.sh \\\n  --token NODE_TOKEN \\\n  --node-id NODE_ID \\\n  --fqdn NODE_PUBLIC_IP \\\n  --port 8081 \\\n  --panel https://YOUR_PANEL",
+          },
         ],
       },
       {
@@ -434,6 +465,7 @@ function articleSearchText(article: WikiArticle): string {
       section.title,
       ...(section.paragraphs ?? []),
       ...(section.bullets ?? []),
+      ...((section.code ?? []).flatMap((block) => [block.label ?? "", block.content])),
     ])
     .join(" ");
   return [
