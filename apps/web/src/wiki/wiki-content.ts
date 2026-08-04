@@ -1,12 +1,12 @@
 import type { WikiArticle } from "./wiki-types";
 
-const wikiAssetUrls = import.meta.glob("../../../docs/wiki/assets/*.png", {
+const wikiAssetUrls = import.meta.glob("../../../../docs/wiki/assets/*.png", {
   eager: true,
   import: "default",
 }) as Record<string, string>;
 
 function wikiAsset(name: string): string {
-  return wikiAssetUrls[`../../../docs/wiki/assets/${name}`] ?? "";
+  return wikiAssetUrls[`../../../../docs/wiki/assets/${name}`] ?? "";
 }
 
 export const wikiArticles: WikiArticle[] = [
@@ -426,12 +426,41 @@ export const wikiArticles: WikiArticle[] = [
           "Move a stopped server to another node when capacity or location changes.",
           "Use start, stop, restart, and kill for day-to-day power control.",
         ],
+        images: [
+          {
+            src: wikiAsset("03-create-server.png"),
+            alt: "Create server page",
+            caption: "Create a new server with engine, version, RAM, and port choices.",
+          },
+          {
+            src: wikiAsset("37-import-server.png"),
+            alt: "Import server flow",
+            caption: "Import an archive into a fresh server from the create flow.",
+          },
+          {
+            src: wikiAsset("34-server-clone-modal.png"),
+            alt: "Clone server modal",
+            caption: "Clone an existing server from the server header actions.",
+          },
+          {
+            src: wikiAsset("25-server-move-modal.png"),
+            alt: "Move server modal",
+            caption: "Move a stopped server to another node.",
+          },
+        ],
       },
       {
         title: "Main tabs",
         paragraphs: [
           "The server detail page combines service tabs, game tabs, and management tabs in one workspace.",
           "This includes console, files, SFTP, databases, network, backups, subusers, settings, players, bans, schedules, activity, logs, resources, and optional bots.",
+        ],
+        images: [
+          {
+            src: wikiAsset("08-server-console.png"),
+            alt: "Server console tab",
+            caption: "The live server workspace starts at the console tab.",
+          },
         ],
       },
       {
@@ -459,12 +488,26 @@ export const wikiArticles: WikiArticle[] = [
           "Browse, edit, upload, download, create folders, and archive selected files in the browser.",
           "Use the web file manager for quick configuration changes and one-off file operations.",
         ],
+        images: [
+          {
+            src: wikiAsset("09-server-files.png"),
+            alt: "File manager tab",
+            caption: "File manager with browser-based upload, edit, and archive actions.",
+          },
+        ],
       },
       {
         title: "SFTP",
         paragraphs: [
           "SFTP uses the same server data directory but is better for large or repeated transfers from desktop tools.",
           "You log in with `{panelUsername}.{serverId}` and either the account password or an app password.",
+        ],
+        images: [
+          {
+            src: wikiAsset("10-server-sftp.png"),
+            alt: "SFTP details tab",
+            caption: "SFTP host, port, and username details for external clients.",
+          },
         ],
       },
       {
@@ -473,6 +516,13 @@ export const wikiArticles: WikiArticle[] = [
           "Create manual backups or schedule them later.",
           "Download, upload, restore, and delete backup archives from the panel.",
           "Safety-sensitive flows like reinstall and transfer can create backups before destructive actions.",
+        ],
+        images: [
+          {
+            src: wikiAsset("11-server-backups.png"),
+            alt: "Backups tab",
+            caption: "Backup management for create, upload, restore, and download flows.",
+          },
         ],
       },
     ],
@@ -494,6 +544,28 @@ export const wikiArticles: WikiArticle[] = [
           "Whitelist toggle and manager",
           "Kick, ban, pardon, and other moderation actions",
           "Recent moderation and join/leave context",
+        ],
+        images: [
+          {
+            src: wikiAsset("14-server-players.png"),
+            alt: "Online players tab",
+            caption: "Online players and recent player visibility.",
+          },
+          {
+            src: wikiAsset("18-server-whitelist.png"),
+            alt: "Whitelist tab",
+            caption: "Whitelist management with add and remove controls.",
+          },
+          {
+            src: wikiAsset("19-server-bans.png"),
+            alt: "Bans tab",
+            caption: "Bans and moderation actions.",
+          },
+          {
+            src: wikiAsset("35-whitelist-toggle-modal.png"),
+            alt: "Whitelist quick toggle modal",
+            caption: "Quick whitelist toggle from the header chip.",
+          },
         ],
       },
       {
@@ -535,6 +607,28 @@ export const wikiArticles: WikiArticle[] = [
           "Browse and install modpacks for compatible families",
           "Expose engine-specific settings for Paper and Purpur style stacks",
         ],
+        images: [
+          {
+            src: wikiAsset("12-server-addons.png"),
+            alt: "Addons tab",
+            caption: "Browse and install compatible plugins or mods.",
+          },
+          {
+            src: wikiAsset("36-addon-version-picker.png"),
+            alt: "Addon version picker",
+            caption: "Choose a specific addon version before install.",
+          },
+          {
+            src: wikiAsset("33-server-modpacks.png"),
+            alt: "Modpacks tab",
+            caption: "Browse and install modpacks for compatible server families.",
+          },
+          {
+            src: wikiAsset("32-server-engine.png"),
+            alt: "Engine settings tab",
+            caption: "Engine-specific settings for supported software families.",
+          },
+        ],
       },
       {
         title: "Compatibility note",
@@ -568,6 +662,13 @@ export const wikiArticles: WikiArticle[] = [
           "Changing published ports usually requires a restart so Docker can rebind them.",
           "Assigning or removing ports can trigger firewall changes on the node.",
           "Optional helpers can add a UDP companion port for query or Geyser-style use cases.",
+        ],
+        images: [
+          {
+            src: wikiAsset("24-server-network.png"),
+            alt: "Network allocations tab",
+            caption: "Manage primary and extra allocations for a server.",
+          },
         ],
       },
       {
