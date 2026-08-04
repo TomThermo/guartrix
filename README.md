@@ -9,6 +9,7 @@
 | | |
 |---|---|
 | **Product** | [guartrix.com](https://guartrix.com) |
+| **Public wiki** | `/wiki` on the panel web app |
 | **Source** | [github.com/TomThermo/guartrix](https://github.com/TomThermo/guartrix) |
 | **Documentation** | [Wiki](docs/wiki/README.md) · [Panel guide](docs/wiki/panel-guide.md) · [Improvement map](docs/roadmap.md) · [Changelog](CHANGELOG.md) |
 

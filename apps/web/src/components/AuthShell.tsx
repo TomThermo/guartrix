@@ -38,6 +38,10 @@ export function AuthShell({
             </Card.Body>
           </Card>
           <div className="text-center mt-3 small text-secondary">
+            <Link to="/wiki" className="link-secondary">
+              Wiki
+            </Link>
+            <span className="mx-2">·</span>
             <Link to="/terms" className="link-secondary">
               {t("nav.terms")}
             </Link>

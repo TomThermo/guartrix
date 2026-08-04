@@ -40,6 +40,12 @@ const TermsPage = lazy(() =>
 const PrivacyPage = lazy(() =>
   import("./pages/PrivacyPage").then((m) => ({ default: m.PrivacyPage })),
 );
+const WikiHomePage = lazy(() =>
+  import("./pages/WikiHomePage").then((m) => ({ default: m.WikiHomePage })),
+);
+const WikiArticlePage = lazy(() =>
+  import("./pages/WikiArticlePage").then((m) => ({ default: m.WikiArticlePage })),
+);
 const InvitePage = lazy(() =>
   import("./pages/InvitePage").then((m) => ({ default: m.InvitePage })),
 );
@@ -223,6 +229,15 @@ function Shell({ children }: { children: ReactNode }) {
                   {t("nav.newServer")}
                 </Link>
               )}
+
+              <Link
+                to="/wiki"
+                className="btn btn-sm btn-outline-secondary"
+                onClick={closeNav}
+              >
+                <i className="fa-solid fa-book me-1" />
+                Wiki
+              </Link>
 
               {isAdmin && (
                 <Dropdown align="end" className="app-nav-dropdown">
@@ -409,6 +424,8 @@ function Shell({ children }: { children: ReactNode }) {
           <div className="main-footer-copy">
             Copyright © 2026 · Powered by <strong>Guartrix</strong>.
             {" · "}
+            <Link to="/wiki">Wiki</Link>
+            {" · "}
             <Link to="/terms">{t("nav.terms")}</Link>
             {" · "}
             <Link to="/privacy">{t("nav.privacy")}</Link>
@@ -431,6 +448,8 @@ function PublicRoutes() {
           <Route path="/verify-email" element={<VerifyEmailPage />} />
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/wiki" element={<WikiHomePage />} />
+          <Route path="/wiki/:slug" element={<WikiArticlePage />} />
           <Route path="/invite/:token" element={<InvitePage />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
@@ -448,6 +467,8 @@ function isPublicPath(pathname: string): boolean {
     pathname === "/verify-email" ||
     pathname === "/terms" ||
     pathname === "/privacy" ||
+    pathname === "/wiki" ||
+    pathname.startsWith("/wiki/") ||
     pathname.startsWith("/invite/")
   );
 }
@@ -482,6 +503,8 @@ export function App() {
             <Route path="/verify-email" element={<VerifyEmailPage />} />
             <Route path="/terms" element={<TermsPage />} />
             <Route path="/privacy" element={<PrivacyPage />} />
+            <Route path="/wiki" element={<WikiHomePage />} />
+            <Route path="/wiki/:slug" element={<WikiArticlePage />} />
             <Route path="/invite/:token" element={<InvitePage />} />
             <Route
               path="/servers/new"
