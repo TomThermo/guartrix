@@ -39,6 +39,7 @@ export function AuthShell({
           </Card>
           <div className="text-center mt-3 small text-secondary">
             <Link to="/wiki" className="link-secondary">
+              <i className="fa-solid fa-book-open me-1" />
               Wiki
             </Link>
             <span className="mx-2">·</span>

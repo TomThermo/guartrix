@@ -25,9 +25,11 @@ export function WikiLayout({
         </div>
         <div className="wiki-hero-actions">
           <Link to="/wiki" className="btn btn-primary">
+            <i className="fa-solid fa-book-open me-1" />
             Browse wiki
           </Link>
           <Link to="/login" className="btn btn-outline-secondary">
+            <i className="fa-solid fa-right-to-bracket me-1" />
             Panel login
           </Link>
         </div>

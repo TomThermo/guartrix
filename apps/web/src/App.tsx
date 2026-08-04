@@ -235,7 +235,7 @@ function Shell({ children }: { children: ReactNode }) {
                 className="btn btn-sm btn-outline-secondary"
                 onClick={closeNav}
               >
-                <i className="fa-solid fa-book me-1" />
+                <i className="fa-solid fa-book-open me-1" />
                 Wiki
               </Link>
 
@@ -247,7 +247,7 @@ function Shell({ children }: { children: ReactNode }) {
                     id="app-nav-admin"
                     className="app-nav-dropdown-toggle"
                   >
-                    <i className="fa-solid fa-screwdriver-wrench me-1" />
+                    <i className="fa-solid fa-user-shield me-1" />
                     {t("nav.admin")}
                     {!licenseOk && (
                       <span
@@ -424,7 +424,10 @@ function Shell({ children }: { children: ReactNode }) {
           <div className="main-footer-copy">
             Copyright © 2026 · Powered by <strong>Guartrix</strong>.
             {" · "}
-            <Link to="/wiki">Wiki</Link>
+            <Link to="/wiki">
+              <i className="fa-solid fa-book-open me-1" />
+              Wiki
+            </Link>
             {" · "}
             <Link to="/terms">{t("nav.terms")}</Link>
             {" · "}
