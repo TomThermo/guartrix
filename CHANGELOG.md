@@ -7,6 +7,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.72] — 2026-08-04
+
+- DB flag `stoppedByUser`: Stop/Kill mark it, Start/Restart clear it; startOnBoot skips marked servers
+
 ## [1.0.71] — 2026-08-04
 
 - startOnBoot no longer restarts servers the user already stopped (only resumes if status was running/starting)

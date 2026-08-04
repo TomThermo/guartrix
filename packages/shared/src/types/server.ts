@@ -79,6 +79,8 @@ export interface McServer {
   whitelistEnabled: boolean;
   autoRestart: boolean;
   startOnBoot: boolean;
+  /** True after the user stopped/killed the server; cleared on start/restart. */
+  stoppedByUser: boolean;
   ownerAlertWebhookUrl?: string | null;
   ownerAlertEmail?: string | null;
   discordStatusWebhookUrl?: string | null;

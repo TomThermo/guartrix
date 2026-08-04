@@ -246,7 +246,7 @@ export function SettingsGeneralPanel({
                   <Col md={6}>
                     <Field
                       label="Start on boot"
-                      hint="After a panel/host restart, start again only if it was still running (not if you stopped it)"
+                      hint="After a panel/host restart, start again unless you stopped or killed it yourself"
                     >
                       <Form.Select
                         value={startOnBoot ? "true" : "false"}

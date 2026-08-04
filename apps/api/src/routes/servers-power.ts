@@ -44,6 +44,10 @@ export function registerServerPowerRoutes(app: FastifyInstance): void {
     try {
       const { openServerAllocationFirewalls } = await import("../allocations.js");
       await openServerAllocationFirewalls(server.id, server.nodeId);
+      await prisma.server.update({
+        where: { id: server.id },
+        data: { stoppedByUser: false },
+      });
       const { startServerIfLicensed } = await import("../license.js");
       await startServerIfLicensed(server.id);
       const updated = await prisma.server.findUniqueOrThrow({
@@ -77,6 +81,10 @@ export function registerServerPowerRoutes(app: FastifyInstance): void {
     });
     if (!access) return;
     await processManager.stop(access.server.id);
+    await prisma.server.update({
+      where: { id: access.server.id },
+      data: { stoppedByUser: true },
+    });
     const updated = await prisma.server.findUniqueOrThrow({
       where: { id: access.server.id },
       include: serverListInclude,
@@ -96,6 +104,10 @@ export function registerServerPowerRoutes(app: FastifyInstance): void {
     });
     if (!access) return;
     await processManager.kill(access.server.id);
+    await prisma.server.update({
+      where: { id: access.server.id },
+      data: { stoppedByUser: true },
+    });
     const updated = await prisma.server.findUniqueOrThrow({
       where: { id: access.server.id },
       include: serverListInclude,
@@ -142,6 +154,10 @@ export function registerServerPowerRoutes(app: FastifyInstance): void {
         await processManager.stop(server.id);
       }
       await openFirewallPort(server.port, server.nodeId);
+      await prisma.server.update({
+        where: { id: server.id },
+        data: { stoppedByUser: false },
+      });
       const { startServerIfLicensed } = await import("../license.js");
       await startServerIfLicensed(server.id);
       const updated = await prisma.server.findUniqueOrThrow({

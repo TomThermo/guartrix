@@ -97,6 +97,11 @@ model Server {
   errorMessage        String?
   autoRestart         Boolean      @default(false)
   startOnBoot         Boolean      @default(false)
+  /**
+   * Set when the user (or API power stop/kill) stops the server.
+   * Cleared on start/restart. startOnBoot skips servers with this flag.
+   */
+  stoppedByUser       Boolean      @default(false)
   /** Owner Discord webhook for critical alerts (crash/disk/backup). */
   ownerAlertWebhookUrl String?
   /** Owner email for critical alerts (optional override). */

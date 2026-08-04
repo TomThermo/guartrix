@@ -56,6 +56,7 @@ export function toMcServer(server: ServerWithRelations): McServer {
     whitelistEnabled: readWhitelistEnabled(server.id),
     autoRestart: server.autoRestart,
     startOnBoot: server.startOnBoot,
+    stoppedByUser: server.stoppedByUser,
     ownerAlertWebhookUrl: server.ownerAlertWebhookUrl ?? null,
     ownerAlertEmail: server.ownerAlertEmail ?? null,
     discordStatusWebhookUrl: server.discordStatusWebhookUrl ?? null,
