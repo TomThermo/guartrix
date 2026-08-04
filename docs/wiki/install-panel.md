@@ -65,6 +65,13 @@ The script installs Docker/Node if needed, clones to `/opt/guartrix`, writes `.e
 (`LICENSE_SERVER_URL=https://license.guartrix.com`), sets up MySQL (and optional Redis), builds, and enables
 systemd units (`guartrix-daemon`, `guartrix-api`, `guartrix-web`).
 
+Implementation references:
+
+- [Build and release internals](build-and-release-internals.md)
+- [Prod-web and downloads](prod-web-and-downloads.md)
+- [Daemon API](daemon-api.md)
+- [License flow internals](license-flow-internals.md)
+
 ### Shortcut entrypoint (optional)
 
 Same installer, via a tiny wrapper (still **download then run**):
@@ -194,3 +201,4 @@ Requirements: Node **22+**, Docker with passwordless `sudo docker`, image `eclip
 - [Environment variables](env-reference.md)  
 - [Operations](operations.md)  
 - [Licensing](licensing.md)
+- [Build and release internals](build-and-release-internals.md)

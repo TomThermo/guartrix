@@ -198,6 +198,8 @@ Guide: [Development](docs/wiki/development.md)
 | UI tour | [panel-guide.md](docs/wiki/panel-guide.md) |
 | Install panel / nodes | [install-panel.md](docs/wiki/install-panel.md) · [install-nodes.md](docs/wiki/install-nodes.md) |
 | Architecture & scaling | [architecture.md](docs/wiki/architecture.md) · [scaling.md](docs/wiki/scaling.md) |
+| Feature references | [server-management.md](docs/wiki/server-management.md) · [files-and-backups.md](docs/wiki/files-and-backups.md) · [networking-and-allocations.md](docs/wiki/networking-and-allocations.md) · [mods-plugins-and-modpacks.md](docs/wiki/mods-plugins-and-modpacks.md) |
+| Internal references | [api-surface-map.md](docs/wiki/api-surface-map.md) · [daemon-api.md](docs/wiki/daemon-api.md) · [node-agent-internals.md](docs/wiki/node-agent-internals.md) · [shared-contracts.md](docs/wiki/shared-contracts.md) |
 | Environment | [env-reference.md](docs/wiki/env-reference.md) |
 | APIs | [client-api.md](docs/wiki/client-api.md) · [application-api.md](docs/wiki/application-api.md) · [OpenAPI](docs/openapi.yaml) |
 | Licensing & releases | [licensing.md](docs/wiki/licensing.md) · [release-builds.md](docs/wiki/release-builds.md) |

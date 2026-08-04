@@ -59,6 +59,14 @@ another tool on the host needs it.
 | Watchdog | Restarts unhealthy panel processes; Discord/webhook alert when `ACTIVITY_WEBHOOK_URL` is set |
 | Licensing | Signed validate, IP/install bind, rate limits, feature ceilings — see [Licensing](licensing.md) |
 
+Internal security references:
+
+- [Auth and session internals](auth-and-session-internals.md)
+- [Daemon API](daemon-api.md)
+- [Node-agent internals](node-agent-internals.md)
+- [Shared contracts](shared-contracts.md)
+- [License flow internals](license-flow-internals.md)
+
 ## Secret rotation runbook
 
 Rotate these in order when a secret may have leaked:
@@ -111,3 +119,5 @@ branch. Full notes: [Install nodes — supply chain](install-nodes.md#install-sc
 ## Reporting
 
 Treat this panel like production hosting software: rotate any secrets that appear in chat or tickets, and keep the OS and Docker patched.
+
+For alert delivery paths and event sinks, see [Notifications and alerts](notifications-and-alerts.md).

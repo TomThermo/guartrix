@@ -104,3 +104,8 @@ Put `LICENSE_SERVER_URL` + `LICENSE_KEY` in their `.env` (default server URL is
 | `scripts/package-download-bundle.sh` | Component zips + master zip → `data/downloads/` |
 
 Do **not** commit `build/`, `dist-release/`, or `dist-download/` (gitignored).
+
+For maintainer-level details about staging boundaries, publish flow, script roles, and the operator-only `/download` edge, see:
+
+- [Build and release internals](build-and-release-internals.md)
+- [Prod-web and downloads](prod-web-and-downloads.md)

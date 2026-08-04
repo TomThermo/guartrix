@@ -34,6 +34,14 @@ Daemon :8081          @msm/node-agent
 | `packages/shared` | Types, permissions, activity, **daemon JWT** + **license verify** helpers, password policy |
 | `scripts/` | `start.sh`, `prod-web.mjs` (+ `prod-web/` modules), installers, backups, monitor |
 
+Reference map:
+
+- [API and surface map](api-surface-map.md)
+- [Daemon API](daemon-api.md)
+- [Node-agent internals](node-agent-internals.md)
+- [Shared contracts](shared-contracts.md)
+- [Build and release internals](build-and-release-internals.md)
+
 **License validation** uses the public API at `LICENSE_SERVER_URL` (default
 `https://license.guartrix.com`) plus `LICENSE_KEY`. Without a valid license the
 panel enforces a free tier (1 node, 1 server, 10 GB disk). See [Licensing](licensing.md).
@@ -105,6 +113,31 @@ Disk walks use a **30s cache** (stale-while-revalidate) so UI polls never block 
 - **Server files:** on the node under `data/servers/<serverId>/` (or daemon `DATA_DIR`). File **list/read** does not run a recursive `chown`; ownership is fixed on start and on write/upload/SFTP paths.
 - **Console:** browser connects to the **panel** WebSocket; the panel fans out daemon event streams (output, status, stats).
 - **Mineflayer bots:** run in a **forked API child** (`bot-worker-main`) so physics/event loops stay out of the Fastify process. The panel proxies spawn/list/command over IPC; `BOT_WORKER=0` forces in-process emergency mode.
+
+## Internal subsystem map
+
+These folders are the most useful anchors when auditing or documenting the codebase:
+
+| Path | Internal focus |
+|------|----------------|
+| `apps/api/src/auth/` | sessions, CSRF, password policy, TOTP, application auth |
+| `apps/api/src/servers/` | provisioning, lifecycle, files, backups, players, moderation, schedules, addons, modpacks |
+| `apps/api/src/nodes/` | daemon connectivity, remote install, DNS/firewall helpers, node token vault |
+| `apps/api/src/billing/` | Mollie checkout, sync, quota application |
+| `apps/api/src/license/` | validate loop, free-tier fallback, daemon ticket generation |
+| `apps/api/src/ws/` | browser-facing console/admin/player event fan-out |
+| `apps/daemon/src/routes/` | node-side file, MySQL, firewall, and WebSocket route families |
+| `packages/node-agent/src/` | host runtime: Docker, SFTP, quotas, jail, networking, MySQL |
+| `packages/shared/src/` | shared payloads, permissions, daemon JWT, license verification, activity taxonomy |
+
+Use the dedicated pages for detail:
+
+- [Auth and session internals](auth-and-session-internals.md)
+- [Billing internals](billing-internals.md)
+- [License flow internals](license-flow-internals.md)
+- [Daemon API](daemon-api.md)
+- [Node-agent internals](node-agent-internals.md)
+- [Shared contracts](shared-contracts.md)
 
 ## Trust boundaries
 

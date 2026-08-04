@@ -28,6 +28,30 @@ npm run dev:daemon
 
 Keep `HOST=127.0.0.1` so the API is not exposed on the public interface.
 
+## Codebase map
+
+When you need to find a feature quickly, start here:
+
+| Path | What usually lives there |
+|------|---------------------------|
+| `apps/web/src/pages` | route-level UI entrypoints |
+| `apps/web/src/components` | tab panels, modals, reusable UI |
+| `apps/api/src/routes` | HTTP route registration layer |
+| `apps/api/src/auth`, `servers`, `nodes`, `billing`, `license`, `bots` | behavior behind route files |
+| `apps/daemon/src` | daemon process entrypoint, auth, metrics, route wrappers |
+| `packages/node-agent/src` | host runtime and sensitive node operations |
+| `packages/shared/src` | cross-service payloads, permissions, auth/licensing helpers |
+| `scripts/` | install, start, watchdog, release, TLS, docs maintenance |
+| `apps/api/prisma/schema.prisma` | persisted product capability map |
+
+Useful companion docs:
+
+- [API and surface map](api-surface-map.md)
+- [Daemon API](daemon-api.md)
+- [Node-agent internals](node-agent-internals.md)
+- [Shared contracts](shared-contracts.md)
+- [Build and release internals](build-and-release-internals.md)
+
 ### Dev MySQL (Docker Compose)
 
 ```bash
@@ -101,3 +125,4 @@ UI chrome across pages, server tabs/panels, and modals is keyed in both locale f
 - Docs: update [README](../../README.md) and this wiki when behaviour users rely on changes (see Cursor rule `keep-docs-updated`).
 - OpenAPI: keep [`docs/openapi.yaml`](../openapi.yaml) `info.version` in sync with the product version in root `package.json` / `VERSION` on each release bump. Drift check: `npm run check:openapi` (coverage floor + fail on stale yaml paths; `--strict` requires full coverage). After adding API routes, run `node scripts/generate-openapi-stubs.mjs` to append missing path stubs.
 - Web: `@sentry/react` when `VITE_SENTRY_DSN` is set at build; FA subset via `npm run fa:subset` + production vite plugin; online players WS at `/ws/servers/:id/players`
+- Feature docs hubs: [Server management](server-management.md), [Files and backups](files-and-backups.md), [Networking and allocations](networking-and-allocations.md), [Mods, plugins, and modpacks](mods-plugins-and-modpacks.md), [Player management](player-management.md)

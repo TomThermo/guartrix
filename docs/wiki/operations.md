@@ -10,6 +10,13 @@ bash scripts/start.sh      # stop old procs → health-check → watchdog
 
 Alternatives: `npm run prod` or `npm run build && npm run start:prod`.
 
+Operational internals reference:
+
+- [Prod-web and downloads](prod-web-and-downloads.md)
+- [Build and release internals](build-and-release-internals.md)
+- [Daemon API](daemon-api.md)
+- [Node-agent internals](node-agent-internals.md)
+
 ## Ports
 
 | Service | Bind | Notes |
@@ -93,6 +100,8 @@ bash build/start.sh
 | `cert/` | TLS cert + key |
 | `.env` | Secrets |
 
+The daemon's sensitive runtime behavior behind these paths is described in [Node-agent internals](node-agent-internals.md).
+
 ## Activity log
 
 Actions are recorded in the panel DB and shown per server (**Activity Log** tab)
@@ -134,3 +143,9 @@ Also served:
 - `https://YOUR_PANEL/install.sh` (thin wrapper → downloads `install-panel.sh`)
 - `https://YOUR_PANEL/install-panel.sh`
 - `https://YOUR_PANEL/install-daemon.sh`
+
+## See also
+
+- [Install the panel](install-panel.md)
+- [Install nodes](install-nodes.md)
+- [Notifications and alerts](notifications-and-alerts.md)
