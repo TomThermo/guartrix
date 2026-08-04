@@ -6,7 +6,6 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import type { Plugin } from "vite";
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
-import { PurgeCSS } from "purgecss";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const webDir = path.dirname(fileURLToPath(import.meta.url));
@@ -20,13 +19,13 @@ function loadFaSafelist(): string[] {
   }
 }
 
-function walkSrc(dir: string, out: string[] = []): string[] {
-  for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
-    const p = path.join(dir, ent.name);
-    if (ent.isDirectory()) walkSrc(p, out);
-    else if (/\.(tsx?|jsx?|html)$/.test(ent.name)) out.push(p);
-  }
-  return out;
+/** Drop unused FA7 glyph rules (.fa-* { --fa: … }) without touching Bootstrap/app CSS. */
+function subsetFaGlyphRules(css: string, keep: Set<string>): string {
+  return css.replace(/\.fa-[a-z0-9-]+\{--fa:[^}]+\}/g, (rule) => {
+    const m = /^\.(fa-[a-z0-9-]+)/.exec(rule);
+    if (!m) return rule;
+    return keep.has(m[1]!) ? rule : "";
+  });
 }
 
 /** Production-only: drop unused Font Awesome solid glyph rules. */
@@ -35,23 +34,15 @@ function faSubsetPlugin(): Plugin {
     name: "fa-subset",
     apply: "build",
     enforce: "post",
-    async generateBundle(_options, bundle) {
-      const safelist = [
+    generateBundle(_options, bundle) {
+      const keep = new Set([
         ...loadFaSafelist(),
         "fa-solid",
         "fa-fw",
         "fa-spin",
         "fa-2x",
         "fa-lg",
-      ];
-      const content = walkSrc(path.join(webDir, "src")).map((file) => ({
-        raw: fs.readFileSync(file, "utf8"),
-        extension: path.extname(file).slice(1),
-      }));
-      content.push({
-        raw: fs.readFileSync(path.join(webDir, "index.html"), "utf8"),
-        extension: "html",
-      });
+      ]);
 
       for (const chunk of Object.values(bundle)) {
         if (chunk.type !== "asset" || !chunk.fileName.endsWith(".css")) continue;
@@ -59,14 +50,8 @@ function faSubsetPlugin(): Plugin {
         if (!chunk.source.includes(".fa-solid") || !chunk.source.includes("Font Awesome")) {
           continue;
         }
-        const purged = await new PurgeCSS().purge({
-          content,
-          css: [{ raw: chunk.source, name: chunk.fileName }],
-          safelist: { standard: safelist },
-          fontFace: true,
-        });
-        const next = purged[0]?.css;
-        if (next && next.length < chunk.source.length) {
+        const next = subsetFaGlyphRules(chunk.source, keep);
+        if (next.length < chunk.source.length) {
           chunk.source = next;
         }
       }

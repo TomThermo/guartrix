@@ -7,6 +7,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.80] — 2026-08-04
+
+- Fix production CSS: FA subset no longer runs PurgeCSS on the full bundle (Bootstrap grid/navbar was stripped)
+- Fix Font Awesome `@font-face` retained; icons render in panel and wiki screenshots
+- Wiki screenshot capture waits for webfonts; auth pages use viewport-only shots
+
 ## [1.0.79] — 2026-08-04
 
 - Wiki screenshot capture supports admin 2FA (`GUARTRIX_TOTP_FROM_DB` unseals DB secret; HTTPS for SESSION_SECURE)

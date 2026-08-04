@@ -224,8 +224,18 @@ async function sanitizePage(page) {
   );
 }
 
+async function waitForIcons(page) {
+  await page
+    .evaluate(async () => {
+      if (document.fonts?.ready) await document.fonts.ready;
+    })
+    .catch(() => {});
+  await new Promise((r) => setTimeout(r, 150));
+}
+
 async function shot(page, name, opts = {}) {
   await new Promise((r) => setTimeout(r, opts.delay ?? 400));
+  await waitForIcons(page);
   await sanitizePage(page);
   await page.screenshot({
     path: path.join(OUT, name),
@@ -360,13 +370,11 @@ async function main() {
 
   // --- Public pages ---
   await page.goto(`${BASE}/login`, { waitUntil: "networkidle2" });
-  await shot(page, "01-login.png");
-
+  await shot(page, "01-login.png", { fullPage: false });
   await page.goto(`${BASE}/register`, { waitUntil: "networkidle2" });
-  await shot(page, "17-register.png");
-
+  await shot(page, "17-register.png", { fullPage: false });
   await page.goto(`${BASE}/forgot-password`, { waitUntil: "networkidle2" });
-  await shot(page, "23-forgot-password.png");
+  await shot(page, "23-forgot-password.png", { fullPage: false });
 
   // --- Login ---
   await page.goto(`${BASE}/login`, { waitUntil: "networkidle2" });
