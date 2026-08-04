@@ -22,6 +22,7 @@ import { useI18n } from "../i18n/react";
 import { formatBytes, formatWhen } from "../utils";
 import { ConfirmModal } from "./ConfirmModal";
 import { EmptyState } from "./EmptyState";
+import { ScheduleFields } from "./ScheduleFields";
 import { TabLoading } from "./TabLoading";
 
 interface Props {
@@ -449,48 +450,16 @@ export function BackupPanel({
             {t("backups.scheduleTitle")}
           </h3>
           <Form onSubmit={(e) => void onSaveSchedule(e)}>
-            <Form.Group className="mb-3">
-              <Form.Label>{t("backups.mode")}</Form.Label>
-              <Form.Select
-                value={mode}
-                onChange={(e) => setMode(e.target.value as BackupScheduleMode)}
-              >
-                <option value="off">{t("backups.modeOff")}</option>
-                <option value="interval">{t("backups.modeInterval")}</option>
-                <option value="daily">{t("backups.modeDaily")}</option>
-              </Form.Select>
-            </Form.Group>
-
-            {mode === "interval" && (
-              <Form.Group className="mb-3">
-                <Form.Label>{t("backups.intervalHours")}</Form.Label>
-                <Form.Select
-                  value={intervalHours}
-                  onChange={(e) => setIntervalHours(Number(e.target.value))}
-                >
-                  {[1, 2, 3, 4, 6, 8, 12, 24, 48].map((h) => (
-                    <option key={h} value={h}>
-                      {t("backups.everyHours", {
-                        h,
-                        plural: h === 1 ? "" : "s",
-                      })}
-                    </option>
-                  ))}
-                </Form.Select>
-              </Form.Group>
-            )}
-
-            {mode === "daily" && (
-              <Form.Group className="mb-3">
-                <Form.Label>{t("backups.timeLocal")}</Form.Label>
-                <Form.Control
-                  type="time"
-                  value={dailyAt}
-                  onChange={(e) => setDailyAt(e.target.value)}
-                  required
-                />
-              </Form.Group>
-            )}
+            <ScheduleFields
+              labels="backups"
+              modes={["off", "interval", "daily"]}
+              mode={mode}
+              onModeChange={(m) => setMode(m as BackupScheduleMode)}
+              intervalHours={intervalHours}
+              onIntervalHoursChange={setIntervalHours}
+              dailyAt={dailyAt}
+              onDailyAtChange={setDailyAt}
+            />
 
             <Form.Group className="mb-3">
               <Form.Label>{t("backups.keepLast")}</Form.Label>

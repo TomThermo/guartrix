@@ -782,6 +782,27 @@ export const en = {
     name: "Name",
     cron: "Cron",
     enabled: "Enabled",
+    newTitle: "New schedule",
+    whenLabel: "When",
+    stepsLabel: "Steps",
+    addStep: "Add step",
+    timing: {
+      when: "When",
+      modeDaily: "Daily at…",
+      modeWeekly: "Weekly on…",
+      modeInterval: "Every X hours",
+      time: "Time",
+      weekdays: "Weekdays",
+      intervalHours: "Interval (hours)",
+      everyHours: "Every {h} hour{plural}",
+      weekdaySun: "Sun",
+      weekdayMon: "Mon",
+      weekdayTue: "Tue",
+      weekdayWed: "Wed",
+      weekdayThu: "Thu",
+      weekdayFri: "Fri",
+      weekdaySat: "Sat",
+    },
   },
   whitelist: {
     title: "Whitelist Manager",
@@ -1208,8 +1229,8 @@ export const en = {
  * Deep string map matching `en` shape — locale catalogs share keys;
  * leaf values are plain strings (not locked to English literals).
  */
-export type Messages = {
-  [K in keyof typeof en]: {
-    [P in keyof (typeof en)[K]]: string;
-  };
-};
+type DeepStringMap<T> = T extends string
+  ? string
+  : { [K in keyof T]: DeepStringMap<T[K]> };
+
+export type Messages = DeepStringMap<typeof en>;

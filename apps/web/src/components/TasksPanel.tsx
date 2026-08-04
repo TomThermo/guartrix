@@ -14,6 +14,7 @@ import { api } from "../api";
 import { useI18n } from "../i18n/react";
 import { formatWhen } from "../utils";
 import { ConfirmModal } from "./ConfirmModal";
+import { ScheduleFields } from "./ScheduleFields";
 
 interface Props {
   serverId: string;
@@ -228,88 +229,27 @@ export function TasksPanel({
           <Col lg={5}>
             <h3 className="h6 mb-3">
               <i className="fa-solid fa-plus me-2" />
-              New schedule
+              {t("schedules.newTitle")}
             </h3>
             <Form onSubmit={(e) => void onCreate(e)}>
-              <Form.Group className="mb-3">
-                <Form.Label>When</Form.Label>
-                <Form.Select
-                  value={mode}
-                  onChange={(e) =>
-                    setMode(e.target.value as "daily" | "interval" | "weekly")
-                  }
-                >
-                  <option value="daily">Daily at…</option>
-                  <option value="weekly">Weekly on…</option>
-                  <option value="interval">Every X hours</option>
-                </Form.Select>
-              </Form.Group>
-
-              {(mode === "daily" || mode === "weekly") && (
-                <Form.Group className="mb-3">
-                  <Form.Label>Time</Form.Label>
-                  <Form.Control
-                    type="time"
-                    value={dailyAt}
-                    onChange={(e) => setDailyAt(e.target.value)}
-                    required
-                  />
-                </Form.Group>
-              )}
-
-              {mode === "weekly" && (
-                <Form.Group className="mb-3">
-                  <Form.Label>Weekdays</Form.Label>
-                  <div className="d-flex flex-wrap gap-2">
-                    {(
-                      [
-                        [0, "Sun"],
-                        [1, "Mon"],
-                        [2, "Tue"],
-                        [3, "Wed"],
-                        [4, "Thu"],
-                        [5, "Fri"],
-                        [6, "Sat"],
-                      ] as const
-                    ).map(([day, label]) => (
-                      <Form.Check
-                        key={day}
-                        type="checkbox"
-                        id={`weekday-${day}`}
-                        label={label}
-                        checked={weekdays.includes(day)}
-                        onChange={(e) => {
-                          setWeekdays((prev) =>
-                            e.target.checked
-                              ? [...prev, day].sort((a, b) => a - b)
-                              : prev.filter((d) => d !== day),
-                          );
-                        }}
-                      />
-                    ))}
-                  </div>
-                </Form.Group>
-              )}
-
-              {mode === "interval" && (
-                <Form.Group className="mb-3">
-                  <Form.Label>Interval (hours)</Form.Label>
-                  <Form.Select
-                    value={intervalHours}
-                    onChange={(e) => setIntervalHours(Number(e.target.value))}
-                  >
-                    {[1, 2, 3, 4, 6, 8, 12, 24, 48].map((h) => (
-                      <option key={h} value={h}>
-                        Every {h} hour{h === 1 ? "" : "s"}
-                      </option>
-                    ))}
-                  </Form.Select>
-                </Form.Group>
-              )}
+              <ScheduleFields
+                labels="schedules"
+                modes={["daily", "weekly", "interval"]}
+                mode={mode}
+                onModeChange={(m) =>
+                  setMode(m as "daily" | "interval" | "weekly")
+                }
+                intervalHours={intervalHours}
+                onIntervalHoursChange={setIntervalHours}
+                dailyAt={dailyAt}
+                onDailyAtChange={setDailyAt}
+                weekdays={weekdays}
+                onWeekdaysChange={setWeekdays}
+              />
 
               <div className="mb-3">
                 <div className="d-flex justify-content-between align-items-center mb-2">
-                  <Form.Label className="mb-0">Steps</Form.Label>
+                  <Form.Label className="mb-0">{t("schedules.stepsLabel")}</Form.Label>
                   <Button
                     type="button"
                     size="sm"
@@ -317,7 +257,7 @@ export function TasksPanel({
                     disabled={busy || steps.length >= 20}
                     onClick={() => setSteps((prev) => [...prev, newDraftStep("wait")])}
                   >
-                    Add step
+                    {t("schedules.addStep")}
                   </Button>
                 </div>
                 <Stack gap={2}>
