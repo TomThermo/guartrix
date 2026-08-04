@@ -7,6 +7,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.79] — 2026-08-04
+
+- Wiki screenshot capture supports admin 2FA (`GUARTRIX_TOTP_FROM_DB` unseals DB secret; HTTPS for SESSION_SECURE)
+- Refreshed docs/wiki/assets screenshots; Sprint 9 dev polish 6/6
+
 ## [1.0.78] — 2026-08-04
 
 - File manager i18n: errors, dialogs, bulk select, unzip label (EN/NL)

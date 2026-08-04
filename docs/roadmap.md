@@ -75,7 +75,7 @@ See [panel-settings.md](wiki/panel-settings.md) · [install-panel.md](wiki/insta
 | Biome `noExplicitAny` | warn → error | [x] |
 | FA solid CSS subset | `npm run fa:subset` + vite build plugin | [x] |
 | OnlinePlayers WS | `/ws/servers/:id/players` + provider | [x] |
-| Screenshots after UI changes | `scripts/capture-wiki-screenshots.mjs` | [—] blocked on download host (admin 2FA login) |
+| Screenshots after UI changes | `scripts/capture-wiki-screenshots.mjs` | [x] `GUARTRIX_TOTP_FROM_DB=1` + HTTPS |
 
 ---
 

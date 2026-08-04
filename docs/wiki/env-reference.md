@@ -98,6 +98,7 @@ The license **server** is hosted separately by Guartrix (default `https://licens
 | `SFTP_PORT` / `SFTP_ENABLED` | Embedded SFTP per node |
 | `PANEL_URL` | URL the daemon uses for SFTP password checks |
 | `GUARTRIX_REPO_URL` | Git URL for remote install scripts |
+| `GUARTRIX_SERVER_ID` / `GUARTRIX_TOTP_FROM_DB` / `GUARTRIX_TOTP_SECRET` / `GUARTRIX_TOTP` | Docs host only — wiki screenshot capture (`scripts/capture-wiki-screenshots.mjs`); not used by panel runtime |
 | `MYSQL_PORT` / `MYSQL_IMAGE` | Per-node game MySQL container |
 | `MYSQL_PUBLIC_HOST` | Hostname plugins use for game MySQL (default Docker DNS `guartrix-mysql`) |
 

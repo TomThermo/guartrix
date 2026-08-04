@@ -4,16 +4,21 @@
  *
  * Usage:
  *   GUARTRIX_USER=admin GUARTRIX_PASS='…' GUARTRIX_SERVER_ID=… \
+ *   GUARTRIX_TOTP_FROM_DB=1 \
  *     node scripts/capture-wiki-screenshots.mjs
  *
  * Optional:
  *   GUARTRIX_DEMO_SERVER_NAME=server1  — hide other servers on dashboard
  *   GUARTRIX_SCRUB_IPS=1               — replace public IPv4 with 127.0.0.1
  *   GUARTRIX_PLACEHOLDER_PLAYERS=1     — mock online/history player APIs
+ *   GUARTRIX_TOTP_FROM_DB=1            — load/unseal admin TOTP from panel DB
+ *   GUARTRIX_TOTP_SECRET               — base32 secret (when not using FROM_DB)
+ *   GUARTRIX_TOTP                      — one-shot 6-digit code (overrides secret)
  *
  * Requires: puppeteer installed in /tmp/gx-shot (or PUPPETEER_MODULE).
  */
 import { createRequire } from "node:module";
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -50,6 +55,11 @@ const SERVER_ID = process.env.GUARTRIX_SERVER_ID || "";
 const DEMO_NAME = process.env.GUARTRIX_DEMO_SERVER_NAME || "server1";
 const SCRUB_IPS = process.env.GUARTRIX_SCRUB_IPS !== "0";
 const PLACEHOLDER_PLAYERS = process.env.GUARTRIX_PLACEHOLDER_PLAYERS !== "0";
+const TOTP_FROM_DB =
+  process.env.GUARTRIX_TOTP_FROM_DB === "1" ||
+  process.env.GUARTRIX_TOTP_FROM_DB === "true";
+let TOTP_SECRET = (process.env.GUARTRIX_TOTP_SECRET || "").trim();
+const TOTP_CODE = (process.env.GUARTRIX_TOTP || "").trim();
 
 if (!PASS) {
   console.error("Set GUARTRIX_PASS or ADMIN_PASSWORD in .env");
@@ -58,6 +68,74 @@ if (!PASS) {
 if (!SERVER_ID) {
   console.error("Set GUARTRIX_SERVER_ID to the demo server id");
   process.exit(1);
+}
+
+const TOTP_ENC_PREFIX = "enc:v1:";
+
+function unsealTotpSecret(stored) {
+  if (!stored.startsWith(TOTP_ENC_PREFIX)) return stored;
+  const secret =
+    process.env.SESSION_SECRET?.trim() || "dev-session-secret-change-me";
+  const key = crypto.scryptSync(secret, "guartrix-totp-v1", 32);
+  const raw = Buffer.from(stored.slice(TOTP_ENC_PREFIX.length), "base64url");
+  if (raw.length < 28) throw new Error("Corrupt TOTP secret");
+  const iv = raw.subarray(0, 12);
+  const tag = raw.subarray(12, 28);
+  const data = raw.subarray(28);
+  const decipher = crypto.createDecipheriv("aes-256-gcm", key, iv);
+  decipher.setAuthTag(tag);
+  return Buffer.concat([decipher.update(data), decipher.final()]).toString("utf8");
+}
+
+async function loadTotpSecretFromDb() {
+  const { PrismaClient } = await import("@prisma/client");
+  const prisma = new PrismaClient();
+  try {
+    const user = await prisma.user.findFirst({
+      where: { username: USER },
+      select: { totpSecret: true, totpEnabled: true },
+    });
+    if (!user?.totpEnabled || !user.totpSecret) {
+      throw new Error(`User ${USER} has no enabled TOTP secret in DB`);
+    }
+    return unsealTotpSecret(user.totpSecret);
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+/** RFC 6238 TOTP (SHA-1, 30s, 6 digits) from base32 secret. */
+function generateTotp(base32Secret, nowMs = Date.now()) {
+  const cleaned = base32Secret.replace(/\s+/g, "").toUpperCase();
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+  let bits = "";
+  for (const ch of cleaned) {
+    const val = alphabet.indexOf(ch);
+    if (val < 0) continue;
+    bits += val.toString(2).padStart(5, "0");
+  }
+  const bytes = [];
+  for (let i = 0; i + 8 <= bits.length; i += 8) {
+    bytes.push(parseInt(bits.slice(i, i + 8), 2));
+  }
+  const key = Buffer.from(bytes);
+  const counter = Math.floor(nowMs / 1000 / 30);
+  const buf = Buffer.alloc(8);
+  buf.writeBigUInt64BE(BigInt(counter));
+  const hmac = crypto.createHmac("sha1", key).update(buf).digest();
+  const offset = hmac[hmac.length - 1] & 0xf;
+  const code =
+    ((hmac[offset] & 0x7f) << 24) |
+    ((hmac[offset + 1] & 0xff) << 16) |
+    ((hmac[offset + 2] & 0xff) << 8) |
+    (hmac[offset + 3] & 0xff);
+  return String(code % 1_000_000).padStart(6, "0");
+}
+
+function resolveTotpCode() {
+  if (/^\d{6}$/.test(TOTP_CODE)) return TOTP_CODE;
+  if (TOTP_SECRET) return generateTotp(TOTP_SECRET);
+  return null;
 }
 
 const puppeteerPath =
@@ -209,6 +287,7 @@ async function dismissModals(page) {
 async function main() {
   const browser = await puppeteer.launch({
     headless: true,
+    ignoreHTTPSErrors: true,
     args: [
       "--no-sandbox",
       "--disable-setuid-sandbox",
@@ -219,6 +298,11 @@ async function main() {
   });
   const page = await browser.newPage();
   page.setDefaultTimeout(45000);
+
+  if (TOTP_FROM_DB) {
+    TOTP_SECRET = await loadTotpSecretFromDb();
+    console.log("Loaded TOTP secret from DB for", USER);
+  }
 
   if (PLACEHOLDER_PLAYERS) {
     await page.setRequestInterception(true);
@@ -303,14 +387,43 @@ async function main() {
   await page.type(userSel, USER, { delay: 20 });
   await page.click(passSel, { clickCount: 3 });
   await page.type(passSel, PASS, { delay: 20 });
-  await Promise.all([
-    page
-      .waitForNavigation({ waitUntil: "networkidle2", timeout: 60000 })
-      .catch(() => {}),
-    page.click('button[type="submit"], .btn-primary'),
-  ]);
-  await new Promise((r) => setTimeout(r, 1200));
-  if (page.url().includes("/login")) {
+  // SPA login — do not wait for navigation (password step stays on /login for 2FA).
+  await page.click('button[type="submit"], .btn-primary');
+  await page
+    .waitForFunction(
+      () =>
+        Boolean(document.querySelector("#totp-code")) ||
+        !location.pathname.includes("/login"),
+      { timeout: 60000 },
+    )
+    .catch(() => {});
+  await new Promise((r) => setTimeout(r, 800));
+
+  // Admin 2FA: SPA stays on /login and shows #totp-code.
+  const totpInput = await page.$("#totp-code, input[autocomplete='one-time-code']");
+  if (totpInput) {
+    const code = resolveTotpCode();
+    if (!code) {
+      console.error(
+        "2FA required — set GUARTRIX_TOTP_FROM_DB=1, GUARTRIX_TOTP_SECRET, or GUARTRIX_TOTP=123456",
+      );
+      await shot(page, "_login-failed.png");
+      await browser.close();
+      process.exit(2);
+    }
+    await totpInput.click({ clickCount: 3 });
+    await totpInput.type(code, { delay: 20 });
+    await page.click('button[type="submit"], .btn-primary');
+    await page
+      .waitForFunction(() => !location.pathname.includes("/login"), {
+        timeout: 60000,
+      })
+      .catch(() => {});
+    await new Promise((r) => setTimeout(r, 1000));
+  }
+
+  const stillOnLogin = page.url().includes("/login");
+  if (stillOnLogin) {
     console.error("Login failed; still on", page.url());
     await shot(page, "_login-failed.png");
     await browser.close();
