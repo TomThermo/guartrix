@@ -19,6 +19,12 @@ license.env
 # Live license config is data/license.env (under data/, already ignored)
 *.pem
 
+# Operator-only license issuer — NEVER in this public panel repo.
+# Lives as a sibling checkout (e.g. ../guartrix-license-server), not under apps/.
+apps/license-server/
+apps/license-server/**
+**/guartrix-license-server/
+
 # Runtime / generated data (never commit)
 data/
 # Keep env templates next to live files (data/*.env.example is tracked)

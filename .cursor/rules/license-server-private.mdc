@@ -1,0 +1,26 @@
+---
+description: Never commit or ship the license-server issuer into the panel repo
+alwaysApply: true
+---
+
+# License-server stays private
+
+The **license issuer** (`guartrix-license-server` / `apps/license-server`) must **never** live in the public Guartrix panel GitHub repo or in customer download zips.
+
+## Facts
+
+- Operator source lives **outside** this repo (sibling dir, e.g. `../guartrix-license-server`).
+- Panel only has **client** license code: validate against `LICENSE_SERVER_URL`, verify with **public** key.
+- `signing-private.pem` / issuer DB stay under `data/` (gitignored) on the operator host.
+
+## Do not
+
+- Copy or recreate `apps/license-server` into this monorepo
+- Commit issuer source, private PEM, or `licenses.json`
+- Add a GitHub remote that publishes the sibling license-server tree
+
+## OK in this repo
+
+- `apps/api` license client, Admin → License UI
+- `packages/shared` verify helpers + public key shipping for customers
+- Docs that describe calling `https://license.guartrix.com` (not how to run the issuer)

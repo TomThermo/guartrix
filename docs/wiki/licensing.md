@@ -54,6 +54,8 @@ See [Environment variables](env-reference.md).
 
 This is a **commercial control plane**, not DRM. Prefer [release builds](release-builds.md) (no sources in the customer tarball). A determined attacker with a patched panel can still skip checks.
 
+The **license issuer** (signing keys, admin UI that mints `GTRX-…` keys) is **not** part of this repository. It runs only on Guartrix operator infrastructure. Customer / public panel code only **calls** `LICENSE_SERVER_URL` and verifies signatures with the shipped **public** key. Never commit `apps/license-server`, `signing-private.pem`, or issuer databases into this repo.
+
 ## Related
 
 - [Install the panel](install-panel.md)
