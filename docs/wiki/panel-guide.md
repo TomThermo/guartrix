@@ -4,6 +4,16 @@ Visual walkthrough of everything you can do in the Guartrix web panel. Screensho
 
 **Live panel:** [https://guartrix.com](https://guartrix.com)
 
+Use this page as the visual tour. For deeper behavior, limits, and internal notes, jump to:
+
+- [Accounts & quotas](accounts-and-quotas.md)
+- [Server management](server-management.md)
+- [Files and backups](files-and-backups.md)
+- [Networking and allocations](networking-and-allocations.md)
+- [Player management](player-management.md)
+- [Mods, plugins, and modpacks](mods-plugins-and-modpacks.md)
+- [Notifications and alerts](notifications-and-alerts.md)
+
 ---
 
 ## Sign in & accounts
@@ -48,6 +58,8 @@ Admins manage plans (including auto-create / recurring) and Application API keys
 
 ![Admin billing](assets/29-admin-billing.png)
 
+More: [Application API & Mollie](application-api.md) · [Billing internals](billing-internals.md)
+
 ---
 
 ## Dashboard (server list)
@@ -67,6 +79,8 @@ Each row shows clickable chips for **disk used / limit**, **online players** (`0
 ![Create server](assets/03-create-server.png)
 
 The same page has an **Import archive** tab to create a server from an existing world/server `.zip` or `.tar.gz`. **Clone** lives on the server detail page (top actions).
+
+More: [Server management](server-management.md)
 
 ---
 
@@ -144,6 +158,8 @@ More: [Activity log](activity-log.md)
 
 ![Statusline](assets/07-statusline.png)
 
+More: [Operations](operations.md) · [Daemon API](daemon-api.md)
+
 ---
 
 ## Server detail
@@ -155,6 +171,15 @@ Open a server from the dashboard. Sidebar groups:
 | Manage service | Console, File Manager, **SFTP**, Databases, **Network**, Backups, Subusers |
 | Game | Server Properties, **World Map**, **Engine** (Paper/Purpur), **Plugin Management**, **Modpacks** (Fabric/Forge…), Whitelist, Online Players, Bans |
 | Management | Schedules, **Activity Log**, Log Files, Resources |
+
+This page is the visual overview. Use these deeper references for the full behavior:
+
+- [Server management](server-management.md)
+- [Files and backups](files-and-backups.md)
+- [Networking and allocations](networking-and-allocations.md)
+- [Player management](player-management.md)
+- [Mods, plugins, and modpacks](mods-plugins-and-modpacks.md)
+- [Notifications and alerts](notifications-and-alerts.md)
 
 The header meta row shows status, loader, owner, version, **online players** (`3/30` — opens Online Players), **Whitelist on/off** (opens a quick toggle modal), and **plugin/mod updates** (opens Plugin Management). Top actions include **Clone**, **Reinstall**, **Move** (admin — to another node), **Owner** (admin), and Start / Stop / Kill / Restart.
 
@@ -184,6 +209,8 @@ and the same World / mods·plugins / backups / other breakdown as Resources.
 
 ![File Manager](assets/09-server-files.png)
 
+More: [Files and backups](files-and-backups.md)
+
 ### SFTP (FileZilla / WinSCP)
 
 Copy-ready host, port **2022**, username `{panelUser}.{serverId}`. Password =
@@ -208,17 +235,23 @@ Permissions: `allocation.read` / `create` / `update` / `delete`.
 
 ![Network](assets/24-server-network.png)
 
+More: [Networking and allocations](networking-and-allocations.md)
+
 ### Backups
 
 Create archives, download/upload, restore. Pair with **Schedules** for automation.
 
 ![Backups](assets/11-server-backups.png)
 
+More: [Files and backups](files-and-backups.md)
+
 ### Subusers
 
 Invite by email with fine-grained permissions (console, files, SFTP, backups, …).
 
 ![Subusers](assets/16-server-subusers.png)
+
+More: [Accounts & quotas](accounts-and-quotas.md)
 
 ### Server Properties
 
@@ -239,6 +272,8 @@ Console sidebar **Join this server** shows address, direct IP, version, whitelis
 Server Properties → **General**: optional owner Discord webhook / email for crash, OOM, disk-high, offline, and backup-failed. **Discord status** keeps one channel message updated (webhook, no bot token) with online/offline and player count.
 
 **Account → Security → Push alerts**: opt-in browser / PWA notifications for the same critical events (requires operator `VAPID_*` keys). Alerts go to the **server owner** who enabled push on that device.
+
+More: [Notifications and alerts](notifications-and-alerts.md)
 
 ### Behind a proxy
 
@@ -277,6 +312,8 @@ The panel also checks Modrinth for newer builds compatible with the server’s l
 ![Plugin Management](assets/12-server-addons.png)
 
 ![Addon version picker](assets/36-addon-version-picker.png)
+
+More: [Mods, plugins, and modpacks](mods-plugins-and-modpacks.md)
 
 ### Whitelist Manager
 
@@ -340,11 +377,9 @@ forked API worker process (not inside Fastify); require `online-mode=false`.
 
 The panel is a Progressive Web App: production builds register a service worker
 (`/sw.js`) that caches the app shell, so browsers offer **Install app** / Add to
-Home Screen and the UI loads instantly on revisit. There are **no push
-notifications** — alerts go via Discord/email webhooks and optional Web Push
-(see [Activity log](activity-log.md) and Account → Security). A hard refresh
-picks up the latest shell when the PWA is installed.
-new panel versions.
+Home Screen and the UI loads instantly on revisit. Optional browser **Web Push**
+alerts can be enabled from **Account → Security** when the operator configured
+`VAPID_*` keys. A hard refresh picks up the latest app shell after new panel versions.
 
 ---
 
@@ -366,5 +401,10 @@ new panel versions.
 
 - [Install the panel](install-panel.md)
 - [Accounts & quotas](accounts-and-quotas.md)
+- [Server management](server-management.md)
+- [Files and backups](files-and-backups.md)
+- [Networking and allocations](networking-and-allocations.md)
+- [Player management](player-management.md)
+- [Mods, plugins, and modpacks](mods-plugins-and-modpacks.md)
 - [SFTP](sftp.md)
 - [Operations](operations.md)
