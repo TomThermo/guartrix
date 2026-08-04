@@ -244,7 +244,10 @@ export function SettingsGeneralPanel({
                 </Row>
                 <Row className="g-3 mb-1">
                   <Col md={6}>
-                    <Field label="Start on boot" hint="Start this server when Guartrix starts">
+                    <Field
+                      label="Start on boot"
+                      hint="After a panel/host restart, start again only if it was still running (not if you stopped it)"
+                    >
                       <Form.Select
                         value={startOnBoot ? "true" : "false"}
                         onChange={(e) => setStartOnBoot(e.target.value === "true")}

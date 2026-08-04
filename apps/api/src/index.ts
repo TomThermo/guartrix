@@ -151,6 +151,18 @@ async function main() {
     logger.warn({ err: msg }, "Scheduled-task JSON migration skipped");
   }
 
+  // Capture before reconcile: startOnBoot only resumes servers that were
+  // actively running (or mid start/stop) when the panel went down — not ones
+  // the user already stopped (status STOPPED / ERROR stay down).
+  const bootResumeRows = await prisma.server.findMany({
+    where: {
+      startOnBoot: true,
+      status: { in: ["RUNNING", "STARTING", "STOPPING"] },
+    },
+    select: { id: true },
+  });
+  const bootResumeIds = new Set(bootResumeRows.map((s) => s.id));
+
   // Reconcile status with reality instead of blindly marking everything
   // STOPPED. A server whose container is still actually running (e.g. after
   // an API/daemon restart, deploy, or watchdog-triggered restart) must stay
@@ -494,11 +506,9 @@ async function main() {
     await import("./license.js");
   startLicenseWatcher();
 
-  // Start servers marked startOnBoot — one at a time, with a cooldown in
-  // between, so a VPS reboot doesn't slam the CPU with several JVMs booting
-  // simultaneously. Runs on every API startup (not just a real host reboot),
-  // so servers that are already running (survived the restart — see the
-  // reconciliation above) are skipped instead of being force-recreated.
+  // Resume startOnBoot servers that were running before this API start.
+  // User-stopped servers (DB status already STOPPED) are left alone even if
+  // startOnBoot stays enabled as a preference for the next crash/reboot while up.
   const license = await validateLicense(true).catch(() => null);
   if (!license?.valid) {
     app.log.warn(
@@ -506,10 +516,13 @@ async function main() {
       "License not valid — startOnBoot limited to unlicensed free tier (1 server ≤10 GB)",
     );
   }
-  const bootServers = await prisma.server.findMany({
-    where: { startOnBoot: true },
-    orderBy: { createdAt: "asc" },
-  });
+  const bootServers =
+    bootResumeIds.size === 0
+      ? []
+      : await prisma.server.findMany({
+          where: { id: { in: [...bootResumeIds] }, startOnBoot: true },
+          orderBy: { createdAt: "asc" },
+        });
   const bootStaggerMs = Number(process.env.BOOT_START_STAGGER_MS ?? 20_000);
   for (let i = 0; i < bootServers.length; i++) {
     const server = bootServers[i]!;

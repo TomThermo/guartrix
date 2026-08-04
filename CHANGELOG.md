@@ -7,6 +7,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.71] — 2026-08-04
+
+- startOnBoot no longer restarts servers the user already stopped (only resumes if status was running/starting)
+
 ## [1.0.70] — 2026-08-04
 
 - Fix duplicate "Server marked as OFF" on intentional stop (race with attach exit handler)
