@@ -74,7 +74,7 @@ Hardening in place:
 
 The **license issuer** (signing keys, admin UI that mints `GTRX-…` keys) is **not** part of this repository. It runs only on Guartrix operator infrastructure. Never commit `apps/license-server`, `signing-private.pem`, or issuer databases into this repo.
 
-Operator tip: keep the GitHub panel repo **private** to reduce casual source copies.
+The panel GitHub repo stays **public** (source available). License control relies on signed tickets + daemon co-enforcement and the private issuer — not on hiding panel source.
 
 ## Related
 
