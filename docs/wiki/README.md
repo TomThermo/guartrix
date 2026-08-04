@@ -23,7 +23,7 @@ Operator and developer documentation for the Guartrix Minecraft hosting panel.
 
 | Page | Description |
 |------|-------------|
-| [Architecture](architecture.md) | Monorepo layout, request flow, panel ↔ daemon |
+| [Architecture](architecture.md) | Tech stack (Node, Vite, React, Fastify, Prisma/MySQL, Docker, Redis), monorepo, panel ↔ daemon |
 | [API and surface map](api-surface-map.md) | Full inventory of UI pages, route families, daemon routes, packages, scripts, and schema domains |
 | [Environment variables](env-reference.md) | `.env` / `daemon.env` knobs |
 | [Panel settings (Admin UI)](panel-settings.md) | Domain, SMTP, HTTPS, quotas, alerts via Admin → Settings |

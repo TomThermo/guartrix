@@ -25,6 +25,19 @@ Guartrix is a panel and daemon stack for commercial or private Minecraft hosting
 
 Supported server types include Vanilla, Paper, Purpur, Fabric, Quilt, Forge, and NeoForge.
 
+### Tech stack
+
+| Layer | Technologies |
+|-------|----------------|
+| **Runtime** | Node.js **22+**, TypeScript |
+| **Web UI** | React 19, Vite 6, React Router, Bootstrap 5 / React-Bootstrap |
+| **API** | Fastify 5, Prisma → **MySQL** (panel DB) |
+| **Daemon / nodes** | Fastify agent, Docker Engine (game containers), SFTP (`ssh2`), node-local MySQL for game DBs |
+| **Optional** | Redis (sessions / rate limits / HA), SMTP, Mollie, Sentry, Prometheus metrics |
+| **Prod serve** | `prod-web.mjs` serves `apps/web/dist` and proxies `/api` + `/ws` to the API |
+
+Install targets and OS matrix: [Requirements](#requirements). Monorepo layout: [Architecture](#architecture).
+
 ---
 
 ## Screenshots
@@ -59,7 +72,7 @@ Full UI tour: [Panel guide](docs/wiki/panel-guide.md).
 
 ## Requirements
 
-The installer targets **apt-based** Linux (Docker, Node.js 22).
+The installer targets **apt-based** Linux (**Docker**, **Node.js 22**, panel **MySQL**; optional Redis).
 
 | Distribution | Status |
 |--------------|--------|
@@ -130,7 +143,7 @@ API ──HTTP + WebSocket──► Daemon(s) (:8081) ──► Docker · SFTP (
 
 | Component | Responsibility |
 |-----------|----------------|
-| `apps/web` | React control panel |
+| `apps/web` | React + Vite control panel |
 | `apps/api` | Fastify API, sessions, Prisma (MySQL) |
 | `apps/daemon` | Node agent HTTP API |
 | `packages/node-agent` | Docker, files, SFTP, metrics, MySQL helper |

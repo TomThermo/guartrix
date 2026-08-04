@@ -1,5 +1,19 @@
 # Architecture
 
+## Tech stack
+
+| Layer | Technologies |
+|-------|----------------|
+| **Runtime** | Node.js **22+**, TypeScript (npm workspaces monorepo) |
+| **Web UI** | React 19, Vite 6, React Router, Bootstrap 5 / React-Bootstrap, Font Awesome |
+| **API** | Fastify 5, Prisma ORM → panel **MySQL**, file or Redis sessions, WebSockets |
+| **Daemon** | Thin Fastify wrapper around `packages/node-agent` |
+| **Node agent** | Docker Engine (Minecraft containers + stats), SFTP (`ssh2` on :2022), firewall/UFW helpers, node-local MySQL for game databases |
+| **Optional** | Redis (`ioredis`) for multi-API HA, SMTP mail, Mollie billing, Sentry, Prometheus (`/metrics`) |
+| **Production web** | `scripts/prod-web.mjs` serves `apps/web/dist`, proxies `/api` and `/ws` to API `:3001` |
+
+Host prerequisites (OS, Docker, Node): [Install the panel](install-panel.md) · [README requirements](../../README.md#requirements).
+
 ## High-level
 
 Guartrix is a **single panel** (web + API) that controls **one or more daemons** (nodes). Each daemon runs Minecraft servers as Docker containers on its own host.

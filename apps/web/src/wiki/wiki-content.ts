@@ -16,7 +16,7 @@ export const wikiArticles: WikiArticle[] = [
     summary:
       "A high-level introduction to the panel, daemon, supported server types, architecture, requirements, and documentation entry points.",
     category: "Overview",
-    keywords: ["overview", "readme", "panel", "daemon", "architecture", "requirements"],
+    keywords: ["overview", "readme", "panel", "daemon", "architecture", "requirements", "stack", "node", "vite", "mysql", "docker", "react", "fastify"],
     sourcePath: "README.md",
     relatedSlugs: ["install-panel", "panel-guide", "api-surface-map"],
     sections: [
@@ -37,6 +37,20 @@ export const wikiArticles: WikiArticle[] = [
           "Quilt",
           "Forge",
           "NeoForge",
+        ],
+      },
+      {
+        title: "Tech stack",
+        paragraphs: [
+          "Guartrix is a Node.js 22+ / TypeScript monorepo. The web UI is React 19 built with Vite; the API is Fastify with Prisma on MySQL; each node runs a Fastify daemon that drives Docker game containers, SFTP, and optional node-local MySQL.",
+        ],
+        bullets: [
+          "Runtime: Node.js 22+, TypeScript",
+          "Web: React 19, Vite 6, React Router, Bootstrap 5",
+          "API: Fastify 5, Prisma → panel MySQL",
+          "Daemon / nodes: Docker Engine, SFTP (ssh2), node MySQL for game DBs",
+          "Optional: Redis (HA), SMTP, Mollie, Sentry, Prometheus metrics",
+          "Production: prod-web serves the Vite build and proxies /api and /ws",
         ],
       },
       {
