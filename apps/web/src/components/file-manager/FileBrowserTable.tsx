@@ -1,5 +1,6 @@
+import { useMemo, useState, type DragEvent } from "react";
 import type { FileEntry } from "@msm/shared";
-import { Button, Form, Stack, Table } from "react-bootstrap";
+import { Button, Form } from "react-bootstrap";
 import { useI18n } from "../../i18n/react";
 import { formatBytes } from "../../utils";
 import { EmptyState } from "../EmptyState";
@@ -12,19 +13,25 @@ import {
   showDownloadButton,
   showRenameButton,
 } from "./file-permissions";
+import type { ContextMenuState } from "./FileContextMenu";
 
 interface Props {
   cwd: string;
   entries: FileEntry[];
   loading: boolean;
   busy: boolean;
-  editingPath: string | null;
+  activeFilePath: string | null;
   selected: Set<string>;
   allSelected: boolean;
   canDownload: boolean;
   canArchive: boolean;
   canUpdate: boolean;
   canDelete: boolean;
+  canUpload: boolean;
+  filter: string;
+  uploadProgress: string | null;
+  dragActive: boolean;
+  onFilterChange: (value: string) => void;
   onGoTo: (path: string) => void;
   onOpenEntry: (entry: FileEntry) => void;
   onToggleSelect: (path: string) => void;
@@ -33,6 +40,24 @@ interface Props {
   onDecompress: (entry: FileEntry) => void;
   onRename: (entry: FileEntry) => void;
   onDelete: (entry: FileEntry) => void;
+  onContextMenu: (menu: ContextMenuState) => void;
+  onDragEnter: () => void;
+  onDragLeave: () => void;
+  onDropFiles: (files: FileList) => void;
+}
+
+function entryIcon(entry: FileEntry): string {
+  if (entry.type === "dir") return "fa-folder text-warning";
+  const n = entry.name.toLowerCase();
+  if (n.endsWith(".jar")) return "fa-cube text-secondary";
+  if (n.endsWith(".yml") || n.endsWith(".yaml") || n.endsWith(".json") || n.endsWith(".properties")) {
+    return "fa-file-code text-secondary";
+  }
+  if (n.endsWith(".log") || n.endsWith(".txt")) return "fa-scroll text-secondary";
+  if (n.endsWith(".zip") || n.endsWith(".tar.gz") || n.endsWith(".tgz") || n.endsWith(".tar")) {
+    return "fa-file-zipper text-secondary";
+  }
+  return "fa-file text-secondary";
 }
 
 export function FileBrowserTable({
@@ -40,13 +65,18 @@ export function FileBrowserTable({
   entries,
   loading,
   busy,
-  editingPath,
+  activeFilePath,
   selected,
   allSelected,
   canDownload,
   canArchive,
   canUpdate,
   canDelete,
+  canUpload,
+  filter,
+  uploadProgress,
+  dragActive,
+  onFilterChange,
   onGoTo,
   onOpenEntry,
   onToggleSelect,
@@ -55,20 +85,94 @@ export function FileBrowserTable({
   onDecompress,
   onRename,
   onDelete,
+  onContextMenu,
+  onDragEnter,
+  onDragLeave,
+  onDropFiles,
 }: Props) {
   const { t } = useI18n();
-  const colSpan = 5;
+  const [dragDepth, setDragDepth] = useState(0);
 
-  if (loading) {
-    return <TabLoading py="sm" />;
+  const filtered = useMemo(() => {
+    const q = filter.trim().toLowerCase();
+    if (!q) return entries;
+    return entries.filter((e) => e.name.toLowerCase().includes(q));
+  }, [entries, filter]);
+
+  function handleDragEnter(e: DragEvent) {
+    if (!canUpload) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setDragDepth((d) => d + 1);
+    onDragEnter();
+  }
+
+  function handleDragLeave(e: DragEvent) {
+    if (!canUpload) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setDragDepth((d) => {
+      const next = Math.max(0, d - 1);
+      if (next === 0) onDragLeave();
+      return next;
+    });
+  }
+
+  function handleDragOver(e: DragEvent) {
+    if (!canUpload) return;
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  function handleDrop(e: DragEvent) {
+    if (!canUpload) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setDragDepth(0);
+    onDragLeave();
+    if (e.dataTransfer.files?.length) onDropFiles(e.dataTransfer.files);
   }
 
   return (
-    <div className="table-responsive border rounded surface">
-      <Table hover className="mb-0 align-middle">
-        <thead>
-          <tr className="text-secondary">
-            <th style={{ width: "2.5rem" }}>
+    <div
+      className={`file-browser border rounded surface${dragActive || dragDepth > 0 ? " is-dragover" : ""}`}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
+      {(dragActive || dragDepth > 0) && canUpload && (
+        <div className="file-drop-overlay">
+          <i className="fa-solid fa-cloud-arrow-up fa-2x mb-2" />
+          <div>{t("files.dropToUpload")}</div>
+        </div>
+      )}
+
+      <div className="file-browser-toolbar">
+        <div className="file-browser-filter">
+          <i className="fa-solid fa-magnifying-glass" />
+          <Form.Control
+            size="sm"
+            type="search"
+            placeholder={t("files.filterPlaceholder")}
+            value={filter}
+            onChange={(e) => onFilterChange(e.target.value)}
+            disabled={loading}
+          />
+        </div>
+        {uploadProgress && (
+          <span className="small text-secondary file-upload-progress">
+            {uploadProgress}
+          </span>
+        )}
+      </div>
+
+      {loading ? (
+        <TabLoading py="sm" />
+      ) : (
+        <div className="file-browser-list">
+          <div className="file-browser-header">
+            <div className="file-browser-col-check">
               {showBulkSelect({ canDownload, canArchive }) && (
                 <Form.Check
                   type="checkbox"
@@ -78,35 +182,44 @@ export function FileBrowserTable({
                   aria-label={t("files.selectAll")}
                 />
               )}
-            </th>
-            <th>{t("common.name")}</th>
-            <th>{t("files.size")}</th>
-            <th>{t("files.modified")}</th>
-            <th />
-          </tr>
-        </thead>
-        <tbody>
+            </div>
+            <div className="file-browser-col-name">{t("common.name")}</div>
+            <div className="file-browser-col-size">{t("files.size")}</div>
+            <div className="file-browser-col-modified">{t("files.modified")}</div>
+            <div className="file-browser-col-actions" />
+          </div>
+
           {cwd !== "." && cwd !== "" && (
-            <tr>
-              <td colSpan={colSpan}>
-                <Button
-                  variant="link"
-                  className="p-0"
-                  onClick={() => void onGoTo(parentPath(cwd))}
-                  disabled={busy}
-                >
-                  <i className="fa-solid fa-folder-open me-1" />
-                  ..
-                </Button>
-              </td>
-            </tr>
-          )}
-          {entries.map((entry) => (
-            <tr
-              key={entry.path}
-              className={editingPath === entry.path ? "table-active" : undefined}
+            <button
+              type="button"
+              className="file-browser-row file-browser-up"
+              disabled={busy}
+              onClick={() => void onGoTo(parentPath(cwd))}
             >
-              <td>
+              <div className="file-browser-col-check" />
+              <div className="file-browser-col-name">
+                <i className="fa-solid fa-folder-open me-2 text-warning" />
+                ..
+              </div>
+              <div className="file-browser-col-size" />
+              <div className="file-browser-col-modified" />
+              <div className="file-browser-col-actions" />
+            </button>
+          )}
+
+          {filtered.map((entry) => (
+            <div
+              key={entry.path}
+              className={`file-browser-row${
+                activeFilePath === entry.path ? " is-active" : ""
+              }${selected.has(entry.path) ? " is-selected" : ""}`}
+              onDoubleClick={() => void onOpenEntry(entry)}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                onContextMenu({ x: e.clientX, y: e.clientY, entry });
+              }}
+            >
+              <div className="file-browser-col-check">
                 {showBulkSelect({ canDownload, canArchive }) && (
                   <Form.Check
                     type="checkbox"
@@ -114,91 +227,87 @@ export function FileBrowserTable({
                     disabled={busy}
                     onChange={() => onToggleSelect(entry.path)}
                     aria-label={t("files.selectItem", { name: entry.name })}
+                    onClick={(e) => e.stopPropagation()}
                   />
                 )}
-              </td>
-              <td>
-                <Button
-                  variant="link"
-                  className="p-0 text-start"
-                  onClick={() => void onOpenEntry(entry)}
-                  disabled={busy}
-                >
-                  <i
-                    className={`fa-solid ${
-                      entry.type === "dir"
-                        ? "fa-folder text-warning"
-                        : "fa-file text-secondary"
-                    } me-2`}
-                  />
-                  {entry.name}
-                </Button>
-              </td>
-              <td className="small text-secondary">
+              </div>
+              <button
+                type="button"
+                className="file-browser-col-name file-browser-name-btn"
+                disabled={busy}
+                onClick={() => void onOpenEntry(entry)}
+              >
+                <i className={`fa-solid ${entryIcon(entry)} me-2`} />
+                <span className="text-truncate">{entry.name}</span>
+              </button>
+              <div className="file-browser-col-size small text-secondary">
                 {entry.type === "dir" ? "—" : formatBytes(entry.size)}
-              </td>
-              <td className="small text-secondary">
+              </div>
+              <div className="file-browser-col-modified small text-secondary">
                 {new Date(entry.modifiedAt).toLocaleString()}
-              </td>
-              <td className="text-end">
-                <Stack
-                  direction="horizontal"
-                  gap={1}
-                  className="justify-content-end flex-wrap"
-                >
-                  {showDownloadButton({ canDownload }, entry) && (
-                    <Button
-                      size="sm"
-                      variant="outline-secondary"
-                      disabled={busy}
-                      onClick={() => void onDownload(entry)}
-                    >
-                      {t("files.download")}
-                    </Button>
-                  )}
-                  {showDecompressButton({ canArchive }, entry) && (
-                      <Button
-                        size="sm"
-                        variant="outline-secondary"
-                        disabled={busy}
-                        onClick={() => void onDecompress(entry)}
-                      >
-                        {t("files.unzip")}
-                      </Button>
-                    )}
-                  {showRenameButton({ canUpdate }) && (
-                    <Button
-                      size="sm"
-                      variant="outline-secondary"
-                      disabled={busy}
-                      onClick={() => void onRename(entry)}
-                    >
-                      {t("files.rename")}
-                    </Button>
-                  )}
-                  {showDeleteButton({ canDelete }) && (
-                    <Button
-                      size="sm"
-                      variant="outline-danger"
-                      disabled={busy}
-                      onClick={() => void onDelete(entry)}
-                    >
-                      {t("files.delete")}
-                    </Button>
-                  )}
-                </Stack>
-              </td>
-            </tr>
+              </div>
+              <div className="file-browser-col-actions">
+                {showDownloadButton({ canDownload }, entry) && (
+                  <Button
+                    size="sm"
+                    variant="link"
+                    className="p-1"
+                    disabled={busy}
+                    title={t("files.download")}
+                    onClick={() => void onDownload(entry)}
+                  >
+                    <i className="fa-solid fa-download" />
+                  </Button>
+                )}
+                {showDecompressButton({ canArchive }, entry) && (
+                  <Button
+                    size="sm"
+                    variant="link"
+                    className="p-1"
+                    disabled={busy}
+                    title={t("files.unzip")}
+                    onClick={() => void onDecompress(entry)}
+                  >
+                    <i className="fa-solid fa-box-open" />
+                  </Button>
+                )}
+                {showRenameButton({ canUpdate }) && (
+                  <Button
+                    size="sm"
+                    variant="link"
+                    className="p-1"
+                    disabled={busy}
+                    title={t("files.rename")}
+                    onClick={() => void onRename(entry)}
+                  >
+                    <i className="fa-solid fa-pen" />
+                  </Button>
+                )}
+                {showDeleteButton({ canDelete }) && (
+                  <Button
+                    size="sm"
+                    variant="link"
+                    className="p-1 text-danger"
+                    disabled={busy}
+                    title={t("files.delete")}
+                    onClick={() => void onDelete(entry)}
+                  >
+                    <i className="fa-solid fa-trash" />
+                  </Button>
+                )}
+              </div>
+            </div>
           ))}
-          {!entries.length && (
-            <tr>
-              <td colSpan={colSpan}>
-                <EmptyState message={t("files.empty")} />
-              </td>
-            </tr>
+
+          {!filtered.length && (
+            <EmptyState
+              message={
+                filter.trim() ? t("files.filterEmpty") : t("files.empty")
+              }
+            />
           )}
-        </tbody>
-      </Table>
+        </div>
+      )}
     </div>
   );
 }

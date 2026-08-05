@@ -10,7 +10,7 @@ Password is your **panel password** or an **SFTP app password** from
 
 ![SFTP credentials in the panel](assets/10-server-sftp.png)
 
-For quick in-browser edits, use **File Manager** instead:
+For quick in-browser edits (Monaco editor with tabs), use **File Manager** instead:
 
 ![File Manager](assets/09-server-files.png)
 

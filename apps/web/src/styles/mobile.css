@@ -473,6 +473,54 @@ body {
     width: 100%;
   }
 
+  .file-workbench {
+    height: min(78vh, calc(100dvh - 12rem));
+    min-height: 22rem;
+  }
+
+  .file-workbench-tree {
+    display: none;
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 6;
+    width: min(82vw, 280px) !important;
+    max-width: none;
+    box-shadow: 8px 0 24px var(--bh-card-shadow);
+  }
+
+  .file-workbench-tree.is-mobile-open {
+    display: flex;
+  }
+
+  .file-workbench-tree.is-collapsed.is-mobile-open {
+    display: flex;
+  }
+
+  .file-workbench-resizer {
+    display: none;
+  }
+
+  .file-tree-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 5;
+    border: 0;
+    background: rgba(0, 0, 0, 0.45);
+  }
+
+  .file-browser-header,
+  .file-browser-row {
+    grid-template-columns: 2rem minmax(0, 1fr) 5rem;
+  }
+
+  .file-browser-col-modified,
+  .file-browser-col-actions {
+    display: none;
+  }
+
   .addon-gallery-slide {
     min-height: 180px;
     max-height: 260px;

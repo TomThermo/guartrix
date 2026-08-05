@@ -60,7 +60,7 @@ Full UI tour: [Panel guide](docs/wiki/panel-guide.md).
 
 **Resources** — RAM, CPU, and disk limits; live Docker stats; optional schedules (backup → restart → commands); crash auto-restart; owner alerts and Discord status webhooks.
 
-**Files & access** — in-panel file manager; SFTP on port 2022 (`{username}.{serverId}`); subusers with invite links and scoped permissions.
+**Files & access** — IDE-style file manager (folder tree, Monaco editor tabs, drag-and-drop upload); SFTP on port 2022 (`{username}.{serverId}`); subusers with invite links and scoped permissions.
 
 **Content** — Modrinth plugins/mods and modpacks; recommended plugin stacks; optional CurseForge; one-click Geyser; Velocity/Bungee **backend** helpers (does not host the proxy); BlueMap / world map; admin Mineflayer bots.
 

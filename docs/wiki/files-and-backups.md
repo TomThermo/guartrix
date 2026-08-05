@@ -14,11 +14,10 @@ The panel file manager uses `apps/api/src/routes/files.ts` on the panel side and
 
 Main capabilities:
 
-- list directories
-- read and edit text files
-- upload and download files
-- create folders
-- rename, move, copy, delete
+- browse with a folder tree and filtered file list
+- open multiple text files in Monaco editor tabs (syntax highlighting)
+- create files and folders; rename and delete
+- upload (multi-file and drag-and-drop) and download files
 - compress selected paths into an archive
 - decompress uploaded archives
 - download one path or a generated zip

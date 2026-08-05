@@ -154,6 +154,12 @@ export default defineConfig(({ mode }) => {
     define: {
       "import.meta.env.VITE_API_PORT": JSON.stringify(apiPort),
     },
+    optimizeDeps: {
+      include: ["monaco-editor", "@monaco-editor/react"],
+    },
+    worker: {
+      format: "es",
+    },
     server: {
       host: "0.0.0.0",
       port: 5173,

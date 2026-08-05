@@ -202,10 +202,19 @@ WebSocket console: live logs, send commands, power controls, address / RAM / CPU
 ### File Manager
 
 Browse, upload (up to **2 GiB**, streamed), edit, delete, **download**, and
-**zip / unzip** files inside the server data directory. Select multiple entries
-to zip in place or download as a zip. Needs `file.download` / `file.archive`
-for those actions. A disk usage card above the browser shows **used / quota · free**
-and the same World / mods·plugins / backups / other breakdown as Resources.
+**zip / unzip** files inside the server data directory. The Files tab is an
+IDE-style workbench:
+
+- **Folder tree** (left, collapsible / resizable) for quick navigation
+- **File list** with filter, multi-select, right-click context menu, and
+  drag-and-drop upload
+- **Monaco editor** with syntax highlighting, line numbers, multi-file tabs,
+  and Ctrl/⌘+S — for editable text configs (YAML, JSON, properties, …)
+
+Select multiple entries to zip in place or download as a zip. Needs
+`file.download` / `file.archive` for those actions. A disk usage card above
+the browser shows **used / quota · free** and the same World / mods·plugins /
+backups / other breakdown as Resources.
 
 ![File Manager](assets/09-server-files.png)
 
