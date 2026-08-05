@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import type { PlayersResponse, ServerDetail, ServerProperties } from "@msm/shared";
+import { isBdsServerType } from "@msm/shared";
 import { Button, Form } from "react-bootstrap";
 import { api } from "../api";
 import { useI18n } from "../i18n/react";
@@ -26,6 +27,7 @@ export function WhitelistManagerPanel({
   canUpdate = true,
 }: Props) {
   const { t } = useI18n();
+  const isBedrock = isBdsServerType(server.type);
   const [players, setPlayers] = useState<PlayersResponse>(server.players);
   const [props, setProps] = useState<ServerProperties>({ ...server.properties });
   const [wlName, setWlName] = useState("");
@@ -45,10 +47,12 @@ export function WhitelistManagerPanel({
     onError(null);
     try {
       const updated = await api.updateServer(server.id, {
-        properties: {
-          "white-list": props["white-list"] ?? "false",
-          "enforce-whitelist": props["enforce-whitelist"] ?? "false",
-        },
+        properties: isBedrock
+          ? { "white-list": props["white-list"] ?? "false" }
+          : {
+              "white-list": props["white-list"] ?? "false",
+              "enforce-whitelist": props["enforce-whitelist"] ?? "false",
+            },
       });
       onSaved(updated);
       setProps({ ...updated.properties });
@@ -132,6 +136,13 @@ export function WhitelistManagerPanel({
           {server.status === "RUNNING"
             ? " Changes are applied live on the running server."
             : " List changes apply on next start."}
+          {isBedrock && (
+            <>
+              {" "}
+              Bedrock uses Xbox gamertags (not Mojang Java names) and{" "}
+              <code>allow-list</code> in server.properties.
+            </>
+          )}
         </p>
       </header>
 
@@ -139,7 +150,7 @@ export function WhitelistManagerPanel({
         <h3 className="wl-card-title">Settings</h3>
         <Form onSubmit={(e) => void saveFlags(e)} className="wl-settings-grid">
           <div className="wl-settings-item">
-            <span className="wl-label">Whitelist</span>
+            <span className="wl-label">{isBedrock ? "Allowlist" : "Whitelist"}</span>
             <Form.Select
               value={bool(props["white-list"])}
               disabled={!canUpdate}
@@ -151,22 +162,24 @@ export function WhitelistManagerPanel({
               <option value="false">{t("whitelist.disabled")}</option>
             </Form.Select>
           </div>
-          <div className="wl-settings-item">
-            <span className="wl-label">Enforce whitelist</span>
-            <Form.Select
-              value={bool(props["enforce-whitelist"])}
-              disabled={!canUpdate}
-              onChange={(e) =>
-                setProps((prev) => ({
-                  ...prev,
-                  "enforce-whitelist": e.target.value,
-                }))
-              }
-            >
-              <option value="true">{t("whitelist.enabled")}</option>
-              <option value="false">{t("whitelist.disabled")}</option>
-            </Form.Select>
-          </div>
+          {!isBedrock && (
+            <div className="wl-settings-item">
+              <span className="wl-label">Enforce whitelist</span>
+              <Form.Select
+                value={bool(props["enforce-whitelist"])}
+                disabled={!canUpdate}
+                onChange={(e) =>
+                  setProps((prev) => ({
+                    ...prev,
+                    "enforce-whitelist": e.target.value,
+                  }))
+                }
+              >
+                <option value="true">{t("whitelist.enabled")}</option>
+                <option value="false">{t("whitelist.disabled")}</option>
+              </Form.Select>
+            </div>
+          )}
           {canUpdate && (
             <div className="wl-settings-action">
               <Button type="submit" variant="primary" disabled={savingFlags}>
@@ -178,7 +191,7 @@ export function WhitelistManagerPanel({
       </section>
 
       <section className="wl-card">
-        <h3 className="wl-card-title">Whitelist</h3>
+        <h3 className="wl-card-title">{isBedrock ? "Allowlist" : "Whitelist"}</h3>
         {canUpdate && (
           <Form onSubmit={(e) => void addWl(e)} className="wl-add-row">
             <Form.Control
@@ -198,7 +211,7 @@ export function WhitelistManagerPanel({
         ) : (
           <div className="wl-player-grid">
             {players.whitelist.map((p) => (
-              <div key={p.uuid} className="wl-player-chip" title={p.uuid}>
+              <div key={`${p.name}-${p.uuid}`} className="wl-player-chip" title={p.uuid}>
                 <PlayerHead uuid={p.uuid} name={p.name} size={28} />
                 <span className="wl-player-name">{p.name}</span>
                 {canUpdate && (

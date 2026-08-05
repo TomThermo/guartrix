@@ -7,6 +7,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.106] — 2026-08-05
+
+- Bedrock Whitelist tab: correct allowlist.json format, Xbox gamertags, permissions.json ops
+
 ## [1.0.105] — 2026-08-05
 
 - BDS: pre-build CA runtime image on daemon start; clearer console during first build

@@ -7,7 +7,7 @@ import { spawn } from "node:child_process";
 import type { ServerType } from "@msm/shared";
 import { config } from "../config.js";
 import { readDefaultServerIcon } from "../servers/default-icon.js";
-import { isBdsServerType } from "@msm/shared";
+import { isBdsServerType, serializeBdsAllowlist } from "@msm/shared";
 
 const USER_AGENT = "Guartrix/1.0 (MinecraftServerManager; contact@localhost)";
 
@@ -522,7 +522,12 @@ export async function prepareServerFiles(
   if (isBds) {
     await fs.writeFile(
       path.join(destDir, "allowlist.json"),
-      `${JSON.stringify({ allowlist: [] }, null, 2)}\n`,
+      serializeBdsAllowlist([]),
+      "utf8",
+    );
+    await fs.writeFile(
+      path.join(destDir, "permissions.json"),
+      "[]\n",
       "utf8",
     );
   }

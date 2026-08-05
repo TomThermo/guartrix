@@ -7,7 +7,17 @@ import type {
   PlayersResponse,
   ServerType,
 } from "@msm/shared";
-import { isBdsServerType } from "@msm/shared";
+import {
+  bdsConsoleGamertagArg,
+  isBdsServerType,
+  parseBdsAllowlistJson,
+  parseBdsPermissionsJson,
+  serializeBdsAllowlist,
+  serializeBdsPermissions,
+  validateBedrockGamertag,
+  type BdsAllowlistEntry,
+  type BdsPermissionEntry,
+} from "@msm/shared";
 import { daemonReadFile, daemonWriteFile } from "../nodes/daemon-client.js";
 import { prisma } from "../db.js";
 import { processManager } from "./process-manager.js";
@@ -55,36 +65,73 @@ async function serverTypeFor(serverId: string): Promise<ServerType> {
   return (row?.type ?? "VANILLA") as ServerType;
 }
 
-interface BdsAllowlistFile {
-  allowlist?: { name: string; ignoresPlayerLimit?: boolean }[];
+async function readBdsOpsAsPanelEntries(serverId: string): Promise<
+  {
+    name?: string;
+    uuid?: string;
+    level?: number;
+    bypassesPlayerLimit?: boolean;
+  }[]
+> {
+  const allowlist = await readBdsAllowlistEntries(serverId);
+  const xuidToName = new Map(
+    allowlist
+      .filter((e) => e.xuid)
+      .map((e) => [e.xuid!, e.name] as const),
+  );
+  const perms = await readBdsPermissions(serverId);
+  return perms
+    .filter((p) => p.permission === "operator")
+    .map((p) => ({
+      name: xuidToName.get(p.xuid) ?? `xuid:${p.xuid}`,
+      uuid: p.xuid,
+      level: 4,
+      bypassesPlayerLimit: false,
+    }));
 }
 
-async function readBdsAllowlistNames(serverId: string): Promise<string[]> {
+async function readBdsAllowlistEntries(serverId: string): Promise<BdsAllowlistEntry[]> {
   try {
     const res = (await daemonReadFile(serverId, "allowlist.json")) as {
       content?: string;
     };
-    const data = JSON.parse(res.content ?? "{}") as BdsAllowlistFile;
-    return (data.allowlist ?? [])
-      .map((e) => e.name?.trim())
-      .filter((n): n is string => Boolean(n));
+    return parseBdsAllowlistJson(res.content ?? "[]");
   } catch {
     return [];
   }
 }
 
-async function writeBdsAllowlist(serverId: string, names: string[]): Promise<void> {
-  const body: BdsAllowlistFile = {
-    allowlist: names.map((name) => ({
-      name,
-      ignoresPlayerLimit: false,
-    })),
-  };
-  await daemonWriteFile(
-    serverId,
-    "allowlist.json",
-    `${JSON.stringify(body, null, 2)}\n`,
-  );
+async function writeBdsAllowlistEntries(
+  serverId: string,
+  entries: BdsAllowlistEntry[],
+): Promise<void> {
+  await daemonWriteFile(serverId, "allowlist.json", serializeBdsAllowlist(entries));
+}
+
+async function readBdsPermissions(serverId: string): Promise<BdsPermissionEntry[]> {
+  try {
+    const res = (await daemonReadFile(serverId, "permissions.json")) as {
+      content?: string;
+    };
+    return parseBdsPermissionsJson(res.content ?? "[]");
+  } catch {
+    return [];
+  }
+}
+
+async function writeBdsPermissions(
+  serverId: string,
+  entries: BdsPermissionEntry[],
+): Promise<void> {
+  await daemonWriteFile(serverId, "permissions.json", serializeBdsPermissions(entries));
+}
+
+function runBdsAllowlistReload(serverId: string): void {
+  runLive(serverId, "allowlist reload");
+}
+
+function runBdsPermissionReload(serverId: string): void {
+  runLive(serverId, "permission reload");
 }
 
 export async function resolvePlayer(name: string): Promise<PlayerEntry> {
@@ -175,20 +222,24 @@ export async function readPlayers(serverId: string): Promise<PlayersResponse> {
 
   let whitelistRaw: { name?: string; uuid?: string }[] = [];
   if (isBdsServerType(serverType)) {
-    const names = await readBdsAllowlistNames(serverId);
-    whitelistRaw = names.map((name) => ({ name, uuid: "" }));
+    whitelistRaw = (await readBdsAllowlistEntries(serverId)).map((e) => ({
+      name: e.name,
+      uuid: e.xuid ?? "",
+    }));
   } else {
     whitelistRaw = await readJsonArray<{ name?: string; uuid?: string }>(
       serverId,
       "whitelist.json",
     );
   }
-  const opsRaw = await readJsonArray<{
-    name?: string;
-    uuid?: string;
-    level?: number;
-    bypassesPlayerLimit?: boolean;
-  }>(serverId, "ops.json");
+  const opsRaw = isBdsServerType(serverType)
+    ? await readBdsOpsAsPanelEntries(serverId)
+    : await readJsonArray<{
+        name?: string;
+        uuid?: string;
+        level?: number;
+        bypassesPlayerLimit?: boolean;
+      }>(serverId, "ops.json");
   const bans = await readBans(serverId);
 
   return {
@@ -402,19 +453,21 @@ export async function addWhitelist(
   name: string,
 ): Promise<PlayersResponse> {
   const serverType = await serverTypeFor(serverId);
-  const player = await resolvePlayer(name);
 
   if (isBdsServerType(serverType)) {
-    const names = await readBdsAllowlistNames(serverId);
-    if (names.some((n) => n.toLowerCase() === player.name.toLowerCase())) {
-      throw new Error(`${player.name} is already on the whitelist`);
+    const gamertag = validateBedrockGamertag(name);
+    const list = await readBdsAllowlistEntries(serverId);
+    if (list.some((e) => e.name.toLowerCase() === gamertag.toLowerCase())) {
+      throw new Error(`${gamertag} is already on the allowlist`);
     }
-    names.push(player.name);
-    await writeBdsAllowlist(serverId, names);
-    runLive(serverId, `allowlist add ${player.name}`);
+    list.push({ name: gamertag, ignoresPlayerLimit: false });
+    await writeBdsAllowlistEntries(serverId, list);
+    runLive(serverId, `allowlist add ${bdsConsoleGamertagArg(gamertag)}`);
+    runBdsAllowlistReload(serverId);
     return readPlayers(serverId);
   }
 
+  const player = await resolvePlayer(name);
   const list = await readJsonArray<{ name: string; uuid: string }>(
     serverId,
     "whitelist.json",
@@ -436,13 +489,15 @@ export async function removeWhitelist(
   const serverType = await serverTypeFor(serverId);
 
   if (isBdsServerType(serverType)) {
-    const names = await readBdsAllowlistNames(serverId);
-    const next = names.filter((n) => n.toLowerCase() !== name.toLowerCase());
-    if (next.length === names.length) {
-      throw new Error(`${name} is not on the whitelist`);
+    const cleaned = validateBedrockGamertag(name);
+    const list = await readBdsAllowlistEntries(serverId);
+    const next = list.filter((e) => e.name.toLowerCase() !== cleaned.toLowerCase());
+    if (next.length === list.length) {
+      throw new Error(`${cleaned} is not on the allowlist`);
     }
-    await writeBdsAllowlist(serverId, next);
-    runLive(serverId, `allowlist remove ${name}`);
+    await writeBdsAllowlistEntries(serverId, next);
+    runLive(serverId, `allowlist remove ${bdsConsoleGamertagArg(cleaned)}`);
+    runBdsAllowlistReload(serverId);
     return readPlayers(serverId);
   }
 
@@ -465,6 +520,35 @@ export async function addOp(
   name: string,
   level = 4,
 ): Promise<PlayersResponse> {
+  const serverType = await serverTypeFor(serverId);
+
+  if (isBdsServerType(serverType)) {
+    const gamertag = validateBedrockGamertag(name);
+    const allowlist = await readBdsAllowlistEntries(serverId);
+    const entry = allowlist.find(
+      (e) => e.name.toLowerCase() === gamertag.toLowerCase(),
+    );
+    const xuid = entry?.xuid;
+    if (xuid) {
+      const perms = await readBdsPermissions(serverId);
+      if (perms.some((p) => p.xuid === xuid && p.permission === "operator")) {
+        throw new Error(`${gamertag} is already an operator`);
+      }
+      const next = perms.filter((p) => p.xuid !== xuid);
+      next.push({ permission: "operator", xuid });
+      await writeBdsPermissions(serverId, next);
+      runBdsPermissionReload(serverId);
+    }
+    if (processManager.isRunning(serverId)) {
+      runLive(serverId, `op ${bdsConsoleGamertagArg(gamertag)}`);
+    } else if (!xuid) {
+      throw new Error(
+        `${gamertag} must join the server once (online mode) before they can be made operator`,
+      );
+    }
+    return readPlayers(serverId);
+  }
+
   const player = await resolvePlayer(name);
   const list = await readJsonArray<OpEntry>(serverId, "ops.json");
   if (list.some((e) => e.name.toLowerCase() === player.name.toLowerCase())) {
@@ -486,6 +570,36 @@ export async function removeOp(
   _dir: string,
   name: string,
 ): Promise<PlayersResponse> {
+  const serverType = await serverTypeFor(serverId);
+
+  if (isBdsServerType(serverType)) {
+    const cleaned = name.trim();
+    const allowlist = await readBdsAllowlistEntries(serverId);
+    const entry = allowlist.find(
+      (e) =>
+        e.name.toLowerCase() === cleaned.toLowerCase() ||
+        e.xuid === cleaned ||
+        cleaned === `xuid:${e.xuid}`,
+    );
+    const xuid = entry?.xuid ?? (cleaned.startsWith("xuid:") ? cleaned.slice(5) : "");
+    if (xuid) {
+      const perms = await readBdsPermissions(serverId);
+      const next = perms.filter((p) => p.xuid !== xuid);
+      if (next.length === perms.length) {
+        throw new Error(`${cleaned} is not an operator`);
+      }
+      await writeBdsPermissions(serverId, next);
+      runBdsPermissionReload(serverId);
+    }
+    const gamertag = entry?.name ?? cleaned.replace(/^xuid:/, "");
+    if (processManager.isRunning(serverId) && gamertag && !gamertag.startsWith("xuid:")) {
+      runLive(serverId, `deop ${bdsConsoleGamertagArg(gamertag)}`);
+    } else if (!xuid) {
+      throw new Error(`${cleaned} is not an operator`);
+    }
+    return readPlayers(serverId);
+  }
+
   const list = await readJsonArray<OpEntry>(serverId, "ops.json");
   const next = list.filter((e) => e.name.toLowerCase() !== name.toLowerCase());
   if (next.length === list.length) {

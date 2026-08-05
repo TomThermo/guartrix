@@ -1,7 +1,7 @@
 import fsp from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { BEDROCK_CONTAINER_DNS } from "@msm/shared";
+import { BEDROCK_CONTAINER_DNS, parseBdsAllowlistJson, serializeBdsAllowlist } from "@msm/shared";
 import { docker } from "./docker.js";
 
 export const BEDROCK_RUNTIME_IMAGE = "guartrix/bedrock-runtime:22.04";
@@ -109,8 +109,7 @@ export async function ensureBdsBootProperties(
         path.join(serverDir, "allowlist.json"),
         "utf8",
       );
-      const data = JSON.parse(raw) as { allowlist?: unknown[] };
-      allowlistCount = Array.isArray(data.allowlist) ? data.allowlist.length : 0;
+      allowlistCount = parseBdsAllowlistJson(raw).length;
     } catch {
       allowlistCount = 0;
     }
@@ -125,7 +124,7 @@ export async function ensureBdsBootProperties(
     props["allow-list"] = "false";
     await fsp.writeFile(
       path.join(serverDir, "allowlist.json"),
-      `${JSON.stringify({ allowlist: [] }, null, 2)}\n`,
+      serializeBdsAllowlist([]),
       "utf8",
     );
   }
