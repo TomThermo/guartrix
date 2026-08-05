@@ -7,6 +7,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.102] — 2026-08-05
+
+- BDS offline boot: force `allow-list=false` (BDS rejects allowlist without online auth)
+
 ## [1.0.101] — 2026-08-05
 
 - BDS boot: fix `Server started` log detection (timestamp prefix), default offline mode, LAN/raknet + DNS in container

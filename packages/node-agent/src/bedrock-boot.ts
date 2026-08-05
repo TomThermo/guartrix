@@ -40,8 +40,12 @@ export async function ensureBdsBootProperties(
   props["online-mode"] = "false";
   props["enable-lan-visibility"] = "true";
   props["transport"] = "raknet";
-  if (props["allow-list"] === undefined) {
-    props["allow-list"] = "false";
-  }
+  // BDS exits if allow-list is on while online-mode is off.
+  props["allow-list"] = "false";
   await fsp.writeFile(file, serializeProperties(props), "utf8");
+  await fsp.writeFile(
+    path.join(serverDir, "allowlist.json"),
+    `${JSON.stringify({ allowlist: [] }, null, 2)}\n`,
+    "utf8",
+  );
 }
