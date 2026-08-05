@@ -5,6 +5,7 @@ import type { FastifyInstance } from "fastify";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import type { ServerType } from "@msm/shared";
+import { primaryAllocationProtocol } from "@msm/shared";
 import { logActivity } from "../activity-log.js";
 import { isAuthenticated, requireWrite, getSessionUser } from "../auth/auth.js";
 import { prisma } from "../db.js";
@@ -109,9 +110,17 @@ export function registerImportRoutes(app: FastifyInstance): void {
       return reply.status(400).send({ error: message });
     }
 
-    const free = await processManager.isPortFree(data.port, undefined, nodeId);
+    const protocol = primaryAllocationProtocol(data.type);
+    const free = await processManager.isPortFree(
+      data.port,
+      undefined,
+      nodeId,
+      protocol,
+    );
     if (!free) {
-      return reply.status(409).send({ error: `Port ${data.port} is already in use` });
+      return reply.status(409).send({
+        error: `Port ${data.port}/${protocol} is already in use`,
+      });
     }
 
     const id = nanoid(12);
@@ -150,12 +159,13 @@ export function registerImportRoutes(app: FastifyInstance): void {
     });
 
     try {
-      await openFirewallPort(data.port, nodeId);
+      await openFirewallPort(data.port, nodeId, protocol);
       const { ensurePrimaryAllocation } = await import("../servers/allocations.js");
       await ensurePrimaryAllocation({
         serverId: id,
         nodeId,
         port: data.port,
+        protocol,
       });
       await fs.writeFile(tmp, uploadBuf);
 

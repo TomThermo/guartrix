@@ -455,13 +455,15 @@ async function main() {
   });
 
   app.post<{
-    Body: { port?: number };
+    Body: { port?: number; protocol?: string };
   }>("/ports/check", async (request, reply) => {
     const port = Number(request.body?.port);
     if (!Number.isFinite(port) || port < 1 || port > 65535) {
       return reply.status(400).send({ error: "port is required" });
     }
-    const free = await processManager.isPortFree(port);
+    const protocol =
+      request.body?.protocol === "udp" ? "udp" : ("tcp" as const);
+    const free = await processManager.isPortFree(port, protocol);
     return { free };
   });
 

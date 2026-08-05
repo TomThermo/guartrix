@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { requireServerAccess } from "../auth/auth.js";
 import { logActivity } from "../activity-log.js";
 import { prisma } from "../db.js";
+import { primaryAllocationProtocol } from "@msm/shared";
 import { openFirewallPort } from "../nodes/firewall.js";
 import { processManager } from "../servers/process-manager.js";
 import { serverListInclude, toMcServer } from "../servers/serialize.js";
@@ -153,7 +154,11 @@ export function registerServerPowerRoutes(app: FastifyInstance): void {
       if (processManager.isRunning(server.id)) {
         await processManager.stop(server.id);
       }
-      await openFirewallPort(server.port, server.nodeId);
+      await openFirewallPort(
+        server.port,
+        server.nodeId,
+        primaryAllocationProtocol(server.type),
+      );
       await prisma.server.update({
         where: { id: server.id },
         data: { stoppedByUser: false },

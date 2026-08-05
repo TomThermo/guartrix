@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { nanoid } from "nanoid";
 import { z } from "zod";
-import { hasPermission } from "@msm/shared";
+import { hasPermission, primaryAllocationProtocol } from "@msm/shared";
 import { logActivity } from "../activity-log.js";
 import { requireAdmin, requireServerAccess } from "../auth/auth.js";
 import {
@@ -152,6 +152,7 @@ export function registerAllocationRoutes(app: FastifyInstance): void {
           port,
           access.server.id,
           nodeId,
+          protocol,
         );
         if (!freeOnHost) {
           return reply
@@ -243,7 +244,7 @@ export function registerAllocationRoutes(app: FastifyInstance): void {
       if (parsed.data.isPrimary === false && row.isPrimary) {
         return reply.status(400).send({
           error:
-            "The primary port cannot be demoted — promote another TCP allocation to primary instead",
+            "The primary port cannot be demoted — promote another allocation with the correct protocol instead",
         });
       }
 
@@ -256,10 +257,11 @@ export function registerAllocationRoutes(app: FastifyInstance): void {
             .status(409)
             .send({ error: "Stop the server before changing the primary port" });
         }
-        if (row.protocol !== "tcp") {
-          return reply
-            .status(400)
-            .send({ error: "Only TCP allocations can be primary" });
+        const primaryProtocol = primaryAllocationProtocol(access.server.type);
+        if (row.protocol !== primaryProtocol) {
+          return reply.status(400).send({
+            error: `Only ${primaryProtocol.toUpperCase()} allocations can be primary for this server type`,
+          });
         }
         const oldPort = access.server.port;
         const newPort = row.port;
@@ -280,7 +282,12 @@ export function registerAllocationRoutes(app: FastifyInstance): void {
         ]);
         await updateServerProperties(access.server.id, {}, newPort);
         try {
-          await changeFirewallPort(oldPort, newPort, access.server.nodeId, "tcp");
+          await changeFirewallPort(
+            oldPort,
+            newPort,
+            access.server.nodeId,
+            primaryProtocol,
+          );
         } catch (err) {
           await prisma.server.update({
             where: { id: access.server.id },
@@ -294,7 +301,7 @@ export function registerAllocationRoutes(app: FastifyInstance): void {
             where: {
               serverId: access.server.id,
               port: oldPort,
-              protocol: "tcp",
+              protocol: primaryProtocol,
             },
             data: { isPrimary: true },
           });

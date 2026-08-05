@@ -132,10 +132,18 @@ async function main() {
   }
 
   try {
-    const { migratePrimaryAllocations } = await import("./servers/allocations.js");
+    const { migratePrimaryAllocations, migrateBedrockAllocationProtocols } =
+      await import("./servers/allocations.js");
     const n = await migratePrimaryAllocations();
     if (n > 0) {
       logger.info({ count: n }, "Backfilled primary allocation(s)");
+    }
+    const bedrock = await migrateBedrockAllocationProtocols();
+    if (bedrock > 0) {
+      logger.info(
+        { count: bedrock },
+        "Fixed Bedrock primary allocation protocol(s)",
+      );
     }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

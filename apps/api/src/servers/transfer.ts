@@ -296,13 +296,23 @@ export async function startServerTransfer(
     excludeServerId: server.id,
   });
 
+  const { primaryAllocationProtocol } = await import("@msm/shared");
+  const primaryProto = primaryAllocationProtocol(server.type);
+
   const newPort = input.port ?? server.port;
   if (newPort !== server.port) {
     // Remapping primary also requires updating the primary allocation.
   }
-  const free = await processManager.isPortFree(newPort, server.id, input.toNodeId);
+  const free = await processManager.isPortFree(
+    newPort,
+    server.id,
+    input.toNodeId,
+    primaryProto,
+  );
   if (!free) {
-    throw new Error(`Port ${newPort} is already in use on the destination node`);
+    throw new Error(
+      `Port ${newPort}/${primaryProto} is already in use on the destination node`,
+    );
   }
 
   // Every allocated port (primary + extras) must be free on the destination.
@@ -325,10 +335,11 @@ export async function startServerTransfer(
       port,
       server.id,
       input.toNodeId,
+      alloc.protocol === "udp" ? "udp" : "tcp",
     );
     if (!hostFree) {
       throw new Error(
-        `Port ${port} is already in use on the destination host`,
+        `Port ${port}/${alloc.protocol} is already in use on the destination host`,
       );
     }
   }

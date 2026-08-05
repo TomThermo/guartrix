@@ -338,8 +338,11 @@ class ProcessManager extends EventEmitter {
     }
   }
 
-  async isPortFree(port: number): Promise<boolean> {
-    return checkPortFree(port);
+  async isPortFree(
+    port: number,
+    protocol: "tcp" | "udp" = "tcp",
+  ): Promise<boolean> {
+    return checkPortFree(port, protocol);
   }
 
   private formatDaemonStamp(at = new Date()): string {
@@ -677,7 +680,7 @@ class ProcessManager extends EventEmitter {
         ? server.ports
         : [{ port: server.port, protocol: "tcp" }];
     for (const p of publishPorts) {
-      const portFree = await this.isPortFree(p.port);
+      const portFree = await this.isPortFree(p.port, p.protocol);
       if (!portFree) {
         failStart(`Port ${p.port}/${p.protocol} is already in use`);
       }

@@ -206,6 +206,8 @@ if command -v ufw >/dev/null 2>&1; then
   fi
   ufw allow "${SFTP_PORT}/tcp" >/dev/null 2>&1 || true
   ufw allow 25565:25600/tcp >/dev/null 2>&1 || true
+  ufw allow 19132:19332/udp >/dev/null 2>&1 || true
+  ufw allow 25565:25600/udp >/dev/null 2>&1 || true
 fi
 
 sleep 1

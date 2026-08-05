@@ -445,8 +445,13 @@ export function registerBackupRoutes(app: FastifyInstance): void {
       });
       if (request.body?.startAfter) {
         const { openFirewallPort } = await import("../nodes/firewall.js");
+        const { primaryAllocationProtocol } = await import("@msm/shared");
         const { startServerIfLicensed } = await import("../license/license.js");
-        await openFirewallPort(server.port, server.nodeId);
+        await openFirewallPort(
+          server.port,
+          server.nodeId,
+          primaryAllocationProtocol(server.type),
+        );
         await startServerIfLicensed(server.id);
       }
       const updated = await prisma.server.findUniqueOrThrow({

@@ -7,6 +7,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.99] — 2026-08-05
+
+- Bedrock ports: UDP-aware host checks, firewall, Docker publish, and clone/import/settings paths
+- Startup migration fixes existing Bedrock servers with TCP primary allocations
+- Install scripts open UDP ranges for Bedrock (`19132:19332/udp`) and game ports
+
 ## [1.0.98] — 2026-08-05
 
 - Bedrock start: longer daemon power timeout (image pull + boot)

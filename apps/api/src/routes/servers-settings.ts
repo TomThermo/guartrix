@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import type { ServerType } from "@msm/shared";
-import { hasPermission, isBdsServerType } from "@msm/shared";
+import { hasPermission, isBdsServerType, primaryAllocationProtocol } from "@msm/shared";
 import { requireServerAccess } from "../auth/auth.js";
 import { logActivity } from "../activity-log.js";
 import { config } from "../config.js";
@@ -350,13 +350,24 @@ export function registerServerSettingsRoutes(app: FastifyInstance): void {
 
     const portChanging = data.port !== undefined && data.port !== server.port;
 
+    const portProtocol = primaryAllocationProtocol(
+      server.type as ServerType,
+    );
+
     if (portChanging) {
       if (processManager.isRunning(server.id) || server.status === "RUNNING") {
         return reply.status(409).send({ error: "Stop the server before changing the port" });
       }
-      const free = await processManager.isPortFree(data.port!, server.id, server.nodeId);
+      const free = await processManager.isPortFree(
+        data.port!,
+        server.id,
+        server.nodeId,
+        portProtocol,
+      );
       if (!free) {
-        return reply.status(409).send({ error: `Port ${data.port} is already in use` });
+        return reply.status(409).send({
+          error: `Port ${data.port}/${portProtocol} is already in use`,
+        });
       }
     }
 
@@ -556,13 +567,19 @@ export function registerServerSettingsRoutes(app: FastifyInstance): void {
 
     if (portChanging) {
       try {
-        await changeFirewallPort(server.port, data.port!, server.nodeId);
+        await changeFirewallPort(
+          server.port,
+          data.port!,
+          server.nodeId,
+          portProtocol,
+        );
         if (server.nodeId) {
           const { ensurePrimaryAllocation } = await import("../servers/allocations.js");
           await ensurePrimaryAllocation({
             serverId: server.id,
             nodeId: server.nodeId,
             port: data.port!,
+            protocol: portProtocol,
           });
         }
       } catch (err) {
@@ -571,14 +588,19 @@ export function registerServerSettingsRoutes(app: FastifyInstance): void {
           data: { port: server.port },
         });
         await updateServerProperties(server.id, {}, server.port);
-        await closeFirewallPort(data.port!, server.nodeId).catch(() => undefined);
-        await openFirewallPort(server.port, server.nodeId).catch(() => undefined);
+        await closeFirewallPort(data.port!, server.nodeId, portProtocol).catch(
+          () => undefined,
+        );
+        await openFirewallPort(server.port, server.nodeId, portProtocol).catch(
+          () => undefined,
+        );
         if (server.nodeId) {
           const { ensurePrimaryAllocation } = await import("../servers/allocations.js");
           await ensurePrimaryAllocation({
             serverId: server.id,
             nodeId: server.nodeId,
             port: server.port,
+            protocol: portProtocol,
           }).catch(() => undefined);
         }
         const message = err instanceof Error ? err.message : String(err);

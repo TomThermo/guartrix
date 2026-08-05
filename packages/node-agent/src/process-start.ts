@@ -7,6 +7,7 @@
  */
 import { execFile } from "node:child_process";
 import fsp from "node:fs/promises";
+import dgram from "node:dgram";
 import net from "node:net";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -105,7 +106,23 @@ export async function computeDiskUsageMessage(
   }
 }
 
-export async function checkPortFree(port: number): Promise<boolean> {
+export async function checkPortFree(
+  port: number,
+  protocol: "tcp" | "udp" = "tcp",
+): Promise<boolean> {
+  if (protocol === "udp") {
+    return new Promise((resolve) => {
+      const socket = dgram.createSocket("udp4");
+      socket.once("error", () => {
+        socket.close();
+        resolve(false);
+      });
+      socket.once("listening", () => {
+        socket.close(() => resolve(true));
+      });
+      socket.bind(port, "0.0.0.0");
+    });
+  }
   return new Promise((resolve) => {
     const server = net.createServer();
     server.once("error", () => resolve(false));

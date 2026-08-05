@@ -38,19 +38,26 @@ export async function cleanupFailedProvision(
   serverId: string,
   port: number,
   nodeId: string,
+  protocol: "tcp" | "udp" = "tcp",
 ): Promise<void> {
   await wipeServerEverywhere(serverId).catch(() => undefined);
   await prisma.server.delete({ where: { id: serverId } }).catch(() => undefined);
-  await closeFirewallPort(port, nodeId).catch(() => undefined);
+  await closeFirewallPort(port, nodeId, protocol).catch(() => undefined);
 }
 
 export async function assertPortAvailable(
   port: number,
   nodeId: string,
+  protocol: "tcp" | "udp" = "tcp",
 ): Promise<void> {
-  const portFree = await processManager.isPortFree(port, undefined, nodeId);
+  const portFree = await processManager.isPortFree(
+    port,
+    undefined,
+    nodeId,
+    protocol,
+  );
   if (!portFree) {
-    throw new Error(`Port ${port} is already in use`);
+    throw new Error(`Port ${port}/${protocol} is already in use`);
   }
 }
 
@@ -93,8 +100,9 @@ export async function provisionPreparedServer(input: ProvisionServerInput) {
   const diskMb = input.diskMb ?? 10_240;
   const cpuLimit = input.cpuLimit ?? 0;
   const cleanupOnFailure = input.cleanupOnFailure !== false;
+  const protocol = primaryAllocationProtocol(input.type);
 
-  await assertPortAvailable(input.port, input.nodeId);
+  await assertPortAvailable(input.port, input.nodeId, protocol);
 
   const { extraMountsForPrisma } = await import("./extra-mounts.js");
 
@@ -118,7 +126,6 @@ export async function provisionPreparedServer(input: ProvisionServerInput) {
   });
 
   try {
-    const protocol = primaryAllocationProtocol(input.type);
     await openFirewallPort(input.port, input.nodeId, protocol);
     await ensurePrimaryAllocation({
       serverId: id,
@@ -171,7 +178,7 @@ export async function provisionPreparedServer(input: ProvisionServerInput) {
       })
       .catch(() => undefined);
     if (cleanupOnFailure) {
-      await cleanupFailedProvision(id, input.port, input.nodeId);
+      await cleanupFailedProvision(id, input.port, input.nodeId, protocol);
     }
     throw err instanceof Error ? err : new Error(message);
   }

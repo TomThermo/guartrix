@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import type { ServerType } from "@msm/shared";
+import { primaryAllocationProtocol } from "@msm/shared";
 import { safeExtractArchive } from "@msm/node-agent";
 import {
   requireServerAccess,
@@ -470,13 +471,17 @@ export function registerServerCrudRoutes(app: FastifyInstance): void {
         return reply.status(400).send({ error: message });
       }
 
+      const protocol = primaryAllocationProtocol(source.type);
       const free = await processManager.isPortFree(
         parsed.data.port,
         undefined,
         nodeId,
+        protocol,
       );
       if (!free) {
-        return reply.status(409).send({ error: `Port ${parsed.data.port} is already in use` });
+        return reply.status(409).send({
+          error: `Port ${parsed.data.port}/${protocol} is already in use`,
+        });
       }
 
       const id = nanoid(12);
@@ -517,12 +522,13 @@ export function registerServerCrudRoutes(app: FastifyInstance): void {
         "../servers/server-provision.js"
       );
       try {
-        await openFirewallPort(parsed.data.port, nodeId);
+        await openFirewallPort(parsed.data.port, nodeId, protocol);
         const { ensurePrimaryAllocation } = await import("../servers/allocations.js");
         await ensurePrimaryAllocation({
           serverId: id,
           nodeId,
           port: parsed.data.port,
+          protocol,
         });
 
         // Pull source files via daemon export (stream to disk — avoid OOM on large worlds)
@@ -571,7 +577,7 @@ export function registerServerCrudRoutes(app: FastifyInstance): void {
           success: false,
           metadata: { error: message, name: parsed.data.name },
         });
-        await cleanupFailedProvision(id, parsed.data.port, nodeId);
+        await cleanupFailedProvision(id, parsed.data.port, nodeId, protocol);
         return reply.status(500).send({ error: message });
       } finally {
         await fs.rm(staging, { recursive: true, force: true }).catch(() => undefined);

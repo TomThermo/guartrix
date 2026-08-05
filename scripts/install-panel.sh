@@ -1080,6 +1080,8 @@ if command -v ufw >/dev/null 2>&1; then
   if [[ "$SKIP_LOCAL_DAEMON" -eq 0 ]]; then
     ufw allow 2022/tcp >/dev/null 2>&1 || true
     ufw allow 25565:25600/tcp >/dev/null 2>&1 || true
+    ufw allow 19132:19332/udp >/dev/null 2>&1 || true
+    ufw allow 25565:25600/udp >/dev/null 2>&1 || true
   fi
 fi
 

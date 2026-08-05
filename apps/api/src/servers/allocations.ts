@@ -162,9 +162,10 @@ export async function ensureUdpCompanion(opts: {
 
 /** Backfill primary allocations for servers that lack one. */
 export async function migratePrimaryAllocations(): Promise<number> {
+  const { primaryAllocationProtocol } = await import("@msm/shared");
   const servers = await prisma.server.findMany({
     where: { nodeId: { not: null } },
-    select: { id: true, nodeId: true, port: true },
+    select: { id: true, nodeId: true, port: true, type: true },
   });
   let n = 0;
   for (const s of servers) {
@@ -178,12 +179,54 @@ export async function migratePrimaryAllocations(): Promise<number> {
         serverId: s.id,
         nodeId: s.nodeId,
         port: s.port,
+        protocol: primaryAllocationProtocol(s.type),
       });
       n += 1;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.warn(
         `[guartrix] Could not backfill allocation for ${s.id}: ${msg}`,
+      );
+    }
+  }
+  return n;
+}
+
+/** Fix Bedrock servers whose primary allocation or firewall still use TCP. */
+export async function migrateBedrockAllocationProtocols(): Promise<number> {
+  const { primaryAllocationProtocol } = await import("@msm/shared");
+  const servers = await prisma.server.findMany({
+    where: {
+      nodeId: { not: null },
+      type: { in: ["BEDROCK", "BEDROCK_PREVIEW", "POCKETMINE", "NUKKIT"] },
+    },
+    select: { id: true, nodeId: true, port: true, type: true },
+  });
+  let n = 0;
+  for (const s of servers) {
+    if (!s.nodeId) continue;
+    const want = primaryAllocationProtocol(s.type);
+    if (want !== "udp") continue;
+    const primary = await prisma.allocation.findFirst({
+      where: { serverId: s.id, isPrimary: true },
+    });
+    if (primary?.protocol === want) continue;
+    try {
+      await ensurePrimaryAllocation({
+        serverId: s.id,
+        nodeId: s.nodeId,
+        port: s.port,
+        protocol: want,
+      });
+      await openFirewallPort(s.port, s.nodeId, want).catch(() => undefined);
+      if (primary?.protocol === "tcp") {
+        await closeFirewallPort(s.port, s.nodeId, "tcp").catch(() => undefined);
+      }
+      n += 1;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn(
+        `[guartrix] Could not fix Bedrock allocation for ${s.id}: ${msg}`,
       );
     }
   }
@@ -269,16 +312,21 @@ export async function createNodeAllocationRange(input: {
     // Also skip if a server already owns this as primary game port (legacy)
     const serverOnPort = await prisma.server.findFirst({
       where: { nodeId: input.nodeId, port },
+      select: { id: true, type: true },
     });
-    if (serverOnPort && input.protocol === "tcp") {
-      await ensurePrimaryAllocation({
-        serverId: serverOnPort.id,
-        nodeId: input.nodeId,
-        port,
-        ip: input.ip,
-      });
-      skipped += 1;
-      continue;
+    if (serverOnPort) {
+      const { primaryAllocationProtocol } = await import("@msm/shared");
+      if (primaryAllocationProtocol(serverOnPort.type) === input.protocol) {
+        await ensurePrimaryAllocation({
+          serverId: serverOnPort.id,
+          nodeId: input.nodeId,
+          port,
+          ip: input.ip,
+          protocol: input.protocol,
+        });
+        skipped += 1;
+        continue;
+      }
     }
     await prisma.allocation.create({
       data: {

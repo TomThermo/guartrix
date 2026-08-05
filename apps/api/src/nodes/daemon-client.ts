@@ -390,11 +390,15 @@ export async function daemonIsRunning(serverId: string): Promise<boolean> {
   return data.running;
 }
 
-export async function daemonIsPortFree(port: number, nodeId?: string | null) {
+export async function daemonIsPortFree(
+  port: number,
+  nodeId?: string | null,
+  protocol: "tcp" | "udp" = "tcp",
+) {
   const node = await resolveNode(nodeId);
   const data = await daemonJson<{ free: boolean }>(node, "/ports/check", {
     method: "POST",
-    body: JSON.stringify({ port }),
+    body: JSON.stringify({ port, protocol }),
   });
   return data.free;
 }

@@ -167,6 +167,7 @@ class ProcessManagerProxy extends EventEmitter {
     port: number,
     excludeServerId?: string,
     nodeId?: string | null,
+    protocol: "tcp" | "udp" = "tcp",
   ): Promise<boolean> {
     const taken = await prisma.server.findFirst({
       where: {
@@ -179,13 +180,14 @@ class ProcessManagerProxy extends EventEmitter {
     const allocTaken = await prisma.allocation.findFirst({
       where: {
         port,
+        protocol,
         ...(nodeId ? { nodeId } : {}),
         serverId: { not: null },
         ...(excludeServerId ? { serverId: { not: excludeServerId } } : {}),
       },
     });
     if (allocTaken) return false;
-    return daemonIsPortFree(port, nodeId);
+    return daemonIsPortFree(port, nodeId, protocol);
   }
 
   private async toConfig(server: {

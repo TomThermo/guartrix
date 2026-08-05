@@ -55,7 +55,7 @@ Open firewall ports on the node:
 |------|---------|
 | `8081/tcp` | Daemon API (panel → node) |
 | `2022/tcp` | SFTP |
-| game ports | e.g. `25565/tcp` (and whatever you assign) |
+| game ports | Java: `25565:25600/tcp` (+ UDP if you use query/Geyser). Bedrock: `19132:19332/udp` (default game port **19132/udp**) |
 
 The installer can auto-open ports when `MANAGE_FIREWALL=true`.
 
