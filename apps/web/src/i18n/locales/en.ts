@@ -204,6 +204,9 @@ export const en = {
     inviteNotFound: "Invite not found",
     inviteAcceptFailed: "Could not accept invite",
     inviteJoin: "Join {server} as {email}",
+    inviteSignInGeneric:
+      "Sign in to accept this server invite (hint: {email}).",
+    inviteServerGeneric: "a server",
     inviteExpires: "· expires {when}",
     signInToAccept: "Sign in to accept",
     acceptInvite: "Accept invite",

@@ -81,7 +81,7 @@ function isLoopbackAddress(addr: string | undefined | null): boolean {
 }
 
 /**
- * METRICS_TOKEN set → Bearer or ?token= required.
+ * METRICS_TOKEN set → Bearer header required (no ?token= — avoids log/Referer leaks).
  * Unset → only raw loopback peers (ignores X-Forwarded-For).
  */
 export function assertMetricsAccess(request: FastifyRequest): boolean {
@@ -92,8 +92,7 @@ export function assertMetricsAccess(request: FastifyRequest): boolean {
       typeof auth === "string"
         ? /^Bearer\s+(.+)$/i.exec(auth)?.[1]?.trim()
         : undefined;
-    const q = (request.query as { token?: string } | undefined)?.token;
-    return bearer === expected || q === expected;
+    return bearer === expected;
   }
   return isLoopbackAddress(request.socket.remoteAddress);
 }

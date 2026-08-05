@@ -54,7 +54,7 @@ another tool on the host needs it.
 | Outbound | Webhook/download SSRF guards (`safe-url.ts`); CDN host allowlist for jars/modpacks |
 | Capacity | Shared `assertNodeCapacity` (incl. reserve) on create/PATCH |
 | Nodes | Only admins pick `nodeId` on create / clone / import; remote-install verifies SSH host keys (explicit trust + stored fingerprint; replace requires confirm); install script prefers ufw allow daemon port **from panel IP only** |
-| Invites | No temporary password in JSON — setup link emailed; accept links are hashed tokens with a 7-day TTL |
+| Invites | No temporary password in JSON — setup link emailed; accept links are hashed tokens with a 7-day TTL; public peek hides email/server until signed in |
 | Audit | Activity log records actor + IP per action; secret-looking metadata keys dropped — see [Activity log](activity-log.md) |
 | Watchdog | Restarts unhealthy panel processes; Discord/webhook alert when `ACTIVITY_WEBHOOK_URL` is set |
 | Licensing | Signed validate, IP/install bind, rate limits, feature ceilings — see [Licensing](licensing.md) |

@@ -124,7 +124,7 @@ export const accountApi = {
       email: string | null;
       emailHint: string;
       serverId: string | null;
-      serverName: string;
+      serverName: string | null;
       expiresAt: string | null;
       alreadyLinked: boolean;
     }>(`/api/invites/${encodeURIComponent(token)}`),

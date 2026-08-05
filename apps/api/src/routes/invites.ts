@@ -38,13 +38,13 @@ export function registerInviteRoutes(app: FastifyInstance): void {
       const sessionUser = authed ? await getSessionUser(request) : null;
       const emailHint = maskEmail(row.email);
 
-      // Unauthenticated: no full email, no serverId (reduces phishing / enum context).
+      // Unauthenticated: minimal peek — no email, server id/name (token-in-URL leak risk).
       if (!sessionUser) {
         return {
           email: null,
           emailHint,
           serverId: null,
-          serverName: row.server.name,
+          serverName: null,
           expiresAt: row.inviteExpiresAt?.toISOString() ?? null,
           alreadyLinked: Boolean(row.userId),
         };

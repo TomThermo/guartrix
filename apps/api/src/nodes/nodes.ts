@@ -312,7 +312,7 @@ function writeLocalDaemonEnv(token: string, port: number, nodeId: string): void 
     `SFTP_PORT=${sftpPort}`,
     `SFTP_ENABLED=true`,
     `DOCKER_IMAGE=${config.dockerImage}`,
-    `DOCKER_NETWORK_MODE=${(process.env.DOCKER_NETWORK_MODE ?? "shared").trim() || "shared"}`,
+    `DOCKER_NETWORK_MODE=${(process.env.DOCKER_NETWORK_MODE ?? "per_server").trim() || "per_server"}`,
     `MYSQL_ROOT_PASSWORD=${mysqlPassword}`,
     `MYSQL_PORT=${mysqlPort}`,
     `MYSQL_IMAGE=${process.env.MYSQL_IMAGE ?? "mysql:8.4"}`,

@@ -7,6 +7,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.108] — 2026-08-05
+
+- Security: per_server Docker default everywhere, metrics Bearer-only, safer backup offsite placeholders, minimal invite peek
+
 ## [1.0.107] — 2026-08-05
 
 - New servers auto-start after create, import, or clone; start on boot enabled by default

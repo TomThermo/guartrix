@@ -17,7 +17,7 @@ function isLoopbackAddress(addr: string | undefined | null): boolean {
   return bare === "127.0.0.1" || bare === "::1" || bare === "localhost";
 }
 
-/** Token (when METRICS_TOKEN set) or loopback (when unset). */
+/** Token (when METRICS_TOKEN set) via Authorization Bearer only; else loopback. */
 export function isMetricsTokenOrLocalhost(request: FastifyRequest): boolean {
   const expected = process.env.METRICS_TOKEN?.trim();
   if (expected) {
@@ -26,8 +26,7 @@ export function isMetricsTokenOrLocalhost(request: FastifyRequest): boolean {
       typeof auth === "string"
         ? /^Bearer\s+(.+)$/i.exec(auth)?.[1]?.trim()
         : undefined;
-    const q = (request.query as { token?: string } | undefined)?.token;
-    return bearer === expected || q === expected;
+    return bearer === expected;
   }
   return isLoopbackAddress(request.socket.remoteAddress);
 }

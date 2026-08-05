@@ -15,7 +15,7 @@ export function InvitePage() {
     email: string | null;
     emailHint: string;
     serverId: string | null;
-    serverName: string;
+    serverName: string | null;
     expiresAt: string | null;
     alreadyLinked: boolean;
   } | null>(null);
@@ -57,10 +57,12 @@ export function InvitePage() {
       {info && (
         <>
           <p className="mb-2">
-            {t("auth.inviteJoin", {
-              server: info.serverName,
-              email: info.email ?? info.emailHint,
-            })}
+            {user
+              ? t("auth.inviteJoin", {
+                  server: info.serverName ?? t("auth.inviteServerGeneric"),
+                  email: info.email ?? info.emailHint,
+                })
+              : t("auth.inviteSignInGeneric", { email: info.emailHint })}
             {info.expiresAt
               ? ` ${t("auth.inviteExpires", {
                   when: new Date(info.expiresAt).toLocaleString(),

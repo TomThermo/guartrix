@@ -207,6 +207,9 @@ export const nl: Messages = {
     inviteNotFound: "Uitnodiging niet gevonden",
     inviteAcceptFailed: "Uitnodiging accepteren mislukt",
     inviteJoin: "Word lid van {server} als {email}",
+    inviteSignInGeneric:
+      "Log in om deze serveruitnodiging te accepteren (hint: {email}).",
+    inviteServerGeneric: "een server",
     inviteExpires: "· verloopt {when}",
     signInToAccept: "Log in om te accepteren",
     acceptInvite: "Uitnodiging accepteren",

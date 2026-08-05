@@ -34,7 +34,7 @@ Many operator knobs (public URL, SMTP, registration, quotas, 2FA policy, alerts,
 | `DATA_DIR` | Default `./data` |
 | `LOG_LEVEL` | API pino level (`fatal`…`trace`; default `info`) |
 | `PRISMA_SLOW_MS` | When set (e.g. `200`), log Prisma queries slower than N ms |
-| `METRICS_TOKEN` | Bearer/`?token=` for Prometheus `GET /api/metrics` and `/metrics` (API + daemon). Unset = localhost only |
+| `METRICS_TOKEN` | `Authorization: Bearer` for Prometheus `GET /api/metrics` and daemon `/metrics` (no `?token=`). Unset = localhost only |
 | `SENTRY_DSN` | Optional Sentry DSN for API + daemon (`@sentry/node`, tracesSampleRate `0.1`) |
 | `VITE_SENTRY_DSN` | Optional Sentry DSN for web UI (`@sentry/react`, baked in at `vite build`) |
 | `WEB_HOST` | Web bind address (default `0.0.0.0`) |

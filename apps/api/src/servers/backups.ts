@@ -27,6 +27,10 @@ import {
 
 const execFileAsync = promisify(execFile);
 
+function shellSingleQuote(s: string): string {
+  return `'${s.replace(/'/g, `'\\''`)}'`;
+}
+
 /**
  * Optional offsite copy after a successful backup.
  * Set BACKUP_OFFSITE_CMD to a shell command; placeholders:
@@ -42,12 +46,12 @@ async function runOffsiteBackupHook(opts: {
   const template = process.env.BACKUP_OFFSITE_CMD?.trim();
   if (!template) return;
   const cmd = template
-    .replaceAll("{path}", opts.archivePath)
-    .replaceAll("{serverId}", opts.serverId)
-    .replaceAll("{backupId}", opts.backupId)
-    .replaceAll("{fileName}", opts.fileName);
+    .replaceAll("{path}", shellSingleQuote(opts.archivePath))
+    .replaceAll("{serverId}", shellSingleQuote(opts.serverId))
+    .replaceAll("{backupId}", shellSingleQuote(opts.backupId))
+    .replaceAll("{fileName}", shellSingleQuote(opts.fileName));
   try {
-    await execFileAsync("bash", ["-lc", cmd], {
+    await execFileAsync("bash", ["-c", cmd], {
       timeout: 10 * 60_000,
       maxBuffer: 4 * 1024 * 1024,
     });
