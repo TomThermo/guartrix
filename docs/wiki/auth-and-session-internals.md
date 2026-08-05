@@ -27,7 +27,7 @@ Important behavior:
 
 - sessions regenerate on login
 - password reset invalidates active sessions
-- CSRF checks require Origin or Referer on mutating cookie-authenticated API routes (missing both is rejected unless `CSRF_ALLOW_MISSING_ORIGIN=1`)
+- CSRF checks require Origin or Referer on mutating cookie-authenticated API routes (missing both is rejected unless `CSRF_ALLOW_MISSING_ORIGIN=1`), plus matching `x-csrf-token` header once the session is authenticated
 - session storage can be file-backed or Redis-backed depending on deployment mode
 - Unauthenticated `GET /api/invites/:token` returns masked `emailHint` + server name only; full email after sign-in
 

@@ -20,7 +20,7 @@ import {
   verifyPassword,
 } from "../auth/auth.js";
 import { config } from "../config.js";
-import { assertSameOrigin } from "../auth/csrf.js";
+import { assertSameOrigin, issueSessionCsrfToken } from "../auth/csrf.js";
 import { prisma } from "../db.js";
 import {
   hostNodeName,
@@ -131,7 +131,10 @@ function emailVerificationBlocksLogin(user: {
 export function registerAuthRoutes(app: FastifyInstance): void {
   app.get("/api/auth/me", async (request) => {
     const user = await getSessionUser(request);
-    return { authenticated: Boolean(user), user };
+    const csrfToken = user
+      ? issueSessionCsrfToken(request.session as { csrfToken?: string })
+      : undefined;
+    return { authenticated: Boolean(user), user, csrfToken };
   });
 
   app.get("/api/auth/config", async () => ({
@@ -237,7 +240,8 @@ export function registerAuthRoutes(app: FastifyInstance): void {
       });
 
       const sessionUser = await getSessionUser(request);
-      return { ok: true, user: sessionUser ?? toAuthUser(user) };
+      const csrfToken = issueSessionCsrfToken(request.session as { csrfToken?: string });
+      return { ok: true, user: sessionUser ?? toAuthUser(user), csrfToken };
     },
   );
 
@@ -341,7 +345,8 @@ export function registerAuthRoutes(app: FastifyInstance): void {
       });
 
       const sessionUser = await getSessionUser(request);
-      return { ok: true, user: sessionUser ?? toAuthUser(user) };
+      const csrfToken = issueSessionCsrfToken(request.session as { csrfToken?: string });
+      return { ok: true, user: sessionUser ?? toAuthUser(user), csrfToken };
     },
   );
 
@@ -469,6 +474,7 @@ export function registerAuthRoutes(app: FastifyInstance): void {
     request.session.cookie.maxAge = 1000 * 60 * 60 * 24;
 
     const sessionUser = await getSessionUser(request);
+    const csrfToken = issueSessionCsrfToken(request.session as { csrfToken?: string });
     return reply.status(201).send({
       ok: true,
       emailVerificationRequired: true,
@@ -477,6 +483,7 @@ export function registerAuthRoutes(app: FastifyInstance): void {
         memoryUsedMb: 0,
         databaseCount: 0,
       }),
+      csrfToken,
     });
   });
 

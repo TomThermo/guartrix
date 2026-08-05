@@ -1,7 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
+import { createHash } from "node:crypto";
 import { createWriteStream } from "node:fs";
 import { pipeline } from "node:stream/promises";
 import { Readable } from "node:stream";
@@ -10,9 +9,9 @@ import {
   BEDROCK_BINARY,
   POCKETMINE_PHAR,
 } from "@msm/shared";
+import { safeExtractArchive } from "@msm/node-agent";
 import { compareMcVersions } from "./jars.js";
 
-const execFileAsync = promisify(execFile);
 const USER_AGENT = "Guartrix/1.0 (MinecraftServerManager; contact@localhost)";
 
 const ENDSTONE_VERSIONS_URL =
@@ -59,12 +58,19 @@ async function downloadFile(url: string, dest: string): Promise<void> {
   await pipeline(Readable.fromWeb(res.body as never), fileStream);
 }
 
-async function extractZip(zipPath: string, destDir: string): Promise<void> {
-  // BDS zips list every extracted file; default 1MB maxBuffer overflows without -q.
-  await execFileAsync("unzip", ["-o", "-q", zipPath, "-d", destDir], {
-    timeout: 300_000,
-    maxBuffer: 4 * 1024 * 1024,
-  });
+async function verifyFileSha256(filePath: string, expected: string): Promise<void> {
+  const hash = createHash("sha256");
+  const data = await fs.readFile(filePath);
+  hash.update(data);
+  const got = hash.digest("hex").toLowerCase();
+  const want = expected.trim().toLowerCase();
+  if (got !== want) {
+    throw new Error("Bedrock download checksum mismatch");
+  }
+}
+
+async function extractBedrockZip(zipPath: string, destDir: string): Promise<void> {
+  await safeExtractArchive(zipPath, destDir);
 }
 
 async function cachedEndstoneVersions(): Promise<EndstoneVersionsRegistry> {
@@ -101,7 +107,11 @@ export async function downloadBedrock(
 
   const zipPath = path.join(destDir, "bedrock-server.zip");
   await downloadFile(url, zipPath);
-  await extractZip(zipPath, destDir);
+  const expectedSha = meta.binary.linux?.sha256?.trim();
+  if (expectedSha) {
+    await verifyFileSha256(zipPath, expectedSha);
+  }
+  await extractBedrockZip(zipPath, destDir);
   await fs.rm(zipPath, { force: true }).catch(() => undefined);
 
   const binaryPath = path.join(destDir, BEDROCK_BINARY);

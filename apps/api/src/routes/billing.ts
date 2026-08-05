@@ -26,6 +26,19 @@ import {
 
 const MOLLIE_WEBHOOK_WINDOW_MS = 60_000;
 const MOLLIE_WEBHOOK_MAX = 60;
+
+function mollieWebhookIpAllowed(ip: string | undefined): boolean {
+  const raw = process.env.MOLLIE_WEBHOOK_IP_ALLOWLIST?.trim();
+  if (!raw) return true;
+  const allow = raw
+    .split(/[,\s]+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (allow.length === 0) return true;
+  const peer = (ip ?? "").trim();
+  return peer.length > 0 && allow.includes(peer);
+}
+
 const planBodySchema = z.object({
   slug: z
     .string()
@@ -351,6 +364,10 @@ export function registerBillingRoutes(app: FastifyInstance): void {
     );
     if (rl.limited) {
       return reply.status(429).send({ error: "Too many webhook requests" });
+    }
+
+    if (!mollieWebhookIpAllowed(request.ip)) {
+      return reply.status(403).send({ error: "Webhook source not allowed" });
     }
 
     let mollieId: string | null = null;

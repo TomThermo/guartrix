@@ -11,6 +11,7 @@ import { api } from "../api";
 import { useI18n } from "../i18n/react";
 import { Console } from "./Console";
 import { ConsoleOnlineHeads } from "./ConsoleOnlineHeads";
+import { openConsolePopout } from "../utils/consolePopout";
 import {
   CHART_HISTORY_MS,
   MatrixChart,
@@ -237,6 +238,19 @@ export function ServerConsoleLayout({
     <Row className="g-3 console-layout">
       <Col xs={12} lg={8}>
         <div className="console-with-online">
+          <div className="console-toolbar">
+            <span className="text-secondary small">{t("console.title")}</span>
+            <div className="flex-grow-1" />
+            <Button
+              size="sm"
+              variant="outline-secondary"
+              title={t("console.openPopoutTitle")}
+              onClick={() => openConsolePopout(server.id)}
+            >
+              <i className="fa-solid fa-up-right-from-square me-1" />
+              {t("console.openPopout")}
+            </Button>
+          </div>
           {canViewPlayers && (
             <ConsoleOnlineHeads
               serverId={server.id}

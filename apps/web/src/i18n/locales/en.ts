@@ -965,6 +965,10 @@ export const en = {
     serverStopped: "Server stopped",
     nobodyOnline: "Nobody online",
     managePlayer: "{name} — manage",
+    openPopout: "Open window",
+    openPopoutTitle: "Open console in a separate window",
+    backToServer: "Full server page",
+    popoutForbidden: "You do not have permission to use the console.",
   },
   engine: {
     title: "Engine",

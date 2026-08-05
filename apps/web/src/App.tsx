@@ -62,6 +62,11 @@ const ServerDetailPage = lazy(() =>
     default: m.ServerDetailPage,
   })),
 );
+const ServerConsolePage = lazy(() =>
+  import("./pages/ServerConsolePage").then((m) => ({
+    default: m.ServerConsolePage,
+  })),
+);
 const UsersPage = lazy(() =>
   import("./pages/UsersPage").then((m) => ({ default: m.UsersPage })),
 );
@@ -110,6 +115,14 @@ function PageFallback() {
       <Spinner animation="border" role="status" />
     </div>
   );
+}
+
+function isConsolePopoutPath(pathname: string): boolean {
+  return /^\/servers\/[^/]+\/console$/.test(pathname);
+}
+
+function ConsolePopoutShell({ children }: { children: ReactNode }) {
+  return <div className="console-popout-shell">{children}</div>;
 }
 
 function Shell({ children }: { children: ReactNode }) {
@@ -480,6 +493,8 @@ export function App() {
   const { loading, authenticated, user } = useAuth();
   const location = useLocation();
 
+  const popoutConsole = isConsolePopoutPath(location.pathname);
+
   if (!authenticated) {
     // Login/register/legal render immediately — do not wait on /api/auth/me.
     // For "/" and other protected paths, wait for the session check to avoid a login flash.
@@ -493,8 +508,10 @@ export function App() {
     );
   }
 
+  const Layout = popoutConsole ? ConsolePopoutShell : Shell;
+
   return (
-    <Shell>
+    <Layout>
       <ErrorBoundary>
         <Suspense fallback={<PageFallback />}>
           <Routes>
@@ -519,6 +536,7 @@ export function App() {
                 )
               }
             />
+            <Route path="/servers/:id/console" element={<ServerConsolePage />} />
             <Route path="/servers/:id" element={<ServerDetailPage />} />
             <Route path="/account/security" element={<AccountSecurityPage />} />
             <Route path="/account/billing" element={<AccountBillingPage />} />
@@ -592,6 +610,6 @@ export function App() {
           </Routes>
         </Suspense>
       </ErrorBoundary>
-    </Shell>
+    </Layout>
   );
 }

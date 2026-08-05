@@ -128,7 +128,16 @@ export async function ensureGuartrixNetwork(): Promise<void> {
 /** `shared` = flat `guartrix` bridge; `per_server` = isolated game network + shared DB attach. */
 export function dockerNetworkMode(): "shared" | "per_server" {
   const raw = (process.env.DOCKER_NETWORK_MODE ?? "per_server").trim().toLowerCase();
-  return raw === "shared" ? "shared" : "per_server";
+  if (raw === "shared") {
+    if (process.env.ALLOW_SHARED_DOCKER_NETWORK !== "1") {
+      console.warn(
+        "[guartrix] DOCKER_NETWORK_MODE=shared ignored — set ALLOW_SHARED_DOCKER_NETWORK=1 to enable flat bridge",
+      );
+      return "per_server";
+    }
+    return "shared";
+  }
+  return "per_server";
 }
 
 /** Docker network name for a game server when DOCKER_NETWORK_MODE=per_server. */

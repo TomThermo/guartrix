@@ -33,6 +33,7 @@ import {
   sftpConfigFromEnv,
   ensureBedrockRuntimeImage,
   bedrockRuntimeImageExists,
+  ensureDaemonPortPanelOnly,
   type DaemonServerConfig,
 } from "@msm/node-agent";
 import { daemonConfig } from "./config.js";
@@ -535,6 +536,10 @@ async function main() {
   app.log.info(
     `Guartrix daemon listening on http://${daemonConfig.host}:${daemonConfig.port}`,
   );
+
+  void ensureDaemonPortPanelOnly(daemonConfig.port).catch((err) => {
+    app.log.warn(err, "Daemon port firewall restriction failed");
+  });
 
   try {
     sftpHandle = await startSftpServer(sftpConfigFromEnv(daemonConfig.token));

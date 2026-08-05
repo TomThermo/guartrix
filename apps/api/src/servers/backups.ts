@@ -31,6 +31,20 @@ function shellSingleQuote(s: string): string {
   return `'${s.replace(/'/g, `'\\''`)}'`;
 }
 
+/** Reject shell metacharacters outside known placeholders in operator templates. */
+function assertSafeOffsiteTemplate(template: string): void {
+  const stripped = template
+    .replaceAll("{path}", "")
+    .replaceAll("{serverId}", "")
+    .replaceAll("{backupId}", "")
+    .replaceAll("{fileName}", "");
+  if (/[;|&$`<>]/.test(stripped)) {
+    throw new Error(
+      "BACKUP_OFFSITE_CMD contains disallowed shell metacharacters outside placeholders",
+    );
+  }
+}
+
 /**
  * Optional offsite copy after a successful backup.
  * Set BACKUP_OFFSITE_CMD to a shell command; placeholders:
@@ -45,6 +59,7 @@ async function runOffsiteBackupHook(opts: {
 }): Promise<void> {
   const template = process.env.BACKUP_OFFSITE_CMD?.trim();
   if (!template) return;
+  assertSafeOffsiteTemplate(template);
   const cmd = template
     .replaceAll("{path}", shellSingleQuote(opts.archivePath))
     .replaceAll("{serverId}", shellSingleQuote(opts.serverId))

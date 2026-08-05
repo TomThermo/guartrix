@@ -7,6 +7,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.110] — 2026-08-05
+
+- Console: open live console in a dedicated browser window (pop-out button on Console tab)
+- Ops: Mollie webhook IP allowlist configured; `PANEL_URL` set to public panel URL for daemon firewall
+
+## [1.0.109] — 2026-08-05
+
+- Security: CSRF double-submit token, Bedrock safe extract + SHA256 verify, shared Docker gate, daemon panel-only firewall, Mollie webhook IP allowlist
+
 ## [1.0.108] — 2026-08-05
 
 - Security: per_server Docker default everywhere, metrics Bearer-only, safer backup offsite placeholders, minimal invite peek

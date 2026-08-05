@@ -970,6 +970,10 @@ export const nl: Messages = {
     serverStopped: "Server gestopt",
     nobodyOnline: "Niemand online",
     managePlayer: "{name} — beheren",
+    openPopout: "Open venster",
+    openPopoutTitle: "Console openen in een apart venster",
+    backToServer: "Volledige serverpagina",
+    popoutForbidden: "Je hebt geen rechten om de console te gebruiken.",
   },
   engine: {
     title: "Engine",

@@ -1,6 +1,6 @@
 {
   "name": "@msm/api",
-  "version": "1.0.108",
+  "version": "1.0.110",
   "private": true,
   "type": "module",
   "scripts": {

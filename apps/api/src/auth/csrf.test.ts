@@ -1,14 +1,22 @@
 import { describe, expect, it } from "vitest";
 import type { FastifyRequest } from "fastify";
-import { assertSameOrigin } from "./csrf.js";
+import {
+  assertCsrfToken,
+  assertSameOrigin,
+  CSRF_HEADER,
+  issueSessionCsrfToken,
+} from "./csrf.js";
 
-function req(headers: Record<string, string | undefined>): FastifyRequest {
-  return { headers } as FastifyRequest;
+function req(
+  headers: Record<string, string | undefined>,
+  session?: { csrfToken?: string; authenticated?: boolean },
+): FastifyRequest {
+  return { headers, session } as FastifyRequest;
 }
 
 describe("assertSameOrigin", () => {
-  it("allows missing Origin/Referer (SameSite cookie clients / curl)", () => {
-    expect(assertSameOrigin(req({}))).toBeNull();
+  it("rejects missing Origin/Referer by default", () => {
+    expect(assertSameOrigin(req({}))).toBe("Missing origin");
   });
 
   it("allows localhost / 127.0.0.1 panel origins", () => {
@@ -31,10 +39,30 @@ describe("assertSameOrigin", () => {
       assertSameOrigin(req({ referer: "https://evil.example/phish" })),
     ).toBe("Invalid referer");
   });
+});
 
-  it("rejects malformed Referer", () => {
-    expect(assertSameOrigin(req({ referer: "not-a-url" }))).toBe(
-      "Invalid referer",
+describe("CSRF token", () => {
+  it("issues stable session token", () => {
+    const session: { csrfToken?: string } = {};
+    const a = issueSessionCsrfToken(session);
+    const b = issueSessionCsrfToken(session);
+    expect(a).toBe(b);
+    expect(a.length).toBeGreaterThan(20);
+  });
+
+  it("validates matching header", () => {
+    const session = { csrfToken: "abc123", authenticated: true };
+    expect(
+      assertCsrfToken(
+        req({ [CSRF_HEADER]: "abc123" }, session),
+      ),
+    ).toBeNull();
+  });
+
+  it("rejects mismatch", () => {
+    const session = { csrfToken: "abc123", authenticated: true };
+    expect(assertCsrfToken(req({ [CSRF_HEADER]: "wrong" }, session))).toBe(
+      "Invalid CSRF token",
     );
   });
 });

@@ -50,7 +50,10 @@ export function parseBdsAllowlistJson(raw: string): BdsAllowlistEntry[] {
     return [];
   }
   return arr
-    .filter((e): e is Record<string, unknown> => e && typeof e === "object")
+    .filter(
+      (e): e is Record<string, unknown> =>
+        typeof e === "object" && e !== null,
+    )
     .map((e) => ({
       name: String(e.name ?? "").trim(),
       ...(e.xuid ? { xuid: String(e.xuid) } : {}),

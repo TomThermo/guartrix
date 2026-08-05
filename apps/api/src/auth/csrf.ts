@@ -1,5 +1,13 @@
+import { randomBytes } from "node:crypto";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { config } from "../config.js";
+
+export const CSRF_HEADER = "x-csrf-token";
+
+type SessionWithCsrf = {
+  csrfToken?: string;
+  authenticated?: boolean;
+};
 
 export function allowedOrigins(): Set<string> {
   const host = config.publicHost;
@@ -52,6 +60,27 @@ export function assertSameOrigin(request: FastifyRequest): string | null {
   return "Missing origin";
 }
 
+/** Issue or return the per-session CSRF secret (double-submit header). */
+export function issueSessionCsrfToken(session: SessionWithCsrf): string {
+  if (session.csrfToken) return session.csrfToken;
+  const token = randomBytes(32).toString("base64url");
+  session.csrfToken = token;
+  return token;
+}
+
+export function assertCsrfToken(request: FastifyRequest): string | null {
+  const session = request.session as SessionWithCsrf;
+  if (!session?.csrfToken) {
+    return "Missing CSRF token — refresh the page";
+  }
+  const raw = request.headers[CSRF_HEADER];
+  const token = typeof raw === "string" ? raw.trim() : "";
+  if (!token || token !== session.csrfToken) {
+    return "Invalid CSRF token";
+  }
+  return null;
+}
+
 const MUTATING = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 function csrfExemptPath(pathname: string): boolean {
@@ -62,9 +91,20 @@ function csrfExemptPath(pathname: string): boolean {
   return false;
 }
 
+/** Auth routes that establish a session before a CSRF token exists. */
+function csrfTokenExemptPath(pathname: string): boolean {
+  if (pathname === "/api/auth/login") return true;
+  if (pathname === "/api/auth/login/2fa") return true;
+  if (pathname === "/api/auth/register") return true;
+  if (pathname === "/api/auth/forgot-password") return true;
+  if (pathname === "/api/auth/reset-password") return true;
+  if (pathname === "/api/auth/verify-email") return true;
+  return false;
+}
+
 /**
- * Apply Origin/Referer checks to all cookie-auth mutating /api routes.
- * Daemon/internal bearer routes and public GETs are skipped.
+ * Apply Origin/Referer + CSRF token checks to cookie-auth mutating /api routes.
+ * Daemon/internal bearer routes and public endpoints are skipped.
  */
 export function registerCsrfGuard(app: FastifyInstance): void {
   app.addHook("preHandler", async (request, reply) => {
@@ -76,9 +116,19 @@ export function registerCsrfGuard(app: FastifyInstance): void {
     const auth = request.headers.authorization;
     if (typeof auth === "string" && /^Bearer\s+/i.test(auth)) return;
 
-    const err = assertSameOrigin(request);
-    if (err) {
-      return reply.status(403).send({ error: err });
+    const originErr = assertSameOrigin(request);
+    if (originErr) {
+      return reply.status(403).send({ error: originErr });
+    }
+
+    if (csrfTokenExemptPath(pathOnly)) return;
+
+    const session = request.session as SessionWithCsrf;
+    if (session?.authenticated) {
+      const csrfErr = assertCsrfToken(request);
+      if (csrfErr) {
+        return reply.status(403).send({ error: csrfErr });
+      }
     }
   });
 }

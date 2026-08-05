@@ -46,6 +46,7 @@ export function canCreateServer(user: AuthUser | null | undefined): boolean {
 export interface AuthMeResponse {
   authenticated: boolean;
   user: AuthUser | null;
+  csrfToken?: string;
 }
 
 export interface CreateUserRequest {

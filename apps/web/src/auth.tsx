@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import type { AuthUser } from "@msm/shared";
-import { api, onUnauthorized } from "./api";
+import { api, onUnauthorized, setCsrfToken } from "./api";
 
 interface AuthState {
   loading: boolean;
@@ -39,6 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuthenticated(false);
     setUser(null);
     setPendingTwoFactor(false);
+    setCsrfToken(null);
   }, []);
 
   useEffect(() => {
@@ -48,6 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setAuthenticated(r.authenticated);
         setUser(r.user);
         setPendingTwoFactor(false);
+        setCsrfToken(r.csrfToken);
       })
       .catch(() => {
         clearSession();
@@ -68,6 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setAuthenticated(true);
             setUser(r.user);
             setPendingTwoFactor(false);
+            setCsrfToken(r.csrfToken);
           }
         })
         .catch(() => {
@@ -90,6 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setPendingTwoFactor(false);
       setAuthenticated(true);
       setUser(result.user ?? null);
+      setCsrfToken(result.csrfToken);
       return { requiresTwoFactor: false };
     },
     [],
@@ -100,6 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setPendingTwoFactor(false);
     setAuthenticated(true);
     setUser(result.user);
+    setCsrfToken(result.csrfToken);
   }, []);
 
   const logout = useCallback(async () => {
@@ -120,6 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuthenticated(true);
     setUser(r.user);
     setPendingTwoFactor(false);
+    setCsrfToken(r.csrfToken);
   }, [clearSession]);
 
   const value = useMemo(

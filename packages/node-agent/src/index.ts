@@ -42,6 +42,8 @@ export {
   firewallEnabled,
 } from "./firewall.js";
 
+export { ensureDaemonPortPanelOnly } from "./daemon-firewall.js";
+
 export {
   hostTotalMemoryGb,
   hostTotalMemoryMb,

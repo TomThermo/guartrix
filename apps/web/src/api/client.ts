@@ -48,10 +48,26 @@ export class ApiError extends Error {
   }
 }
 
+let csrfToken: string | null = null;
+
+export function setCsrfToken(token: string | null | undefined): void {
+  csrfToken = token?.trim() ? token.trim() : null;
+}
+
+export function getCsrfToken(): string | null {
+  return csrfToken;
+}
+
+const MUTATING = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+
 export async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const headers = new Headers(init?.headers);
   if (init?.body !== undefined && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
+  }
+  const method = (init?.method ?? "GET").toUpperCase();
+  if (csrfToken && MUTATING.has(method) && !headers.has("x-csrf-token")) {
+    headers.set("x-csrf-token", csrfToken);
   }
 
   let res: Response;

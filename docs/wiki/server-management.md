@@ -71,7 +71,7 @@ The server detail page is the main workspace. Tabs are grouped roughly as:
 
 ### Service and data
 
-- Console
+- Console — use **Open window** to pop the live console into a separate browser window (power controls included)
 - File Manager
 - SFTP
 - Databases

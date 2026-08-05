@@ -41,7 +41,7 @@ another tool on the host needs it.
 |------|---------|
 | Proxy | `X-Forwarded-*` overwritten from the socket by prod-web; API trusts XFF only from `TRUSTED_PROXIES` |
 | CSP | prod-web sends `script-src` with a **per-request nonce** (stamped on `index.html` scripts). Cloudflare Bot JS detections can reuse that nonce; Web Analytics needs `static.cloudflareinsights.com`. Prefer turning off **Email Address Obfuscation** (Scrape Shield) rather than `'unsafe-inline'` |
-| CSRF | Origin/Referer required on cookie-auth mutating `/api` routes (missing both rejected unless `CSRF_ALLOW_MISSING_ORIGIN=1`; Bearer + `/api/public/*` exempt) |
+| CSRF | Origin/Referer + **`x-csrf-token`** double-submit on authenticated cookie mutating `/api` (missing Origin **and** Referer rejected unless `CSRF_ALLOW_MISSING_ORIGIN=1`; Bearer + `/api/public/*` exempt) |
 | Sessions | `httpOnly` + `SameSite=Lax`; regenerate on login; purge on password reset |
 | Rate limits | Login / API-key / SFTP counters via `RATE_LIMIT_STORE` (`file` default under `data/rate-limits/`, or `memory`) |
 | Passwords | Versioned scrypt hashes (`scrypt$v1$…`); legacy `salt:hash` still verifies and upgrades on login |
@@ -50,7 +50,7 @@ another tool on the host needs it.
 | Client API | Personal Bearer keys (`gt_…`), scoped permissions, per-key rate limit — see [Client API](client-api.md) |
 | Files / SFTP | Symlink jail, `O_NOFOLLOW` uploads, member-safe archive extract, sensitive `guartrix-*.json` blocked |
 | Archives | Symlinks/hardlinks rejected; zip member-by-member; File Manager + modpack/clone/import use `safeExtractArchive` |
-| Daemon | Short-lived HS256 JWTs on the wire (HMAC with node secret); raw bearer only if `DAEMON_JWT_LEGACY=true`; `serverId` sanitized; MySQL game users default `remote: 172.%`; containers `--cap-drop=ALL`; **`DOCKER_NETWORK_MODE=per_server`** (default) isolates game bridges (`guartrix-s-<id>`) with a second attach to shared `guartrix` for game MySQL; set **`shared`** only for single-tenant / simplest DNS |
+| Daemon | Short-lived HS256 JWTs on the wire (HMAC with node secret); raw bearer only if `DAEMON_JWT_LEGACY=true`; `serverId` sanitized; MySQL game users default `remote: 172.%`; containers `--cap-drop=ALL`; **`DOCKER_NETWORK_MODE=per_server`** (default) isolates game bridges (`guartrix-s-<id>`) with a second attach to shared `guartrix` for game MySQL; **`shared`** requires `ALLOW_SHARED_DOCKER_NETWORK=1`; daemon port ufw restricted to panel IP when `MANAGE_FIREWALL` + `PANEL_URL` |
 | Outbound | Webhook/download SSRF guards (`safe-url.ts`); CDN host allowlist for jars/modpacks |
 | Capacity | Shared `assertNodeCapacity` (incl. reserve) on create/PATCH |
 | Nodes | Only admins pick `nodeId` on create / clone / import; remote-install verifies SSH host keys (explicit trust + stored fingerprint; replace requires confirm); install script prefers ufw allow daemon port **from panel IP only** |
@@ -87,7 +87,7 @@ Re-check after upgrades:
 
 - File Manager + SFTP resolve paths under the server jail; symlinks and `guartrix-*.json` stay blocked.
 - Zip/tar extract rejects symlink members.
-- Cookie mutating routes still fail without a matching Origin/Referer (Bearer and `/api/public/*` exempt). Missing Origin **and** Referer is rejected unless `CSRF_ALLOW_MISSING_ORIGIN=1`.
+- Cookie mutating routes require matching Origin/Referer **and** session `x-csrf-token` when authenticated (Bearer and `/api/public/*` exempt). Missing Origin **and** Referer is rejected unless `CSRF_ALLOW_MISSING_ORIGIN=1`.
 - Public invite peek returns a masked `emailHint` only; full invite email requires a signed-in session.
 - Mollie webhook is rate-limited and only syncs `tr_*` ids that exist in the local Payment table.
 

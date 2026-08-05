@@ -1,4 +1,4 @@
-export { ApiError, onUnauthorized } from "./client";
+export { ApiError, onUnauthorized, setCsrfToken } from "./client";
 import { authApi } from "./auth";
 import { accountApi } from "./account";
 import { nodesApi } from "./nodes";

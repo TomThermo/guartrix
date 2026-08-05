@@ -14,18 +14,23 @@ export const authApi = {
       emailVerificationRequired?: boolean;
     }>("/api/auth/config"),
   login: (username: string, password: string, rememberMe = false) =>
-    request<{ ok: boolean; user?: AuthUser; requiresTwoFactor?: boolean }>(
-      "/api/auth/login",
+    request<{
+      ok: boolean;
+      user?: AuthUser;
+      requiresTwoFactor?: boolean;
+      csrfToken?: string;
+    }>("/api/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ username, password, rememberMe }),
+    }),
+  loginTwoFactor: (code: string) =>
+    request<{ ok: boolean; user: AuthUser; csrfToken?: string }>(
+      "/api/auth/login/2fa",
       {
         method: "POST",
-        body: JSON.stringify({ username, password, rememberMe }),
+        body: JSON.stringify({ code }),
       },
     ),
-  loginTwoFactor: (code: string) =>
-    request<{ ok: boolean; user: AuthUser }>("/api/auth/login/2fa", {
-      method: "POST",
-      body: JSON.stringify({ code }),
-    }),
   getTwoFactor: () =>
     request<{
       enabled: boolean;
