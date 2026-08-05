@@ -34,6 +34,7 @@ export type PanelSettingsStored = {
   activityWebhookUrl?: string;
   alertEmail?: string;
   activityAlertMute?: string[];
+  backupOffsiteCmd?: string;
 };
 
 /** Public GET shape — secrets masked. */
@@ -62,6 +63,8 @@ export type PanelSettingsView = {
   activityWebhookUrl: string;
   alertEmail: string;
   activityAlertMute: string[];
+  backupOffsiteCmd: string;
+  backupOffsiteCmdSet: boolean;
   /** Redis HA status (read-only; configure via install / .env). */
   redis: {
     configured: boolean;
@@ -221,6 +224,9 @@ export function applyPanelSettings(stored: PanelSettingsStored): void {
       .map((s) => String(s).trim())
       .filter(Boolean);
   }
+  if (stored.backupOffsiteCmd !== undefined) {
+    config.backupOffsiteCmd = String(stored.backupOffsiteCmd).trim();
+  }
   // Track HTTPS for GET view / env sync (prod-web still needs restart).
   if (stored.httpsEnabled !== undefined) {
     process.env.HTTPS_ENABLED = stored.httpsEnabled ? "true" : "false";
@@ -263,6 +269,8 @@ export async function getPanelSettingsView(): Promise<PanelSettingsView> {
     activityWebhookUrl: config.alerts.webhookUrl,
     alertEmail: config.alerts.alertEmail,
     activityAlertMute: [...config.alerts.mutedActions],
+    backupOffsiteCmd: config.backupOffsiteCmd,
+    backupOffsiteCmdSet: Boolean(config.backupOffsiteCmd),
     redis: {
       configured: redis.configured,
       enabled: redis.enabled,
@@ -301,6 +309,7 @@ export type PanelSettingsPatch = {
   activityWebhookUrl?: string;
   alertEmail?: string;
   activityAlertMute?: string[] | string;
+  backupOffsiteCmd?: string;
 };
 
 function asNonNegInt(value: unknown, label: string): number {
@@ -424,6 +433,9 @@ export function mergePanelSettingsPatch(
           .map((s) => s.trim())
           .filter(Boolean);
     next.activityAlertMute = list;
+  }
+  if (patch.backupOffsiteCmd !== undefined) {
+    next.backupOffsiteCmd = String(patch.backupOffsiteCmd).trim();
   }
 
   return next;

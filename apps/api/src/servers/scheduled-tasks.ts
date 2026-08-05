@@ -8,9 +8,11 @@ import { serverDir } from "../config.js";
 import { prisma } from "../db.js";
 import { processManager } from "./process-manager.js";
 import {
+  computeCronNextRun,
   computeDailyNextRun,
   computeIntervalNextRun,
   computeWeeklyNextRun,
+  parseCronExpression,
   parseDailyAt,
 } from "./schedule-time.js";
 
@@ -24,6 +26,7 @@ interface SchedulePayload {
   dailyAt: string;
   intervalHours: number;
   weekdays: number[];
+  cronExpression: string;
   kind: ScheduledTask["kind"];
   command: string;
 }
@@ -42,6 +45,9 @@ function normalizeWeekdays(raw: unknown): number[] {
 
 function computeNextRun(task: ScheduledTask, from = new Date()): string | null {
   if (!task.enabled) return null;
+  if (task.mode === "cron") {
+    return computeCronNextRun(task.cronExpression || "0 4 * * *", from);
+  }
   if (task.mode === "interval") {
     return computeIntervalNextRun(task, from);
   }
@@ -103,7 +109,7 @@ function firstCommand(steps: ScheduleStep[]): string {
 function normalizeMode(
   raw: Partial<ScheduledTask>["mode"],
 ): ScheduledTask["mode"] {
-  if (raw === "interval" || raw === "weekly") return raw;
+  if (raw === "interval" || raw === "weekly" || raw === "cron") return raw;
   return "daily";
 }
 
@@ -134,6 +140,7 @@ function normalizeTask(raw: Partial<ScheduledTask> & { id?: string }): Scheduled
     dailyAt: raw.dailyAt || "04:00",
     intervalHours: Math.min(168, Math.max(1, Number(raw.intervalHours) || 24)),
     weekdays: mode === "weekly" ? normalizeWeekdays(raw.weekdays) : [],
+    cronExpression: (raw.cronExpression || "0 4 * * *").trim(),
     command: firstCommand(steps),
     steps,
     note: raw.note?.trim() || null,
@@ -169,6 +176,9 @@ function validateScheduleTiming(task: ScheduledTask): void {
   if (task.mode === "weekly" && task.weekdays.length === 0) {
     throw new Error("Select at least one weekday");
   }
+  if (task.mode === "cron" && !parseCronExpression(task.cronExpression || "")) {
+    throw new Error("cronExpression must be 5 fields (minute hour day month weekday)");
+  }
 }
 
 function schedulePayload(task: ScheduledTask): SchedulePayload {
@@ -177,6 +187,7 @@ function schedulePayload(task: ScheduledTask): SchedulePayload {
     dailyAt: task.dailyAt,
     intervalHours: task.intervalHours,
     weekdays: task.weekdays,
+    cronExpression: task.cronExpression,
     kind: task.kind,
     command: task.command,
   };
@@ -209,6 +220,7 @@ function rowToTask(row: {
     dailyAt: schedule.dailyAt,
     intervalHours: schedule.intervalHours,
     weekdays: schedule.weekdays,
+    cronExpression: schedule.cronExpression,
     kind: schedule.kind,
     command: schedule.command,
     steps: rawSteps.map((s) => normalizeStep(s)),

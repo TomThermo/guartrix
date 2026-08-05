@@ -38,6 +38,7 @@ import {
 } from "@msm/node-agent";
 import { daemonConfig } from "./config.js";
 import { requireDaemonAuth } from "./auth.js";
+import { registerDaemonRateLimit } from "./rate-limit.js";
 import { registerDaemonMetrics } from "./metrics.js";
 import {
   acceptLicenseTicket,
@@ -161,6 +162,8 @@ async function main() {
   await app.register(multipart, {
     limits: { fileSize: 100 * 1024 * 1024 },
   });
+
+  registerDaemonRateLimit(app);
 
   app.addHook("preHandler", requireDaemonAuth);
 

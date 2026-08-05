@@ -48,6 +48,7 @@ export const SERVER_TABS: Array<{
     labelKey: "tabs.console",
     group: "service",
     anyOf: [
+      "control.console.read",
       "control.console",
       "control.start",
       "control.stop",

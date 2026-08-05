@@ -39,8 +39,10 @@ export function registerConsoleWs(app: FastifyInstance): void {
       }
 
       const canSend = hasServerPermission(access, "control.console");
-      if (!canSend) {
-        deny("Missing permission: control.console");
+      const canRead =
+        canSend || hasServerPermission(access, "control.console.read");
+      if (!canRead) {
+        deny("Missing permission: control.console.read");
         return;
       }
       const canStop = hasServerPermission(access, "control.stop");

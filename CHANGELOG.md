@@ -7,6 +7,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.112] — 2026-08-05
+
+- Console read-only permission, MySQL in backups, cron schedules, bulk dashboard actions, daemon/API rate limits, backup offsite UI
+
 ## [1.0.111] — 2026-08-05
 
 - Console pop-out window fits viewport without page scroll

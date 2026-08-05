@@ -22,7 +22,10 @@ export const backupsApi = {
     ),
   updateBackupSchedule: (
     id: string,
-    schedule: Pick<BackupSchedule, "mode" | "intervalHours" | "dailyAt" | "keepCount">,
+    schedule: Pick<
+      BackupSchedule,
+      "mode" | "intervalHours" | "dailyAt" | "cronExpression" | "keepCount"
+    >,
   ) =>
     request<{ schedule: BackupSchedule }>(`/api/servers/${id}/backups/schedule`, {
       method: "PUT",

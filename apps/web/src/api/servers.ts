@@ -477,10 +477,11 @@ export const serversApi = {
     body: {
       enabled?: boolean;
       kind?: "command" | "restart" | "backup" | "chain";
-      mode: "daily" | "interval" | "weekly";
+      mode: "daily" | "interval" | "weekly" | "cron";
       dailyAt?: string;
       intervalHours?: number;
       weekdays?: number[];
+      cronExpression?: string;
       command?: string;
       note?: string | null;
       steps?: ScheduleStep[];
@@ -496,9 +497,11 @@ export const serversApi = {
     body: Partial<{
       enabled: boolean;
       kind: "command" | "restart" | "backup" | "chain";
-      mode: "daily" | "interval";
+      mode: "daily" | "interval" | "weekly" | "cron";
       dailyAt: string;
       intervalHours: number;
+      weekdays?: number[];
+      cronExpression?: string;
       command: string;
       note: string | null;
       steps: ScheduleStep[];

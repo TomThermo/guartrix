@@ -274,6 +274,9 @@ export function buildDockerRunArgs(opts: DockerRunArgsOptions): string[] {
     opts.gameNetwork,
     "--security-opt",
     "no-new-privileges:true",
+    ...(process.env.DOCKER_SECCOMP_PROFILE?.trim()
+      ? ["--security-opt", `seccomp=${process.env.DOCKER_SECCOMP_PROFILE.trim()}`]
+      : []),
     "--cap-drop",
     "ALL",
     "--pids-limit",

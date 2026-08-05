@@ -56,6 +56,7 @@ export function AdminSettingsPage() {
   const [activityWebhookUrl, setActivityWebhookUrl] = useState("");
   const [alertEmail, setAlertEmail] = useState("");
   const [activityAlertMute, setActivityAlertMute] = useState("");
+  const [backupOffsiteCmd, setBackupOffsiteCmd] = useState("");
   const [redisInfo, setRedisInfo] = useState<PanelSettings["redis"] | null>(
     null,
   );
@@ -86,6 +87,7 @@ export function AdminSettingsPage() {
     setActivityWebhookUrl(s.activityWebhookUrl);
     setAlertEmail(s.alertEmail);
     setActivityAlertMute((s.activityAlertMute ?? []).join(", "));
+    setBackupOffsiteCmd(s.backupOffsiteCmd ?? "");
     setRedisInfo(s.redis ?? null);
   }, []);
 
@@ -135,6 +137,7 @@ export function AdminSettingsPage() {
         activityWebhookUrl,
         alertEmail,
         activityAlertMute,
+        backupOffsiteCmd,
       };
       if (cloudflareApiToken.trim()) {
         body.cloudflareApiToken = cloudflareApiToken.trim();
@@ -390,6 +393,22 @@ export function AdminSettingsPage() {
                       />
                     </Form.Group>
                   </Col>
+                  <Col xs={12}>
+                    <Form.Group>
+                      <Form.Label>
+                        {t("adminSettings.backupOffsiteCmd")}
+                      </Form.Label>
+                      <Form.Control
+                        value={backupOffsiteCmd}
+                        onChange={(e) => setBackupOffsiteCmd(e.target.value)}
+                        placeholder='rclone copy "{path}" b2:bucket/{serverId}/'
+                        className="font-monospace"
+                      />
+                      <Form.Text muted>
+                        {t("adminSettings.backupOffsiteCmdHelp")}
+                      </Form.Text>
+                    </Form.Group>
+                  </Col>
                 </Row>
               </Tab.Pane>
 
@@ -620,6 +639,22 @@ export function AdminSettingsPage() {
                       />
                       <Form.Text muted>
                         {t("adminSettings.activityAlertMuteHelp")}
+                      </Form.Text>
+                    </Form.Group>
+                  </Col>
+                  <Col xs={12}>
+                    <Form.Group>
+                      <Form.Label>
+                        {t("adminSettings.backupOffsiteCmd")}
+                      </Form.Label>
+                      <Form.Control
+                        value={backupOffsiteCmd}
+                        onChange={(e) => setBackupOffsiteCmd(e.target.value)}
+                        placeholder='rclone copy "{path}" b2:bucket/{serverId}/'
+                        className="font-monospace"
+                      />
+                      <Form.Text muted>
+                        {t("adminSettings.backupOffsiteCmdHelp")}
                       </Form.Text>
                     </Form.Group>
                   </Col>

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import type { ServerDetail, ServerStatus } from "@msm/shared";
-import { hasPermission } from "@msm/shared";
+import { hasPermission, type ServerPermission } from "@msm/shared";
 import { Alert, Badge, Button, Spinner, Stack } from "react-bootstrap";
 import { api, ApiError } from "../api";
 import { useAuth } from "../auth";
@@ -34,7 +34,7 @@ export function ServerConsolePage() {
   const [loading, setLoading] = useState(true);
 
   const perms = server?.permissions ?? (user?.role === "ADMIN" ? ["*"] : []);
-  const can = (p: Parameters<typeof hasPermission>[1]) => hasPermission(perms, p);
+  const can = (p: ServerPermission) => hasPermission(perms, p);
   const canSendConsole = can("control.console");
   const canViewPlayers = can("player.read");
   const canManagePlayers = can("player.update");
@@ -121,7 +121,7 @@ export function ServerConsolePage() {
     );
   }
 
-  if (!canSendConsole && !canPowerStart && !canPowerStop) {
+  if (!canSendConsole && !canPowerStart && !canPowerStop && !can("control.console.read")) {
     return (
       <div className="console-popout-page p-3">
         <Alert variant="warning">{t("console.popoutForbidden")}</Alert>

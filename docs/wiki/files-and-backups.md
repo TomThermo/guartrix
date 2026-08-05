@@ -88,7 +88,9 @@ Main capabilities:
 - upload existing backup archives
 - restore to the current server
 - delete old backups
-- schedule recurring backups
+- schedule recurring backups (daily, weekly, interval, or **cron** five-field expression)
+- optional **offsite hook** after each backup (`BACKUP_OFFSITE_CMD` or **Admin → Settings → Alerts**)
+- **MySQL dumps** for databases linked to the server are embedded under `guartrix-mysql/` in the archive and restored with the backup
 
 ### Backup behavior
 
@@ -108,7 +110,7 @@ Operators should document or remember:
 
 - restores overwrite server data for the selected target
 - restart may be required to republish allocations or fully apply changed runtime files
-- database data is a separate lifecycle from file backups unless the flow explicitly includes database dump/restore
+- file backups now include linked game **MySQL** dumps when present; panel Prisma DB is separate (see [Operations](operations.md))
 
 ## Related
 

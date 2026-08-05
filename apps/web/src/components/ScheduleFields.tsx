@@ -4,7 +4,7 @@ import { useI18n } from "../i18n/react";
 /** Shared hour options for interval schedules (backups + task chains). */
 export const SCHEDULE_INTERVAL_HOURS = [1, 2, 3, 4, 6, 8, 12, 24, 48] as const;
 
-export type ScheduleTimingMode = "off" | "daily" | "interval" | "weekly";
+export type ScheduleTimingMode = "off" | "daily" | "interval" | "weekly" | "cron";
 
 const WEEKDAY_DEFS = [
   [0, "weekdaySun"],
@@ -27,6 +27,8 @@ export interface ScheduleFieldsProps {
   onDailyAtChange: (time: string) => void;
   weekdays?: number[];
   onWeekdaysChange?: (days: number[]) => void;
+  cronExpression?: string;
+  onCronExpressionChange?: (expr: string) => void;
   /** Use backups.* or schedules.timing.* translation keys. */
   labels: "backups" | "schedules";
 }
@@ -41,6 +43,8 @@ export function ScheduleFields({
   onDailyAtChange,
   weekdays = [],
   onWeekdaysChange,
+  cronExpression = "0 4 * * *",
+  onCronExpressionChange,
   labels,
 }: ScheduleFieldsProps) {
   const { t } = useI18n();
@@ -49,10 +53,12 @@ export function ScheduleFields({
     if (labels === "backups") {
       if (m === "off") return t("backups.modeOff");
       if (m === "interval") return t("backups.modeInterval");
+      if (m === "cron") return t("backups.modeCron");
       return t("backups.modeDaily");
     }
     if (m === "daily") return t("schedules.timing.modeDaily");
     if (m === "weekly") return t("schedules.timing.modeWeekly");
+    if (m === "cron") return t("schedules.timing.modeCron");
     return t("schedules.timing.modeInterval");
   };
 
@@ -138,6 +144,22 @@ export function ScheduleFields({
               </option>
             ))}
           </Form.Select>
+        </Form.Group>
+      )}
+
+      {mode === "cron" && onCronExpressionChange && (
+        <Form.Group className="mb-3">
+          <Form.Label>{t("schedules.timing.cronExpression")}</Form.Label>
+          <Form.Control
+            value={cronExpression}
+            onChange={(e) => onCronExpressionChange(e.target.value)}
+            placeholder="*/15 * * * *"
+            className="font-monospace"
+            required
+          />
+          <Form.Text className="text-secondary">
+            {t("schedules.timing.cronHint")}
+          </Form.Text>
         </Form.Group>
       )}
     </>

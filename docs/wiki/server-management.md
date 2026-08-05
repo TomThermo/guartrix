@@ -56,6 +56,7 @@ Official BDS defaults to **`online-mode=true`** (Xbox / Microsoft account verifi
 The dashboard is not just a list. It exposes operational shortcuts:
 
 - start, stop, restart, kill
+- **bulk actions** — select multiple servers with checkboxes, then start / stop / restart the selection
 - filters by node, type, and state
 - deep links into a specific server tab
 - quick chips for whitelist state, updates, and online players
@@ -71,7 +72,7 @@ The server detail page is the main workspace. Tabs are grouped roughly as:
 
 ### Service and data
 
-- Console — use **Open window** to pop the live console into a separate browser window (power controls included)
+- Console — use **Open window** to pop the live console into a separate browser window (power controls included). Subusers can be granted **`control.console.read`** to watch logs without sending commands or using power buttons
 - File Manager
 - SFTP
 - Databases

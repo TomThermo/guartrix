@@ -28,9 +28,10 @@ import {
 import { prisma } from "../db.js";
 
 const scheduleSchema = z.object({
-  mode: z.enum(["off", "interval", "daily"]),
+  mode: z.enum(["off", "interval", "daily", "cron"]),
   intervalHours: z.number().int().min(1).max(168).optional(),
   dailyAt: z.string().optional(),
+  cronExpression: z.string().max(120).optional(),
   keepCount: z.number().int().min(1).max(50).optional(),
 });
 

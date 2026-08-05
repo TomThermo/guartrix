@@ -123,6 +123,11 @@ export const nl: Messages = {
     type: "Type",
     allTypes: "Alle types",
     noMatch: "Geen servers komen overeen met deze filters.",
+    selectAllFiltered: "Selecteer gefilterd",
+    selectedCount: "{count} geselecteerd",
+    bulkStart: "Start geselecteerd",
+    bulkStop: "Stop geselecteerd",
+    bulkRestart: "Herstart geselecteerd",
     serverLimit: "Serverlimiet bereikt ({count}/{max}).",
     autoRestart: "Auto-herstart",
     autoRestartTitle: "Auto-herstart ingeschakeld",
@@ -547,7 +552,7 @@ export const nl: Messages = {
     noteOptional: "Notitie (optioneel)",
     notePlaceholder: "Voor grote update…",
     help:
-      "Back-ups worden opgeslagen als .tar.gz-archieven (wereld, configs, mods/plugins). Logs en libraries worden overgeslagen. Als de server draait, voert Guartrix eerst save-all uit. Je kunt .tar.gz, .tgz of .zip uploaden (zips worden uitgepakt en geconverteerd). Max. upload {max}.",
+      "Back-ups worden opgeslagen als .tar.gz-archieven (wereld, configs, mods/plugins en game-MySQL dumps wanneer databases bestaan). Logs en libraries worden overgeslagen. Als de server draait, voert Guartrix eerst save-all uit. Je kunt .tar.gz, .tgz of .zip uploaden (zips worden uitgepakt en geconverteerd). Max. upload {max}.",
     helpEncrypted:
       "Nieuwe back-ups worden at-rest versleuteld (AES-256-GCM) als .tar.gz.enc — downloads blijven ciphertext; herstellen vereist de paneelsleutel.",
     loadFailed: "Back-ups laden mislukt",
@@ -582,6 +587,7 @@ export const nl: Messages = {
     modeOff: "Uit",
     modeInterval: "Elke X uur",
     modeDaily: "Eens per dag om…",
+    modeCron: "Cron-expressie…",
     intervalHours: "Interval (uren)",
     everyHours: "Elke {h} uur{plural}",
     timeLocal: "Tijd (server lokaal)",
@@ -831,6 +837,9 @@ export const nl: Messages = {
       modeDaily: "Dagelijks om…",
       modeWeekly: "Wekelijks op…",
       modeInterval: "Elke X uur",
+      modeCron: "Cron-expressie…",
+      cronExpression: "Cron (5 velden)",
+      cronHint: "Minuut uur dag maand weekdag — bijv. */15 * * * * of 0 3 * * *",
       time: "Tijd",
       weekdays: "Weekdagen",
       intervalHours: "Interval (uren)",
@@ -1252,6 +1261,9 @@ export const nl: Messages = {
     twoFactorRolesHelp:
       "Gebruikers in deze rollen moeten TOTP inschakelen voordat ze het paneel gebruiken.",
     activityWebhookUrl: "Activity-webhook-URL",
+    backupOffsiteCmd: "Offsite back-up commando",
+    backupOffsiteCmdHelp:
+      "Optioneel shell-commando na elke back-up. Placeholders: {path} {serverId} {backupId} {fileName}",
     alertEmail: "Alert-e-mail",
     activityAlertMute: "Gedempte alert-acties",
     activityAlertMuteHelp:

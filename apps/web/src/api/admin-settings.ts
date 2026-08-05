@@ -25,6 +25,8 @@ export type PanelSettings = {
   activityWebhookUrl: string;
   alertEmail: string;
   activityAlertMute: string[];
+  backupOffsiteCmd: string;
+  backupOffsiteCmdSet: boolean;
   redis: {
     configured: boolean;
     enabled: boolean;
@@ -63,6 +65,7 @@ export type PanelSettingsPatch = {
   activityWebhookUrl?: string;
   alertEmail?: string;
   activityAlertMute?: string[] | string;
+  backupOffsiteCmd?: string;
 };
 
 export const adminSettingsApi = {

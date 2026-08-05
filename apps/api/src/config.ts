@@ -78,6 +78,8 @@ export const config = {
       .map((s) => s.trim())
       .filter(Boolean),
   },
+  /** Optional shell hook after backup (placeholders: {path} {serverId} {backupId} {fileName}). */
+  backupOffsiteCmd: process.env.BACKUP_OFFSITE_CMD?.trim() || "",
   rootDir,
 };
 

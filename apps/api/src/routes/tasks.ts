@@ -22,9 +22,11 @@ const stepSchema = z.object({
 const taskSchema = z.object({
   enabled: z.boolean().optional(),
   kind: z.enum(["command", "restart", "backup", "chain"]).optional(),
-  mode: z.enum(["daily", "interval"]),
+  mode: z.enum(["daily", "interval", "weekly", "cron"]),
   dailyAt: z.string().optional(),
   intervalHours: z.number().int().min(1).max(168).optional(),
+  weekdays: z.array(z.number().int().min(0).max(6)).optional(),
+  cronExpression: z.string().max(120).optional(),
   command: z.string().max(200).optional(),
   note: z.string().max(120).nullable().optional(),
   steps: z.array(stepSchema).min(1).max(20).optional(),

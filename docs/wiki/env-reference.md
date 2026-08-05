@@ -42,6 +42,7 @@ Many operator knobs (public URL, SMTP, registration, quotas, 2FA policy, alerts,
 | `DOCKER_IMAGE` | Default `eclipse-temurin:25-jre-jammy` |
 | `DOCKER_LOG_MAX_SIZE` | Docker `json-file` max-size for game containers (default `10m`; daemon env file) |
 | `DOCKER_LOG_MAX_FILE` | Docker `json-file` max-file count (default `3`) |
+| `DOCKER_SECCOMP_PROFILE` | Optional path to a Docker seccomp profile applied to game containers (daemon env file) |
 | `DOCKER_NETWORK_MODE` | `per_server` (default: isolated `guartrix-s-<id>` per server; MySQL still on shared bridge) or `shared` (flat `guartrix` bridge; requires `ALLOW_SHARED_DOCKER_NETWORK=1`). Set on the daemon env file (local `data/daemon.env` or remote `/var/lib/guartrix/daemon.env`). New remote installs write `per_server`. |
 | `ALLOW_SHARED_DOCKER_NETWORK` | Must be `1` on the daemon host to honour `DOCKER_NETWORK_MODE=shared` (ignored otherwise with a warning) |
 | `MANAGE_FIREWALL` | Open/close game ports via ufw when true |
@@ -69,6 +70,7 @@ Installer: `--mysql-docker` (default) or `--mysql-external` / `--database-url`.
 | `TWO_FACTOR_REQUIRED_ROLES` | Comma-separated roles that must enable TOTP (e.g. `ADMIN`). Empty = optional |
 | `API_KEY_RATE_LIMIT` | Max Client API requests per minute per key (default **120**) |
 | `APPLICATION_API_RATE_LIMIT` | Max Application API (`gta_`) requests per minute per key (default **120**) |
+| `API_SESSION_RATE_LIMIT` | Max authenticated session (cookie) `/api` requests per minute per user (default **600**) |
 | `RATE_LIMIT_STORE` | `file` (default) under `data/rate-limits/`; `memory` in-process; `redis` shared (needs `REDIS_URL`) |
 | `SESSION_STORE` | `file` (default, `data/sessions`) or `redis` (needs `REDIS_URL` + optional `ioredis`) |
 | `REDIS_URL` | Redis URL for multi-API HA (sessions, rate limits, transfers, scheduler lock, event bus) |
@@ -108,6 +110,8 @@ The license **server** is hosted separately by Guartrix (default `https://licens
 | `DAEMON_JWT_TTL` | Access JWT lifetime seconds (default `900`) |
 | `DAEMON_JWT_WS_TTL` | WebSocket JWT lifetime seconds (default `3600`) |
 | `DAEMON_JWT_LEGACY` | `false` (default) = JWT only; `true` temporarily for old daemons (deprecated — logs a warning when used; remove after all nodes use JWT) |
+| `DAEMON_RATE_LIMIT_MAX` | Max daemon HTTP requests per IP per window (default **600**; daemon env file) |
+| `DAEMON_RATE_LIMIT_WINDOW_MS` | Daemon rate-limit window in ms (default **60000**) |
 | `EXTRA_MOUNTS_ALLOW_PREFIX` | Comma-separated host path prefixes allowed for server extra mounts (default `/var/lib/guartrix/shared,/opt/guartrix/shared`) |
 | `SFTP_PORT` / `SFTP_ENABLED` | Embedded SFTP per node |
 | `PANEL_URL` | URL the daemon uses for SFTP password checks |
@@ -144,7 +148,7 @@ The license **server** is hosted separately by Guartrix (default `https://licens
 | `VAPID_PRIVATE_KEY` | Web Push private key (keep secret) |
 | `VAPID_SUBJECT` | `mailto:` contact for VAPID (default `mailto:noreply@$PUBLIC_HOST`) |
 | `ACTIVITY_ALERT_MUTE` | Comma-separated action keys to never alert on, e.g. `auth.login-failed` |
-| `BACKUP_OFFSITE_CMD` | Optional shell command after each backup (`{path}` `{serverId}` `{backupId}` `{fileName}`) |
+| `BACKUP_OFFSITE_CMD` | Optional shell command after each backup (`{path}` `{serverId}` `{backupId}` `{fileName}`). Also editable in **Admin → Settings → Alerts** |
 | `BACKUP_ENCRYPTION` | `1` = seal new backups with AES-256-GCM (`.tar.gz.enc`) |
 | `BACKUP_ENCRYPTION_KEY` | Optional passphrase / 64-hex / base64-32 key (else derived from `SESSION_SECRET`) |
 

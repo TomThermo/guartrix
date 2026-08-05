@@ -7,7 +7,7 @@ import type {
   ServerUpdateInfo,
 } from "@msm/shared";
 import { addonKindFor, hasPermission } from "@msm/shared";
-import { Badge, Button } from "react-bootstrap";
+import { Badge, Button, Form } from "react-bootstrap";
 import { useI18n } from "../i18n/react";
 import { typeIcon, typeLabel } from "../utils";
 
@@ -30,6 +30,9 @@ interface Props {
   canWrite: boolean;
   isAdmin: boolean;
   busyId: string | null;
+  bulkBusy?: boolean;
+  selected?: boolean;
+  onToggleSelected?: () => void;
   whitelistModalBusy: boolean;
   statusLabel: (status: McServer["status"]) => string;
   onRequestStart: (server: McServer) => void;
@@ -48,6 +51,9 @@ export const DashboardServerRow = memo(function DashboardServerRow({
   canWrite,
   isAdmin,
   busyId,
+  bulkBusy = false,
+  selected = false,
+  onToggleSelected,
   whitelistModalBusy,
   statusLabel,
   onRequestStart,
@@ -95,6 +101,19 @@ export const DashboardServerRow = memo(function DashboardServerRow({
       }}
     >
       <div className="server-row-main">
+        {canWrite && onToggleSelected && (
+          <Form.Check
+            type="checkbox"
+            checked={selected}
+            aria-label={`Select ${s.name}`}
+            className="server-row-select me-2"
+            onClick={stopRowNav}
+            onChange={(e) => {
+              e.stopPropagation();
+              onToggleSelected();
+            }}
+          />
+        )}
         <img
           className="server-row-icon"
           src={`/api/servers/${s.id}/icon?t=${s.hasIcon ? s.updatedAt : "default"}`}
@@ -310,7 +329,7 @@ export const DashboardServerRow = memo(function DashboardServerRow({
               size="sm"
               variant="outline-secondary"
               className="server-action-btn"
-              disabled={busyId === s.id || s.status === "STOPPED"}
+              disabled={busyId === s.id || bulkBusy || s.status === "STOPPED"}
               title={t("dashboard.stop")}
               onClick={() => onStop(s.id)}
             >
@@ -320,7 +339,7 @@ export const DashboardServerRow = memo(function DashboardServerRow({
               size="sm"
               variant="outline-secondary"
               className="server-action-btn"
-              disabled={busyId === s.id}
+              disabled={busyId === s.id || bulkBusy}
               title={t("dashboard.restart")}
               onClick={() => onRestart(s.id)}
             >

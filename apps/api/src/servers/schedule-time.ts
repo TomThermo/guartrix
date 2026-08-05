@@ -78,3 +78,63 @@ export function computeWeeklyNextRun(
   }
   return null;
 }
+
+/** Validate standard 5-field cron (minute hour dom month dow). */
+export function parseCronExpression(expr: string): boolean {
+  const parts = expr.trim().split(/\s+/);
+  if (parts.length !== 5) return false;
+  return parts.every((field) => field.length > 0 && field.length <= 64);
+}
+
+function cronFieldMatches(field: string, value: number, min: number, max: number): boolean {
+  if (field === "*") return true;
+  if (field.startsWith("*/")) {
+    const step = Number(field.slice(2));
+    if (!Number.isFinite(step) || step < 1) return false;
+    return value % step === 0;
+  }
+  for (const part of field.split(",")) {
+    if (part.includes("-")) {
+      const [a, b] = part.split("-", 2);
+      const lo = Number(a);
+      const hi = Number(b);
+      if (Number.isFinite(lo) && Number.isFinite(hi) && value >= lo && value <= hi) {
+        return true;
+      }
+    } else if (Number(part) === value) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/** Next run for cron expression (minute hour dom month dow). Scans up to ~366 days. */
+export function computeCronNextRun(
+  cronExpression: string,
+  from = new Date(),
+): string | null {
+  if (!parseCronExpression(cronExpression)) return null;
+  const [minF, hourF, domF, monF, dowF] = cronExpression.trim().split(/\s+/);
+  const cursor = new Date(from);
+  cursor.setSeconds(0, 0);
+  cursor.setMinutes(cursor.getMinutes() + 1);
+  const limit = 366 * 24 * 60;
+  for (let i = 0; i < limit; i++) {
+    const minute = cursor.getMinutes();
+    const hour = cursor.getHours();
+    const dom = cursor.getDate();
+    const month = cursor.getMonth() + 1;
+    const dow = cursor.getDay();
+    if (
+      cronFieldMatches(minF, minute, 0, 59) &&
+      cronFieldMatches(hourF, hour, 0, 23) &&
+      cronFieldMatches(domF, dom, 1, 31) &&
+      cronFieldMatches(monF, month, 1, 12) &&
+      cronFieldMatches(dowF, dow, 0, 6)
+    ) {
+      return cursor.toISOString();
+    }
+    cursor.setMinutes(cursor.getMinutes() + 1);
+  }
+  return null;
+}

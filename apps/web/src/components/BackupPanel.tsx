@@ -69,6 +69,7 @@ export function BackupPanel({
   const [mode, setMode] = useState<BackupScheduleMode>("off");
   const [intervalHours, setIntervalHours] = useState(6);
   const [dailyAt, setDailyAt] = useState("03:00");
+  const [cronExpression, setCronExpression] = useState("0 3 * * *");
   const [keepCount, setKeepCount] = useState(7);
   const [savingSchedule, setSavingSchedule] = useState(false);
 
@@ -100,6 +101,7 @@ export function BackupPanel({
       setMode(data.schedule.mode);
       setIntervalHours(data.schedule.intervalHours);
       setDailyAt(data.schedule.dailyAt);
+      setCronExpression(data.schedule.cronExpression || "0 3 * * *");
       setKeepCount(data.schedule.keepCount);
     }
   }, [serverId]);
@@ -270,6 +272,7 @@ export function BackupPanel({
         mode,
         intervalHours,
         dailyAt,
+        cronExpression,
         keepCount,
       });
       setSchedule(result.schedule);
@@ -452,13 +455,15 @@ export function BackupPanel({
           <Form onSubmit={(e) => void onSaveSchedule(e)}>
             <ScheduleFields
               labels="backups"
-              modes={["off", "interval", "daily"]}
+              modes={["off", "interval", "daily", "cron"]}
               mode={mode}
               onModeChange={(m) => setMode(m as BackupScheduleMode)}
               intervalHours={intervalHours}
               onIntervalHoursChange={setIntervalHours}
               dailyAt={dailyAt}
               onDailyAtChange={setDailyAt}
+              cronExpression={cronExpression}
+              onCronExpressionChange={setCronExpression}
             />
 
             <Form.Group className="mb-3">

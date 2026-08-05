@@ -21,6 +21,7 @@ Prefer a Schedules chain when you need “backup → wait → restart → say �
 | **daily** | `dailyAt` (`HH:mm`, panel host timezone) |
 | **weekly** | `dailyAt` + `weekdays` (`0`=Sun … `6`=Sat) |
 | **interval** | `intervalHours` (1–168) |
+| **cron** | `cronExpression` — standard five-field cron (`min hour dom month dow`, panel host timezone). Example: `0 4 * * 1-5` = weekdays at 04:00 |
 
 ## Steps
 

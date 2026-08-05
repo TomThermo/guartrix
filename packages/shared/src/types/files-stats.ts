@@ -337,7 +337,7 @@ export interface AddonInstallResult {
   restartRequired: boolean;
 }
 
-export type BackupScheduleMode = "off" | "interval" | "daily";
+export type BackupScheduleMode = "off" | "interval" | "daily" | "cron";
 
 export interface BackupSchedule {
   mode: BackupScheduleMode;
@@ -345,6 +345,8 @@ export interface BackupSchedule {
   intervalHours: number;
   /** Local server time HH:mm when mode === "daily". */
   dailyAt: string;
+  /** Standard 5-field cron when mode === "cron". */
+  cronExpression: string;
   /** How many backups to keep (1–50). */
   keepCount: number;
   lastRunAt: string | null;

@@ -14,6 +14,7 @@ import multipart from "@fastify/multipart";
 import { ensureBootstrapAdmin, registerOwnershipGuard } from "./auth/auth.js";
 import { registerAuthRoutes } from "./routes/auth.js";
 import { registerCsrfGuard, allowedOrigins } from "./auth/csrf.js";
+import { registerApiSessionRateLimit } from "./auth/api-rate-limit.js";
 import { config } from "./config.js";
 import { loadAndApplyPanelSettings } from "./panel-settings.js";
 import { prisma } from "./db.js";
@@ -343,6 +344,7 @@ async function main() {
   });
 
   registerCsrfGuard(app);
+  registerApiSessionRateLimit(app);
   registerMetrics(app);
   registerAuthRoutes(app);
   registerTwoFactorRoutes(app);

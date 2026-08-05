@@ -72,9 +72,10 @@ export function TasksPanel({
   const [deleteTarget, setDeleteTarget] = useState<ScheduledTask | null>(null);
   const [dialogBusy, setDialogBusy] = useState(false);
 
-  const [mode, setMode] = useState<"daily" | "interval" | "weekly">("daily");
+  const [mode, setMode] = useState<"daily" | "interval" | "weekly" | "cron">("daily");
   const [dailyAt, setDailyAt] = useState("04:00");
   const [intervalHours, setIntervalHours] = useState(6);
+  const [cronExpression, setCronExpression] = useState("0 4 * * *");
   const [weekdays, setWeekdays] = useState<number[]>([1, 2, 3, 4, 5]);
   const [note, setNote] = useState("");
   const [steps, setSteps] = useState<DraftStep[]>([newDraftStep("command")]);
@@ -134,6 +135,7 @@ export function TasksPanel({
         dailyAt: mode === "daily" || mode === "weekly" ? dailyAt : undefined,
         intervalHours: mode === "interval" ? intervalHours : undefined,
         weekdays: mode === "weekly" ? weekdays : undefined,
+        cronExpression: mode === "cron" ? cronExpression : undefined,
         note: note.trim() || null,
         enabled: true,
         steps: payloadSteps,
@@ -234,10 +236,10 @@ export function TasksPanel({
             <Form onSubmit={(e) => void onCreate(e)}>
               <ScheduleFields
                 labels="schedules"
-                modes={["daily", "weekly", "interval"]}
+                modes={["daily", "weekly", "interval", "cron"]}
                 mode={mode}
                 onModeChange={(m) =>
-                  setMode(m as "daily" | "interval" | "weekly")
+                  setMode(m as "daily" | "interval" | "weekly" | "cron")
                 }
                 intervalHours={intervalHours}
                 onIntervalHoursChange={setIntervalHours}
@@ -245,6 +247,8 @@ export function TasksPanel({
                 onDailyAtChange={setDailyAt}
                 weekdays={weekdays}
                 onWeekdaysChange={setWeekdays}
+                cronExpression={cronExpression}
+                onCronExpressionChange={setCronExpression}
               />
 
               <div className="mb-3">

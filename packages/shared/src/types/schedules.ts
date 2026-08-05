@@ -24,7 +24,7 @@ export interface ScheduledTask {
    */
   kind: "command" | "restart" | "backup" | "chain";
   /** Cron-like local time HH:mm for daily/weekly, or interval hours when mode is interval */
-  mode: "daily" | "interval" | "weekly";
+  mode: "daily" | "interval" | "weekly" | "cron";
   dailyAt: string;
   intervalHours: number;
   /**
@@ -32,6 +32,8 @@ export interface ScheduledTask {
    * Ignored for daily/interval.
    */
   weekdays: number[];
+  /** Standard 5-field cron when mode === "cron" (e.g. every 15 minutes). */
+  cronExpression: string;
   /**
    * Legacy single-command field (still filled from the first command step).
    * Prefer `steps` for new clients.

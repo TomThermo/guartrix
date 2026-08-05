@@ -8,7 +8,7 @@ import type {
   ServerUpdateInfo,
 } from "@msm/shared";
 import { canCreateServer } from "@msm/shared";
-import { Alert, Card, Col, Form, Row, Spinner } from "react-bootstrap";
+import { Alert, Button, Card, Col, Form, Row, Spinner } from "react-bootstrap";
 import { api, ApiError } from "../api";
 import { useAuth } from "../auth";
 import { useI18n } from "../i18n/react";
@@ -65,6 +65,8 @@ export function DashboardPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [nodeFilter, setNodeFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -177,6 +179,55 @@ export function DashboardPage() {
       return hay.includes(q);
     });
   }, [servers, query, statusFilter, nodeFilter, typeFilter]);
+
+  const filteredIds = useMemo(() => filtered.map((s) => s.id), [filtered]);
+  const allFilteredSelected =
+    filteredIds.length > 0 && filteredIds.every((id) => selectedIds.has(id));
+
+  function toggleSelected(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAllFiltered() {
+    setSelectedIds((prev) => {
+      if (allFilteredSelected) {
+        const next = new Set(prev);
+        for (const id of filteredIds) next.delete(id);
+        return next;
+      }
+      return new Set([...prev, ...filteredIds]);
+    });
+  }
+
+  async function bulkAct(action: "start" | "stop" | "restart") {
+    if (!canWrite || selectedIds.size === 0) return;
+    setBulkBusy(true);
+    setError(null);
+    try {
+      for (const id of selectedIds) {
+        const server = servers.find((s) => s.id === id);
+        if (!server) continue;
+        if (action === "start") {
+          if (!server.whitelistEnabled) continue;
+          await api.startServer(id);
+        } else if (action === "stop") {
+          await api.stopServer(id);
+        } else {
+          await api.restartServer(id);
+        }
+      }
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Bulk action failed");
+    } finally {
+      setBulkBusy(false);
+    }
+  }
 
   function requestStart(server: McServer) {
     if (!server.whitelistEnabled) {
@@ -399,6 +450,46 @@ export function DashboardPage() {
           {filtered.length === 0 ? (
             <Alert variant="secondary">{t("dashboard.noMatch")}</Alert>
           ) : (
+        <>
+          {canWrite && (
+            <div className="d-flex flex-wrap align-items-center gap-2 mb-3">
+              <Form.Check
+                type="checkbox"
+                id="dashboard-select-all"
+                label={t("dashboard.selectAllFiltered")}
+                checked={allFilteredSelected}
+                onChange={() => toggleSelectAllFiltered()}
+              />
+              <span className="text-secondary small">
+                {t("dashboard.selectedCount", { count: selectedIds.size })}
+              </span>
+              <div className="flex-grow-1" />
+              <Button
+                size="sm"
+                variant="success"
+                disabled={bulkBusy || selectedIds.size === 0}
+                onClick={() => void bulkAct("start")}
+              >
+                {t("dashboard.bulkStart")}
+              </Button>
+              <Button
+                size="sm"
+                variant="danger"
+                disabled={bulkBusy || selectedIds.size === 0}
+                onClick={() => void bulkAct("stop")}
+              >
+                {t("dashboard.bulkStop")}
+              </Button>
+              <Button
+                size="sm"
+                variant="primary"
+                disabled={bulkBusy || selectedIds.size === 0}
+                onClick={() => void bulkAct("restart")}
+              >
+                {t("dashboard.bulkRestart")}
+              </Button>
+            </div>
+          )}
         <div className="server-list">
           {filtered.map((s) => (
             <DashboardServerRow
@@ -411,6 +502,9 @@ export function DashboardPage() {
               canWrite={canWrite}
               isAdmin={isAdmin}
               busyId={busyId}
+              bulkBusy={bulkBusy}
+              selected={selectedIds.has(s.id)}
+              onToggleSelected={() => toggleSelected(s.id)}
               whitelistModalBusy={whitelistModalBusy}
               statusLabel={statusLabel}
               onRequestStart={requestStart}
@@ -421,6 +515,7 @@ export function DashboardPage() {
             />
           ))}
         </div>
+        </>
           )}
         </>
       )}

@@ -7,6 +7,7 @@ export const SERVER_PERMISSIONS = [
   "control.restart",
   "control.kill",
   "control.console",
+  "control.console.read",
   // Subuser Management
   "user.read",
   "user.create",
@@ -98,6 +99,12 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
         key: "control.kill",
         label: "Kill Server",
         description: "Allows the user to force-kill the server process.",
+      },
+      {
+        key: "control.console.read",
+        label: "View Console",
+        description:
+          "Allows viewing live console output without sending commands.",
       },
       {
         key: "control.console",

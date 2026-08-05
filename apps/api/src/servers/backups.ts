@@ -15,15 +15,20 @@ import {
   isBackupEncryptionEnabled,
   isEncryptedBackupPath,
 } from "./backup-crypto.js";
-import { serverBackupsDir, serverDir } from "../config.js";
+import { serverBackupsDir, serverDir, config } from "../config.js";
 import { logger } from "../logger.js";
+import { prisma } from "../db.js";
 import { processManager } from "./process-manager.js";
 import { safeExtractArchive } from "@msm/node-agent";
 import {
+  computeCronNextRun,
   computeDailyNextRun,
   computeIntervalNextRun,
+  parseCronExpression,
   parseDailyAt,
 } from "./schedule-time.js";
+
+const MYSQL_BACKUP_DIR = "guartrix-mysql";
 
 const execFileAsync = promisify(execFile);
 
@@ -57,7 +62,7 @@ async function runOffsiteBackupHook(opts: {
   backupId: string;
   fileName: string;
 }): Promise<void> {
-  const template = process.env.BACKUP_OFFSITE_CMD?.trim();
+  const template = config.backupOffsiteCmd?.trim();
   if (!template) return;
   assertSafeOffsiteTemplate(template);
   const cmd = template
@@ -142,10 +147,96 @@ function defaultSchedule(): BackupSchedule {
     mode: "off",
     intervalHours: 6,
     dailyAt: "03:00",
+    cronExpression: "0 3 * * *",
     keepCount: 7,
     lastRunAt: null,
     nextRunAt: null,
   };
+}
+
+async function embedMysqlDumpsInArchive(
+  serverId: string,
+  archivePath: string,
+): Promise<void> {
+  const server = await prisma.server.findUnique({
+    where: { id: serverId },
+    select: { nodeId: true },
+  });
+  if (!server) return;
+  const dbs = await prisma.database.findMany({
+    where: { serverId },
+    select: { name: true },
+  });
+  if (dbs.length === 0) return;
+
+  const stage = `${archivePath}.mysql-stage-${process.pid}`;
+  await fs.mkdir(stage, { recursive: true });
+  try {
+    await execFileAsync("tar", ["-xzf", archivePath, "-C", stage], {
+      maxBuffer: 16 * 1024 * 1024,
+    });
+    const mysqlDir = path.join(stage, MYSQL_BACKUP_DIR);
+    await fs.mkdir(mysqlDir, { recursive: true });
+    const { daemonMysqlDumpToFile } = await import("../nodes/daemon-client.js");
+    for (const db of dbs) {
+      const dumpPath = path.join(mysqlDir, `${db.name}.sql`);
+      await daemonMysqlDumpToFile(server.nodeId, db.name, dumpPath);
+    }
+    await fs.writeFile(
+      path.join(mysqlDir, "manifest.json"),
+      `${JSON.stringify({ version: 1, databases: dbs.map((d) => d.name) }, null, 2)}\n`,
+      "utf8",
+    );
+    const repacked = `${archivePath}.repack`;
+    await execFileAsync(
+      "tar",
+      ["-czf", repacked, ...TAR_EXCLUDES, "-C", stage, "."],
+      { maxBuffer: 16 * 1024 * 1024 },
+    );
+    await fs.rename(repacked, archivePath);
+  } finally {
+    await fs.rm(stage, { recursive: true, force: true }).catch(() => undefined);
+  }
+}
+
+async function restoreMysqlFromBackupDir(
+  serverId: string,
+  dest: string,
+): Promise<void> {
+  const mysqlDir = path.join(dest, MYSQL_BACKUP_DIR);
+  try {
+    await fs.access(mysqlDir);
+  } catch {
+    return;
+  }
+  const server = await prisma.server.findUnique({
+    where: { id: serverId },
+    select: { nodeId: true },
+  });
+  if (!server) return;
+  let databases: string[] = [];
+  try {
+    const manifest = JSON.parse(
+      await fs.readFile(path.join(mysqlDir, "manifest.json"), "utf8"),
+    ) as { databases?: string[] };
+    databases = Array.isArray(manifest.databases) ? manifest.databases : [];
+  } catch {
+    const entries = await fs.readdir(mysqlDir);
+    databases = entries
+      .filter((n) => n.endsWith(".sql"))
+      .map((n) => n.replace(/\.sql$/, ""));
+  }
+  const { daemonMysqlRestoreFromFile } = await import("../nodes/daemon-client.js");
+  for (const name of databases) {
+    const sqlPath = path.join(mysqlDir, `${name}.sql`);
+    try {
+      await fs.access(sqlPath);
+      await daemonMysqlRestoreFromFile(server.nodeId, name, sqlPath);
+    } catch (err) {
+      logger.warn({ err, serverId, name }, "mysql restore from backup failed");
+    }
+  }
+  await fs.rm(mysqlDir, { recursive: true, force: true }).catch(() => undefined);
 }
 
 function computeNextRun(schedule: BackupSchedule, from = new Date()): string | null {
@@ -153,6 +244,9 @@ function computeNextRun(schedule: BackupSchedule, from = new Date()): string | n
 
   if (schedule.mode === "interval") {
     return computeIntervalNextRun(schedule, from);
+  }
+  if (schedule.mode === "cron") {
+    return computeCronNextRun(schedule.cronExpression || "0 3 * * *", from);
   }
 
   return computeDailyNextRun(schedule.dailyAt || "03:00", from, "03:00");
@@ -168,6 +262,7 @@ export async function readBackupSchedule(serverId: string): Promise<BackupSchedu
       mode: (data.mode as BackupScheduleMode) || "off",
       intervalHours: Number(data.intervalHours) || 6,
       dailyAt: data.dailyAt || "03:00",
+      cronExpression: data.cronExpression || "0 3 * * *",
       keepCount: Number(data.keepCount) || 7,
       lastRunAt: data.lastRunAt ?? null,
       nextRunAt: data.nextRunAt ?? null,
@@ -198,6 +293,11 @@ export async function writeBackupSchedule(
   if (next.mode === "daily") {
     if (!parseDailyAt(next.dailyAt)) {
       throw new Error("dailyAt must be HH:mm (24h)");
+    }
+  }
+  if (next.mode === "cron") {
+    if (!parseCronExpression(next.cronExpression || "")) {
+      throw new Error("cronExpression must be 5 fields (minute hour day month weekday)");
     }
   }
   next.keepCount = Math.min(50, Math.max(1, Number(next.keepCount) || 7));
@@ -336,6 +436,12 @@ export async function createBackup(opts: {
         ["-czf", dest, ...TAR_EXCLUDES, "-C", source, "."],
         { maxBuffer: 16 * 1024 * 1024 },
       );
+    }
+
+    try {
+      await embedMysqlDumpsInArchive(serverId, dest);
+    } catch (err) {
+      logger.warn({ err, serverId }, "mysql dump embed in backup failed — files only");
     }
 
     const stPlain = await fs.stat(dest);
@@ -551,6 +657,8 @@ export async function restoreBackup(opts: {
     }
 
     await safeExtractArchive(extractFrom, dest);
+
+    await restoreMysqlFromBackupDir(serverId, dest);
 
     // Drop stale locks from the archive era
     await fs.rm(path.join(dest, "session.lock"), { force: true }).catch(() => undefined);
