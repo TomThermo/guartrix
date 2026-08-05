@@ -128,7 +128,8 @@ export {
   readDefaultServerIcon,
   serverIconFilePath,
   isCustomServerIcon,
-  DEFAULT_SERVER_ICON_PATH,
+  resolveDefaultServerIconPath,
+  getDefaultServerIconPath,
 } from "./default-icon.js";
 
 export {

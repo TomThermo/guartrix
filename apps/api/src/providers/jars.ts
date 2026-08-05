@@ -6,7 +6,7 @@ import { Readable } from "node:stream";
 import { spawn } from "node:child_process";
 import type { ServerType } from "@msm/shared";
 import { config } from "../config.js";
-import { DEFAULT_SERVER_ICON_PATH } from "../servers/default-icon.js";
+import { readDefaultServerIcon } from "../servers/default-icon.js";
 
 const USER_AGENT = "Guartrix/1.0 (MinecraftServerManager; contact@localhost)";
 
@@ -479,9 +479,9 @@ export async function prepareServerFiles(
   await fs.mkdir(destDir, { recursive: true });
   await fs.writeFile(path.join(destDir, "eula.txt"), "eula=true\n", "utf8");
   // Classic Minecraft pack icon until the user uploads their own
-  await fs.copyFile(
-    DEFAULT_SERVER_ICON_PATH,
+  await fs.writeFile(
     path.join(destDir, "server-icon.png"),
+    readDefaultServerIcon(),
   );
 
   const defaultProperties = [

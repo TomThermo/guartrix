@@ -85,6 +85,15 @@ guartrix_stage_release_tree() {
     cp -a "$ROOT/apps/$app/dist/." "$STAGE/apps/$app/dist/"
   done
 
+  # Default multiplayer list icon (esbuild bundles resolve ../assets from dist/)
+  if [[ -f "$ROOT/packages/node-agent/assets/default-server-icon.png" ]]; then
+    mkdir -p "$STAGE/apps/api/assets" "$STAGE/apps/daemon/assets"
+    cp "$ROOT/packages/node-agent/assets/default-server-icon.png" "$STAGE/apps/api/assets/"
+    cp "$ROOT/packages/node-agent/assets/default-server-icon.png" "$STAGE/apps/daemon/assets/"
+  else
+    echo "[guartrix] WARN: missing packages/node-agent/assets/default-server-icon.png" >&2
+  fi
+
   mkdir -p "$STAGE/apps/api/prisma"
   # Schema only — never ship local sqlite backups or generated DBs
   cp "$ROOT/apps/api/prisma/schema.prisma" "$STAGE/apps/api/prisma/"
