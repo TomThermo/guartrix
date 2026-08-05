@@ -455,6 +455,10 @@ export const en = {
       "Node has {free} usable after host reserve ({reserved} reserved; {used} of {total} allocated).",
     notEnoughRamDetail:
       "Not enough RAM on this node: you requested {requested}, usable is {usable}.",
+    port: "Port",
+    portInUse: "Port {port}/{protocol} is already in use on this node",
+    portChecking: "Checking port availability…",
+    portSuggested: "A free port is suggested automatically when you change node or type.",
   },
   users: {
     title: "Users",

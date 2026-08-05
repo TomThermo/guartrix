@@ -6,6 +6,18 @@ import { request, notifyUnauthorized } from "./client";
 export const nodesApi = {
   listNodes: () =>
     request<{ nodes: import("@msm/shared").DaemonNode[] }>("/api/nodes"),
+  suggestedPort: (nodeId: string, type: import("@msm/shared").ServerType) =>
+    request<{ port: number; protocol: "tcp" | "udp" }>(
+      `/api/nodes/${encodeURIComponent(nodeId)}/suggested-port?type=${encodeURIComponent(type)}`,
+    ),
+  checkNodePort: (
+    nodeId: string,
+    port: number,
+    type: import("@msm/shared").ServerType,
+  ) =>
+    request<{ free: boolean; port: number; protocol: "tcp" | "udp" }>(
+      `/api/nodes/${encodeURIComponent(nodeId)}/port-check?port=${port}&type=${encodeURIComponent(type)}`,
+    ),
   listAdminNodes: () =>
     request<{ nodes: import("@msm/shared").DaemonNode[] }>("/api/admin/nodes"),
   createNode: (body: import("@msm/shared").CreateNodeRequest) =>

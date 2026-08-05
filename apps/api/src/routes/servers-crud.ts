@@ -201,6 +201,15 @@ export function registerServerCrudRoutes(app: FastifyInstance): void {
       return reply.status(400).send({ error: message });
     }
 
+    const { isGamePortAvailable } = await import("../servers/game-port.js");
+    if (!(await isGamePortAvailable(nodeId, data.port, data.type))) {
+      const { primaryAllocationProtocol } = await import("@msm/shared");
+      const protocol = primaryAllocationProtocol(data.type);
+      return reply.status(409).send({
+        error: `Port ${data.port}/${protocol} is already in use`,
+      });
+    }
+
     try {
       const { provisionPreparedServer } = await import("../servers/server-provision.js");
       const { server: updated } = await provisionPreparedServer({

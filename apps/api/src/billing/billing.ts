@@ -1,5 +1,5 @@
 import { nanoid } from "nanoid";
-import type { PlanTemplateRecord, PaymentRecord } from "@msm/shared";
+import type { PlanTemplateRecord, PaymentRecord, ServerType } from "@msm/shared";
 import { logActivity } from "../activity-log.js";
 import { config } from "../config.js";
 import { prisma } from "../db.js";
@@ -122,18 +122,9 @@ export async function applyPlanToUser(
   });
 }
 
-async function pickFreePort(nodeId: string): Promise<number> {
-  const freeAlloc = await prisma.allocation.findFirst({
-    where: { nodeId, serverId: null, protocol: "tcp" },
-    orderBy: { port: "asc" },
-  });
-  if (freeAlloc) return freeAlloc.port;
-
-  const { processManager } = await import("../servers/process-manager.js");
-  for (let port = 25565; port < 26000; port += 1) {
-    if (await processManager.isPortFree(port, undefined, nodeId)) return port;
-  }
-  throw new Error("No free TCP port available on the selected node");
+async function pickFreePort(nodeId: string, type: ServerType): Promise<number> {
+  const { pickFreeGamePort } = await import("../servers/game-port.js");
+  return pickFreeGamePort(nodeId, type);
 }
 
 /**
@@ -178,8 +169,6 @@ export async function autoCreateServerForPayment(paymentId: string): Promise<{
     const { assertNodeCapacity, resolveCreateNodeId } = await import("../nodes/nodes.js");
     const nodeId = await resolveCreateNodeId(undefined);
     await assertNodeCapacity(nodeId, plan.defaultMemoryMb);
-    const port = await pickFreePort(nodeId);
-
     const type = (
       [
         "VANILLA",
@@ -197,6 +186,8 @@ export async function autoCreateServerForPayment(paymentId: string): Promise<{
     ).includes(plan.defaultServerType as never)
       ? (plan.defaultServerType as import("@msm/shared").ServerType)
       : "PAPER";
+
+    const port = await pickFreePort(nodeId, type);
 
     const id = nanoid(12);
     const name = `${plan.slug}-${id.slice(0, 6)}`;

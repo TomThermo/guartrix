@@ -7,6 +7,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.100] — 2026-08-05
+
+- Create/import: auto-suggest free game port per node and type; live port-in-use validation in UI
+- API: `GET /api/nodes/:id/suggested-port` and `port-check`; billing auto-create uses type-aware port pick
+
 ## [1.0.99] — 2026-08-05
 
 - Bedrock ports: UDP-aware host checks, firewall, Docker publish, and clone/import/settings paths

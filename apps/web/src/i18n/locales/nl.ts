@@ -458,6 +458,11 @@ export const nl: Messages = {
       "Node heeft {free} bruikbaar na hostreserve ({reserved} gereserveerd; {used} van {total} toegewezen).",
     notEnoughRamDetail:
       "Onvoldoende RAM op deze node: je vroeg {requested} aan, bruikbaar is {usable}.",
+    port: "Poort",
+    portInUse: "Poort {port}/{protocol} is al in gebruik op deze node",
+    portChecking: "Poortbeschikbaarheid controleren…",
+    portSuggested:
+      "Een vrije poort wordt automatisch voorgesteld bij wijziging van node of type.",
   },
   users: {
     title: "Gebruikers",

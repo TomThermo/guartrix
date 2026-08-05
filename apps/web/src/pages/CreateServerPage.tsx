@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import {
   BEDROCK_SERVER_TYPES,
-  defaultGamePortForType,
   JAVA_SERVER_TYPES,
   canCreateServer,
   type DaemonNode,
@@ -36,6 +35,9 @@ export function CreateServerPage() {
   const [mcVersion, setMcVersion] = useState("");
   const [versions, setVersions] = useState<string[]>([]);
   const [port, setPort] = useState(25565);
+  const [portManuallyEdited, setPortManuallyEdited] = useState(false);
+  const [portError, setPortError] = useState<string | null>(null);
+  const [portChecking, setPortChecking] = useState(false);
   const [memoryMb, setMemoryMb] = useState(2 * 1024);
   const [diskMb, setDiskMb] = useState(10 * 1024);
   const [cpuLimit, setCpuLimit] = useState(200);
@@ -134,8 +136,61 @@ export function CreateServerPage() {
   }, [type]);
 
   useEffect(() => {
-    setPort(defaultGamePortForType(type));
+    setPortManuallyEdited(false);
   }, [type]);
+
+  useEffect(() => {
+    if (!nodeId) return;
+    let cancelled = false;
+    void api
+      .suggestedPort(nodeId, type)
+      .then((res) => {
+        if (cancelled || portManuallyEdited) return;
+        setPort(res.port);
+        setPortError(null);
+      })
+      .catch((err) => {
+        if (!cancelled && !portManuallyEdited) {
+          setPortError(err instanceof Error ? err.message : String(err));
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [nodeId, type, portManuallyEdited]);
+
+  useEffect(() => {
+    if (!nodeId || port < 1024 || port > 65535) return;
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      setPortChecking(true);
+      void api
+        .checkNodePort(nodeId, port, type)
+        .then((res) => {
+          if (cancelled) return;
+          if (!res.free) {
+            setPortError(
+              t("createServer.portInUse", {
+                port: res.port,
+                protocol: res.protocol.toUpperCase(),
+              }),
+            );
+          } else {
+            setPortError(null);
+          }
+        })
+        .catch(() => {
+          if (!cancelled) setPortError(null);
+        })
+        .finally(() => {
+          if (!cancelled) setPortChecking(false);
+        });
+    }, 350);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [nodeId, port, type, t]);
 
   const selectedFreeMb =
     selectedNode == null
@@ -144,6 +199,10 @@ export function CreateServerPage() {
 
   async function onCreate(e: FormEvent) {
     e.preventDefault();
+    if (portError) {
+      setError(portError);
+      return;
+    }
     if (!nodeRamOk) {
       setError(
         selectedNode
@@ -187,6 +246,10 @@ export function CreateServerPage() {
 
   async function onImport(e: FormEvent) {
     e.preventDefault();
+    if (portError) {
+      setError(portError);
+      return;
+    }
     if (!archive) {
       setError(t("createServer.chooseArchive"));
       return;
@@ -422,15 +485,34 @@ export function CreateServerPage() {
       <Row className="g-3 mb-3">
         <Col md={6}>
           <Form.Group controlId="port">
-            <Form.Label>Port</Form.Label>
+            <Form.Label>{t("createServer.port")}</Form.Label>
             <Form.Control
               type="number"
               min={1024}
               max={65535}
               value={port}
-              onChange={(e) => setPort(Number(e.target.value))}
+              onChange={(e) => {
+                setPortManuallyEdited(true);
+                setPort(Number(e.target.value));
+              }}
+              isInvalid={!!portError}
               required
             />
+            {portChecking && (
+              <Form.Text className="text-secondary">
+                {t("createServer.portChecking")}
+              </Form.Text>
+            )}
+            {portError && (
+              <Form.Control.Feedback type="invalid">
+                {portError}
+              </Form.Control.Feedback>
+            )}
+            {!portError && !portManuallyEdited && nodeId && (
+              <Form.Text className="text-secondary">
+                {t("createServer.portSuggested")}
+              </Form.Text>
+            )}
           </Form.Group>
         </Col>
         <Col md={6}>
@@ -549,7 +631,9 @@ export function CreateServerPage() {
               <Button
                 type="submit"
                 variant="primary"
-                disabled={busy || !mcVersion || !nodeRamOk || !nodeId}
+                disabled={
+                  busy || !mcVersion || !nodeRamOk || !nodeId || !!portError
+                }
               >
                 {busy ? (
                   <>
@@ -589,7 +673,14 @@ export function CreateServerPage() {
               <Button
                 type="submit"
                 variant="primary"
-                disabled={busy || !mcVersion || !archive || !nodeRamOk || !nodeId}
+                disabled={
+                  busy ||
+                  !mcVersion ||
+                  !archive ||
+                  !nodeRamOk ||
+                  !nodeId ||
+                  !!portError
+                }
               >
                 {busy ? (
                   <>

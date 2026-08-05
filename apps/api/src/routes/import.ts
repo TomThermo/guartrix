@@ -126,6 +126,16 @@ export function registerImportRoutes(app: FastifyInstance): void {
     const id = nanoid(12);
     const dir = await fs.mkdtemp(path.join(os.tmpdir(), `guartrix-import-${id}-`));
 
+    const { isGamePortAvailable } = await import("../servers/game-port.js");
+    if (!(await isGamePortAvailable(nodeId, data.port, data.type))) {
+      await fs.rm(dir, { recursive: true, force: true }).catch(() => undefined);
+      const { primaryAllocationProtocol } = await import("@msm/shared");
+      const protocol = primaryAllocationProtocol(data.type);
+      return reply.status(409).send({
+        error: `Port ${data.port}/${protocol} is already in use`,
+      });
+    }
+
     const uploadName = uploadFilename.toLowerCase();
     const ext = uploadName.endsWith(".tar.gz")
       ? ".tar.gz"

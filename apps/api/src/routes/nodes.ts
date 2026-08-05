@@ -1,6 +1,11 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { nanoid } from "nanoid";
+import {
+  BEDROCK_SERVER_TYPES,
+  JAVA_SERVER_TYPES,
+  primaryAllocationProtocol,
+} from "@msm/shared";
 import { logActivity } from "../activity-log.js";
 import { requireAdmin, requireAuth } from "../auth/auth.js";
 import { prisma } from "../db.js";
@@ -52,11 +57,67 @@ async function serializeNodeWithUsage(nodeId: string) {
   return found;
 }
 
+const SERVER_TYPES = [
+  ...JAVA_SERVER_TYPES,
+  ...BEDROCK_SERVER_TYPES,
+] as const;
+
+const serverTypeSchema = z.enum(SERVER_TYPES);
+
+async function resolveListedNode(nodeId: string) {
+  const node = await prisma.node.findUnique({ where: { id: nodeId } });
+  if (!node) return null;
+  return node;
+}
+
 export function registerNodeRoutes(app: FastifyInstance): void {
   /** Any logged-in user — used when creating a server (node picker). */
   app.get("/api/nodes", async (request, reply) => {
     if (!(await requireAuth(request, reply))) return;
     return { nodes: await listNodesWithUsage() };
+  });
+
+  app.get<{
+    Params: { id: string };
+    Querystring: { type?: string };
+  }>("/api/nodes/:id/suggested-port", async (request, reply) => {
+    if (!(await requireAuth(request, reply))) return;
+    const node = await resolveListedNode(request.params.id);
+    if (!node) return reply.status(404).send({ error: "Node not found" });
+    const parsed = serverTypeSchema.safeParse(request.query.type ?? "PAPER");
+    if (!parsed.success) {
+      return reply.status(400).send({ error: "Invalid server type" });
+    }
+    try {
+      const { pickFreeGamePort } = await import("../servers/game-port.js");
+      const port = await pickFreeGamePort(node.id, parsed.data);
+      const protocol = primaryAllocationProtocol(parsed.data);
+      return { port, protocol };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return reply.status(409).send({ error: message });
+    }
+  });
+
+  app.get<{
+    Params: { id: string };
+    Querystring: { port?: string; type?: string };
+  }>("/api/nodes/:id/port-check", async (request, reply) => {
+    if (!(await requireAuth(request, reply))) return;
+    const node = await resolveListedNode(request.params.id);
+    if (!node) return reply.status(404).send({ error: "Node not found" });
+    const port = Number(request.query.port);
+    if (!Number.isFinite(port) || port < 1024 || port > 65535) {
+      return reply.status(400).send({ error: "port is required (1024–65535)" });
+    }
+    const parsed = serverTypeSchema.safeParse(request.query.type ?? "PAPER");
+    if (!parsed.success) {
+      return reply.status(400).send({ error: "Invalid server type" });
+    }
+    const { isGamePortAvailable } = await import("../servers/game-port.js");
+    const protocol = primaryAllocationProtocol(parsed.data);
+    const free = await isGamePortAvailable(node.id, port, parsed.data);
+    return { free, port, protocol };
   });
 
   app.get("/api/admin/nodes", async (request, reply) => {
