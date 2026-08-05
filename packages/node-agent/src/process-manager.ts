@@ -10,7 +10,6 @@ import {
   consoleLineIndicatesBootFailure,
   consoleLineIndicatesReady,
   containerEnvForRuntime,
-  dnsServersForServerType,
   defaultServerExecutable,
   dockerImageForServerType,
   normalizeServerExecutable,
@@ -31,6 +30,8 @@ import {
 } from "./docker.js";
 import {
   connectContainerToSharedNetwork,
+  ensureGuartrixNetwork,
+  GUARTRIX_NETWORK,
   resolveGameNetwork,
 } from "./mysql.js";
 import { invalidateDiskUsage } from "./disk-usage.js";
@@ -46,7 +47,7 @@ import {
   syncOnlineSet,
 } from "./player-history.js";
 import { ensureDefaultServerIcon } from "./default-icon.js";
-import { ensureBdsBootProperties } from "./bedrock-boot.js";
+import { ensureBdsBootProperties, bedrockContainerDnsServers } from "./bedrock-boot.js";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import {
@@ -775,7 +776,17 @@ class ProcessManager extends EventEmitter {
     await this.emitStartupBanner(serverId, runtimeCmd);
 
     const { primary: gameNetwork, attachSharedDb } =
-      await resolveGameNetwork(serverId);
+      runtimeKind === "bedrock_native"
+        ? await (async () => {
+            await ensureGuartrixNetwork();
+            return { primary: GUARTRIX_NETWORK, attachSharedDb: false };
+          })()
+        : await resolveGameNetwork(serverId);
+
+    const bedrockDns =
+      runtimeKind === "bedrock_native"
+        ? await bedrockContainerDnsServers()
+        : [];
 
     // Detached run: the container outlives the daemon. Console I/O goes through
     // `docker attach --sig-proxy=false` so a panel restart never kills Minecraft.
@@ -798,7 +809,7 @@ class ProcessManager extends EventEmitter {
         logMaxSize,
         logMaxFile,
         containerEnv: containerEnvForRuntime(server.type),
-        dnsServers: dnsServersForServerType(server.type),
+        dnsServers: bedrockDns,
       }),
       { timeout: 60_000 },
     );

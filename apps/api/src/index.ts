@@ -150,7 +150,7 @@ async function main() {
     }
     const bdsBoot = await migrateBdsBootProperties();
     if (bdsBoot > 0) {
-      logger.info({ count: bdsBoot }, "Fixed BDS server.properties for offline boot");
+      logger.info({ count: bdsBoot }, "Restored BDS online-mode for Xbox auth");
     }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

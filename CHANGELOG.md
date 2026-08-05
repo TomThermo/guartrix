@@ -7,6 +7,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.103] — 2026-08-05
+
+- BDS: default `online-mode=true` again (Xbox verification); shared Docker network + host DNS for Microsoft auth
+
 ## [1.0.102] — 2026-08-05
 
 - BDS offline boot: force `allow-list=false` (BDS rejects allowlist without online auth)

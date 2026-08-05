@@ -493,7 +493,7 @@ export async function prepareServerFiles(
         "max-players=20",
         "difficulty=easy",
         "gamemode=survival",
-        "online-mode=false",
+        "online-mode=true",
         "allow-list=false",
         "enable-lan-visibility=true",
         "transport=raknet",

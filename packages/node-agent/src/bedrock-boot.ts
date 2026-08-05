@@ -1,5 +1,6 @@
 import fsp from "node:fs/promises";
 import path from "node:path";
+import { BEDROCK_CONTAINER_DNS } from "@msm/shared";
 
 function parseProperties(raw: string): Record<string, string> {
   const props: Record<string, string> = {};
@@ -20,9 +21,32 @@ function serializeProperties(props: Record<string, string>): string {
     .concat("\n");
 }
 
+function isOnlineMode(props: Record<string, string>): boolean {
+  const v = props["online-mode"]?.trim().toLowerCase();
+  if (v === "false" || v === "0" || v === "no") return false;
+  return true;
+}
+
+/** DNS for BDS containers: host resolvers + public fallbacks (Microsoft auth). */
+export async function bedrockContainerDnsServers(): Promise<string[]> {
+  const servers = new Set<string>(BEDROCK_CONTAINER_DNS);
+  try {
+    const raw = await fsp.readFile("/etc/resolv.conf", "utf8");
+    for (const line of raw.split("\n")) {
+      const m = line.match(/^\s*nameserver\s+(\S+)/i);
+      if (m?.[1] && /^[\d.a-fA-F:]+$/.test(m[1])) {
+        servers.add(m[1]);
+      }
+    }
+  } catch {
+    // ignore
+  }
+  return [...servers];
+}
+
 /**
- * BDS in Docker needs LAN visibility + raknet; online-mode requires outbound
- * Microsoft services (often blocked on VPS). Sync port before each start.
+ * Sync BDS server.properties before container start. Defaults to online mode
+ * (Xbox verification). Offline mode forces allow-list off (BDS requirement).
  */
 export async function ensureBdsBootProperties(
   serverDir: string,
@@ -37,15 +61,19 @@ export async function ensureBdsBootProperties(
   }
   const props = parseProperties(raw);
   props["server-port"] = String(port);
-  props["online-mode"] = "false";
+  if (props["online-mode"] === undefined || props["online-mode"] === "") {
+    props["online-mode"] = "true";
+  }
   props["enable-lan-visibility"] = "true";
   props["transport"] = "raknet";
-  // BDS exits if allow-list is on while online-mode is off.
-  props["allow-list"] = "false";
+  const online = isOnlineMode(props);
+  if (!online) {
+    props["allow-list"] = "false";
+    await fsp.writeFile(
+      path.join(serverDir, "allowlist.json"),
+      `${JSON.stringify({ allowlist: [] }, null, 2)}\n`,
+      "utf8",
+    );
+  }
   await fsp.writeFile(file, serializeProperties(props), "utf8");
-  await fsp.writeFile(
-    path.join(serverDir, "allowlist.json"),
-    `${JSON.stringify({ allowlist: [] }, null, 2)}\n`,
-    "utf8",
-  );
 }

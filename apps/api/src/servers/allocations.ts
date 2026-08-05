@@ -193,7 +193,7 @@ export async function migratePrimaryAllocations(): Promise<number> {
   return n;
 }
 
-/** Fix BDS servers stuck on Microsoft online-services (online-mode). */
+/** Restore BDS online-mode for Xbox verification (undo offline-only migration). */
 export async function migrateBdsBootProperties(): Promise<number> {
   const servers = await prisma.server.findMany({
     where: { type: { in: ["BEDROCK", "BEDROCK_PREVIEW"] } },
@@ -203,15 +203,8 @@ export async function migrateBdsBootProperties(): Promise<number> {
   for (const s of servers) {
     try {
       const props = await readServerProperties(s.id);
-      const needs =
-        props["online-mode"] !== "false" ||
-        props["allow-list"] === "true" ||
-        props["white-list"] === "true";
-      if (!needs) continue;
-      await updateServerProperties(s.id, {
-        "online-mode": "false",
-        "white-list": "false",
-      });
+      if (props["online-mode"] !== "false") continue;
+      await updateServerProperties(s.id, { "online-mode": "true" });
       n += 1;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
