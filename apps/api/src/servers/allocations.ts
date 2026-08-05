@@ -38,18 +38,24 @@ export async function ensurePrimaryAllocation(input: {
   nodeId: string;
   port: number;
   ip?: string;
+  protocol?: AllocationProtocol;
 }): Promise<void> {
+  const protocol = input.protocol ?? "tcp";
   const existing = await prisma.allocation.findFirst({
     where: { serverId: input.serverId, isPrimary: true },
   });
   if (existing) {
-    if (existing.port !== input.port || existing.nodeId !== input.nodeId) {
+    if (
+      existing.port !== input.port ||
+      existing.nodeId !== input.nodeId ||
+      existing.protocol !== protocol
+    ) {
       await prisma.allocation.update({
         where: { id: existing.id },
         data: {
           nodeId: input.nodeId,
           port: input.port,
-          protocol: "tcp",
+          protocol,
           ip: input.ip ?? existing.ip,
           isPrimary: true,
           serverId: input.serverId,
@@ -64,14 +70,14 @@ export async function ensurePrimaryAllocation(input: {
       nodeId_port_protocol: {
         nodeId: input.nodeId,
         port: input.port,
-        protocol: "tcp",
+        protocol,
       },
     },
   });
   if (clash) {
     if (clash.serverId && clash.serverId !== input.serverId) {
       throw new Error(
-        `Port ${input.port}/tcp is already allocated to another server`,
+        `Port ${input.port}/${protocol} is already allocated to another server`,
       );
     }
     await prisma.allocation.update({
@@ -99,7 +105,7 @@ export async function ensurePrimaryAllocation(input: {
       id: nanoid(12),
       nodeId: input.nodeId,
       port: input.port,
-      protocol: "tcp",
+      protocol,
       ip: input.ip ?? "0.0.0.0",
       serverId: input.serverId,
       isPrimary: true,
@@ -194,7 +200,13 @@ export async function listServerAllocationPorts(serverId: string): Promise<
   if (!rows.length) {
     const server = await prisma.server.findUnique({ where: { id: serverId } });
     if (!server) return [];
-    return [{ port: server.port, protocol: "tcp" }];
+    const { primaryAllocationProtocol } = await import("@msm/shared");
+    return [
+      {
+        port: server.port,
+        protocol: primaryAllocationProtocol(server.type),
+      },
+    ];
   }
   return rows.map((r) => ({
     port: r.port,

@@ -30,11 +30,11 @@ Operator and developer documentation for the Guartrix Minecraft hosting panel.
 | [Status overview](statusline.md) | Admin → Status health board (web, API, watchdog, nodes) |
 | [Accounts & quotas](accounts-and-quotas.md) | Register, verify, reset, quotas, subusers |
 | [Auth and session internals](auth-and-session-internals.md) | Sessions, TOTP, API keys, app passwords, daemon auth, invite/reset token surfaces |
-| [Server management](server-management.md) | Create/import/clone/reinstall/transfer, world tools, resource packs |
+| [Server management](server-management.md) | Create/import/clone/reinstall/transfer, Java + Bedrock server types, world tools, resource packs |
 | [Databases](databases.md) | Per-server MySQL on the node, quotas, shared Docker MySQL notes |
 | [Bots](bots.md) | Admin Mineflayer bots (online-mode=false, Via*, worker) |
 | [Files and backups](files-and-backups.md) | File manager, SFTP, jail rules, backup and restore flows |
-| [Networking and allocations](networking-and-allocations.md) | Ports, Geyser, BlueMap 8100, Velocity/Bungee helpers, Docker networks |
+| [Networking and allocations](networking-and-allocations.md) | Ports, native Bedrock (UDP), Geyser, BlueMap 8100, Velocity/Bungee helpers, Docker networks |
 | [Player management](player-management.md) | Online players, whitelist, bans, moderation, history |
 | [Mods, plugins, and modpacks](mods-plugins-and-modpacks.md) | Addons, CurseForge, engine compatibility, modpacks |
 | [SFTP](sftp.md) | Per-node SFTP, username format, permissions |

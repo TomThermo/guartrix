@@ -192,8 +192,32 @@ export async function checkServerUpdate(server: Server): Promise<ServerUpdateInf
         !server.forgeVersion ||
         compareVersionsAsc(server.forgeVersion, latestNeo) < 0;
     }
+  } else if (server.type === "BEDROCK") {
+    const { getLatestBedrockStableVersion } = await import("../providers/bedrock.js");
+    const latest = await getLatestBedrockStableVersion();
+    if (latest) {
+      latestChannelLabel = latest;
+      channelUpdateAvailable =
+        compareVersionsAsc(server.mcVersion, latest) < 0;
+    }
+  } else if (server.type === "BEDROCK_PREVIEW") {
+    const { getLatestBedrockPreviewVersion } = await import("../providers/bedrock.js");
+    const latest = await getLatestBedrockPreviewVersion();
+    if (latest) {
+      latestChannelLabel = latest;
+      channelUpdateAvailable =
+        compareVersionsAsc(server.mcVersion, latest) < 0;
+    }
+  } else if (server.type === "POCKETMINE") {
+    const { getLatestPocketMineVersion } = await import("../providers/bedrock.js");
+    const latest = await getLatestPocketMineVersion();
+    if (latest) {
+      latestChannelLabel = latest;
+      channelUpdateAvailable =
+        compareVersionsAsc(server.mcVersion, latest) < 0;
+    }
   }
-  // Vanilla has no channel update — only MC version
+  // Vanilla / Nukkit: MC version list only (Nukkit uses rolling "latest")
 
   const available = channelUpdateAvailable || mcUpdateAvailable;
 

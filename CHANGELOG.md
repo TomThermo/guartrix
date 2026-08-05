@@ -7,6 +7,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.95] — 2026-08-05
+
+- Native Bedrock server types: Mojang BDS (stable + preview), PocketMine-MP, Nukkit
+- UDP-primary allocations and Docker runtimes for Bedrock (ubuntu BDS, pmmp PHP, Java Nukkit)
+- Create-server UI grouped Java vs Bedrock Edition; wiki and README updated
+
 ## [1.0.80] — 2026-08-04
 
 - Fix production CSS: FA subset no longer runs PurgeCSS on the full bundle (Bootstrap grid/navbar was stripped)

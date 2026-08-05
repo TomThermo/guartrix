@@ -46,9 +46,24 @@ Important rules:
 - extra allocations can carry protocol information
 - some helper flows can attach a UDP companion on the same numeric port
 
-## Geyser, BlueMap, and proxy helpers
+## Geyser, native Bedrock, BlueMap, and proxy helpers
 
-### Geyser / Floodgate (Bedrock)
+### Native Bedrock servers (BDS, PocketMine-MP, Nukkit)
+
+When you create a server with type **Bedrock (official)**, **Bedrock Preview**, **PocketMine-MP**, or **Nukkit**, Guartrix provisions the matching runtime and sets the **primary allocation to UDP** on the chosen port (firewall + Docker publish).
+
+| Type | Runtime | Version source |
+|------|---------|----------------|
+| Bedrock (official) | Mojang BDS stable | [Endstone BDS registry](https://github.com/EndstoneMC/bedrock-server-data) → official Mojang Linux zips |
+| Bedrock Preview | Mojang BDS preview | Same registry, preview channel |
+| PocketMine-MP | PHP (`pmmp/pocketmine-mp` image) | PocketMine-MP GitHub releases |
+| Nukkit | Java (`server.jar` from OpenCollab) | Rolling `latest` Maven snapshot |
+
+Players connect with `host:UDP_port`. This is **not** the same as Geyser on a Java server (below).
+
+Details: [Server management → Bedrock Edition](server-management.md#bedrock-edition).
+
+### Geyser / Floodgate (Bedrock clients on Java)
 
 On **Paper / Purpur**, the **Network** tab offers **Install Geyser**:
 

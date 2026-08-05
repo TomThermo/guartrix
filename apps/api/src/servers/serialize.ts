@@ -1,13 +1,8 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import type { Node, Server, User } from "@prisma/client";
-import type {
-  McServer,
-  PlayersResponse,
-  ServerDetail,
-  ServerProperties,
-} from "@msm/shared";
-import { DEFAULT_SERVER_JAR, normalizeJavaVersion } from "@msm/shared";
+import type { McServer, PlayersResponse, ServerDetail, ServerProperties, ServerType } from "@msm/shared";
+import { defaultServerExecutable, normalizeJavaVersion } from "@msm/shared";
 import { serverDir } from "../config.js";
 import { coerceExtraMounts } from "./extra-mounts.js";
 import { hasServerIcon } from "./server-icon.js";
@@ -46,7 +41,9 @@ export function toMcServer(server: ServerWithRelations): McServer {
     status: server.status,
     javaVersion: normalizeJavaVersion(server.javaPath),
     startupCommand: server.startupCommand ?? null,
-    serverJar: server.serverJar?.trim() || DEFAULT_SERVER_JAR,
+    serverJar:
+      server.serverJar?.trim() ||
+      defaultServerExecutable(server.type as ServerType),
     fabricLoaderVersion: server.fabricLoaderVersion,
     forgeVersion: server.forgeVersion,
     paperBuild: server.paperBuild,

@@ -62,6 +62,14 @@ export function typeLabel(type: string): string {
       return "Forge";
     case "NEOFORGE":
       return "NeoForge";
+    case "BEDROCK":
+      return "Bedrock (official)";
+    case "BEDROCK_PREVIEW":
+      return "Bedrock Preview";
+    case "POCKETMINE":
+      return "PocketMine-MP";
+    case "NUKKIT":
+      return "Nukkit";
     default:
       return type;
   }
@@ -81,6 +89,13 @@ export function typeIcon(type: string): string {
       return "fa-hammer";
     case "NEOFORGE":
       return "fa-gears";
+    case "BEDROCK":
+    case "BEDROCK_PREVIEW":
+      return "fa-mobile-screen";
+    case "POCKETMINE":
+      return "fa-php";
+    case "NUKKIT":
+      return "fa-cubes";
     default:
       return "fa-cube";
   }

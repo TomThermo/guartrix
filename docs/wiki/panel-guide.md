@@ -74,7 +74,7 @@ Each row shows clickable chips for **disk used / limit**, **online players** (`0
 
 ## Create a server
 
-**+ New server** — pick software (Vanilla, Paper, Purpur, Fabric, Quilt, Forge, NeoForge), version, RAM, port, and (admins) which node. Optional **world preset** (Default / Flat / Void) and **seed** are applied on first start.
+**+ New server** — pick software under **Java Edition** (Vanilla, Paper, Purpur, Fabric, Quilt, Forge, NeoForge) or **Bedrock Edition** (official Mojang BDS stable/preview, PocketMine-MP, Nukkit), version, RAM, port, and (admins) which node. Bedrock servers use **UDP** as the primary game port. Optional **world preset** (Default / Flat / Void) and **seed** are applied on first start (Java-oriented; Bedrock uses the same `server.properties` basics where applicable).
 
 ![Create server](assets/03-create-server.png)
 
@@ -229,7 +229,7 @@ Per-server MySQL on the node (`guartrix-mysql`). Create DBs within the user’s 
 
 ### Network / Allocations
 
-Primary game port plus optional extra TCP/UDP ports (plugins, query, voice, …). Firewall opens on assign; Docker publishes extras on the **next start/restart**. Promote a secondary TCP allocation to primary only while the server is stopped. Optional **also UDP** companion on the same port for query/Geyser. Paper/Purpur: **Install Geyser** one-click (Geyser + Floodgate via Modrinth + UDP companion).
+Primary game port plus optional extra TCP/UDP ports (plugins, query, voice, …). **Native Bedrock** servers (BDS, PocketMine-MP, Nukkit) use **UDP** as the primary allocation; Java servers use **TCP**. Firewall opens on assign; Docker publishes extras on the **next start/restart**. Promote a secondary allocation to primary only while the server is stopped. Optional **also UDP** companion on the same port for Java + query/Geyser. Paper/Purpur: **Install Geyser** one-click (Geyser + Floodgate via Modrinth + UDP companion) so Bedrock *clients* join a Java server — separate from creating a native Bedrock server type.
 
 Permissions: `allocation.read` / `create` / `update` / `delete`.
 

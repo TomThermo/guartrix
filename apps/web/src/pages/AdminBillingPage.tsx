@@ -5,7 +5,7 @@ import type {
   PaymentRecord,
   PlanTemplateRecord,
 } from "@msm/shared";
-import { APPLICATION_SCOPES } from "@msm/shared";
+import { APPLICATION_SCOPES, ALL_SERVER_TYPES } from "@msm/shared";
 import {
   Alert,
   Badge,
@@ -315,7 +315,7 @@ export function AdminBillingPage() {
                       })
                     }
                   >
-                    {["PAPER", "VANILLA", "PURPUR", "FABRIC", "FORGE", "NEOFORGE", "QUILT"].map(
+                    {ALL_SERVER_TYPES.map(
                       (t) => (
                         <option key={t} value={t}>
                           {t}

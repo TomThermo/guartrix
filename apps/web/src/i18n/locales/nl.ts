@@ -423,6 +423,8 @@ export const nl: Messages = {
     chooseNode: "Kies een node",
     noNodes: "Geen nodes beschikbaar",
     type: "Servertype",
+    typeJava: "Java Edition",
+    typeBedrock: "Bedrock Edition",
     version: "Minecraft-versie",
     memory: "Geheugen",
     disk: "Schijf",

@@ -27,6 +27,10 @@ const SERVER_TYPES = [
   "PURPUR",
   "NEOFORGE",
   "QUILT",
+  "BEDROCK",
+  "BEDROCK_PREVIEW",
+  "POCKETMINE",
+  "NUKKIT",
 ] as const;
 
 const metaSchema = z.object({

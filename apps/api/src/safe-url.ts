@@ -177,6 +177,10 @@ export const DOWNLOAD_HOST_SUFFIXES = [
   "purpurmc.org",
   "maven.org",
   "apache.org",
+  "opencollab.dev",
+  "minecraft-services.net",
+  "azureedge.net",
+  "raw.githubusercontent.com",
 ];
 
 export async function assertSafeDownloadUrl(raw: string): Promise<string> {

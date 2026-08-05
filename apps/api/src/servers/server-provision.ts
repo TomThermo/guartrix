@@ -1,5 +1,6 @@
 import { nanoid } from "nanoid";
 import type { ServerType } from "@msm/shared";
+import { primaryAllocationProtocol } from "@msm/shared";
 import { ensurePrimaryAllocation } from "./allocations.js";
 import { config } from "../config.js";
 import { daemonSetLimits } from "../nodes/daemon-client.js";
@@ -117,11 +118,13 @@ export async function provisionPreparedServer(input: ProvisionServerInput) {
   });
 
   try {
-    await openFirewallPort(input.port, input.nodeId);
+    const protocol = primaryAllocationProtocol(input.type);
+    await openFirewallPort(input.port, input.nodeId, protocol);
     await ensurePrimaryAllocation({
       serverId: id,
       nodeId: input.nodeId,
       port: input.port,
+      protocol,
     });
 
     const prepared = await prepareServerOnNode({

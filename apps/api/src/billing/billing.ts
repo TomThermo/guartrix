@@ -189,16 +189,13 @@ export async function autoCreateServerForPayment(paymentId: string): Promise<{
         "PURPUR",
         "NEOFORGE",
         "QUILT",
+        "BEDROCK",
+        "BEDROCK_PREVIEW",
+        "POCKETMINE",
+        "NUKKIT",
       ] as const
     ).includes(plan.defaultServerType as never)
-      ? (plan.defaultServerType as
-          | "VANILLA"
-          | "PAPER"
-          | "FABRIC"
-          | "FORGE"
-          | "PURPUR"
-          | "NEOFORGE"
-          | "QUILT")
+      ? (plan.defaultServerType as import("@msm/shared").ServerType)
       : "PAPER";
 
     const id = nanoid(12);

@@ -5,7 +5,15 @@ export type ServerType =
   | "FORGE"
   | "PURPUR"
   | "NEOFORGE"
-  | "QUILT";
+  | "QUILT"
+  /** Mojang Bedrock Dedicated Server (stable). */
+  | "BEDROCK"
+  /** Mojang Bedrock Dedicated Server (preview). */
+  | "BEDROCK_PREVIEW"
+  /** PocketMine-MP (PHP, custom Bedrock server). */
+  | "POCKETMINE"
+  /** Nukkit (Java, custom Bedrock protocol server). */
+  | "NUKKIT";
 
 export type AddonKind = "plugin" | "mod";
 
@@ -32,6 +40,10 @@ export const ALL_SERVER_TYPES: ServerType[] = [
   "QUILT",
   "FORGE",
   "NEOFORGE",
+  "BEDROCK",
+  "BEDROCK_PREVIEW",
+  "POCKETMINE",
+  "NUKKIT",
 ];
 
 export type ServerStatus =

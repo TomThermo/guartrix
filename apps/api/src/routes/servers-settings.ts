@@ -42,6 +42,10 @@ const SERVER_TYPES = [
   "PURPUR",
   "NEOFORGE",
   "QUILT",
+  "BEDROCK",
+  "BEDROCK_PREVIEW",
+  "POCKETMINE",
+  "NUKKIT",
 ] as const;
 
 
@@ -377,15 +381,21 @@ export function registerServerSettingsRoutes(app: FastifyInstance): void {
           const {
             resolveStartupCommand,
             startupCommandToArgs,
-            normalizeServerJar,
-            assertSafeStartupCommand,
+            normalizeServerExecutable,
+            assertSafeStartupCommandForType,
           } = await import("@msm/shared");
-          const jar = normalizeServerJar(
+          const jar = normalizeServerExecutable(
             data.serverJar !== undefined ? data.serverJar : server.serverJar,
+            server.type as ServerType,
           );
           const mem = data.memoryMb ?? server.memoryMb;
           startupCommandToArgs(resolveStartupCommand(trimmed, mem, jar));
-          assertSafeStartupCommand(trimmed, mem, jar);
+          assertSafeStartupCommandForType(
+            server.type as ServerType,
+            trimmed,
+            mem,
+            jar,
+          );
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);
           return reply.status(400).send({ error: `Invalid startup command: ${message}` });
@@ -398,14 +408,17 @@ export function registerServerSettingsRoutes(app: FastifyInstance): void {
     ) {
       // Memory lowered/changed — existing hard-coded -Xmx must still fit.
       try {
-        const { assertSafeStartupCommand, normalizeServerJar } = await import(
-          "@msm/shared"
-        );
-        assertSafeStartupCommand(
+        const {
+          assertSafeStartupCommandForType,
+          normalizeServerExecutable,
+        } = await import("@msm/shared");
+        assertSafeStartupCommandForType(
+          server.type as ServerType,
           server.startupCommand,
           data.memoryMb,
-          normalizeServerJar(
+          normalizeServerExecutable(
             data.serverJar !== undefined ? data.serverJar : server.serverJar,
+            server.type as ServerType,
           ),
         );
       } catch (err) {
@@ -422,8 +435,11 @@ export function registerServerSettingsRoutes(app: FastifyInstance): void {
         nextServerJar = null;
       } else {
         try {
-          const { normalizeServerJar } = await import("@msm/shared");
-          nextServerJar = normalizeServerJar(data.serverJar);
+          const { normalizeServerExecutable } = await import("@msm/shared");
+          nextServerJar = normalizeServerExecutable(
+            data.serverJar,
+            server.type as ServerType,
+          );
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);
           return reply.status(400).send({ error: message });

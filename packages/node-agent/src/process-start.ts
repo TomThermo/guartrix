@@ -14,6 +14,9 @@ import {
   jvmArgsFromStartupCommand,
   resolveStartupCommand,
   startupCommandToArgs,
+  defaultStartupTemplateForType,
+  runtimeKindFor,
+  type ServerRuntimeKind,
 } from "@msm/shared";
 import { getDiskUsageCached } from "./disk-usage.js";
 import type { DaemonServerConfig } from "./process-types.js";
@@ -183,6 +186,38 @@ export function resolveJavaCommand(
   return { javaCmd, warnings };
 }
 
+/**
+ * Resolves argv for any server runtime (Java, Bedrock BDS, PocketMine PHP).
+ */
+export function resolveRuntimeCommand(
+  server: DaemonServerConfig,
+  executableName: string,
+  runtimeKind: ServerRuntimeKind,
+  isForgeRuntime: boolean,
+): { cmd: string[]; warnings: string[] } {
+  const template =
+    server.startupCommand?.trim() ||
+    defaultStartupTemplateForType(server.type);
+  const patchedServer: DaemonServerConfig = {
+    ...server,
+    startupCommand: template,
+  };
+  if (runtimeKind === "java") {
+    const { javaCmd, warnings } = resolveJavaCommand(
+      patchedServer,
+      executableName,
+      isForgeRuntime,
+    );
+    return { cmd: javaCmd, warnings };
+  }
+  const resolved = resolveStartupCommand(
+    template,
+    server.memoryMb,
+    executableName,
+  );
+  return { cmd: startupCommandToArgs(resolved), warnings: [] };
+}
+
 export interface DockerRunArgsOptions {
   name: string;
   uid: number;
@@ -198,10 +233,17 @@ export interface DockerRunArgsOptions {
   serverId: string;
   logMaxSize: string;
   logMaxFile: string;
+  containerEnv?: Record<string, string>;
 }
 
 /** Builds the full `docker run …` argv for a Minecraft server container. */
 export function buildDockerRunArgs(opts: DockerRunArgsOptions): string[] {
+  const envArgs: string[] = [];
+  if (opts.containerEnv) {
+    for (const [key, value] of Object.entries(opts.containerEnv)) {
+      envArgs.push("-e", `${key}=${value}`);
+    }
+  }
   return [
     "run",
     "-d",
@@ -234,6 +276,7 @@ export function buildDockerRunArgs(opts: DockerRunArgsOptions): string[] {
     `${opts.containerMemoryMb}m`,
     ...opts.cpuArgs,
     ...opts.publishArgs,
+    ...envArgs,
     "-v",
     `${opts.dir}:/data`,
     ...extraVolumeArgs(opts.extraMounts),

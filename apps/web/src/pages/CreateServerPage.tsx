@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import {
-  ALL_SERVER_TYPES,
+  BEDROCK_SERVER_TYPES,
+  JAVA_SERVER_TYPES,
   canCreateServer,
   type DaemonNode,
   type ServerType,
@@ -293,20 +294,45 @@ export function CreateServerPage() {
 
       <Form.Group className="mb-3">
         <Form.Label>{t("createServer.type")}</Form.Label>
-        <div className="type-picker d-flex flex-wrap gap-2">
-          {ALL_SERVER_TYPES.map((t) => (
-            <Button
-              key={t}
-              type="button"
-              size="sm"
-              variant={type === t ? "primary" : "outline-secondary"}
-              className="type-picker-btn"
-              onClick={() => setType(t)}
-            >
-              <i className={`fa-solid ${typeIcon(t)} me-1`} />
-              {typeLabel(t)}
-            </Button>
-          ))}
+        <div className="mb-2">
+          <Form.Text className="text-muted d-block mb-1">
+            {t("createServer.typeJava")}
+          </Form.Text>
+          <div className="type-picker d-flex flex-wrap gap-2">
+            {JAVA_SERVER_TYPES.map((st) => (
+              <Button
+                key={st}
+                type="button"
+                size="sm"
+                variant={type === st ? "primary" : "outline-secondary"}
+                className="type-picker-btn"
+                onClick={() => setType(st)}
+              >
+                <i className={`fa-solid ${typeIcon(st)} me-1`} />
+                {typeLabel(st)}
+              </Button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <Form.Text className="text-muted d-block mb-1">
+            {t("createServer.typeBedrock")}
+          </Form.Text>
+          <div className="type-picker d-flex flex-wrap gap-2">
+            {BEDROCK_SERVER_TYPES.map((st) => (
+              <Button
+                key={st}
+                type="button"
+                size="sm"
+                variant={type === st ? "primary" : "outline-secondary"}
+                className="type-picker-btn"
+                onClick={() => setType(st)}
+              >
+                <i className={`fa-solid ${typeIcon(st)} me-1`} />
+                {typeLabel(st)}
+              </Button>
+            ))}
+          </div>
         </div>
       </Form.Group>
 

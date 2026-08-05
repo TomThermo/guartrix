@@ -15,6 +15,10 @@ enum ServerType {
   PURPUR
   NEOFORGE
   QUILT
+  BEDROCK
+  BEDROCK_PREVIEW
+  POCKETMINE
+  NUKKIT
 }
 
 enum ServerStatus {

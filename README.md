@@ -23,7 +23,7 @@ Guartrix is a panel and daemon stack for commercial or private Minecraft hosting
 - **Daemon** — per-machine agent that runs Docker game containers, SFTP, and node MySQL  
 - **Multi-node** — local and remote nodes; move servers between hosts from the admin UI  
 
-Supported server types include Vanilla, Paper, Purpur, Fabric, Quilt, Forge, and NeoForge.
+Supported server types include **Java Edition** (Vanilla, Paper, Purpur, Fabric, Quilt, Forge, NeoForge) and **Bedrock Edition** (official Mojang BDS stable/preview, PocketMine-MP, Nukkit). Paper/Purpur can also expose **Geyser** so Bedrock clients join a Java server without a separate Bedrock runtime.
 
 ### Tech stack
 
@@ -56,7 +56,7 @@ Full UI tour: [Panel guide](docs/wiki/panel-guide.md).
 
 ## Capabilities
 
-**Game servers** — create, import, clone, reinstall; change type/version; world reset and upload; live console and power controls; join card (copy/QR); seed map + optional BlueMap.
+**Game servers** — create, import, clone, reinstall; change type/version; world reset and upload; live console and power controls; join card (copy/QR); seed map + optional BlueMap. **Java** and **native Bedrock** server families (BDS, PocketMine-MP, Nukkit) with UDP-primary networking for Bedrock.
 
 **Resources** — RAM, CPU, and disk limits; live Docker stats; optional schedules (backup → restart → commands); crash auto-restart; owner alerts and Discord status webhooks.
 

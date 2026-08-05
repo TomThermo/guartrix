@@ -138,6 +138,14 @@ export const FORGE_MODDED_STARTUP_COMMAND = [
   "-Xms{{MEMORY}}M -Xmx{{MEMORY}}M",
 ].join(" ");
 
+/** Bedrock BDS native binary (LD_LIBRARY_PATH is set on the container). */
+export const BEDROCK_DEFAULT_STARTUP_COMMAND = "./bedrock_server";
+/** PocketMine-MP phar via PHP. */
+export const POCKETMINE_DEFAULT_STARTUP_COMMAND =
+  "php -d memory_limit={{MEMORY}}M PocketMine-MP.phar";
+
+export type ServerRuntimeKind = "java" | "bedrock_native" | "php";
+
 export type StartupPresetId =
   | "default"
   | "aikar"
@@ -158,7 +166,11 @@ export type StartupPresetServerType =
   | "FORGE"
   | "PURPUR"
   | "NEOFORGE"
-  | "QUILT";
+  | "QUILT"
+  | "BEDROCK"
+  | "BEDROCK_PREVIEW"
+  | "POCKETMINE"
+  | "NUKKIT";
 
 /** Presets for a given server software (Aikar = Paper family only). */
 export function startupPresetsFor(
@@ -201,7 +213,27 @@ export function startupPresetsFor(
     command: FORGE_MODDED_STARTUP_COMMAND,
   };
 
+  const bedrock: StartupPreset = {
+    id: "default",
+    label: "Default",
+    hint: "Native bedrock_server binary (LD_LIBRARY_PATH set by container)",
+    command: BEDROCK_DEFAULT_STARTUP_COMMAND,
+  };
+  const pocketmine: StartupPreset = {
+    id: "default",
+    label: "Default",
+    hint: "PHP with memory_limit from {{MEMORY}}",
+    command: POCKETMINE_DEFAULT_STARTUP_COMMAND,
+  };
+
   switch (type) {
+    case "BEDROCK":
+    case "BEDROCK_PREVIEW":
+      return [bedrock];
+    case "POCKETMINE":
+      return [pocketmine];
+    case "NUKKIT":
+      return [jarDefault, modded];
     case "PAPER":
     case "PURPUR":
       return [jarDefault, aikar];
@@ -398,31 +430,44 @@ export function assertStartupHeapWithinLimit(
 }
 
 /**
- * Startup must be a java invocation only (no shell, no other binaries).
- * Forge JVM templates also start with `java`.
+ * Startup must be a safe argv-only command (no shell metacharacters).
+ * Java/PHP templates use `java` or `php`; Bedrock uses `./bedrock_server`.
  */
 export function assertSafeStartupCommand(
   commandOrTemplate: string | null | undefined,
   memoryMb: number,
   jarName = DEFAULT_SERVER_JAR,
+  runtimeKind: ServerRuntimeKind = "java",
 ): void {
   const trimmed = (commandOrTemplate ?? "").trim();
   if (!trimmed) return;
   const resolved = resolveStartupCommand(trimmed, memoryMb, jarName);
   const args = startupCommandToArgs(resolved);
-  if (args[0] !== "java") {
-    throw new Error('Startup command must start with "java"');
+
+  if (runtimeKind === "bedrock_native") {
+    const bin = args[0];
+    if (bin !== "./bedrock_server" && bin !== "bedrock_server") {
+      throw new Error("Bedrock startup must run ./bedrock_server");
+    }
+  } else if (runtimeKind === "php") {
+    if (args[0] !== "php") {
+      throw new Error('PocketMine startup command must start with "php"');
+    }
+  } else {
+    if (args[0] !== "java") {
+      throw new Error('Startup command must start with "java"');
+    }
   }
+
   for (const a of args) {
     if (/[;&|`$<>]/.test(a) || a.includes("\0")) {
       throw new Error("Startup command contains forbidden shell characters");
     }
   }
-  // Disallow replacing java with a path to another binary
-  if (args[0] !== "java") {
-    throw new Error('Startup binary must be "java"');
+
+  if (runtimeKind === "java") {
+    assertStartupHeapWithinLimit(trimmed, memoryMb, jarName);
   }
-  assertStartupHeapWithinLimit(trimmed, memoryMb, jarName);
 }
 
 /** Split a resolved startup command into argv for Docker/exec. */

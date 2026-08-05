@@ -191,6 +191,26 @@ export async function listVersions(type: ServerType): Promise<string[]> {
     return games.filter((g) => g.stable).map((g) => g.version);
   }
 
+  if (type === "BEDROCK") {
+    const { listBedrockStableVersions } = await import("./bedrock.js");
+    return listBedrockStableVersions();
+  }
+
+  if (type === "BEDROCK_PREVIEW") {
+    const { listBedrockPreviewVersions } = await import("./bedrock.js");
+    return listBedrockPreviewVersions();
+  }
+
+  if (type === "POCKETMINE") {
+    const { listPocketMineVersions } = await import("./bedrock.js");
+    return listPocketMineVersions();
+  }
+
+  if (type === "NUKKIT") {
+    const { listNukkitVersions } = await import("./bedrock.js");
+    return listNukkitVersions();
+  }
+
   const games = await fetchJson<FabricGameVersions>(
     "https://meta.fabricmc.net/v2/versions/game",
   );
@@ -498,6 +518,14 @@ export async function prepareServerFiles(
       return downloadForge(mcVersion, destDir);
     case "NEOFORGE":
       return downloadNeoForge(mcVersion, destDir);
+    case "BEDROCK":
+      return (await import("./bedrock.js")).downloadBedrock(mcVersion, destDir, false);
+    case "BEDROCK_PREVIEW":
+      return (await import("./bedrock.js")).downloadBedrock(mcVersion, destDir, true);
+    case "POCKETMINE":
+      return (await import("./bedrock.js")).downloadPocketMine(mcVersion, destDir);
+    case "NUKKIT":
+      return (await import("./bedrock.js")).downloadNukkit(mcVersion, destDir);
     default: {
       const _exhaustive: never = type;
       throw new Error(`Unsupported server type: ${_exhaustive}`);
@@ -537,6 +565,14 @@ export async function replaceServerRuntime(
       return downloadForge(mcVersion, destDir);
     case "NEOFORGE":
       return downloadNeoForge(mcVersion, destDir);
+    case "BEDROCK":
+      return (await import("./bedrock.js")).downloadBedrock(mcVersion, destDir, false);
+    case "BEDROCK_PREVIEW":
+      return (await import("./bedrock.js")).downloadBedrock(mcVersion, destDir, true);
+    case "POCKETMINE":
+      return (await import("./bedrock.js")).downloadPocketMine(mcVersion, destDir);
+    case "NUKKIT":
+      return (await import("./bedrock.js")).downloadNukkit(mcVersion, destDir);
     default: {
       const _exhaustive: never = type;
       throw new Error(`Unsupported server type: ${_exhaustive}`);

@@ -52,6 +52,10 @@ const planBodySchema = z.object({
       "PURPUR",
       "NEOFORGE",
       "QUILT",
+      "BEDROCK",
+      "BEDROCK_PREVIEW",
+      "POCKETMINE",
+      "NUKKIT",
     ])
     .optional(),
   defaultMcVersion: z.string().trim().min(1).max(32).optional(),

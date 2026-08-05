@@ -5,10 +5,15 @@ import fsp from "node:fs/promises";
 import path from "node:path";
 import type { ServerStatus } from "@msm/shared";
 import {
-  assertSafeStartupCommand,
-  dockerImageForJava,
-  normalizeJavaVersion,
-  normalizeServerJar,
+  assertSafeStartupCommandForType,
+  BEDROCK_BINARY,
+  containerEnvForRuntime,
+  defaultServerExecutable,
+  dockerImageForServerType,
+  normalizeServerExecutable,
+  POCKETMINE_PHAR,
+  runtimeKindFor,
+  runtimeLabelForServerType,
 } from "@msm/shared";
 import { config, serverDir } from "./config.js";
 import {
@@ -51,7 +56,7 @@ import {
   checkPortFree,
   computeDiskUsageMessage,
   fixDataOwnership,
-  resolveJavaCommand,
+  resolveRuntimeCommand,
   writeForgeJvmArgsFile,
 } from "./process-start.js";
 import type {
@@ -612,7 +617,8 @@ class ProcessManager extends EventEmitter {
     }
 
     try {
-      assertSafeStartupCommand(
+      assertSafeStartupCommandForType(
+        server.type,
         server.startupCommand,
         server.memoryMb,
         server.serverJar ?? undefined,
@@ -624,20 +630,34 @@ class ProcessManager extends EventEmitter {
     this.lastConfigs.set(serverId, { ...server });
 
     const dir = serverDir(serverId);
-    let jarName = "server.jar";
+    let executableName = defaultServerExecutable(server.type);
     try {
-      jarName = normalizeServerJar(server.serverJar);
+      executableName = normalizeServerExecutable(server.serverJar, server.type);
     } catch (err) {
       failStart(err instanceof Error ? err.message : String(err));
     }
-    const jarPath = path.join(dir, jarName);
+    const executablePath = path.join(dir, executableName);
     const runShPath = path.join(dir, "run.sh");
+    const runtimeKind = runtimeKindFor(server.type);
     const isForgeRuntime =
+      runtimeKind === "java" &&
       (server.type === "FORGE" || server.type === "NEOFORGE") &&
       fs.existsSync(runShPath);
-    if (!isForgeRuntime && !fs.existsSync(jarPath)) {
+    if (runtimeKind === "bedrock_native") {
+      if (!fs.existsSync(executablePath)) {
+        failStart(
+          `${BEDROCK_BINARY} not found — recreate the server or reinstall BDS`,
+        );
+      }
+    } else if (runtimeKind === "php") {
+      if (!fs.existsSync(executablePath)) {
+        failStart(
+          `${POCKETMINE_PHAR} not found — recreate the server or reinstall PocketMine`,
+        );
+      }
+    } else if (!isForgeRuntime && !fs.existsSync(executablePath)) {
       failStart(
-        `${jarName} not found — upload the jar or fix Server Jar File`,
+        `${executableName} not found — upload the jar or fix Server Jar File`,
       );
     }
     if (isForgeRuntime && !fs.existsSync(runShPath)) {
@@ -698,8 +718,7 @@ class ProcessManager extends EventEmitter {
 
     this.daemonSay(serverId, "Running server preflight.");
     await ensureDockerReady();
-    const javaVersion = normalizeJavaVersion(server.javaVersion);
-    const image = dockerImageForJava(javaVersion);
+    const image = dockerImageForServerType(server.type, server.javaVersion);
     await ensureJavaImage(image);
     await ensureDefaultServerIcon(serverId);
 
@@ -712,24 +731,25 @@ class ProcessManager extends EventEmitter {
     const gid = typeof process.getgid === "function" ? process.getgid() : 1000;
 
     if (isForgeRuntime) {
-      const { warnings } = await writeForgeJvmArgsFile(dir, server, jarName);
+      const { warnings } = await writeForgeJvmArgsFile(dir, server, executableName);
       for (const warning of warnings) this.daemonSay(serverId, warning);
     }
 
-    const { javaCmd, warnings: javaCmdWarnings } = resolveJavaCommand(
+    const { cmd: runtimeCmd, warnings: runtimeWarnings } = resolveRuntimeCommand(
       server,
-      jarName,
+      executableName,
+      runtimeKind,
       isForgeRuntime,
     );
-    for (const warning of javaCmdWarnings) this.daemonSay(serverId, warning);
+    for (const warning of runtimeWarnings) this.daemonSay(serverId, warning);
 
     this.daemonSay(
       serverId,
-      `Using Java ${javaVersion} (${image}) · ${javaCmd.join(" ")}`,
+      `Using ${runtimeLabelForServerType(server.type, server.javaVersion)} (${image}) · ${runtimeCmd.join(" ")}`,
     );
 
     this.daemonSay(serverId, "Starting server container.");
-    await this.emitStartupBanner(serverId, javaCmd);
+    await this.emitStartupBanner(serverId, runtimeCmd);
 
     const { primary: gameNetwork, attachSharedDb } =
       await resolveGameNetwork(serverId);
@@ -750,10 +770,11 @@ class ProcessManager extends EventEmitter {
         dir,
         extraMounts: server.extraMounts,
         image,
-        javaCmd,
+        javaCmd: runtimeCmd,
         serverId,
         logMaxSize,
         logMaxFile,
+        containerEnv: containerEnvForRuntime(server.type),
       }),
       { timeout: 60_000 },
     );

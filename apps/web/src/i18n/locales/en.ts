@@ -420,6 +420,8 @@ export const en = {
     chooseNode: "Choose a node",
     noNodes: "No nodes available",
     type: "Server type",
+    typeJava: "Java Edition",
+    typeBedrock: "Bedrock Edition",
     version: "Minecraft version",
     memory: "Memory",
     disk: "Disk",

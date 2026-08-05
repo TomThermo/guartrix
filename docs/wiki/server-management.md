@@ -30,6 +30,25 @@ The main UI entrypoints are:
 
 World preset, seed, difficulty, gamemode, and initial server properties are part of the provisioning surface. The API work is mostly handled by `routes/servers-crud.ts` and `servers/server-provision.ts`.
 
+### Java Edition
+
+Vanilla, Paper, Purpur, Fabric, Quilt, Forge, and NeoForge — downloaded from upstream APIs (Mojang, PaperMC, Fabric/Quilt meta, Forge/NeoForged Maven). Primary game port is **TCP**.
+
+### Bedrock Edition
+
+The create flow also supports native Bedrock servers (grouped separately in the UI):
+
+| Type | Description | Versions |
+|------|-------------|----------|
+| **Bedrock (official)** | Mojang Bedrock Dedicated Server (stable) | Listed from the [Endstone BDS registry](https://github.com/EndstoneMC/bedrock-server-data) (official Mojang Linux zips) |
+| **Bedrock Preview** | Mojang BDS preview builds | Preview channel from the same registry |
+| **PocketMine-MP** | Custom PHP Bedrock server | PocketMine-MP release tags from GitHub |
+| **Nukkit** | Custom Java Bedrock-protocol server | Rolling `latest` snapshot from OpenCollab Maven |
+
+Bedrock servers use **UDP** as the primary allocation (firewall + Docker publish). Docker images: `ubuntu:22.04` for BDS, `pmmp/pocketmine-mp` for PocketMine, Temurin JRE for Nukkit.
+
+**Geyser** (Paper/Purpur plugin that lets Bedrock clients join a *Java* server) remains under **Network → Bedrock (Geyser)** — that is separate from native Bedrock server types.
+
 ## Dashboard actions
 
 The dashboard is not just a list. It exposes operational shortcuts:
@@ -108,7 +127,7 @@ The header and toolbar expose high-impact workflows:
 - **Version**
   Change Minecraft version within the current family.
 - **Software**
-  Move between software families such as Paper, Purpur, Fabric, Forge, Quilt, and NeoForge.
+  Move between software families such as Paper, Purpur, Fabric, Forge, Quilt, NeoForge, Bedrock BDS, PocketMine-MP, or Nukkit.
 - **Clone**
   Duplicate the server and selected data.
 - **Reinstall**
