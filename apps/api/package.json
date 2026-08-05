@@ -21,7 +21,7 @@
     "@fastify/websocket": "^11.0.2",
     "@msm/node-agent": "*",
     "@msm/shared": "*",
-    "@prisma/client": "^6.5.0",
+    "@prisma/client": "^7.9.1",
     "@sentry/node": "^10.69.0",
     "dotenv": "^16.4.7",
     "fastify": "^5.2.1",
