@@ -61,7 +61,7 @@ The dashboard is not just a list. It exposes operational shortcuts:
 - deep links into a specific server tab
 - quick chips for whitelist state, updates, and online players
 
-When you change the game port while the server is stopped, **Start** first syncs the host firewall (UFW) and Docker port bindings to match, then boots the container. The console shows **purple** `[Guartrix Daemon] NOTICE:` lines explaining what the system is doing.
+When you change the game port while the server is stopped, **Start** first syncs `server.properties` (`server-port`), the host firewall (UFW), and Docker port bindings to match, then boots the container. The console shows **purple** `[Guartrix Daemon] NOTICE:` lines explaining what the system is doing.
 
 Route anchors:
 

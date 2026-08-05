@@ -296,8 +296,8 @@ function formatPortList(
 }
 
 /**
- * Before start: align primary allocation + host firewall (UFW) with `Server.port`,
- * then return optional console notices for the daemon to show in purple.
+ * Before start: align primary allocation, `server.properties` (`server-port`),
+ * and host firewall (UFW) with `Server.port`. Returns purple console notices.
  */
 export async function syncServerPortPermissionsBeforeStart(server: {
   id: string;
@@ -306,12 +306,38 @@ export async function syncServerPortPermissionsBeforeStart(server: {
   type: string;
 }): Promise<{ notices: string[] }> {
   const notices: string[] = [];
-  if (!server.nodeId) return { notices };
 
   const { primaryAllocationProtocol } = await import("@msm/shared");
   const protocol = primaryAllocationProtocol(
     server.type as import("@msm/shared").ServerType,
   );
+
+  // Java / PocketMine / Nukkit read the bind port from server.properties.
+  // Bedrock BDS is also patched on the daemon; keep the file in sync here too.
+  try {
+    const props = await readServerProperties(server.id);
+    const filePort = Number.parseInt(String(props["server-port"] ?? ""), 10);
+    const needsPropsFix =
+      !Number.isFinite(filePort) || filePort !== server.port;
+
+    if (needsPropsFix) {
+      await updateServerProperties(server.id, {}, server.port);
+      const from =
+        Number.isFinite(filePort) && filePort > 0
+          ? String(filePort)
+          : "(missing)";
+      notices.push(
+        `server.properties server-port was ${from} — updated to ${server.port} so Minecraft binds the same port as the panel (Docker publish + firewall).`,
+      );
+    }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    notices.push(
+      `Could not sync server.properties server-port to ${server.port}: ${msg}`,
+    );
+  }
+
+  if (!server.nodeId) return { notices };
 
   const primaryBefore = await prisma.allocation.findFirst({
     where: { serverId: server.id, isPrimary: true },

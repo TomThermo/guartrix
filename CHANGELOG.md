@@ -7,6 +7,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.114] — 2026-08-05
+
+- Start syncs `server.properties` server-port to the panel port before boot (purple NOTICE)
+
 ## [1.0.113] — 2026-08-05
 
 - Start syncs firewall + Docker ports after a port change; purple console NOTICE lines explain why

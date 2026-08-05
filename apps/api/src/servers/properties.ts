@@ -90,6 +90,10 @@ export async function updateServerProperties(
 
   if (port !== undefined) {
     current["server-port"] = String(port);
+    // Keep query.port in lockstep when present (same host port Minecraft uses).
+    if (current["query.port"] !== undefined) {
+      current["query.port"] = String(port);
+    }
   }
 
   const fileProps = { ...current };
