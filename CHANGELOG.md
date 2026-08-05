@@ -7,6 +7,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.101] — 2026-08-05
+
+- BDS boot: fix `Server started` log detection (timestamp prefix), default offline mode, LAN/raknet + DNS in container
+- Startup migration sets `online-mode=false` on existing BDS servers; boot failure logs mark ERROR in panel
+
 ## [1.0.100] — 2026-08-05
 
 - Create/import: auto-suggest free game port per node and type; live port-in-use validation in UI

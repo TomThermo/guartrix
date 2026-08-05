@@ -77,10 +77,20 @@ export function whitelistPropertyKey(type: ServerType): "white-list" | "allow-li
 export function consoleLineIndicatesReady(line: string, type?: ServerType): boolean {
   if (/Done\s*\([\d.]+s\)!/i.test(line)) return true;
   if (type && isBdsServerType(type)) {
-    if (/Server started\.?$/i.test(line.trim())) return true;
+    // BDS prefixes lines with [timestamp INFO] — do not anchor to end of line.
+    if (/Server started\.?/i.test(line)) return true;
     if (/Dedicated Server.*running/i.test(line)) return true;
   }
   return false;
+}
+
+/** BDS boot failure before the game loop is up (online-mode / Microsoft services). */
+export function consoleLineIndicatesBootFailure(
+  line: string,
+  type?: ServerType,
+): boolean {
+  if (!type || !isBdsServerType(type)) return false;
+  return /Could not connect to Minecraft services/i.test(line);
 }
 
 export const BEDROCK_DOCKER_IMAGE = "ubuntu:22.04";
@@ -170,6 +180,16 @@ export function containerEnvForRuntime(type: ServerType): Record<string, string>
     return { LD_LIBRARY_PATH: "." };
   }
   return {};
+}
+
+/** Reliable public DNS for BDS containers (embedded Docker DNS can block Microsoft auth). */
+export const BEDROCK_CONTAINER_DNS = ["8.8.8.8", "1.1.1.1"] as const;
+
+export function dnsServersForServerType(type: ServerType): readonly string[] {
+  if (type === "BEDROCK" || type === "BEDROCK_PREVIEW") {
+    return BEDROCK_CONTAINER_DNS;
+  }
+  return [];
 }
 
 /** Label shown in power/start logs (not necessarily the Docker image tag). */

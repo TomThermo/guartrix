@@ -132,8 +132,11 @@ async function main() {
   }
 
   try {
-    const { migratePrimaryAllocations, migrateBedrockAllocationProtocols } =
-      await import("./servers/allocations.js");
+    const {
+      migratePrimaryAllocations,
+      migrateBedrockAllocationProtocols,
+      migrateBdsBootProperties,
+    } = await import("./servers/allocations.js");
     const n = await migratePrimaryAllocations();
     if (n > 0) {
       logger.info({ count: n }, "Backfilled primary allocation(s)");
@@ -144,6 +147,10 @@ async function main() {
         { count: bedrock },
         "Fixed Bedrock primary allocation protocol(s)",
       );
+    }
+    const bdsBoot = await migrateBdsBootProperties();
+    if (bdsBoot > 0) {
+      logger.info({ count: bdsBoot }, "Fixed BDS server.properties for offline boot");
     }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

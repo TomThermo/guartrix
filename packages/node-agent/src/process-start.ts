@@ -251,6 +251,7 @@ export interface DockerRunArgsOptions {
   logMaxSize: string;
   logMaxFile: string;
   containerEnv?: Record<string, string>;
+  dnsServers?: readonly string[];
 }
 
 /** Builds the full `docker run …` argv for a Minecraft server container. */
@@ -293,6 +294,7 @@ export function buildDockerRunArgs(opts: DockerRunArgsOptions): string[] {
     `${opts.containerMemoryMb}m`,
     ...opts.cpuArgs,
     ...opts.publishArgs,
+    ...(opts.dnsServers ?? []).flatMap((dns) => ["--dns", dns]),
     ...envArgs,
     "-v",
     `${opts.dir}:/data`,

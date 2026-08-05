@@ -2,6 +2,7 @@ import { nanoid } from "nanoid";
 import type { PortAllocation } from "@msm/shared";
 import { prisma } from "../db.js";
 import { closeFirewallPort, openFirewallPort } from "../nodes/firewall.js";
+import { readServerProperties, updateServerProperties } from "./properties.js";
 
 export type AllocationProtocol = "tcp" | "udp";
 
@@ -187,6 +188,34 @@ export async function migratePrimaryAllocations(): Promise<number> {
       console.warn(
         `[guartrix] Could not backfill allocation for ${s.id}: ${msg}`,
       );
+    }
+  }
+  return n;
+}
+
+/** Fix BDS servers stuck on Microsoft online-services (online-mode). */
+export async function migrateBdsBootProperties(): Promise<number> {
+  const servers = await prisma.server.findMany({
+    where: { type: { in: ["BEDROCK", "BEDROCK_PREVIEW"] } },
+    select: { id: true },
+  });
+  let n = 0;
+  for (const s of servers) {
+    try {
+      const props = await readServerProperties(s.id);
+      const needs =
+        props["online-mode"] !== "false" ||
+        props["allow-list"] === "true" ||
+        props["white-list"] === "true";
+      if (!needs) continue;
+      await updateServerProperties(s.id, {
+        "online-mode": "false",
+        "white-list": "false",
+      });
+      n += 1;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn(`[guartrix] BDS boot property migration skipped for ${s.id}: ${msg}`);
     }
   }
   return n;

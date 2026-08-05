@@ -493,8 +493,10 @@ export async function prepareServerFiles(
         "max-players=20",
         "difficulty=easy",
         "gamemode=survival",
-        "online-mode=true",
+        "online-mode=false",
         "allow-list=false",
+        "enable-lan-visibility=true",
+        "transport=raknet",
         "level-name=world",
         "",
       ].join("\n")

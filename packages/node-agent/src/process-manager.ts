@@ -7,8 +7,10 @@ import type { ServerStatus } from "@msm/shared";
 import {
   assertSafeStartupCommandForType,
   BEDROCK_BINARY,
+  consoleLineIndicatesBootFailure,
   consoleLineIndicatesReady,
   containerEnvForRuntime,
+  dnsServersForServerType,
   defaultServerExecutable,
   dockerImageForServerType,
   normalizeServerExecutable,
@@ -44,6 +46,7 @@ import {
   syncOnlineSet,
 } from "./player-history.js";
 import { ensureDefaultServerIcon } from "./default-icon.js";
+import { ensureBdsBootProperties } from "./bedrock-boot.js";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import {
@@ -449,6 +452,11 @@ class ProcessManager extends EventEmitter {
           this.daemonSay(serverId, "Server marked as RUNNING");
           this.setStatus(serverId, "RUNNING");
         }
+        if (consoleLineIndicatesBootFailure(line, serverType)) {
+          const msg = line.trim();
+          this.daemonSay(serverId, `ERROR: ${msg}`);
+          this.setStatus(serverId, "ERROR", msg);
+        }
         if (isPlayersListLine(line)) continue;
         this.emit("output", serverId, line, stream);
       }
@@ -759,6 +767,10 @@ class ProcessManager extends EventEmitter {
       `Using ${runtimeLabelForServerType(server.type, server.javaVersion)} (${image}) · ${runtimeCmd.join(" ")}`,
     );
 
+    if (runtimeKind === "bedrock_native") {
+      await ensureBdsBootProperties(dir, server.port);
+    }
+
     this.daemonSay(serverId, "Starting server container.");
     await this.emitStartupBanner(serverId, runtimeCmd);
 
@@ -786,6 +798,7 @@ class ProcessManager extends EventEmitter {
         logMaxSize,
         logMaxFile,
         containerEnv: containerEnvForRuntime(server.type),
+        dnsServers: dnsServersForServerType(server.type),
       }),
       { timeout: 60_000 },
     );
