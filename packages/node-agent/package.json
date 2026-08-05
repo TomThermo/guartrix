@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "@msm/shared": "*",
-    "dotenv": "^16.4.7",
+    "dotenv": "^17.4.2",
     "ssh2": "^1.16.0"
   },
   "devDependencies": {

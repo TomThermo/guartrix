@@ -15,7 +15,7 @@
     "@msm/node-agent": "*",
     "@msm/shared": "*",
     "@sentry/node": "^10.69.0",
-    "dotenv": "^16.4.7",
+    "dotenv": "^17.4.2",
     "fastify": "^5.2.1",
     "nanoid": "^5.1.5",
     "prom-client": "^15.1.3",
