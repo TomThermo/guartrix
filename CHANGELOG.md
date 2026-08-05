@@ -7,9 +7,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.116] — 2026-08-05
+
+- File manager: files left + editor right again (viewport-sized textarea)
+
 ## [1.0.115] — 2026-08-05
 
-- Full-width file editor with viewport-sized textarea; patch server.properties in place
+- Side-by-side file manager (files left, editor right) with viewport-sized textarea; patch server.properties in place
 
 ## [1.0.114] — 2026-08-05
 
