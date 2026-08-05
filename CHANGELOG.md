@@ -7,6 +7,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.105] — 2026-08-05
+
+- BDS: pre-build CA runtime image on daemon start; clearer console during first build
+- Empty allowlist auto-disabled so Xbox players can join online-mode servers
+
 ## [1.0.104] — 2026-08-05
 
 - BDS: custom Docker image with CA certificates so Microsoft online-services auth works (fixes hang on *Waiting for Minecraft services…*)

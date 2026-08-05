@@ -31,6 +31,8 @@ import {
   serverDir,
   startSftpServer,
   sftpConfigFromEnv,
+  ensureBedrockRuntimeImage,
+  bedrockRuntimeImageExists,
   type DaemonServerConfig,
 } from "@msm/node-agent";
 import { daemonConfig } from "./config.js";
@@ -542,6 +544,23 @@ async function main() {
   } catch (err) {
     app.log.error(err, "Failed to start SFTP server");
   }
+
+  void (async () => {
+    try {
+      if (await bedrockRuntimeImageExists()) {
+        app.log.info("Bedrock runtime image already present");
+        return;
+      }
+      app.log.info("Pre-building Bedrock runtime image (ca-certificates)…");
+      await ensureBedrockRuntimeImage();
+      app.log.info("Bedrock runtime image ready");
+    } catch (err) {
+      app.log.warn(
+        err,
+        "Bedrock runtime image prebuild failed — will retry on server start",
+      );
+    }
+  })();
 
   // Reclaim Minecraft containers that kept running across a previous daemon exit.
   try {

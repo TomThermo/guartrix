@@ -6,6 +6,12 @@ export {
 } from "./config.js";
 
 export {
+  ensureBedrockRuntimeImage,
+  bedrockRuntimeImageExists,
+  BEDROCK_RUNTIME_IMAGE,
+} from "./bedrock-boot.js";
+
+export {
   docker,
   containerName,
   removeContainer,

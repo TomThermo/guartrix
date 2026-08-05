@@ -49,9 +49,13 @@ export async function bedrockContainerDnsServers(): Promise<string[]> {
 }
 
 /** ubuntu:22.04 has no CA bundle — BDS cannot reach Microsoft auth without this image. */
-export async function ensureBedrockRuntimeImage(): Promise<void> {
+export async function bedrockRuntimeImageExists(): Promise<boolean> {
   const { stdout } = await docker(["images", "-q", BEDROCK_RUNTIME_IMAGE]);
-  if (stdout.trim()) return;
+  return Boolean(stdout.trim());
+}
+
+export async function ensureBedrockRuntimeImage(): Promise<void> {
+  if (await bedrockRuntimeImageExists()) return;
 
   const staging = await fsp.mkdtemp(path.join(os.tmpdir(), "guartrix-bedrock-img-"));
   try {
@@ -81,7 +85,8 @@ export async function ensureBedrockRuntimeImage(): Promise<void> {
 export async function ensureBdsBootProperties(
   serverDir: string,
   port: number,
-): Promise<void> {
+): Promise<string[]> {
+  const warnings: string[] = [];
   const file = path.join(serverDir, "server.properties");
   let raw = "";
   try {
@@ -97,6 +102,25 @@ export async function ensureBdsBootProperties(
   props["enable-lan-visibility"] = "true";
   props["transport"] = "raknet";
   const online = isOnlineMode(props);
+  if (online) {
+    let allowlistCount = 0;
+    try {
+      const raw = await fsp.readFile(
+        path.join(serverDir, "allowlist.json"),
+        "utf8",
+      );
+      const data = JSON.parse(raw) as { allowlist?: unknown[] };
+      allowlistCount = Array.isArray(data.allowlist) ? data.allowlist.length : 0;
+    } catch {
+      allowlistCount = 0;
+    }
+    if (props["allow-list"] === "true" && allowlistCount === 0) {
+      props["allow-list"] = "false";
+      warnings.push(
+        "Allowlist was on but empty — turned off so players can join (add names under Players to enable).",
+      );
+    }
+  }
   if (!online) {
     props["allow-list"] = "false";
     await fsp.writeFile(
@@ -106,4 +130,5 @@ export async function ensureBdsBootProperties(
     );
   }
   await fsp.writeFile(file, serializeProperties(props), "utf8");
+  return warnings;
 }

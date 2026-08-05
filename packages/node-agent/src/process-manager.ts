@@ -47,7 +47,7 @@ import {
   syncOnlineSet,
 } from "./player-history.js";
 import { ensureDefaultServerIcon } from "./default-icon.js";
-import { ensureBdsBootProperties, bedrockContainerDnsServers, ensureBedrockRuntimeImage } from "./bedrock-boot.js";
+import { ensureBdsBootProperties, bedrockContainerDnsServers, ensureBedrockRuntimeImage, bedrockRuntimeImageExists } from "./bedrock-boot.js";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import {
@@ -739,11 +739,15 @@ class ProcessManager extends EventEmitter {
     this.daemonSay(serverId, "Running server preflight.");
     await ensureDockerReady();
     if (runtimeKind === "bedrock_native") {
-      this.daemonSay(
-        serverId,
-        "Preparing Bedrock runtime image (ca-certificates for Microsoft auth)…",
-      );
-      await ensureBedrockRuntimeImage();
+      const needsBuild = !(await bedrockRuntimeImageExists());
+      if (needsBuild) {
+        this.daemonSay(
+          serverId,
+          "Building Bedrock runtime image (first time only, ~1–2 minutes)…",
+        );
+        await ensureBedrockRuntimeImage();
+        this.daemonSay(serverId, "Bedrock runtime image ready.");
+      }
     } else {
       const image = dockerImageForServerType(server.type, server.javaVersion);
       await ensureJavaImage(image);
@@ -778,7 +782,8 @@ class ProcessManager extends EventEmitter {
     );
 
     if (runtimeKind === "bedrock_native") {
-      await ensureBdsBootProperties(dir, server.port);
+      const bootWarnings = await ensureBdsBootProperties(dir, server.port);
+      for (const w of bootWarnings) this.daemonSay(serverId, w);
     }
 
     this.daemonSay(serverId, "Starting server container.");
