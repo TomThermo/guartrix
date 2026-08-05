@@ -1,6 +1,10 @@
 import fsp from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import { BEDROCK_CONTAINER_DNS } from "@msm/shared";
+import { docker } from "./docker.js";
+
+export const BEDROCK_RUNTIME_IMAGE = "guartrix/bedrock-runtime:22.04";
 
 function parseProperties(raw: string): Record<string, string> {
   const props: Record<string, string> = {};
@@ -42,6 +46,32 @@ export async function bedrockContainerDnsServers(): Promise<string[]> {
     // ignore
   }
   return [...servers];
+}
+
+/** ubuntu:22.04 has no CA bundle — BDS cannot reach Microsoft auth without this image. */
+export async function ensureBedrockRuntimeImage(): Promise<void> {
+  const { stdout } = await docker(["images", "-q", BEDROCK_RUNTIME_IMAGE]);
+  if (stdout.trim()) return;
+
+  const staging = await fsp.mkdtemp(path.join(os.tmpdir(), "guartrix-bedrock-img-"));
+  try {
+    await fsp.writeFile(
+      path.join(staging, "Dockerfile"),
+      [
+        "FROM ubuntu:22.04",
+        "RUN apt-get update \\",
+        "  && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ca-certificates \\",
+        "  && rm -rf /var/lib/apt/lists/*",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+    await docker(["build", "-t", BEDROCK_RUNTIME_IMAGE, staging], {
+      timeout: 600_000,
+    });
+  } finally {
+    await fsp.rm(staging, { recursive: true, force: true }).catch(() => undefined);
+  }
 }
 
 /**

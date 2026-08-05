@@ -93,7 +93,7 @@ export function consoleLineIndicatesBootFailure(
   return /Could not connect to Minecraft services/i.test(line);
 }
 
-export const BEDROCK_DOCKER_IMAGE = "ubuntu:22.04";
+export const BEDROCK_DOCKER_IMAGE = "guartrix/bedrock-runtime:22.04";
 export const POCKETMINE_DOCKER_IMAGE = "pmmp/pocketmine-mp:latest";
 
 export function dockerImageForServerType(

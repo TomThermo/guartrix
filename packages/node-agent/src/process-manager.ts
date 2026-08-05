@@ -47,7 +47,7 @@ import {
   syncOnlineSet,
 } from "./player-history.js";
 import { ensureDefaultServerIcon } from "./default-icon.js";
-import { ensureBdsBootProperties, bedrockContainerDnsServers } from "./bedrock-boot.js";
+import { ensureBdsBootProperties, bedrockContainerDnsServers, ensureBedrockRuntimeImage } from "./bedrock-boot.js";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import {
@@ -738,8 +738,17 @@ class ProcessManager extends EventEmitter {
 
     this.daemonSay(serverId, "Running server preflight.");
     await ensureDockerReady();
+    if (runtimeKind === "bedrock_native") {
+      this.daemonSay(
+        serverId,
+        "Preparing Bedrock runtime image (ca-certificates for Microsoft auth)…",
+      );
+      await ensureBedrockRuntimeImage();
+    } else {
+      const image = dockerImageForServerType(server.type, server.javaVersion);
+      await ensureJavaImage(image);
+    }
     const image = dockerImageForServerType(server.type, server.javaVersion);
-    await ensureJavaImage(image);
     await ensureDefaultServerIcon(serverId);
 
     // Docker memory limit must cover heap + metaspace + native + threads.

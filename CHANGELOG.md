@@ -7,6 +7,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.104] — 2026-08-05
+
+- BDS: custom Docker image with CA certificates so Microsoft online-services auth works (fixes hang on *Waiting for Minecraft services…*)
+
 ## [1.0.103] — 2026-08-05
 
 - BDS: default `online-mode=true` again (Xbox verification); shared Docker network + host DNS for Microsoft auth

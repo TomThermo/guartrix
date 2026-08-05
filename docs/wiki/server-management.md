@@ -47,7 +47,7 @@ The create flow also supports native Bedrock servers (grouped separately in the 
 
 Bedrock servers use **UDP** as the primary allocation (firewall + Docker publish). Docker images: `ubuntu:22.04` for BDS, `pmmp/pocketmine-mp` for PocketMine, Temurin JRE for Nukkit.
 
-Official BDS defaults to **`online-mode=true`** (Xbox / Microsoft account verification). The daemon applies `enable-lan-visibility=true` and `transport=raknet` on each start. **Allowlist requires online mode** — with `online-mode=false` the daemon turns `allow-list` off on start. If boot logs show *Could not connect to Minecraft services*, check outbound HTTPS/DNS from Docker on the node.
+Official BDS defaults to **`online-mode=true`** (Xbox / Microsoft account verification). The daemon applies `enable-lan-visibility=true` and `transport=raknet` on each start. **Allowlist requires online mode** — with `online-mode=false` the daemon turns `allow-list` off on start. If boot logs show *Could not connect to Minecraft services*, the node could not reach Microsoft over HTTPS (the panel builds a `guartrix/bedrock-runtime` image with CA certificates for this). While starting, *Waiting for Minecraft services…* is normal for up to ~60 seconds in online mode.
 
 **Geyser** (Paper/Purpur plugin that lets Bedrock clients join a *Java* server) remains under **Network → Bedrock (Geyser)** — that is separate from native Bedrock server types.
 
