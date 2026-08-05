@@ -95,6 +95,34 @@ export async function tryEnsureServerSubdomain(
 ): Promise<string | null> {
   return maybeEnsureSubdomain(name, port);
 }
+
+/** Start a freshly provisioned server (create / import / clone). Logs and skips on license errors. */
+export async function autoStartProvisionedServer(serverId: string): Promise<void> {
+  const server = await prisma.server.findUnique({ where: { id: serverId } });
+  if (!server) return;
+  try {
+    const {
+      assertLicenseAllowsPower,
+      assertLicensePanelQuota,
+      assertLicenseDiskQuota,
+      startServerIfLicensed,
+    } = await import("../license/license.js");
+    await assertLicenseAllowsPower();
+    await assertLicensePanelQuota(server.memoryMb, { excludeServerId: serverId });
+    await assertLicenseDiskQuota(server.diskMb);
+    const { openServerAllocationFirewalls } = await import("./allocations.js");
+    await openServerAllocationFirewalls(serverId, server.nodeId);
+    await prisma.server.update({
+      where: { id: serverId },
+      data: { stoppedByUser: false },
+    });
+    await startServerIfLicensed(serverId);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.warn(`[guartrix] auto-start after provision failed for ${serverId}: ${message}`);
+  }
+}
+
 export async function provisionPreparedServer(input: ProvisionServerInput) {
   const id = input.id ?? nanoid(12);
   const diskMb = input.diskMb ?? 10_240;
@@ -117,6 +145,7 @@ export async function provisionPreparedServer(input: ProvisionServerInput) {
       diskMb,
       cpuLimit,
       status: "CREATING",
+      startOnBoot: true,
       ownerId: input.ownerId,
       nodeId: input.nodeId,
       ...(input.extraMounts !== undefined

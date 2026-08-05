@@ -7,6 +7,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.107] — 2026-08-05
+
+- New servers auto-start after create, import, or clone; start on boot enabled by default
+
 ## [1.0.106] — 2026-08-05
 
 - Bedrock Whitelist tab: correct allowlist.json format, Xbox gamertags, permissions.json ops

@@ -74,7 +74,7 @@ Each row shows clickable chips for **disk used / limit**, **online players** (`0
 
 ## Create a server
 
-**+ New server** — pick software under **Java Edition** (Vanilla, Paper, Purpur, Fabric, Quilt, Forge, NeoForge) or **Bedrock Edition** (official Mojang BDS stable/preview, PocketMine-MP, Nukkit), version, RAM, port, and (admins) which node. Bedrock servers use **UDP** as the primary game port. Optional **world preset** (Default / Flat / Void) and **seed** are applied on first start (Java-oriented; Bedrock uses the same `server.properties` basics where applicable).
+**+ New server** — pick software under **Java Edition** (Vanilla, Paper, Purpur, Fabric, Quilt, Forge, NeoForge) or **Bedrock Edition** (official Mojang BDS stable/preview, PocketMine-MP, Nukkit), version, RAM, port, and (admins) which node. Bedrock servers use **UDP** as the primary game port. Optional **world preset** (Default / Flat / Void) and **seed** are applied before the first boot. The panel **starts the server automatically** after create, import, or clone (and sets **Start on boot** so it comes back after a panel restart unless you stopped it manually).
 
 ![Create server](assets/03-create-server.png)
 

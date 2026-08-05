@@ -163,6 +163,7 @@ export function registerImportRoutes(app: FastifyInstance): void {
         diskMb: data.diskMb ?? 10_240,
         cpuLimit: data.cpuLimit ?? 0,
         status: "CREATING",
+        startOnBoot: true,
         ownerId: user.id,
         nodeId,
       },
@@ -255,7 +256,13 @@ export function registerImportRoutes(app: FastifyInstance): void {
           node: nodeId,
         },
       });
-      return reply.status(201).send(toMcServer(updated));
+      const { autoStartProvisionedServer } = await import("../servers/server-provision.js");
+      await autoStartProvisionedServer(updated.id);
+      const refreshed = await prisma.server.findUniqueOrThrow({
+        where: { id: updated.id },
+        include: serverListInclude,
+      });
+      return reply.status(201).send(toMcServer(refreshed));
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       await wipeServerEverywhere(id).catch(() => undefined);

@@ -192,7 +192,9 @@ export async function autoCreateServerForPayment(paymentId: string): Promise<{
     const id = nanoid(12);
     const name = `${plan.slug}-${id.slice(0, 6)}`;
 
-    const { provisionPreparedServer } = await import("../servers/server-provision.js");
+    const { provisionPreparedServer, autoStartProvisionedServer } = await import(
+      "../servers/server-provision.js",
+    );
     await provisionPreparedServer({
       id,
       name,
@@ -206,6 +208,8 @@ export async function autoCreateServerForPayment(paymentId: string): Promise<{
       nodeId,
       cleanupOnFailure: true,
     });
+
+    await autoStartProvisionedServer(id);
 
     await prisma.payment.update({
       where: { id: paymentId },

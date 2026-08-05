@@ -211,7 +211,9 @@ export function registerServerCrudRoutes(app: FastifyInstance): void {
     }
 
     try {
-      const { provisionPreparedServer } = await import("../servers/server-provision.js");
+      const { provisionPreparedServer, autoStartProvisionedServer } = await import(
+        "../servers/server-provision.js",
+      );
       const { server: updated } = await provisionPreparedServer({
         name: data.name,
         type: data.type as ServerType,
@@ -267,7 +269,14 @@ export function registerServerCrudRoutes(app: FastifyInstance): void {
           worldPreset: preset,
         },
       });
-      return reply.status(201).send(toMcServer(updated));
+
+      await autoStartProvisionedServer(updated.id);
+
+      const refreshed = await prisma.server.findUniqueOrThrow({
+        where: { id: updated.id },
+        include: serverListInclude,
+      });
+      return reply.status(201).send(toMcServer(refreshed));
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       logActivity({
@@ -517,7 +526,7 @@ export function registerServerCrudRoutes(app: FastifyInstance): void {
           forgeVersion: source.forgeVersion,
           paperBuild: source.paperBuild,
           autoRestart: source.autoRestart,
-          startOnBoot: false,
+          startOnBoot: true,
           ownerId: access.user.id,
           nodeId,
           extraMounts: source.extraMounts ?? undefined,
@@ -527,9 +536,8 @@ export function registerServerCrudRoutes(app: FastifyInstance): void {
       const staging = await fs.mkdtemp(
         path.join(os.tmpdir(), `guartrix-clone-${id}-`),
       );
-      const { tryEnsureServerSubdomain, cleanupFailedProvision } = await import(
-        "../servers/server-provision.js"
-      );
+      const { tryEnsureServerSubdomain, cleanupFailedProvision, autoStartProvisionedServer } =
+        await import("../servers/server-provision.js");
       try {
         await openFirewallPort(parsed.data.port, nodeId, protocol);
         const { ensurePrimaryAllocation } = await import("../servers/allocations.js");
@@ -575,7 +583,12 @@ export function registerServerCrudRoutes(app: FastifyInstance): void {
             node: nodeId,
           },
         });
-        return reply.status(201).send(toMcServer(updated));
+        await autoStartProvisionedServer(updated.id);
+        const refreshed = await prisma.server.findUniqueOrThrow({
+          where: { id: updated.id },
+          include: serverListInclude,
+        });
+        return reply.status(201).send(toMcServer(refreshed));
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         logActivity({

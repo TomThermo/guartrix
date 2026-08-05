@@ -375,7 +375,9 @@ export function registerApplicationRoutes(app: FastifyInstance): void {
     }
 
     try {
-      const { provisionPreparedServer } = await import("../servers/server-provision.js");
+      const { provisionPreparedServer, autoStartProvisionedServer } = await import(
+        "../servers/server-provision.js",
+      );
       const { id, server: updated } = await provisionPreparedServer({
         name: data.name,
         type: data.type,
@@ -389,11 +391,18 @@ export function registerApplicationRoutes(app: FastifyInstance): void {
         cleanupOnFailure: false,
       });
 
+      await autoStartProvisionedServer(id);
+
+      const refreshed = await prisma.server.findUniqueOrThrow({
+        where: { id },
+        include: serverListInclude,
+      });
+
       logActivity({
         action: "server.create",
         actor: `app:${ctx.prefix}`,
         serverId: id,
-        serverName: updated.name,
+        serverName: refreshed.name,
         metadata: {
           ownerId: owner.id,
           owner: owner.username,
@@ -402,7 +411,7 @@ export function registerApplicationRoutes(app: FastifyInstance): void {
         },
       });
 
-      return reply.status(201).send({ server: toMcServer(updated) });
+      return reply.status(201).send({ server: toMcServer(refreshed) });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       const status = message.includes("already in use") ? 409 : 500;
