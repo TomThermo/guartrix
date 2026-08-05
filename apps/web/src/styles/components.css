@@ -311,6 +311,10 @@
   color: #3ecf6a;
 }
 
+.console-line-daemon-notice {
+  color: #a855f7;
+}
+
 .console-line-error {
   color: #ff6b6b;
   font-weight: 600;

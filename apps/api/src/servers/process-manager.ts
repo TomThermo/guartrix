@@ -232,11 +232,14 @@ class ProcessManagerProxy extends EventEmitter {
     });
     this.applyStatus(serverId, "STARTING", null);
     try {
-      const result = await daemonPower(
-        serverId,
-        "start",
-        await this.toConfig(server),
+      const { syncServerPortPermissionsBeforeStart } = await import(
+        "./allocations.js"
       );
+      const { notices } = await syncServerPortPermissionsBeforeStart(server);
+      const result = await daemonPower(serverId, "start", {
+        ...(await this.toConfig(server)),
+        ...(notices.length ? { startupNotices: notices } : {}),
+      });
       this.applyStatus(serverId, result.status ?? "RUNNING", null);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

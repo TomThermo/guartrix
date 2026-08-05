@@ -42,6 +42,7 @@ Changing allocations affects several layers:
 Important rules:
 
 - changing published ports needs a restart before Docker rebinds them
+- **Start** (and **Restart**) syncs host firewall rules to all assigned allocations before the container boots; if the port changed since the last run, the console shows purple `[Guartrix Daemon] NOTICE:` lines explaining the sync
 - the primary allocation must stay consistent with the server's main port
 - extra allocations can carry protocol information
 - some helper flows can attach a UDP companion on the same numeric port

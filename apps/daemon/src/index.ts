@@ -121,6 +121,7 @@ const daemonServerConfigSchema = z.object({
     )
     .max(64)
     .optional(),
+  startupNotices: z.array(z.string().min(1).max(500)).max(8).optional(),
 });
 
 const powerBodySchema = z.object({

@@ -289,6 +289,78 @@ export async function openServerAllocationFirewalls(
   }
 }
 
+function formatPortList(
+  ports: Array<{ port: number; protocol: AllocationProtocol }>,
+): string {
+  return ports.map((p) => `${p.port}/${p.protocol}`).join(", ");
+}
+
+/**
+ * Before start: align primary allocation + host firewall (UFW) with `Server.port`,
+ * then return optional console notices for the daemon to show in purple.
+ */
+export async function syncServerPortPermissionsBeforeStart(server: {
+  id: string;
+  nodeId: string | null;
+  port: number;
+  type: string;
+}): Promise<{ notices: string[] }> {
+  const notices: string[] = [];
+  if (!server.nodeId) return { notices };
+
+  const { primaryAllocationProtocol } = await import("@msm/shared");
+  const protocol = primaryAllocationProtocol(
+    server.type as import("@msm/shared").ServerType,
+  );
+
+  const primaryBefore = await prisma.allocation.findFirst({
+    where: { serverId: server.id, isPrimary: true },
+  });
+
+  const needsAllocationFix =
+    !primaryBefore ||
+    primaryBefore.port !== server.port ||
+    primaryBefore.protocol !== protocol;
+
+  await ensurePrimaryAllocation({
+    serverId: server.id,
+    nodeId: server.nodeId,
+    port: server.port,
+    protocol,
+  });
+
+  if (primaryBefore && primaryBefore.port !== server.port) {
+    await closeFirewallPort(
+      primaryBefore.port,
+      server.nodeId,
+      primaryBefore.protocol as AllocationProtocol,
+    ).catch(() => undefined);
+  } else if (
+    primaryBefore &&
+    primaryBefore.protocol !== protocol &&
+    primaryBefore.port === server.port
+  ) {
+    await closeFirewallPort(
+      primaryBefore.port,
+      server.nodeId,
+      primaryBefore.protocol as AllocationProtocol,
+    ).catch(() => undefined);
+  }
+
+  await openServerAllocationFirewalls(server.id, server.nodeId);
+
+  const ports = await listServerAllocationPorts(server.id);
+  const portList = formatPortList(ports);
+
+  if (needsAllocationFix) {
+    notices.push(
+      `Port settings were out of sync — updated the primary allocation to ${server.port}/${protocol} and adjusted the host firewall (${portList}) before starting.`,
+    );
+  }
+
+  return { notices };
+}
+
 export async function closeServerAllocationFirewalls(
   serverId: string,
   nodeId?: string | null,

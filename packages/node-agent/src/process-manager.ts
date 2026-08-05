@@ -73,6 +73,26 @@ import type {
 export type { DaemonPortPublish, DaemonServerConfig } from "./process-types.js";
 export { fixDataOwnership } from "./process-start.js";
 
+function formatPublishPorts(ports: DaemonPortPublish[]): string {
+  return ports.map((p) => `${p.port}/${p.protocol}`).join(", ");
+}
+
+function publishPortsEqual(
+  a: DaemonPortPublish[],
+  b: DaemonPortPublish[],
+): boolean {
+  if (a.length !== b.length) return false;
+  const key = (p: DaemonPortPublish) => `${p.port}/${p.protocol}`;
+  const setA = new Set(a.map(key));
+  return b.every((p) => setA.has(key(p)));
+}
+
+function resolvePublishPorts(server: DaemonServerConfig): DaemonPortPublish[] {
+  return server.ports && server.ports.length > 0
+    ? server.ports
+    : [{ port: server.port, protocol: "tcp" }];
+}
+
 const execFileAsync = promisify(execFile);
 
 const MAX_HISTORY = 500;
@@ -647,6 +667,7 @@ class ProcessManager extends EventEmitter {
       failStart(err instanceof Error ? err.message : String(err));
     }
 
+    const prevConfig = this.lastConfigs.get(serverId);
     this.lastConfigs.set(serverId, { ...server });
 
     const dir = serverDir(serverId);
@@ -684,10 +705,7 @@ class ProcessManager extends EventEmitter {
       failStart("Forge run.sh not found — recreate the server");
     }
 
-    const publishPorts: DaemonPortPublish[] =
-      server.ports && server.ports.length > 0
-        ? server.ports
-        : [{ port: server.port, protocol: "tcp" }];
+    const publishPorts: DaemonPortPublish[] = resolvePublishPorts(server);
     for (const p of publishPorts) {
       const portFree = await this.isPortFree(p.port, p.protocol);
       if (!portFree) {
@@ -698,6 +716,24 @@ class ProcessManager extends EventEmitter {
       "-p",
       `${p.port}:${p.port}/${p.protocol}`,
     ]);
+
+    const prev = prevConfig;
+    if (prev) {
+      const prevPorts = resolvePublishPorts(prev);
+      if (!publishPortsEqual(prevPorts, publishPorts)) {
+        this.daemonSay(
+          serverId,
+          `NOTICE: Your server port was changed while the server was stopped. Host firewall rules were verified and Docker is being rebuilt with the new port binding(s) before startup.`,
+        );
+        this.daemonSay(
+          serverId,
+          `NOTICE: Port(s) now: ${formatPublishPorts(publishPorts)} (previously: ${formatPublishPorts(prevPorts)}).`,
+        );
+      }
+    }
+    for (const notice of server.startupNotices ?? []) {
+      this.daemonSay(serverId, `NOTICE: ${notice}`);
+    }
 
     const name = containerName(serverId);
 

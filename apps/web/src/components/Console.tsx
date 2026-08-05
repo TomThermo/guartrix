@@ -24,7 +24,7 @@ function isPlayersListLine(line: string): boolean {
   return /There are \d+ of a max of \d+ players online:/i.test(line);
 }
 
-type DaemonTone = "info" | "progress" | "ok" | "error";
+type DaemonTone = "info" | "progress" | "ok" | "error" | "notice";
 
 /** Optional Minecraft-style `[HH:MM:SS]` prefix from the daemon. */
 const CONSOLE_CLOCK = /^\[\d{1,2}:\d{2}:\d{2}\]\s*/;
@@ -46,6 +46,7 @@ function daemonConsoleTone(line: string): DaemonTone | null {
   if (!/^\[Guartrix Daemon\]/i.test(body)) return null;
 
   const msg = body.replace(/^\[Guartrix Daemon\]\s*/i, "");
+  if (/^NOTICE:/i.test(msg)) return "notice";
   if (/^ERROR:/i.test(msg)) return "error";
   if (
     /^Completed rebuild process/i.test(msg) ||
@@ -257,11 +258,13 @@ export function Console({
               ? "console-line-daemon-ok"
               : tone === "progress"
                 ? "console-line-daemon-progress"
-                : tone === "error"
-                  ? "console-line-error"
-                  : tone === "info"
-                    ? "console-line-daemon"
-                    : undefined;
+                : tone === "notice"
+                  ? "console-line-daemon-notice"
+                  : tone === "error"
+                    ? "console-line-error"
+                    : tone === "info"
+                      ? "console-line-daemon"
+                      : undefined;
           return (
             <div key={`${i}-${line.slice(0, 24)}`} className={className}>
               {line}

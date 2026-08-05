@@ -25,6 +25,8 @@ export interface DaemonServerConfig {
   cpuLimit?: number;
   /** All host ports to publish (primary + extras). Defaults to primary TCP. */
   ports?: DaemonPortPublish[];
+  /** Purple console notices emitted before container rebuild (port/firewall sync). */
+  startupNotices?: string[];
   /** Extra host→container binds (shared plugins/worlds). */
   extraMounts?: Array<{
     host: string;
