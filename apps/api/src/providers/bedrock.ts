@@ -60,8 +60,10 @@ async function downloadFile(url: string, dest: string): Promise<void> {
 }
 
 async function extractZip(zipPath: string, destDir: string): Promise<void> {
-  await execFileAsync("unzip", ["-o", zipPath, "-d", destDir], {
+  // BDS zips list every extracted file; default 1MB maxBuffer overflows without -q.
+  await execFileAsync("unzip", ["-o", "-q", zipPath, "-d", destDir], {
     timeout: 300_000,
+    maxBuffer: 4 * 1024 * 1024,
   });
 }
 

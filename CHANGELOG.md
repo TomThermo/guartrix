@@ -7,6 +7,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.97] — 2026-08-05
+
+- Fix Bedrock server provision: quiet unzip so BDS extract does not exceed exec maxBuffer
+
 ## [1.0.96] — 2026-08-05
 
 - Fix ENOENT on server create: stage default-server-icon.png in release tree and resolve icon path in bundled API/daemon
