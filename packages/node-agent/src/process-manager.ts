@@ -7,6 +7,7 @@ import type { ServerStatus } from "@msm/shared";
 import {
   assertSafeStartupCommandForType,
   BEDROCK_BINARY,
+  consoleLineIndicatesReady,
   containerEnvForRuntime,
   defaultServerExecutable,
   dockerImageForServerType,
@@ -265,7 +266,8 @@ class ProcessManager extends EventEmitter {
     // Strip ANSI / log prefixes loosely and match join/leave
     const join =
       line.match(/\b([A-Za-z0-9_]{3,16}) joined the game\b/) ??
-      line.match(/\b([A-Za-z0-9_]{3,16}) logged in with entity id\b/);
+      line.match(/\b([A-Za-z0-9_]{3,16}) logged in with entity id\b/) ??
+      line.match(/Player connected:\s*([A-Za-z0-9_]{3,16})/i);
     if (join?.[1]) {
       managed.onlinePlayers.add(join[1]);
       void recordPlayerJoin(serverId, join[1]);
@@ -276,7 +278,8 @@ class ProcessManager extends EventEmitter {
     const leave =
       line.match(/\b([A-Za-z0-9_]{3,16}) left the game\b/) ??
       line.match(/\b([A-Za-z0-9_]{3,16}) lost connection:/) ??
-      line.match(/\b([A-Za-z0-9_]{3,16}) was kicked\b/);
+      line.match(/\b([A-Za-z0-9_]{3,16}) was kicked\b/) ??
+      line.match(/Player disconnected:\s*([A-Za-z0-9_]{3,16})/i);
     if (leave?.[1]) {
       managed.onlinePlayers.delete(leave[1]);
       void recordPlayerLeave(serverId, leave[1]);
@@ -387,17 +390,24 @@ class ProcessManager extends EventEmitter {
       serverId,
       `Resuming log starting from: ${this.formatDaemonStamp()}`,
     );
-    try {
-      const { stdout, stderr } = await docker(
-        ["run", "--rm", config.dockerImage, "java", "-version"],
-        { timeout: 20_000 },
-      );
-      const text = `${stderr || ""}${stdout || ""}`;
-      for (const line of text.split(/\r?\n/)) {
-        if (line.trim()) this.pushConsoleLine(serverId, line.trim());
+    const serverType = this.lastConfigs.get(serverId)?.type;
+    if (runtimeKindFor(serverType ?? "VANILLA") === "java") {
+      try {
+        const image = dockerImageForServerType(
+          serverType ?? "VANILLA",
+          this.lastConfigs.get(serverId)?.javaVersion,
+        );
+        const { stdout, stderr } = await docker(
+          ["run", "--rm", image, "java", "-version"],
+          { timeout: 20_000 },
+        );
+        const text = `${stderr || ""}${stdout || ""}`;
+        for (const line of text.split(/\r?\n/)) {
+          if (line.trim()) this.pushConsoleLine(serverId, line.trim());
+        }
+      } catch {
+        // java -version is best-effort
       }
-    } catch {
-      // java -version is best-effort
     }
     this.pushConsoleLine(
       serverId,
@@ -424,16 +434,14 @@ class ProcessManager extends EventEmitter {
 
     const waitForDone = opts?.waitForDone === true;
     let sawDone = !waitForDone;
+    const serverType = this.lastConfigs.get(serverId)?.type;
 
     const handleChunk = (stream: "stdout" | "stderr") => (data: Buffer) => {
       const text = data.toString("utf8");
       for (const line of text.split(/\r?\n/)) {
         if (line === "") continue;
         this.appendHistory(serverId, line);
-        if (
-          !sawDone &&
-          /Done\s*\([\d.]+s\)!/i.test(line)
-        ) {
+        if (!sawDone && consoleLineIndicatesReady(line, serverType)) {
           sawDone = true;
           this.daemonSay(serverId, "Server marked as RUNNING");
           this.setStatus(serverId, "RUNNING");
@@ -818,8 +826,18 @@ class ProcessManager extends EventEmitter {
       await this.attachToContainer(serverId, name, { waitForDone: true });
     }
 
-    // Stay STARTING until the JVM prints Done — avoid flooding commands into
-    // stdin before the command dispatcher is ready (causes "unexpected error").
+    // If boot log never matched (Bedrock / odd runtimes), promote when container stays up.
+    setTimeout(() => {
+      if (this.getStatus(serverId) !== "STARTING") return;
+      void isContainerRunning(serverId).then((still) => {
+        if (!still) return;
+        this.daemonSay(
+          serverId,
+          "Server marked as RUNNING (container up; no boot line matched)",
+        );
+        this.setStatus(serverId, "RUNNING");
+      });
+    }, 45_000);
   }
 
   private async maybeAutoRestart(serverId: string, reason: string): Promise<void> {

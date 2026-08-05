@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import type { Node, Server, User } from "@prisma/client";
 import type { McServer, PlayersResponse, ServerDetail, ServerProperties, ServerType } from "@msm/shared";
-import { defaultServerExecutable, normalizeJavaVersion } from "@msm/shared";
+import { defaultServerExecutable, isBdsServerType, normalizeJavaVersion } from "@msm/shared";
 import { serverDir } from "../config.js";
 import { coerceExtraMounts } from "./extra-mounts.js";
 import { hasServerIcon } from "./server-icon.js";
@@ -12,12 +12,14 @@ type ServerWithRelations = Server & {
   node?: Pick<Node, "id" | "name"> | null;
 };
 
-function readWhitelistEnabled(serverId: string): boolean {
+function readWhitelistEnabled(serverId: string, type?: ServerType): boolean {
   try {
     const raw = readFileSync(path.join(serverDir(serverId), "server.properties"), "utf8");
-    const line = raw.split(/\r?\n/).find((l) => l.startsWith("white-list="));
+    const key =
+      type && isBdsServerType(type) ? "allow-list=" : "white-list=";
+    const line = raw.split(/\r?\n/).find((l) => l.startsWith(key));
     if (!line) return false;
-    return line.slice("white-list=".length).trim() === "true";
+    return line.slice(key.length).trim() === "true";
   } catch {
     return false;
   }
@@ -49,7 +51,7 @@ export function toMcServer(server: ServerWithRelations): McServer {
     paperBuild: server.paperBuild,
     errorMessage: server.errorMessage,
     hasIcon: hasServerIcon(server.id),
-    whitelistEnabled: readWhitelistEnabled(server.id),
+    whitelistEnabled: readWhitelistEnabled(server.id, server.type as ServerType),
     autoRestart: server.autoRestart,
     startOnBoot: server.startOnBoot,
     stoppedByUser: server.stoppedByUser,

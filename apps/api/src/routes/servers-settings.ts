@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import type { ServerType } from "@msm/shared";
-import { hasPermission } from "@msm/shared";
+import { hasPermission, isBdsServerType } from "@msm/shared";
 import { requireServerAccess } from "../auth/auth.js";
 import { logActivity } from "../activity-log.js";
 import { config } from "../config.js";
@@ -672,8 +672,18 @@ export function registerServerSettingsRoutes(app: FastifyInstance): void {
       processManager.isRunning(updated.id)
     ) {
       const on = data.properties["white-list"] === "true";
+      const isBds = isBdsServerType(updated.type as ServerType);
       try {
-        processManager.sendCommand(updated.id, on ? "whitelist on" : "whitelist off");
+        processManager.sendCommand(
+          updated.id,
+          on
+            ? isBds
+              ? "allowlist on"
+              : "whitelist on"
+            : isBds
+              ? "allowlist off"
+              : "whitelist off",
+        );
       } catch {
         // ignore
       }

@@ -7,6 +7,7 @@ import { spawn } from "node:child_process";
 import type { ServerType } from "@msm/shared";
 import { config } from "../config.js";
 import { readDefaultServerIcon } from "../servers/default-icon.js";
+import { isBdsServerType } from "@msm/shared";
 
 const USER_AGENT = "Guartrix/1.0 (MinecraftServerManager; contact@localhost)";
 
@@ -484,24 +485,45 @@ export async function prepareServerFiles(
     readDefaultServerIcon(),
   );
 
-  const defaultProperties = [
-    `server-port=${port}`,
-    "motd=A Minecraft Server",
-    "max-players=20",
-    "difficulty=easy",
-    "gamemode=survival",
-    "online-mode=true",
-    "pvp=true",
-    "view-distance=10",
-    "spawn-protection=16",
-    "level-name=world",
-    "",
-  ].join("\n");
+  const isBds = isBdsServerType(type);
+  const defaultProperties = isBds
+    ? [
+        `server-port=${port}`,
+        "motd=A Minecraft Server",
+        "max-players=20",
+        "difficulty=easy",
+        "gamemode=survival",
+        "online-mode=true",
+        "allow-list=false",
+        "level-name=world",
+        "",
+      ].join("\n")
+    : [
+        `server-port=${port}`,
+        "motd=A Minecraft Server",
+        "max-players=20",
+        "difficulty=easy",
+        "gamemode=survival",
+        "online-mode=true",
+        "pvp=true",
+        "view-distance=10",
+        "spawn-protection=16",
+        "level-name=world",
+        "white-list=false",
+        "",
+      ].join("\n");
   await fs.writeFile(
     path.join(destDir, "server.properties"),
     defaultProperties,
     "utf8",
   );
+  if (isBds) {
+    await fs.writeFile(
+      path.join(destDir, "allowlist.json"),
+      `${JSON.stringify({ allowlist: [] }, null, 2)}\n`,
+      "utf8",
+    );
+  }
 
   switch (type) {
     case "VANILLA":

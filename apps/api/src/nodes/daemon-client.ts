@@ -125,6 +125,8 @@ function baseUrl(node: { scheme: string; fqdn: string; daemonPort: number }): st
 const DAEMON_DEFAULT_TIMEOUT_MS = 5_000;
 /** Transfer / backup / deploy streams can take a long time. */
 const DAEMON_LONG_TIMEOUT_MS = 30 * 60 * 1000;
+/** Start/restart may pull images and wait for game boot. */
+const DAEMON_POWER_TIMEOUT_MS = 180_000;
 
 async function daemonFetch(
   node: NodeRow & { token: string },
@@ -165,7 +167,7 @@ export function daemonWsAuthorization(nodeId: string, secret: string): string {
 async function daemonJson<T>(
   node: NodeRow & { token: string },
   path: string,
-  init?: RequestInit,
+  init?: RequestInit & { timeoutMs?: number },
 ): Promise<T> {
   const res = await daemonFetch(node, path, init);
   const text = await res.text();
@@ -307,12 +309,17 @@ export async function daemonPower(
   server?: DaemonServerConfig,
 ) {
   const { node } = await resolveNodeForServer(serverId);
+  const timeoutMs =
+    action === "start" || action === "restart"
+      ? DAEMON_POWER_TIMEOUT_MS
+      : DAEMON_DEFAULT_TIMEOUT_MS;
   return daemonJson<{ ok: boolean; status?: ServerStatus }>(
     node,
     `/servers/${serverId}/power`,
     {
       method: "POST",
       body: JSON.stringify({ action, server }),
+      timeoutMs,
     },
   );
 }

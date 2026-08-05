@@ -7,6 +7,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.98] — 2026-08-05
+
+- Bedrock start: longer daemon power timeout (image pull + boot)
+- RUNNING detection for BDS ("Server started") and boot fallback timer
+- Default port 19132 for Bedrock types; BDS allowlist.json + allow-list properties
+- Whitelist UI maps to BDS allowlist; join/leave log parsing for Bedrock players
+
 ## [1.0.97] — 2026-08-05
 
 - Fix Bedrock server provision: quiet unzip so BDS extract does not exceed exec maxBuffer

@@ -5,8 +5,11 @@ import type {
   OpEntry,
   PlayerEntry,
   PlayersResponse,
+  ServerType,
 } from "@msm/shared";
+import { isBdsServerType } from "@msm/shared";
 import { daemonReadFile, daemonWriteFile } from "../nodes/daemon-client.js";
+import { prisma } from "../db.js";
 import { processManager } from "./process-manager.js";
 
 interface MojangProfile {
@@ -42,6 +45,46 @@ async function writeJsonArray(
   data: unknown[],
 ): Promise<void> {
   await daemonWriteFile(serverId, rel, JSON.stringify(data, null, 2) + "\n");
+}
+
+async function serverTypeFor(serverId: string): Promise<ServerType> {
+  const row = await prisma.server.findUnique({
+    where: { id: serverId },
+    select: { type: true },
+  });
+  return (row?.type ?? "VANILLA") as ServerType;
+}
+
+interface BdsAllowlistFile {
+  allowlist?: { name: string; ignoresPlayerLimit?: boolean }[];
+}
+
+async function readBdsAllowlistNames(serverId: string): Promise<string[]> {
+  try {
+    const res = (await daemonReadFile(serverId, "allowlist.json")) as {
+      content?: string;
+    };
+    const data = JSON.parse(res.content ?? "{}") as BdsAllowlistFile;
+    return (data.allowlist ?? [])
+      .map((e) => e.name?.trim())
+      .filter((n): n is string => Boolean(n));
+  } catch {
+    return [];
+  }
+}
+
+async function writeBdsAllowlist(serverId: string, names: string[]): Promise<void> {
+  const body: BdsAllowlistFile = {
+    allowlist: names.map((name) => ({
+      name,
+      ignoresPlayerLimit: false,
+    })),
+  };
+  await daemonWriteFile(
+    serverId,
+    "allowlist.json",
+    `${JSON.stringify(body, null, 2)}\n`,
+  );
 }
 
 export async function resolvePlayer(name: string): Promise<PlayerEntry> {
@@ -128,10 +171,18 @@ export async function readBans(serverId: string): Promise<BansResponse> {
 }
 
 export async function readPlayers(serverId: string): Promise<PlayersResponse> {
-  const whitelistRaw = await readJsonArray<{ name?: string; uuid?: string }>(
-    serverId,
-    "whitelist.json",
-  );
+  const serverType = await serverTypeFor(serverId);
+
+  let whitelistRaw: { name?: string; uuid?: string }[] = [];
+  if (isBdsServerType(serverType)) {
+    const names = await readBdsAllowlistNames(serverId);
+    whitelistRaw = names.map((name) => ({ name, uuid: "" }));
+  } else {
+    whitelistRaw = await readJsonArray<{ name?: string; uuid?: string }>(
+      serverId,
+      "whitelist.json",
+    );
+  }
   const opsRaw = await readJsonArray<{
     name?: string;
     uuid?: string;
@@ -142,8 +193,11 @@ export async function readPlayers(serverId: string): Promise<PlayersResponse> {
 
   return {
     whitelist: whitelistRaw
-      .filter((e) => e.name && e.uuid)
-      .map((e) => ({ name: e.name!, uuid: e.uuid! })),
+      .filter((e) => e.name)
+      .map((e) => ({
+        name: e.name!,
+        uuid: e.uuid?.trim() ? e.uuid! : "bedrock",
+      })),
     ops: opsRaw
       .filter((e) => e.name && e.uuid)
       .map((e) => ({
@@ -347,7 +401,20 @@ export async function addWhitelist(
   _dir: string,
   name: string,
 ): Promise<PlayersResponse> {
+  const serverType = await serverTypeFor(serverId);
   const player = await resolvePlayer(name);
+
+  if (isBdsServerType(serverType)) {
+    const names = await readBdsAllowlistNames(serverId);
+    if (names.some((n) => n.toLowerCase() === player.name.toLowerCase())) {
+      throw new Error(`${player.name} is already on the whitelist`);
+    }
+    names.push(player.name);
+    await writeBdsAllowlist(serverId, names);
+    runLive(serverId, `allowlist add ${player.name}`);
+    return readPlayers(serverId);
+  }
+
   const list = await readJsonArray<{ name: string; uuid: string }>(
     serverId,
     "whitelist.json",
@@ -366,6 +433,19 @@ export async function removeWhitelist(
   _dir: string,
   name: string,
 ): Promise<PlayersResponse> {
+  const serverType = await serverTypeFor(serverId);
+
+  if (isBdsServerType(serverType)) {
+    const names = await readBdsAllowlistNames(serverId);
+    const next = names.filter((n) => n.toLowerCase() !== name.toLowerCase());
+    if (next.length === names.length) {
+      throw new Error(`${name} is not on the whitelist`);
+    }
+    await writeBdsAllowlist(serverId, next);
+    runLive(serverId, `allowlist remove ${name}`);
+    return readPlayers(serverId);
+  }
+
   const list = await readJsonArray<{ name: string; uuid: string }>(
     serverId,
     "whitelist.json",

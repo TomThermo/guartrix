@@ -55,6 +55,34 @@ export function primaryAllocationProtocol(type: ServerType): "tcp" | "udp" {
   return isBedrockProtocolServer(type) ? "udp" : "tcp";
 }
 
+/** Default game port (Java TCP / Bedrock UDP). */
+export const DEFAULT_JAVA_PORT = 25565;
+export const DEFAULT_BEDROCK_PORT = 19132;
+
+export function defaultGamePortForType(type: ServerType): number {
+  return isBedrockProtocolServer(type) ? DEFAULT_BEDROCK_PORT : DEFAULT_JAVA_PORT;
+}
+
+/** Mojang BDS uses allow-list + allowlist.json (not Java white-list). */
+export function isBdsServerType(type: ServerType): boolean {
+  return type === "BEDROCK" || type === "BEDROCK_PREVIEW";
+}
+
+/** server.properties key for the whitelist toggle in the panel UI. */
+export function whitelistPropertyKey(type: ServerType): "white-list" | "allow-list" {
+  return isBdsServerType(type) ? "allow-list" : "white-list";
+}
+
+/** Console log line that means the game loop is accepting players. */
+export function consoleLineIndicatesReady(line: string, type?: ServerType): boolean {
+  if (/Done\s*\([\d.]+s\)!/i.test(line)) return true;
+  if (type && isBdsServerType(type)) {
+    if (/Server started\.?$/i.test(line.trim())) return true;
+    if (/Dedicated Server.*running/i.test(line)) return true;
+  }
+  return false;
+}
+
 export const BEDROCK_DOCKER_IMAGE = "ubuntu:22.04";
 export const POCKETMINE_DOCKER_IMAGE = "pmmp/pocketmine-mp:latest";
 

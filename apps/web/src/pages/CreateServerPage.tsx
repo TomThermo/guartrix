@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import {
   BEDROCK_SERVER_TYPES,
+  defaultGamePortForType,
   JAVA_SERVER_TYPES,
   canCreateServer,
   type DaemonNode,
@@ -130,6 +131,10 @@ export function CreateServerPage() {
     return () => {
       cancelled = true;
     };
+  }, [type]);
+
+  useEffect(() => {
+    setPort(defaultGamePortForType(type));
   }, [type]);
 
   const selectedFreeMb =
