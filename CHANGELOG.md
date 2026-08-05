@@ -7,6 +7,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.111] — 2026-08-05
+
+- Console pop-out window fits viewport without page scroll
+
 ## [1.0.110] — 2026-08-05
 
 - Console: open live console in a dedicated browser window (pop-out button on Console tab)
