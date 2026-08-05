@@ -1,3 +1,4 @@
+import { useEffect, useRef, type KeyboardEvent } from "react";
 import { Button, Form, Stack } from "react-bootstrap";
 import { useI18n } from "../../i18n/react";
 
@@ -25,12 +26,35 @@ export function FileEditorPane({
   onAskDiscard,
 }: Props) {
   const { t } = useI18n();
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    textareaRef.current?.focus();
+  }, [path]);
+
+  function onKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+      e.preventDefault();
+      if (canUpdate && dirty && !busy) onSave();
+      return;
+    }
+    if (e.key !== "Tab" || e.altKey || e.ctrlKey || e.metaKey) return;
+    e.preventDefault();
+    const el = e.currentTarget;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const next = `${content.slice(0, start)}\t${content.slice(end)}`;
+    onChange(next);
+    requestAnimationFrame(() => {
+      el.selectionStart = el.selectionEnd = start + 1;
+    });
+  }
 
   return (
-    <div className="border rounded surface p-3 h-100">
-      <div className="d-flex justify-content-between align-items-center gap-2 mb-2 flex-wrap">
-        <strong className="font-monospace small text-break">{path}</strong>
-        <Stack direction="horizontal" gap={2}>
+    <div className="file-editor-pane border rounded surface">
+      <div className="file-editor-toolbar d-flex justify-content-between align-items-center gap-2 flex-wrap">
+        <strong className="font-monospace small text-break mb-0">{path}</strong>
+        <Stack direction="horizontal" gap={2} className="flex-shrink-0">
           {dirty && (
             <span className="badge text-bg-warning">{t("files.unsaved")}</span>
           )}
@@ -54,6 +78,7 @@ export function FileEditorPane({
               variant="primary"
               disabled={busy || !dirty}
               onClick={() => void onSave()}
+              title="Ctrl/⌘+S"
             >
               {t("files.save")}
             </Button>
@@ -61,11 +86,14 @@ export function FileEditorPane({
         </Stack>
       </div>
       <Form.Control
+        ref={textareaRef}
         as="textarea"
         className="file-editor-textarea"
         value={content}
         spellCheck={false}
         readOnly={!canUpdate}
+        wrap="off"
+        onKeyDown={onKeyDown}
         onChange={(e) => {
           if (!canUpdate) return;
           onChange(e.target.value);

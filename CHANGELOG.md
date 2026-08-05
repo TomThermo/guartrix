@@ -7,6 +7,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.115] — 2026-08-05
+
+- Full-width file editor with viewport-sized textarea; patch server.properties in place
+
 ## [1.0.114] — 2026-08-05
 
 - Start syncs `server.properties` server-port to the panel port before boot (purple NOTICE)

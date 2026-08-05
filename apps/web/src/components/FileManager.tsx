@@ -448,32 +448,34 @@ export function FileManager({
       />
 
       <Row className="g-3">
-        <Col lg={editing ? 6 : 12}>
-          <FileBrowserTable
-            cwd={cwd}
-            entries={entries}
-            loading={loading}
-            busy={busy}
-            editingPath={editing?.path ?? null}
-            selected={selected}
-            allSelected={allSelected}
-            canDownload={canDownload}
-            canArchive={canArchive}
-            canUpdate={canUpdate}
-            canDelete={canDelete}
-            onGoTo={goTo}
-            onOpenEntry={openEntry}
-            onToggleSelect={toggleSelect}
-            onToggleSelectAll={toggleSelectAll}
-            onDownload={onDownload}
-            onDecompress={onDecompress}
-            onRename={onRename}
-            onDelete={onDelete}
-          />
-        </Col>
+        {!editing && (
+          <Col xs={12}>
+            <FileBrowserTable
+              cwd={cwd}
+              entries={entries}
+              loading={loading}
+              busy={busy}
+              editingPath={null}
+              selected={selected}
+              allSelected={allSelected}
+              canDownload={canDownload}
+              canArchive={canArchive}
+              canUpdate={canUpdate}
+              canDelete={canDelete}
+              onGoTo={goTo}
+              onOpenEntry={openEntry}
+              onToggleSelect={toggleSelect}
+              onToggleSelectAll={toggleSelectAll}
+              onDownload={onDownload}
+              onDecompress={onDecompress}
+              onRename={onRename}
+              onDelete={onDelete}
+            />
+          </Col>
+        )}
 
         {editing && (
-          <Col lg={6}>
+          <Col xs={12}>
             <FileEditorPane
               path={editing.path}
               content={editing.content}
