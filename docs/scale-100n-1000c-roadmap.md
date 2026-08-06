@@ -1,13 +1,15 @@
 # Scale roadmap — 100 nodes / 1000 customers
 
-**Status:** yellow → target green on one strong panel  
-**Product:** Guartrix 1.0.168+  
+**Status:** **green** on one strong panel (software control-plane ready as of **1.1.0**)  
+**Product:** Guartrix 1.1.0+  
 **Assumption:** ~100 daemons, ~1000 accounts, ~1k–5k game servers  
 
-Nodes already scale. This roadmap fixes the **control-plane**.
+Nodes already scale. This roadmap fixed the **control-plane**. Remaining risk is **your** hardware, MySQL, and network — not missing panel O(N) jobs.
 
 Interactive Cursor canvas (IDE): `.cursor/canvases/scale-100n-1000c-roadmap.canvas.tsx`  
 Open via **Command Palette → Open Canvas** (Cursor 3.1+), or open that file in the tree.
+
+Upgrade notes: [wiki/upgrade-to-1.1.md](wiki/upgrade-to-1.1.md) · Smoke: `bash scripts/scale-smoke.sh`
 
 ---
 
@@ -46,25 +48,26 @@ Open via **Command Palette → Open Canvas** (Cursor 3.1+), or open that file in
 
 ## Ops / DB (parallel)
 
-| # | Item | Wat |
-|---|------|-----|
-| 13 | MySQL indexes + activity retention | `Server(ownerId/nodeId)`, schedules, `PRISMA_SLOW_MS` |
-| 14 | Redis sessions (optioneel HA) | Lost O(N)-jobs **niet** op; wel multi-API sessions |
-| 15 | Panel-host sizing + netwerk | Alle nodes `:8081` bereikbaar |
-| 16 | Rate limits vs UI-polls | List-endpoints mogen 600/min niet opeten |
+| # | Item | Status | Wat |
+|---|------|--------|-----|
+| 13 | MySQL indexes + activity retention | **done (1.1.0)** | `Server(createdAt)`, `(ownerId,createdAt)`; retention via `ACTIVITY_LOG_RETENTION_DAYS` + hourly prune; `PRISMA_SLOW_MS` |
+| 14 | Redis sessions (optioneel HA) | **documented** | Not required for single-API 100n; required for multi-API |
+| 15 | Panel-host sizing + netwerk | **documented** | Strong panel + all nodes `:8081` reachable — see upgrade + scaling wiki |
+| 16 | Rate limits vs UI-polls | **done (1.1.0)** | Separate `API_SESSION_READ_RATE_LIMIT` for dashboard GETs |
 
-## Bewust skip
+## Bewust skip / later
 
 - 100 aparte panels  
 - Redis Cluster/Sentinel als eerste stap  
 - Egg-marketplace / Ptero 1:1  
+- Peer MySQL dump on transfer (worlds already peer; SQL still panel temp)
 
 ---
 
 ## Definition of done
 
 **Must:** batch scheduler/backups, disk-watch niet O(all), gepagineerde lists, gecachte Admin Status.  
-**Should:** stats niet in API-heap (**done**), transfers zonder panel-temp (**done**, fallback blijft), backup busy cross-replica (**done**), bridges niet N×R (**done** — single primary + Redis fan-out + backoff).  
-**Ops:** indexed MySQL, Redis alleen bij multi-API.
+**Should:** stats niet in API-heap, transfers zonder panel-temp (fallback), backup busy, bridges niet N×R, list indexes, read-poll rate budget.  
+**Ops:** retention + sizing docs + `scale-smoke.sh`.
 
-Zie ook: [Scaling](wiki/scaling.md).
+Zie ook: [Scaling](wiki/scaling.md) · [Upgrade 1.1](wiki/upgrade-to-1.1.md).

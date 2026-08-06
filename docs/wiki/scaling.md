@@ -62,6 +62,20 @@ Without Redis, behaviour stays single-API (file sessions / file rate limits).
 
 Still valid for sessions only: mount the same `data/sessions` (POSIX rename semantics). Object storage (S3) is **not** enough. Transfers, rate limits, locks, and live consoles still need Redis (or you accept single-API limits).
 
+## Panel sizing (100 nodes / ~1000 servers)
+
+Software control-plane work for this scale shipped in **1.1.0**. Still required:
+
+| Layer | Guidance |
+|-------|----------|
+| Panel host | Strong CPU/RAM/SSD; one API process is enough unless you need HA |
+| MySQL | Dedicated or well-sized instance; enable `PRISMA_SLOW_MS=200` while tuning |
+| Nodes | Each daemon reachable from the panel (daemon port / firewall) |
+| Redis | **Optional** for a single panel API; **required** for multiple API replicas |
+| Smoke | `bash scripts/scale-smoke.sh` after upgrade |
+
+See [Upgrade to 1.1](upgrade-to-1.1.md).
+
 ## Do you need Redis?
 
 **Not for multi-node Minecraft.** Add nodes via System → Add node.

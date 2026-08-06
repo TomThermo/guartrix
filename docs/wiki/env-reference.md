@@ -72,7 +72,8 @@ Installer: `--mysql-docker` (default) or `--mysql-external` / `--database-url`.
 | `TWO_FACTOR_REQUIRED_ROLES` | Comma-separated roles that must enable TOTP (e.g. `ADMIN`). Empty = optional |
 | `API_KEY_RATE_LIMIT` | Max Client API requests per minute per key (default **120**) |
 | `APPLICATION_API_RATE_LIMIT` | Max Application API (`gta_`) requests per minute per key (default **120**) |
-| `API_SESSION_RATE_LIMIT` | Max authenticated session (cookie) `/api` requests per minute **per userId** (default **600**; falls back to client IP only if the session has no `userId`) |
+| `API_SESSION_RATE_LIMIT` | Max authenticated session (cookie) `/api` requests per minute **per userId** for non-poll traffic (default **600**; falls back to client IP only if the session has no `userId`) |
+| `API_SESSION_READ_RATE_LIMIT` | Separate budget for dashboard poll GETs (`/api/servers`, `/stats`, `/online`, …) per userId (default **max(1800, 3× API_SESSION_RATE_LIMIT)**) so UI polls do not starve creates/power |
 | `RATE_LIMIT_STORE` | `file` (default) under `data/rate-limits/`; `memory` in-process; `redis` shared (needs `REDIS_URL`) |
 | `SESSION_STORE` | `file` (default, `data/sessions`) or `redis` (needs `REDIS_URL` + optional `ioredis`) |
 | `REDIS_URL` | Redis URL for multi-API HA (sessions, rate limits, transfers, scheduler lock, backup busy lock, event bus) |

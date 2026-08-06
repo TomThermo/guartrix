@@ -149,7 +149,7 @@ API ──HTTP + WebSocket──► Daemon(s) (:8081) ──► Docker · SFTP (
 | `packages/node-agent` | Docker, files, SFTP, metrics, MySQL helper |
 | `packages/shared` | Shared types, permissions, license verification |
 
-Further reading: [Architecture](docs/wiki/architecture.md) · [Scaling](docs/wiki/scaling.md) · [Licensing](docs/wiki/licensing.md)
+Further reading: [Architecture](docs/wiki/architecture.md) · [Scaling](docs/wiki/scaling.md) · [Upgrade to 1.1](docs/wiki/upgrade-to-1.1.md) · [Licensing](docs/wiki/licensing.md)
 
 ---
 

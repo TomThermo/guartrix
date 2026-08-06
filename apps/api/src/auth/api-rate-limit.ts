@@ -3,6 +3,11 @@ import { getRateLimitStore } from "../rate-limit-store.js";
 
 const WINDOW_MS = 60_000;
 const MAX = Number(process.env.API_SESSION_RATE_LIMIT ?? 600);
+/** Higher budget for dashboard/list poll GETs so they do not starve mutations. */
+const READ_MAX = Number(
+  process.env.API_SESSION_READ_RATE_LIMIT ??
+    (Number.isFinite(MAX) && MAX > 0 ? Math.max(MAX * 3, 1800) : 1800),
+);
 
 /** Paths / auth modes that skip the cookie-session rate limit. */
 export function isApiSessionRateLimitExempt(request: FastifyRequest): boolean {
@@ -18,6 +23,29 @@ export function isApiSessionRateLimitExempt(request: FastifyRequest): boolean {
   return false;
 }
 
+/**
+ * High-churn UI poll GETs (dashboard / console charts).
+ * Counted under API_SESSION_READ_RATE_LIMIT so they do not eat the mutation budget.
+ */
+export function isApiSessionReadPoll(request: FastifyRequest): boolean {
+  const method = (request.method ?? "GET").toUpperCase();
+  if (method !== "GET") return false;
+  const path = request.url.split("?")[0] ?? "";
+  if (
+    path === "/api/servers" ||
+    path === "/api/servers/stats" ||
+    path === "/api/servers/online" ||
+    path === "/api/servers/updates" ||
+    path === "/api/servers/addon-updates"
+  ) {
+    return true;
+  }
+  // /api/servers/:id/stats and .../stats/history
+  if (/^\/api\/servers\/[^/]+\/stats(\/history)?$/.test(path)) return true;
+  if (/^\/api\/servers\/[^/]+\/online$/.test(path)) return true;
+  return false;
+}
+
 function isExempt(request: FastifyRequest): boolean {
   return isApiSessionRateLimitExempt(request);
 }
@@ -30,24 +58,39 @@ function isExempt(request: FastifyRequest): boolean {
 export function sessionRateLimitKey(
   session: { authenticated?: boolean; userId?: string },
   ip: string,
+  kind: "all" | "read" = "all",
 ): string | null {
   if (!session?.authenticated) return null;
   const userId = session.userId?.trim();
-  if (userId) return `api-session:user:${userId}`;
-  return `api-session:ip:${ip || "unknown"}`;
+  const prefix = kind === "read" ? "api-session-read" : "api-session";
+  if (userId) return `${prefix}:user:${userId}`;
+  return `${prefix}:ip:${ip || "unknown"}`;
 }
 
 /** Soft cap on authenticated cookie-session API traffic per user. */
 export function registerApiSessionRateLimit(app: FastifyInstance): void {
   app.addHook("preHandler", async (request, reply) => {
     if (isExempt(request)) return;
-    if (!Number.isFinite(MAX) || MAX <= 0) return;
 
     const session = request.session as {
       authenticated?: boolean;
       userId?: string;
     };
-    const key = sessionRateLimitKey(session, request.ip || "unknown");
+    const ip = request.ip || "unknown";
+
+    if (isApiSessionReadPoll(request)) {
+      if (!Number.isFinite(READ_MAX) || READ_MAX <= 0) return;
+      const readKey = sessionRateLimitKey(session, ip, "read");
+      if (!readKey) return;
+      const rl = await getRateLimitStore().hit(readKey, WINDOW_MS, READ_MAX);
+      if (rl.limited) {
+        return reply.status(429).send({ error: "Too many API requests — slow down" });
+      }
+      return;
+    }
+
+    if (!Number.isFinite(MAX) || MAX <= 0) return;
+    const key = sessionRateLimitKey(session, ip, "all");
     if (!key) return;
 
     const rl = await getRateLimitStore().hit(key, WINDOW_MS, MAX);

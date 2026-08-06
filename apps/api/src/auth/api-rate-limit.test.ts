@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import {
   isApiSessionRateLimitExempt,
+  isApiSessionReadPoll,
   registerApiSessionRateLimit,
   sessionRateLimitKey,
 } from "./api-rate-limit.js";
@@ -13,13 +14,14 @@ import {
 function fakeReq(
   url: string,
   extras?: {
+    method?: string;
     apiKeyAuth?: unknown;
     applicationAuth?: unknown;
     session?: { authenticated?: boolean; userId?: string };
     ip?: string;
   },
 ): FastifyRequest {
-  return { url, ...extras } as FastifyRequest;
+  return { url, method: extras?.method ?? "GET", ...extras } as FastifyRequest;
 }
 
 function mockApp(): {
@@ -58,6 +60,22 @@ function mockApp(): {
     },
   };
 }
+
+describe("isApiSessionReadPoll", () => {
+  it("matches dashboard list/stats GETs only", () => {
+    expect(isApiSessionReadPoll(fakeReq("/api/servers"))).toBe(true);
+    expect(isApiSessionReadPoll(fakeReq("/api/servers/stats"))).toBe(true);
+    expect(
+      isApiSessionReadPoll(fakeReq("/api/servers/abc/stats/history")),
+    ).toBe(true);
+    expect(
+      isApiSessionReadPoll(fakeReq("/api/servers", { method: "POST" })),
+    ).toBe(false);
+    expect(isApiSessionReadPoll(fakeReq("/api/servers/abc/backups"))).toBe(
+      false,
+    );
+  });
+});
 
 describe("isApiSessionRateLimitExempt", () => {
   it("exempts health, public, internal, and bearer key traffic", () => {
@@ -100,8 +118,9 @@ describe("sessionRateLimitKey", () => {
       sessionRateLimitKey(
         { authenticated: true, userId: "user_b" },
         "10.0.0.1",
+        "read",
       ),
-    ).toBe("api-session:user:user_b");
+    ).toBe("api-session-read:user:user_b");
   });
 
   it("falls back to IP when authenticated without userId", () => {

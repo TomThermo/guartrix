@@ -146,6 +146,8 @@ model Server {
   @@index([ownerId])
   @@index([nodeId])
   @@index([status])
+  @@index([createdAt])
+  @@index([ownerId, createdAt])
 }
 
 /**

@@ -5,7 +5,7 @@ Formerly called “roadmap”; same file, clearer name.
 
 **Scale (100n/1000c):** [docs/scale-100n-1000c-roadmap.md](scale-100n-1000c-roadmap.md) · **Live:** [guartrix.com](https://guartrix.com) · **Wiki:** [docs/wiki/README.md](wiki/README.md) · **History:** [CHANGELOG.md](../CHANGELOG.md)
 
-Last updated: **2026-08-06** · product **v1.0.168**
+Last updated: **2026-08-06** · product **v1.1.0**
 
 ---
 
@@ -15,6 +15,7 @@ Last updated: **2026-08-06** · product **v1.0.168**
 |------|--------|
 | Feature sprints 1–8 (disk/CPU → Mollie) | ✅ Complete |
 | Sprint 9 — polish (product) | ✅ Complete on this host |
+| Scale 100n/1000c control-plane | ✅ **1.1.0** ([roadmap](scale-100n-1000c-roadmap.md) · [upgrade](wiki/upgrade-to-1.1.md)) |
 | Customer go-live (webhook/SMTP/Mollie) | Their install — not this download host |
 | P2 — eggs/nests, web Sentry, Biome strict | Optional |
 
@@ -69,7 +70,7 @@ See [panel-settings.md](wiki/panel-settings.md) · [install-panel.md](wiki/insta
 | Item | Target | Status |
 |------|--------|--------|
 | OpenAPI full coverage | `npm run check:openapi --strict` | [x] 165/165 (100%) |
-| OpenAPI `info.version` sync | Match root `package.json` / `VERSION` on each release | [x] 1.0.168 |
+| OpenAPI `info.version` sync | Match root `package.json` / `VERSION` on each release | [x] 1.1.0 |
 | Regenerate stubs after new routes | `node scripts/generate-openapi-stubs.mjs` | [x] script added |
 | Web Sentry | `VITE_SENTRY_DSN` at build time | [x] wired in apps/web |
 | Biome `noExplicitAny` | warn → error | [x] |

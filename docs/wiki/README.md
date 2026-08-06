@@ -58,7 +58,7 @@ Operator and developer documentation for the Guartrix Minecraft hosting panel.
 | [Schedules](schedules.md) | Schedule chains: backup → wait → restart → command |
 | [Move between nodes](node-transfer.md) | Admin transfer: stop → sync → rebind ports/DNS → start |
 | [Security](security.md) | Hardening checklist and known controls |
-| [Scaling](scaling.md) · [100n/1000c roadmap](../scale-100n-1000c-roadmap.md) | Multi-node scale; when Redis is (not) needed |
+| [Scaling](scaling.md) · [100n/1000c roadmap](../scale-100n-1000c-roadmap.md) · [Upgrade to 1.1](upgrade-to-1.1.md) | Multi-node scale; Redis HA; 1.0→1.1 upgrade |
 | [Development](development.md) | Local `dev:*` workflow, Vitest + coverage floor, CI, i18n, Cursor Cloud env |
 | [Daemon API](daemon-api.md) | Node-local control plane, route groups, auth, metrics, reattach model |
 | [Node-agent internals](node-agent-internals.md) | Docker, files, quotas, SFTP, MySQL, firewall, player history |

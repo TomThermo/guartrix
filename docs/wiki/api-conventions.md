@@ -88,7 +88,7 @@ Validation errors (`400`) may return Zod flatten:
 |------|---------------|---------|
 | Client API `gt_` | 120 / min / key | `API_KEY_RATE_LIMIT` |
 | Application API `gta_` | 120 / min / key | `APPLICATION_API_RATE_LIMIT` |
-| Cookie session | 600 / min / IP | (session rate limit) |
+| Cookie session | 600 / min / **userId** (mutations); dashboard poll GETs use a separate higher budget (`API_SESSION_READ_RATE_LIMIT`, default ~1800) | (session rate limit) |
 
 429 response:
 
@@ -116,7 +116,7 @@ Not all list endpoints paginate the same way:
 | `GET /api/admin/activity` | `?offset=0&limit=50` |
 | `GET /api/application/activity` | `?offset=0&limit=50` |
 | `GET /api/servers/:id/activity` | `?offset=0&limit=50` |
-| `GET /api/servers` | No pagination — returns all visible servers |
+| `GET /api/servers` | Optional `?limit=&offset=` — returns `{ servers, total, limit, offset }` when paged; bare list when omitted |
 
 Activity list response shape:
 

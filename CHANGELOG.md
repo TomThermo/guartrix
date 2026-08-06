@@ -7,6 +7,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.1.0] — 2026-08-06
+
+### Scale-ready minor
+
+- Mark 100n/1000c control-plane **green** (fases 1–4 from 1.0.165–1.0.168)
+- MySQL: `Server` list indexes on `createdAt` and `(ownerId, createdAt)`
+- Session rate limits: separate `API_SESSION_READ_RATE_LIMIT` for dashboard poll GETs
+- Docs: [upgrade-to-1.1.md](docs/wiki/upgrade-to-1.1.md), sizing section, api-conventions pagination/rate-limit fixes
+- Ops: `scripts/scale-smoke.sh` readiness check
+
 ## [1.0.168] — 2026-08-06
 
 - Scale fase 4: daemon `/events` single-primary via Redis `guartrix:bridge:lock` + Redis fan-out
