@@ -75,9 +75,10 @@ Installer: `--mysql-docker` (default) or `--mysql-external` / `--database-url`.
 | `API_SESSION_RATE_LIMIT` | Max authenticated session (cookie) `/api` requests per minute **per userId** (default **600**; falls back to client IP only if the session has no `userId`) |
 | `RATE_LIMIT_STORE` | `file` (default) under `data/rate-limits/`; `memory` in-process; `redis` shared (needs `REDIS_URL`) |
 | `SESSION_STORE` | `file` (default, `data/sessions`) or `redis` (needs `REDIS_URL` + optional `ioredis`) |
-| `REDIS_URL` | Redis URL for multi-API HA (sessions, rate limits, transfers, scheduler lock, event bus) |
+| `REDIS_URL` | Redis URL for multi-API HA (sessions, rate limits, transfers, scheduler lock, backup busy lock, event bus) |
 | `REDIS_ENABLED` | `0` disables Redis even if `REDIS_URL` is set; default on when URL is present |
 | `SCHEDULER_LOCK_TTL_MS` | Redis leader-lock TTL for backup/schedule ticks (default **15000**) |
+| `BACKUP_BUSY_TTL_MS` | Redis TTL for per-server backup/restore busy lock (default **7200000** = 2h; clamp 1m–24h). Without Redis, lock is process-local. |
 | `CSP_REPORT_ONLY` | `1` = prod-web also sends CSP Report-Only (stricter `style-src 'self'`) for violation telemetry |
 | `CSP_SCRIPT_SRC_EXTRA` | Extra `script-src` tokens (space-separated hosts/hashes) appended to the enforcing CSP |
 | `CSP_ALLOW_UNSAFE_INLINE_SCRIPT` | `1` = allow `'unsafe-inline'` in `script-src` (last resort; browsers ignore it when a nonce is present). Prefer disabling Cloudflare Email Obfuscation / fixing injects instead |

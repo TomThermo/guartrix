@@ -99,7 +99,7 @@ export async function startServerTransfer(
   ) {
     throw new Error("Stop the server before moving it to another node");
   }
-  if (isBackupBusy(server.id)) {
+  if (await isBackupBusy(server.id)) {
     throw new Error("A backup is running — wait before transferring");
   }
 

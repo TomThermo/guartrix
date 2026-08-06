@@ -115,7 +115,7 @@ export function registerBackupRoutes(app: FastifyInstance): void {
       return {
         backups,
         schedule,
-        busy: isBackupBusy(server.id),
+        busy: await isBackupBusy(server.id),
         encryptionEnabled: isBackupEncryptionEnabled(),
         limits: {
           maxUploadBytes: BACKUP_UPLOAD_MAX_BYTES,
@@ -152,7 +152,7 @@ export function registerBackupRoutes(app: FastifyInstance): void {
           note: backup.note,
         },
       });
-      return { backup, schedule, busy: isBackupBusy(server.id) };
+      return { backup, schedule, busy: await isBackupBusy(server.id) };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       logActivity({

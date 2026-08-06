@@ -7,6 +7,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.167] — 2026-08-06
+
+- Scale fase 3 complete: backup/restore busy lock via Redis SET NX + TTL (local Set without Redis)
+- Env: `BACKUP_BUSY_TTL_MS`
+
 ## [1.0.166] — 2026-08-06
 
 - Removed Mineflayer admin bots (API worker, UI tab, deps, wiki, OpenAPI)

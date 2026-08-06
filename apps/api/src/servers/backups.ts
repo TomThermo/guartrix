@@ -34,6 +34,11 @@ import {
   embedMysqlDumpsInArchive,
   restoreMysqlFromBackupDir,
 } from "./backup-mysql.js";
+import {
+  isBackupBusy,
+  releaseBackupBusy,
+  tryAcquireBackupBusy,
+} from "./backup-busy.js";
 
 export {
   computeBackupNextRun,
@@ -47,18 +52,9 @@ export {
   formatBackupSize,
   resolveBackupArchivePath,
 } from "./backup-paths.js";
+export { isBackupBusy } from "./backup-busy.js";
 
 const execFileAsync = promisify(execFile);
-
-const busyServers = new Set<string>();
-
-function isBusy(serverId: string): boolean {
-  return busyServers.has(serverId);
-}
-
-export function isBackupBusy(serverId: string): boolean {
-  return isBusy(serverId);
-}
 
 export async function listBackups(serverId: string): Promise<ServerBackup[]> {
   const dir = serverBackupsDir(serverId);
@@ -144,11 +140,10 @@ export async function createBackup(opts: {
   advanceBackupSchedule?: boolean;
 }): Promise<ServerBackup> {
   const { serverId } = opts;
-  if (busyServers.has(serverId)) {
+  if (!(await tryAcquireBackupBusy(serverId))) {
     throw new Error("A backup is already running for this server");
   }
 
-  busyServers.add(serverId);
   try {
     await fs.mkdir(serverBackupsDir(serverId), { recursive: true });
     await flushWorldIfRunning(serverId);
@@ -247,7 +242,7 @@ export async function createBackup(opts: {
       encrypted,
     };
   } finally {
-    busyServers.delete(serverId);
+    await releaseBackupBusy(serverId);
   }
 }
 
@@ -354,22 +349,21 @@ export async function restoreBackup(opts: {
   backupId: string;
 }): Promise<void> {
   const { serverId, backupId } = opts;
-  if (busyServers.has(serverId)) {
-    throw new Error("A backup operation is already running for this server");
-  }
   if (processManager.isRunning(serverId)) {
     throw new Error("Stop the server before restoring a backup");
   }
+  if (!(await tryAcquireBackupBusy(serverId))) {
+    throw new Error("A backup operation is already running for this server");
+  }
 
-  const { path: archive, encrypted } = await resolveBackupArchivePath(
-    serverId,
-    backupId,
-  );
-  const dest = serverDir(serverId);
-
-  busyServers.add(serverId);
   let plainTmp: string | null = null;
   try {
+    const { path: archive, encrypted } = await resolveBackupArchivePath(
+      serverId,
+      backupId,
+    );
+    const dest = serverDir(serverId);
+
     await fs.mkdir(dest, { recursive: true });
 
     // Clear current server files (keep the directory). Backups folder is separate.
@@ -405,7 +399,7 @@ export async function restoreBackup(opts: {
     if (plainTmp) {
       await fs.rm(plainTmp, { force: true }).catch(() => undefined);
     }
-    busyServers.delete(serverId);
+    await releaseBackupBusy(serverId);
   }
 }
 
@@ -442,7 +436,7 @@ export async function runDueBackupSchedules(
   const dueIds = await listDueBackupScheduleServerIds(new Date(now));
 
   for (const serverId of dueIds) {
-    if (busyServers.has(serverId)) continue;
+    if (await isBackupBusy(serverId)) continue;
     const schedule = await readBackupSchedule(serverId);
     if (schedule.mode === "off" || !schedule.nextRunAt) continue;
     if (new Date(schedule.nextRunAt).getTime() > now) continue;
