@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { requireServerAccess } from "../../auth/auth.js";
+import { assertAdminFullApiKey, requireServerAccess } from "../../auth/auth.js";
 import { prisma } from "../../db.js";
 import { serverListInclude, toMcServer } from "../../servers/serialize.js";
 
@@ -25,6 +25,7 @@ export function registerServerTransferRoutes(app: FastifyInstance): void {
           .status(403)
           .send({ error: "Only admins can move servers between nodes" });
       }
+      if (!assertAdminFullApiKey(request, reply)) return;
       const parsed = transferSchema.safeParse(request.body);
       if (!parsed.success) {
         return reply.status(400).send({ error: parsed.error.flatten() });

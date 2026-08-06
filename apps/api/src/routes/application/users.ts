@@ -7,6 +7,7 @@ import {
   findUserByUsernameInsensitive,
   hashPassword,
 } from "../../auth/auth.js";
+import { destroySessionsForUser } from "../../auth/session-store.js";
 import {
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
@@ -16,6 +17,11 @@ import {
 import { logActivity } from "../../activity-log.js";
 import { prisma } from "../../db.js";
 import { toAppUser } from "./helpers.js";
+
+/** Minting/promoting ADMIN needs a full Application key (`*`), not users.write alone. */
+function canAssignAdminRole(scopes: readonly string[]): boolean {
+  return scopes.includes("*");
+}
 
 const quotaLimit = z.number().int().min(0).max(100_000).nullable();
 
@@ -79,6 +85,12 @@ export function registerApplicationUserRoutes(app: FastifyInstance): void {
     }
 
     const isAdminRole = parsed.data.role === "ADMIN";
+    if (isAdminRole && !canAssignAdminRole(ctx.scopes)) {
+      return reply.status(403).send({
+        error:
+          "Creating ADMIN accounts requires Application scope * (users.write alone is not enough)",
+      });
+    }
     const user = await prisma.user.create({
       data: {
         id: nanoid(12),
@@ -136,15 +148,18 @@ export function registerApplicationUserRoutes(app: FastifyInstance): void {
       if (parsed.data.maxDatabases !== undefined) data.maxDatabases = parsed.data.maxDatabases;
       if (parsed.data.email !== undefined) data.email = parsed.data.email;
 
-      if (parsed.data.role === "ADMIN") {
+      const nextRole = parsed.data.role;
+      if (nextRole === "ADMIN") {
+        if (!canAssignAdminRole(ctx.scopes)) {
+          return reply.status(403).send({
+            error:
+              "Promoting to ADMIN requires Application scope * (users.write alone is not enough)",
+          });
+        }
         data.maxServers = null;
         data.maxMemoryMb = null;
         data.maxDatabases = null;
-      } else if (
-        parsed.data.role &&
-        existing.role === "ADMIN" &&
-        parsed.data.role !== "ADMIN"
-      ) {
+      } else if (nextRole && existing.role === "ADMIN") {
         const admins = await prisma.user.count({ where: { role: "ADMIN" } });
         if (admins <= 1) {
           return reply
@@ -157,6 +172,9 @@ export function registerApplicationUserRoutes(app: FastifyInstance): void {
         where: { id: existing.id },
         data,
       });
+      if (parsed.data.password) {
+        await destroySessionsForUser(user.id);
+      }
       logActivity({
         action: "user.update",
         actor: `app:${ctx.prefix}`,

@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import type { ServerType } from "@msm/shared";
 import { hasPermission, isBdsServerType, primaryAllocationProtocol } from "@msm/shared";
-import { requireServerAccess } from "../../auth/auth.js";
+import { assertAdminFullApiKey, requireServerAccess } from "../../auth/auth.js";
 import { logActivity } from "../../activity-log.js";
 import { config } from "../../config.js";
 import { prisma } from "../../db.js";
@@ -280,6 +280,7 @@ export function registerServerSettingsRoutes(app: FastifyInstance): void {
       if (access.user.role !== "ADMIN") {
         return reply.status(403).send({ error: "Only admins can reassign ownership" });
       }
+      if (!assertAdminFullApiKey(request, reply)) return;
       if (data.ownerId !== null) {
         const owner = await prisma.user.findUnique({ where: { id: data.ownerId } });
         if (!owner) return reply.status(400).send({ error: "Owner user not found" });
@@ -305,6 +306,7 @@ export function registerServerSettingsRoutes(app: FastifyInstance): void {
           .status(403)
           .send({ error: "Only admins can change server memory" });
       }
+      if (!assertAdminFullApiKey(request, reply)) return;
       const ownerId = data.ownerId !== undefined ? data.ownerId : server.ownerId;
       if (ownerId) {
         const owner =
@@ -344,6 +346,7 @@ export function registerServerSettingsRoutes(app: FastifyInstance): void {
           .status(403)
           .send({ error: "Only admins can change server disk quota" });
       }
+      if (!assertAdminFullApiKey(request, reply)) return;
       try {
         const { assertLicenseDiskQuota } = await import("../../license/license.js");
         await assertLicenseDiskQuota(data.diskMb);
@@ -359,6 +362,7 @@ export function registerServerSettingsRoutes(app: FastifyInstance): void {
           .status(403)
           .send({ error: "Only admins can change server CPU limit" });
       }
+      if (!assertAdminFullApiKey(request, reply)) return;
     }
 
     const portChanging = data.port !== undefined && data.port !== server.port;

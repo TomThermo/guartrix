@@ -5,6 +5,7 @@ import type { ServerType } from "@msm/shared";
 import { primaryAllocationProtocol } from "@msm/shared";
 import { safeExtractArchive } from "@msm/node-agent";
 import {
+  assertAdminFullApiKey,
   requireServerAccess,
   requireWrite,
   verifyAccountPassword,
@@ -202,6 +203,9 @@ export function registerServerCrudRoutes(app: FastifyInstance): void {
 
     if (data.nodeId && user.role !== "ADMIN") {
       return reply.status(403).send({ error: "Only admins can choose a node" });
+    }
+    if (data.nodeId && user.role === "ADMIN" && !assertAdminFullApiKey(request, reply)) {
+      return;
     }
 
     let nodeId: string;
@@ -479,6 +483,13 @@ export function registerServerCrudRoutes(app: FastifyInstance): void {
       }
       if (parsed.data.nodeId && access.user.role !== "ADMIN") {
         return reply.status(403).send({ error: "Only admins can choose a node" });
+      }
+      if (
+        parsed.data.nodeId &&
+        access.user.role === "ADMIN" &&
+        !assertAdminFullApiKey(request, reply)
+      ) {
+        return;
       }
       const memoryMb = parsed.data.memoryMb ?? source.memoryMb;
       const diskMb = parsed.data.diskMb ?? source.diskMb;

@@ -426,3 +426,40 @@ export async function requireAdmin(
   }
   return user;
 }
+
+/**
+ * Client API keys with only granular scopes (e.g. users.write) must not mint or
+ * promote ADMIN accounts — that needs admin.full / *. Cookie sessions of an
+ * ADMIN are unrestricted (same as the UI Users page).
+ */
+export function assertCanAssignAdminRole(
+  request: FastifyRequest,
+  reply: FastifyReply,
+): boolean {
+  if (!request.apiKeyAuth) return true;
+  if (adminPanelHasScope(request.apiKeyAuth.adminScopes ?? [], "admin.full")) {
+    return true;
+  }
+  void reply.status(403).send({
+    error:
+      "Creating or promoting ADMIN accounts requires admin.full (or *) on the API key",
+  });
+  return false;
+}
+
+/**
+ * Privileged panel ops that historically checked `role === "ADMIN"` only.
+ * Cookie admins pass; Client API keys need admin.full so scoped keys cannot
+ * reassign ownership / change memory / transfer nodes via CSRF+Bearer mix.
+ */
+export function assertAdminFullApiKey(
+  request: FastifyRequest,
+  reply: FastifyReply,
+): boolean {
+  if (!request.apiKeyAuth) return true;
+  if (adminPanelHasScope(request.apiKeyAuth.adminScopes ?? [], "admin.full")) {
+    return true;
+  }
+  void reply.status(403).send({ error: "Missing admin scope: admin.full" });
+  return false;
+}

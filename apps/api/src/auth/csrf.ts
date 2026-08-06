@@ -112,9 +112,16 @@ export function registerCsrfGuard(app: FastifyInstance): void {
     const pathOnly = request.url.split("?")[0] ?? "";
     if (!pathOnly.startsWith("/api/")) return;
     if (csrfExemptPath(pathOnly)) return;
-    // Only skip CSRF when a real API/Application key resolved — not a junk Bearer
-    // that would leave cookie session in charge without Origin/CSRF checks.
-    if (request.apiKeyAuth || request.applicationAuth) return;
+    // Skip CSRF only for Bearer-only clients. If a cookie session is authenticated,
+    // always enforce Origin + token — even when a gt_/gta_ key also resolved
+    // (session identity wins in getSessionUser; must not bypass CSRF).
+    const session = request.session as SessionWithCsrf;
+    if (
+      !session?.authenticated &&
+      (request.apiKeyAuth || request.applicationAuth)
+    ) {
+      return;
+    }
 
     const originErr = assertSameOrigin(request);
     if (originErr) {
@@ -123,7 +130,6 @@ export function registerCsrfGuard(app: FastifyInstance): void {
 
     if (csrfTokenExemptPath(pathOnly)) return;
 
-    const session = request.session as SessionWithCsrf;
     if (session?.authenticated) {
       const csrfErr = assertCsrfToken(request);
       if (csrfErr) {

@@ -294,6 +294,7 @@ async function main() {
       "Content-Type",
       "Authorization",
       "X-Request-Id",
+      "X-CSRF-Token",
     ],
     exposedHeaders: [
       "Accept-Ranges",

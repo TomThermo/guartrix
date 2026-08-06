@@ -7,7 +7,7 @@ import { z } from "zod";
 import type { ServerType } from "@msm/shared";
 import { primaryAllocationProtocol } from "@msm/shared";
 import { logActivity } from "../../activity-log.js";
-import { isAuthenticated, requireWrite, getSessionUser } from "../../auth/auth.js";
+import { assertAdminFullApiKey, isAuthenticated, requireWrite, getSessionUser } from "../../auth/auth.js";
 import { prisma } from "../../db.js";
 import { closeFirewallPort, openFirewallPort } from "../../nodes/firewall.js";
 import { processManager } from "../../servers/process-manager.js";
@@ -94,6 +94,9 @@ export function registerImportRoutes(app: FastifyInstance): void {
       return reply
         .status(403)
         .send({ error: "Only admins can choose a target node" });
+    }
+    if (data.nodeId && user.role === "ADMIN" && !assertAdminFullApiKey(request, reply)) {
+      return;
     }
 
     let nodeId: string;

@@ -5,6 +5,7 @@ import { nanoid } from "nanoid";
 import { z } from "zod";
 import { logActivity } from "../../activity-log.js";
 import {
+  assertCanAssignAdminRole,
   ensureBootstrapAdmin,
   findUserByEmailInsensitive,
   findUserByUsernameInsensitive,
@@ -663,6 +664,7 @@ export function registerAuthRoutes(app: FastifyInstance): void {
     if (exists) return reply.status(409).send({ error: "Username already taken" });
 
     const isAdminRole = parsed.data.role === "ADMIN";
+    if (isAdminRole && !assertCanAssignAdminRole(request, reply)) return;
     const maxServers = isAdminRole
       ? null
       : parsed.data.maxServers === undefined
@@ -741,6 +743,7 @@ export function registerAuthRoutes(app: FastifyInstance): void {
 
     const nextRole = parsed.data.role;
     if (nextRole === "ADMIN") {
+      if (!assertCanAssignAdminRole(request, reply)) return;
       data.maxServers = null;
       data.maxMemoryMb = null;
       data.maxDatabases = null;

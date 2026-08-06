@@ -315,7 +315,7 @@ Or full panel admin:
 |-------|--------|
 | `admin.full` or `*` | All `/api/admin/*` routes (required for Application API key minting and a few privileged helpers) |
 | `users.read` | `GET /api/users` |
-| `users.write` | `POST` / `PATCH /api/users` (cannot demote/delete the last admin) |
+| `users.write` | `POST` / `PATCH /api/users` (non-ADMIN roles; cannot demote/delete the last admin). Creating or promoting **ADMIN** requires `admin.full` / `*` on Client keys |
 | `users.delete` | `DELETE /api/users/:id` |
 | `nodes.read` / `nodes.write` | Node list & admin node CRUD / install / token rotate |
 | `settings.read` / `settings.write` | Admin → Settings (+ test mail/redis) |

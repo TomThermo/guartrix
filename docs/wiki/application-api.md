@@ -36,7 +36,7 @@ Rate limit: `APPLICATION_API_RATE_LIMIT` (default **120/min**).
 | Scope | Access |
 |-------|--------|
 | `users.read` | List / get users |
-| `users.write` | Create / update users |
+| `users.write` | Create / update users (promoting to **ADMIN** requires Application scope `*`) |
 | `users.delete` | Delete users |
 | `servers.read` | List / get servers + connect/SFTP meta |
 | `servers.write` | Create servers |
