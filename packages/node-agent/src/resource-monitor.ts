@@ -135,6 +135,9 @@ class ResourceMonitor extends EventEmitter {
     if (disk) stats = { ...stats, disk };
     this.latest.set(serverId, stats);
     this.emit("stats", serverId, stats);
+    void import("./stats-history.js").then(({ pushDaemonStatsHistory }) => {
+      pushDaemonStatsHistory(serverId, stats);
+    });
 
     const last = this.lastDiskKick.get(serverId) ?? 0;
     if (Date.now() - last < 30_000) return;

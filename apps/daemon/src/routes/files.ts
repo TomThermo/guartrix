@@ -255,6 +255,60 @@ export function registerFileRoutes(app: FastifyInstance): void {
     },
   );
 
+  /** Dest pulls .tar.gz from source daemon and deploys locally (no panel staging). */
+  app.post<{
+    Params: { id: string };
+    Body: { sourceExportUrl?: string; sourceAuthorization?: string };
+  }>("/servers/:id/deploy-from", async (request, reply) => {
+    const sourceExportUrl = request.body?.sourceExportUrl?.trim();
+    const sourceAuthorization = request.body?.sourceAuthorization?.trim();
+    if (!sourceExportUrl || !sourceAuthorization) {
+      return reply
+        .status(400)
+        .send({ error: "sourceExportUrl and sourceAuthorization required" });
+    }
+    let parsed: URL;
+    try {
+      parsed = new URL(sourceExportUrl);
+    } catch {
+      return reply.status(400).send({ error: "Invalid sourceExportUrl" });
+    }
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return reply.status(400).send({ error: "sourceExportUrl must be http(s)" });
+    }
+    const tmp = path.join(
+      os.tmpdir(),
+      `guartrix-peer-deploy-${request.params.id}-${Date.now()}.tar.gz`,
+    );
+    try {
+      const res = await fetch(sourceExportUrl, {
+        headers: { Authorization: sourceAuthorization },
+        signal: AbortSignal.timeout(30 * 60 * 1000),
+      });
+      if (!res.ok || !res.body) {
+        const text = await res.text().catch(() => "");
+        return reply
+          .status(502)
+          .send({ error: text || `Source export failed (${res.status})` });
+      }
+      const { createWriteStream } = await import("node:fs");
+      const { pipeline } = await import("node:stream/promises");
+      const { Readable } = await import("node:stream");
+      await pipeline(
+        Readable.fromWeb(res.body as never),
+        createWriteStream(tmp),
+      );
+      await deployServerArchive(request.params.id, tmp);
+      const st = await fs.stat(tmp).catch(() => null);
+      return { ok: true, bytes: st?.size ?? null };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return reply.status(400).send({ error: message });
+    } finally {
+      await fs.rm(tmp, { force: true }).catch(() => undefined);
+    }
+  });
+
   /** Panel pulls a .tar.gz of the server data directory. */
   app.get<{ Params: { id: string } }>(
     "/servers/:id/export",

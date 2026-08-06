@@ -108,8 +108,14 @@ export function registerServerCrudRoutes(app: FastifyInstance): void {
     async (request, reply) => {
       const access = await requireServerAccess(request, reply, request.params.id);
       if (!access) return;
-      const { getStatsHistory } = await import("../../servers/stats-history.js");
-      return { samples: getStatsHistory(access.server.id) };
+      try {
+        const { daemonStatsHistory } = await import("../../nodes/daemon-client.js");
+        const data = await daemonStatsHistory(access.server.id);
+        return { samples: data.samples ?? [] };
+      } catch {
+        // Daemon unreachable or older node without history route — empty ring.
+        return { samples: [] };
+      }
     },
   );
 

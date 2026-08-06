@@ -5,6 +5,36 @@ import {
   resolveNode,
   resolveNodeForServer,
 } from "./daemon-client-core.js";
+import { panelToDaemonAuthorization } from "@msm/shared/daemon-jwt";
+import { nodePublicUrl } from "./nodes.js";
+
+/** Dest node pulls archive from source node and deploys (no panel disk staging). */
+export async function daemonPeerDeployArchiveOnNode(
+  serverId: string,
+  fromNodeId: string,
+  toNodeId: string,
+): Promise<{ bytes: number | null }> {
+  const from = await resolveNode(fromNodeId);
+  const to = await resolveNode(toNodeId);
+  const sourceExportUrl = `${nodePublicUrl(from)}/servers/${serverId}/export`;
+  const sourceAuthorization = `Bearer ${panelToDaemonAuthorization(from.id, from.token, {
+    ttlSec: 30 * 60,
+  })}`;
+  const data = await daemonFetch(to, `/servers/${serverId}/deploy-from`, {
+    method: "POST",
+    body: JSON.stringify({ sourceExportUrl, sourceAuthorization }),
+    timeoutMs: DAEMON_LONG_TIMEOUT_MS,
+  });
+  if (!data.ok) {
+    const text = await data.text();
+    throw new DaemonHttpError(
+      text || `Peer deploy failed (${data.status})`,
+      data.status,
+    );
+  }
+  const json = (await data.json().catch(() => ({}))) as { bytes?: number | null };
+  return { bytes: typeof json.bytes === "number" ? json.bytes : null };
+}
 
 /** Push a .tar.gz already on disk to a specific daemon (streamed via openAsBlob). */
 export async function daemonDeployArchiveFileOnNode(

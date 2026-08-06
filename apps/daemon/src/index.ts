@@ -120,6 +120,14 @@ async function main() {
   });
 
   app.get<{ Params: { id: string } }>(
+    "/servers/:id/stats/history",
+    async (request) => {
+      const { getDaemonStatsHistory } = await import("@msm/node-agent");
+      return { samples: getDaemonStatsHistory(request.params.id) };
+    },
+  );
+
+  app.get<{ Params: { id: string } }>(
     "/servers/:id/disk",
     async (request) => getDiskUsageCached(request.params.id),
   );

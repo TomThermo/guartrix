@@ -102,9 +102,6 @@ class ProcessManagerProxy extends EventEmitter {
   ): void {
     this.stats.set(serverId, stats);
     this.emit("stats", serverId, stats);
-    void import("./stats-history.js").then(({ pushStatsHistory }) => {
-      pushStatsHistory(serverId, stats);
-    });
     if (!opts?.fromBus) {
       void import("../redis.js").then(({ publishPanelEvent }) =>
         publishPanelEvent({ kind: "stats", serverId, stats }),

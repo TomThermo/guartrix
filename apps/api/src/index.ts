@@ -453,12 +453,6 @@ async function main() {
     stopDaemonEventBridge();
     app.log.info("Shutting down…");
     try {
-      const { flushStatsHistory } = await import("./servers/stats-history.js");
-      await flushStatsHistory();
-    } catch {
-      // ignore persist errors on shutdown
-    }
-    try {
       const { closeRedis } = await import("./redis.js");
       await closeRedis();
     } catch {

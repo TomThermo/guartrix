@@ -13,6 +13,7 @@ import { isBackupBusy } from "./backups.js";
 import {
   daemonDeployArchiveFileOnNode,
   daemonExportArchiveToFileOnNode,
+  daemonPeerDeployArchiveOnNode,
   daemonWipeServerOnNode,
 } from "../nodes/daemon-client.js";
 import { prisma } from "../db.js";
@@ -205,22 +206,65 @@ async function runTransfer(
     path.join(os.tmpdir(), `guartrix-transfer-${serverId}-`),
   );
   let cutOver = false;
+  let peerCopied = false;
+  let payloadBytes = 0;
+  let archivePath: string | null = null;
 
   try {
-    setTransferStep(job, 1, "Exporting archive from source…");
-    await setServerProgress(serverId, "TRANSFERRING", "Transfer: exporting files…");
-    const archivePath = path.join(staging, "source.tar.gz");
-    await daemonExportArchiveToFileOnNode(serverId, fromNodeId, archivePath);
-    const archiveStat = await fs.stat(archivePath);
-    const payloadBytes = archiveStat.size;
-    setTransferChunkProgress(
-      job,
-      1,
-      1,
-      `Exported ${formatBytes(payloadBytes)}`,
-      payloadBytes,
-      payloadBytes,
+    // Prefer node→node pull so the panel never holds the world archive.
+    setTransferStep(job, 1, "Copying archive node→node…");
+    await setServerProgress(
+      serverId,
+      "TRANSFERRING",
+      "Transfer: copying files between nodes…",
     );
+    try {
+      const peer = await daemonPeerDeployArchiveOnNode(
+        serverId,
+        fromNodeId,
+        toNodeId,
+      );
+      payloadBytes = peer.bytes ?? 0;
+      peerCopied = true;
+      setTransferChunkProgress(
+        job,
+        1,
+        1,
+        payloadBytes > 0
+          ? `Peer-copied ${formatBytes(payloadBytes)}`
+          : "Peer-copied archive",
+        payloadBytes,
+        payloadBytes,
+      );
+    } catch (peerErr) {
+      logger.warn(
+        {
+          err: peerErr instanceof Error ? peerErr : new Error(String(peerErr)),
+          serverId,
+          fromNodeId,
+          toNodeId,
+        },
+        "Peer deploy failed — falling back to panel staging",
+      );
+      setTransferStep(job, 1, "Exporting archive from source…");
+      await setServerProgress(
+        serverId,
+        "TRANSFERRING",
+        "Transfer: exporting files…",
+      );
+      archivePath = path.join(staging, "source.tar.gz");
+      await daemonExportArchiveToFileOnNode(serverId, fromNodeId, archivePath);
+      const archiveStat = await fs.stat(archivePath);
+      payloadBytes = archiveStat.size;
+      setTransferChunkProgress(
+        job,
+        1,
+        1,
+        `Exported ${formatBytes(payloadBytes)}`,
+        payloadBytes,
+        payloadBytes,
+      );
+    }
 
     setTransferStep(job, 2, "Rebinding allocations…");
     await setServerProgress(serverId, "TRANSFERRING", "Transfer: rebinding network…");
@@ -261,19 +305,35 @@ async function runTransfer(
 
     await openServerAllocationFirewalls(serverId, toNodeId);
 
-    setTransferStep(job, 3, `Deploying ${formatBytes(payloadBytes)}…`);
-    await setServerProgress(serverId, "TRANSFERRING", "Transfer: deploying to destination…");
-    setTransferChunkProgress(
-      job,
-      3,
-      0.15,
-      `Uploading ${formatBytes(payloadBytes)}…`,
-      0,
-      payloadBytes,
-    );
-    // Stream archive to dest without unpacking on the panel (one temp copy only).
-    await daemonDeployArchiveFileOnNode(serverId, toNodeId, archivePath);
-    await fs.rm(archivePath, { force: true }).catch(() => undefined);
+    if (!peerCopied) {
+      if (!archivePath) {
+        throw new Error("Transfer archive missing after panel staging export");
+      }
+      setTransferStep(job, 3, `Deploying ${formatBytes(payloadBytes)}…`);
+      await setServerProgress(
+        serverId,
+        "TRANSFERRING",
+        "Transfer: deploying to destination…",
+      );
+      setTransferChunkProgress(
+        job,
+        3,
+        0.15,
+        `Uploading ${formatBytes(payloadBytes)}…`,
+        0,
+        payloadBytes,
+      );
+      await daemonDeployArchiveFileOnNode(serverId, toNodeId, archivePath);
+      await fs.rm(archivePath, { force: true }).catch(() => undefined);
+      archivePath = null;
+    } else {
+      setTransferStep(job, 3, "Finalizing deploy…");
+      await setServerProgress(
+        serverId,
+        "TRANSFERRING",
+        "Transfer: finalizing on destination…",
+      );
+    }
     setTransferChunkProgress(
       job,
       3,

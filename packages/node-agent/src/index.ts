@@ -72,6 +72,12 @@ export {
 export { collectServerStats } from "./stats.js";
 export { resourceMonitor } from "./resource-monitor.js";
 export {
+  pushDaemonStatsHistory,
+  getDaemonStatsHistory,
+  clearDaemonStatsHistory,
+  type StatsHistorySample,
+} from "./stats-history.js";
+export {
   dockerPing,
   fetchContainerStatsOnce,
   streamContainerStats,

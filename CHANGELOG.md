@@ -7,6 +7,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.166] — 2026-08-06
+
+- Removed Mineflayer admin bots (API worker, UI tab, deps, wiki, OpenAPI)
+- Scale phase 3: daemon-side stats history (panel proxies); node→node transfer via `deploy-from` with panel staging fallback
+- Roadmap: bots cancelled; stats + transfers marked done
+
 ## [1.0.165] — 2026-08-06
 
 - Scale phase 1: due scheduled tasks + backup schedules via indexed DB queries (BackupSchedule model); disk-watch paged/concurrent + lock

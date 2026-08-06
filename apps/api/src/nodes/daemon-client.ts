@@ -31,6 +31,7 @@ export {
   daemonIsPortFree,
   daemonChown,
   daemonStats,
+  daemonStatsHistory,
   daemonDisk,
   daemonOnlineNames,
   daemonHistory,
@@ -63,6 +64,7 @@ export {
 } from "./daemon-client-mysql.js";
 
 export {
+  daemonPeerDeployArchiveOnNode,
   daemonDeployArchiveFileOnNode,
   daemonDeployFromDir,
   daemonExportArchiveToFileOnNode,

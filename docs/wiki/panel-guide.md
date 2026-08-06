@@ -195,7 +195,7 @@ More on moving servers: [Move between nodes](node-transfer.md)
 
 ### Console (live)
 
-WebSocket console: live logs, send commands, power controls, address / RAM / CPU / storage / players. Below the console, **history charts** show roughly the last hour of CPU / RAM / network from the API ring buffer (persisted under `data/stats-history/` so samples survive panel restarts).
+WebSocket console: live logs, send commands, power controls, address / RAM / CPU / storage / players. Below the console, **history charts** show roughly the last hour of CPU / RAM / network from the **daemon** ring buffer (kept on the node that runs the server — not in the panel API heap).
 
 ![Console](assets/08-server-console.png)
 

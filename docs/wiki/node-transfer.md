@@ -38,7 +38,7 @@ source node; after cutover it stays on the destination with `ERROR` and a messag
 
 | Item | Behaviour |
 |------|-----------|
-| World / files | Export from source daemon → deploy on destination (same as clone pipeline) |
+| World / files | Dest daemon pulls `.tar.gz` from source (`deploy-from`); panel staging only as fallback |
 | Allocations | All rows rebind `nodeId` (primary port remapped if requested) |
 | Firewall | Closed on source, opened on destination |
 | DNS subdomain | A/SRV updated to destination public IPv4 when Cloudflare is configured |
@@ -48,8 +48,10 @@ source node; after cutover it stays on the destination with `ERROR` and a messag
 
 ## Ops notes
 
-Large worlds stream as a single `.tar.gz` through the panel temp dir (export →
-deploy, no unpack). Keep free space on the panel for ~1× world size during the
-move. Activity log records `server.transfer`.
+Prefer node→node copy: destination calls source `/export` with a short-lived
+panel-issued bearer, then deploys locally. The panel does **not** hold the world
+archive when peer copy works. If nodes cannot reach each other, the panel falls
+back to temp staging (~1× world size). MySQL dumps may still briefly use panel
+temp. Activity log records `server.transfer`.
 
 See also [Install nodes](install-nodes.md) and [Architecture](architecture.md).

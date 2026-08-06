@@ -238,6 +238,19 @@ export async function daemonStats(serverId: string, includeDisk = false) {
   return daemonJson(node, `/servers/${serverId}/stats${q}`);
 }
 
+export async function daemonStatsHistory(serverId: string) {
+  const { node } = await resolveNodeForServer(serverId);
+  return daemonJson<{
+    samples: Array<{
+      at: number;
+      cpuPercent: number;
+      memoryMb: number;
+      networkRxBytes: number;
+      networkTxBytes: number;
+    }>;
+  }>(node, `/servers/${serverId}/stats/history`);
+}
+
 export async function daemonDisk(serverId: string) {
   const { node } = await resolveNodeForServer(serverId);
   return daemonJson(node, `/servers/${serverId}/disk`);

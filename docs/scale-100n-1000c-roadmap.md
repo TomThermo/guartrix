@@ -1,7 +1,7 @@
 # Scale roadmap — 100 nodes / 1000 customers
 
 **Status:** yellow → target green on one strong panel  
-**Product:** Guartrix 1.0.164+  
+**Product:** Guartrix 1.0.166+  
 **Assumption:** ~100 daemons, ~1000 accounts, ~1k–5k game servers  
 
 Nodes already scale. This roadmap fixes the **control-plane**.
@@ -32,10 +32,10 @@ Open via **Command Palette → Open Canvas** (Cursor 3.1+), or open that file in
 
 | # | Item | Status | Wat | Files |
 |---|------|--------|-----|-------|
-| 8 | Stats-history | open | Uit heap/`data/stats-history` → Redis/DB of alleen daemon | `stats-history.ts` |
+| 8 | Stats-history | **done (1.0.166)** | Daemon in-memory 1h ring; panel proxies `GET .../stats/history` | `node-agent/stats-history.ts`, daemon route |
 | 9 | Mineflayer bots | **cancelled** | Feature removed from product (no bot worker / admin bots tab) | — |
 | 9b | busyServers backup lock | open | In-process `busyServers` Set in backup flows — still needs Redis or sticky primary API under multi-API | `servers/backups.ts` |
-| 10 | Transfers | open | Node→node / object storage; geen panel-staging | `transfer.ts`, `transfer-jobs.ts` |
+| 10 | Transfers | **done (1.0.166)** | Dest pulls archive from source (`deploy-from`); panel staging fallback | `transfer.ts`, daemon `files.ts` |
 
 ## Fase 4 — Daemon bridges @ 100 nodes (P1)
 
@@ -64,7 +64,7 @@ Open via **Command Palette → Open Canvas** (Cursor 3.1+), or open that file in
 ## Definition of done
 
 **Must:** batch scheduler/backups, disk-watch niet O(all), gepagineerde lists, gecachte Admin Status.  
-**Should:** stats niet in API-heap, transfers zonder panel-temp, bridges niet N×100.  
+**Should:** stats niet in API-heap (**done**), transfers zonder panel-temp (**done**, fallback blijft), bridges niet N×100 (fase 4).  
 **Ops:** indexed MySQL, Redis alleen bij multi-API.
 
 Zie ook: [Scaling](wiki/scaling.md).
