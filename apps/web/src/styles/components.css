@@ -457,10 +457,6 @@
   min-width: 0;
 }
 
-.server-info-tile--wide {
-  grid-column: 1 / -1;
-}
-
 .server-info-tile__icon {
   display: inline-grid;
   place-items: center;
@@ -708,16 +704,6 @@
 .join-card-compact__chip i {
   font-size: 0.65rem;
   opacity: 0.9;
-}
-
-@media (max-width: 575.98px) and (max-aspect-ratio: 3/4) {
-  .server-info-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .server-info-tile--wide {
-    grid-column: auto;
-  }
 }
 
 .server-controls-panel {

@@ -1,5 +1,5 @@
 /* Guartrix app-shell service worker — offline shell + Web Push alerts. */
-const CACHE = "guartrix-shell-v14";
+const CACHE = "guartrix-shell-v15";
 const SHELL = ["/", "/index.html", "/site.webmanifest"];
 
 self.addEventListener("install", (event) => {

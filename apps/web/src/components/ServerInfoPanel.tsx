@@ -26,7 +26,6 @@ function InfoTile({
   label,
   value,
   mono,
-  wide,
   tone = "neutral",
   onCopy,
   copyTitle,
@@ -35,13 +34,12 @@ function InfoTile({
   label: string;
   value: string;
   mono?: boolean;
-  wide?: boolean;
   tone?: "neutral" | "success" | "warning" | "info";
   onCopy?: () => void;
   copyTitle?: string;
 }) {
   return (
-    <div className={`server-info-tile${wide ? " server-info-tile--wide" : ""}`}>
+    <div className="server-info-tile">
       <span className={`server-info-tile__icon server-info-tile__icon--${tone}`} aria-hidden>
         <i className={`fa-solid ${icon}`} />
       </span>
@@ -178,7 +176,6 @@ export function ServerInfoPanel({
           label={t("serverInfo.serverId")}
           value={server.id}
           mono
-          wide
           copyTitle={t("common.copy")}
           onCopy={() => void copy(t("serverInfo.serverId"), server.id)}
         />
@@ -213,7 +210,6 @@ export function ServerInfoPanel({
           icon="fa-cube"
           label={t("common.version")}
           value={versionParts.filter(Boolean).join(" · ") || "—"}
-          wide
           copyTitle={t("common.copy")}
         />
         <InfoTile
