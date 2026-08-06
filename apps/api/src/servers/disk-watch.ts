@@ -2,13 +2,19 @@ import { prisma } from "../db.js";
 import { recordActivity } from "../activity-log.js";
 import { daemonDisk } from "../nodes/daemon-client.js";
 
-const INTERVAL_MS = 5 * 60_000;
+function diskWatchIntervalMs(): number {
+  const raw = Number(process.env.DISK_WATCH_INTERVAL_MS ?? 5 * 60_000);
+  if (!Number.isFinite(raw) || raw < 30_000) return 5 * 60_000;
+  return Math.min(raw, 60 * 60_000);
+}
+
 const THRESHOLD = 0.9;
 /** Don't re-alert the same server more than once per hour. */
 const COOLDOWN_MS = 60 * 60_000;
 const lastAlert = new Map<string, number>();
 
 export function startDiskWatch(): void {
+  const intervalMs = diskWatchIntervalMs();
   const run = async () => {
     try {
       const servers = await prisma.server.findMany({
@@ -62,5 +68,5 @@ export function startDiskWatch(): void {
   };
 
   setTimeout(() => void run(), 30_000);
-  setInterval(() => void run(), INTERVAL_MS);
+  setInterval(() => void run(), intervalMs);
 }

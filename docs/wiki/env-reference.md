@@ -70,7 +70,7 @@ Installer: `--mysql-docker` (default) or `--mysql-external` / `--database-url`.
 | `TWO_FACTOR_REQUIRED_ROLES` | Comma-separated roles that must enable TOTP (e.g. `ADMIN`). Empty = optional |
 | `API_KEY_RATE_LIMIT` | Max Client API requests per minute per key (default **120**) |
 | `APPLICATION_API_RATE_LIMIT` | Max Application API (`gta_`) requests per minute per key (default **120**) |
-| `API_SESSION_RATE_LIMIT` | Max authenticated session (cookie) `/api` requests per minute per user (default **600**) |
+| `API_SESSION_RATE_LIMIT` | Max authenticated session (cookie) `/api` requests per minute **per userId** (default **600**; falls back to client IP only if the session has no `userId`) |
 | `RATE_LIMIT_STORE` | `file` (default) under `data/rate-limits/`; `memory` in-process; `redis` shared (needs `REDIS_URL`) |
 | `SESSION_STORE` | `file` (default, `data/sessions`) or `redis` (needs `REDIS_URL` + optional `ioredis`) |
 | `REDIS_URL` | Redis URL for multi-API HA (sessions, rate limits, transfers, scheduler lock, event bus) |
@@ -113,6 +113,8 @@ The license **server** is hosted separately by Guartrix (default `https://licens
 | `DAEMON_RATE_LIMIT_MAX` | Max daemon HTTP requests per IP per window (default **600**; daemon env file) |
 | `DAEMON_RATE_LIMIT_WINDOW_MS` | Daemon rate-limit window in ms (default **60000**) |
 | `EXTRA_MOUNTS_ALLOW_PREFIX` | Comma-separated host path prefixes allowed for server extra mounts (default `/var/lib/guartrix/shared,/opt/guartrix/shared`). Changing mounts requires **ADMIN** |
+| `DISK_USAGE_CACHE_MS` | Stale-while-revalidate TTL for per-server disk walks on the node (default **30000**; clamp 1s–10m; daemon/node-agent) |
+| `DISK_WATCH_INTERVAL_MS` | Panel interval for disk-quota high alerts (default **300000** = 5m; clamp 30s–1h) |
 | `SFTP_PORT` / `SFTP_ENABLED` | Embedded SFTP per node |
 | `PANEL_URL` | URL the daemon uses for SFTP password checks |
 | `GUARTRIX_REPO_URL` | Git URL for remote install scripts |

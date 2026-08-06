@@ -2,8 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
   assertSafeBrowserUrl,
   assertSafeOutboundUrl,
+  fetchPinned,
   isBlockedIp,
+  resolveSafeOutboundUrl,
 } from "./safe-url.js";
+import http from "node:http";
+import type { AddressInfo } from "node:net";
 
 describe("isBlockedIp", () => {
   it("blocks empty / invalid input", () => {
@@ -124,6 +128,64 @@ describe("assertSafeOutboundUrl", () => {
       resolveDns: false,
     });
     expect(href).toBe("http://1.1.1.1/x");
+  });
+});
+
+describe("resolveSafeOutboundUrl (DNS pin addresses)", () => {
+  it("returns pinned addresses for literal public IPs", async () => {
+    const resolved = await resolveSafeOutboundUrl("https://1.1.1.1/path", {
+      resolveDns: true,
+    });
+    expect(resolved.href).toBe("https://1.1.1.1/path");
+    expect(resolved.addresses).toEqual([{ address: "1.1.1.1", family: 4 }]);
+  });
+
+  it("rejects private literal IPs even with resolveDns", async () => {
+    await expect(
+      resolveSafeOutboundUrl("https://127.0.0.1/", { resolveDns: true }),
+    ).rejects.toThrow(/not allowed/i);
+    await expect(
+      resolveSafeOutboundUrl("https://10.0.0.1/", { resolveDns: true }),
+    ).rejects.toThrow(/not allowed/i);
+  });
+});
+
+describe("fetchPinned", () => {
+  it("connects to the pinned address (not the URL hostname DNS)", async () => {
+    const server = http.createServer((_req, res) => {
+      res.writeHead(200, { "Content-Type": "text/plain" });
+      res.end("pinned-ok");
+    });
+    await new Promise<void>((resolve) => {
+      server.listen(0, "127.0.0.1", () => resolve());
+    });
+    const { port } = server.address() as AddressInfo;
+    try {
+      const res = await fetchPinned(
+        {
+          href: `http://cdn.example.test:${port}/file`,
+          hostname: "cdn.example.test",
+          addresses: [{ address: "127.0.0.1", family: 4 }],
+        },
+        { method: "GET" },
+      );
+      expect(res.status).toBe(200);
+      expect(await res.text()).toBe("pinned-ok");
+    } finally {
+      await new Promise<void>((resolve, reject) => {
+        server.close((err) => (err ? reject(err) : resolve()));
+      });
+    }
+  });
+
+  it("rejects when no addresses were validated", async () => {
+    await expect(
+      fetchPinned({
+        href: "https://example.com/",
+        hostname: "example.com",
+        addresses: [],
+      }),
+    ).rejects.toThrow(/no validated addresses/i);
   });
 });
 

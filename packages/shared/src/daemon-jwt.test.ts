@@ -70,4 +70,20 @@ describe("daemon JWT", () => {
       verifyDaemonJwt("raw-bearer-token", SECRET, { aud: "daemon" }),
     ).toBeNull();
   });
+
+  it("rejects empty secret and tampered payload", () => {
+    const now = 1_700_000_000;
+    const token = signDaemonJwt(SECRET, {
+      nodeId: "node_abc",
+      aud: "daemon",
+      ttlSec: 60,
+      nowSec: now,
+    });
+    const parts = token.split(".");
+    expect(parts).toHaveLength(3);
+    const tampered = `${parts[0]}.${Buffer.from('{"aud":"daemon"}').toString("base64url")}.${parts[2]}`;
+    expect(
+      verifyDaemonJwt(tampered, SECRET, { aud: "daemon", nowSec: now }),
+    ).toBeNull();
+  });
 });

@@ -26,6 +26,7 @@
     "prod:release": "npm run build:release && npm run start:prod",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "check:openapi": "node scripts/check-openapi-coverage.mjs",
@@ -37,11 +38,12 @@
   "devDependencies": {
     "@biomejs/biome": "^2.0.6",
     "@playwright/test": "^1.62.1",
+    "@vitest/coverage-v8": "^3.2.7",
     "esbuild": "^0.25.0",
     "javascript-obfuscator": "^4.2.2",
     "playwright": "^1.55.0",
     "typescript": "^5.8.2",
     "vitest": "^3.2.7"
   },
-  "version": "1.0.157"
+  "version": "1.0.158"
 }

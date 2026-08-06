@@ -7,6 +7,45 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.158] — 2026-08-06
+
+- Session API rate limit keyed by **userId** (NAT-safe); security test floor + CI coverage gate
+- Peel `daemon-client` into domain modules; extract bot-controls + backup-schedule
+- `DISK_USAGE_CACHE_MS` / `DISK_WATCH_INTERVAL_MS` env knobs; OpenAPI/CHANGELOG/roadmap sync
+- Extra Playwright authz smokes; install-nodes supply-chain hardening notes
+
+## [1.0.157] — 2026-08-06
+
+- Security: SSRF DNS-pin on outbound fetches; MySQL `remote:%` rejected; root password via `--defaults-extra-file`; `extraMounts` admin-only; remote-install panel password step-up; CSRF `timingSafeEqual`; wiki URL local-host block
+
+## [1.0.156] — 2026-08-06
+
+- Split node-agent (files/mysql/process), daemon routes, and large web modules
+
+## [1.0.155] — 2026-08-06
+
+- Extract user-quota helpers and split fat API routes
+
+## [1.0.154] — 2026-08-06
+
+- Block scoped-key admin escalation; CSRF always enforced for cookie sessions
+
+## [1.0.153] — 2026-08-06
+
+- Harden admin API authz and split route modules
+
+## [1.0.136] — 2026-08-05
+
+- Expand HTTP API, admin scopes, and API documentation (OpenAPI)
+
+## [1.0.126]–[1.0.135] — 2026-08-05
+
+- Panel UI refresh: design tokens, dashboard/console/admin shells, Fold layouts, create-server and account-security redesigns
+
+## [1.0.117]–[1.0.125] — 2026-08-05
+
+- IDE-style File Manager (Monaco); Fold/viewport layout polish; server detail header cards
+
 ## [1.0.116] — 2026-08-05
 
 - File manager: files left + editor right again (viewport-sized textarea)

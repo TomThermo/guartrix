@@ -9,5 +9,21 @@ export default defineConfig({
     ],
     exclude: ["**/node_modules/**", "**/dist/**", "e2e/**"],
     environment: "node",
+    coverage: {
+      provider: "v8",
+      include: [
+        "apps/api/src/auth/csrf.ts",
+        "apps/api/src/auth/api-rate-limit.ts",
+        "apps/api/src/auth/password-hash.ts",
+        "apps/api/src/safe-url.ts",
+      ],
+      exclude: ["**/*.test.ts", "**/node_modules/**"],
+      // Floor for critical security modules (raises as more fetchPinned paths are tested).
+      thresholds: {
+        lines: 65,
+        functions: 60,
+        statements: 65,
+      },
+    },
   },
 });

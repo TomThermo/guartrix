@@ -15,6 +15,11 @@ describe("joinPath", () => {
     expect(joinPath("", "plugins")).toBe("plugins");
     expect(joinPath("plugins", "LuckPerms")).toBe("plugins/LuckPerms");
   });
+
+  it("does not evaluate .. as client-side jail (server enforces)", () => {
+    // UI join is cosmetic; real jail is resolveSafePath on the agent.
+    expect(joinPath("world", "..")).toBe("world/..");
+  });
 });
 
 describe("isArchiveName", () => {

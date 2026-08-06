@@ -73,7 +73,11 @@ type CacheEntry = {
 
 const cache = new Map<string, CacheEntry>();
 /** Wings-like: serve stale while a refresh runs in the background. */
-const DISK_TTL_MS = 30_000;
+function diskTtlMs(): number {
+  const raw = Number(process.env.DISK_USAGE_CACHE_MS ?? 30_000);
+  if (!Number.isFinite(raw) || raw < 1_000) return 30_000;
+  return Math.min(raw, 10 * 60_000);
+}
 
 export function peekDiskUsage(serverId: string): DiskUsageBreakdown | null {
   return cache.get(serverId)?.value ?? null;
@@ -92,7 +96,7 @@ export async function getDiskUsageCached(
   serverId: string,
   opts?: { maxAgeMs?: number; force?: boolean },
 ): Promise<DiskUsageBreakdown> {
-  const maxAge = opts?.maxAgeMs ?? DISK_TTL_MS;
+  const maxAge = opts?.maxAgeMs ?? diskTtlMs();
   const entry = cache.get(serverId);
   const age = entry ? Date.now() - entry.at : Number.POSITIVE_INFINITY;
   const fresh = entry && age <= maxAge && !opts?.force;

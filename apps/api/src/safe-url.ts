@@ -295,26 +295,36 @@ export function fetchPinned(
   const pinned = resolved.addresses;
   let pinIndex = 0;
   const lookup: LookupFunction = (_hostname, options, callback) => {
+    const opts =
+      typeof options === "function" || options == null
+        ? ({} as { family?: number; all?: boolean })
+        : (options as { family?: number; all?: boolean });
     const cb =
       typeof options === "function"
         ? options
-        : (callback as (
-            err: NodeJS.ErrnoException | null,
-            address: string,
-            family: number,
-          ) => void);
+        : (callback as (...args: unknown[]) => void);
+
     const choice = pinned[pinIndex % pinned.length]!;
     pinIndex += 1;
-    // Prefer family match when Node asks for a specific family
-    const wantFamily =
-      typeof options === "object" && options && "family" in options
-        ? Number((options as { family?: number }).family)
-        : 0;
+    const wantFamily = Number(opts.family) || 0;
     const match =
       wantFamily === 4 || wantFamily === 6
         ? pinned.find((a) => a.family === wantFamily) ?? choice
         : choice;
-    cb(null, match.address, match.family);
+
+    if (opts.all) {
+      const list = pinned.map((a) => ({
+        address: a.address,
+        family: a.family,
+      }));
+      (cb as (err: null, addresses: typeof list) => void)(null, list);
+      return;
+    }
+    (cb as (
+      err: NodeJS.ErrnoException | null,
+      address: string,
+      family: number,
+    ) => void)(null, match.address, match.family);
   };
 
   return new Promise<Response>((resolve, reject) => {

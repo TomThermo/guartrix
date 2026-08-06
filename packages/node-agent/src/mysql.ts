@@ -25,6 +25,7 @@ export {
   restoreMysqlDatabaseFromFile,
   generateMysqlPassword,
   readOrCreateMysqlRootPassword,
+  assertSafeMysqlRemote,
   type CreateMysqlDatabaseInput,
   type CreateMysqlDatabaseResult,
 } from "./mysql-crud.js";

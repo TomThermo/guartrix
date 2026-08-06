@@ -127,6 +127,7 @@ export {
   MYSQL_CONTAINER,
   MYSQL_IMAGE,
   GUARTRIX_NETWORK,
+  assertSafeMysqlRemote,
   type MysqlStatus,
   type CreateMysqlDatabaseInput,
   type CreateMysqlDatabaseResult,

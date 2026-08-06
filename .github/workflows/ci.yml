@@ -39,6 +39,9 @@ jobs:
       - name: Unit tests
         run: npm test
 
+      - name: Coverage floor (auth + safe-url)
+        run: npm run test:coverage
+
       - name: npm audit (high+, production deps)
         continue-on-error: true
         run: npm audit --omit=dev --audit-level=high

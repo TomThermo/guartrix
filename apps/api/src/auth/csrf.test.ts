@@ -65,4 +65,23 @@ describe("CSRF token", () => {
       "Invalid CSRF token",
     );
   });
+
+  it("rejects missing header and missing session token", () => {
+    expect(assertCsrfToken(req({}, { authenticated: true }))).toMatch(
+      /Missing CSRF/i,
+    );
+    const session = { csrfToken: "abc123", authenticated: true };
+    expect(assertCsrfToken(req({}, session))).toBe("Invalid CSRF token");
+  });
+
+  it("accepts long random tokens with constant-time compare path", () => {
+    const session: { csrfToken?: string; authenticated?: boolean } = {
+      authenticated: true,
+    };
+    const token = issueSessionCsrfToken(session);
+    expect(assertCsrfToken(req({ [CSRF_HEADER]: token }, session))).toBeNull();
+    expect(
+      assertCsrfToken(req({ [CSRF_HEADER]: `${token}x` }, session)),
+    ).toBe("Invalid CSRF token");
+  });
 });

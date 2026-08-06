@@ -133,12 +133,16 @@ may install Docker and Node.js via upstream convenience scripts when they are mi
 These are common for greenfield VPS installs but carry **residual supply-chain risk**
 (pipe-to-shell without pinning). For production hardening:
 
-1. Pre-install Docker and Node 22 from **pinned packages** or official repos on the node
-   before running the Guartrix installer (the script skips curl installs when binaries exist).
+1. **Preferred:** Pre-install Docker Engine and Node.js 22 from **pinned packages** or
+   official repos on the node **before** running the Guartrix installer. When
+   `docker` / `node` already exist on `PATH`, `install-daemon.sh` **skips** the
+   curl|bash convenience scripts entirely (offline / air-gapped friendly).
 2. When you must use the convenience scripts, **pin versions** (e.g. specific Docker CE
    package, Node 22.x from NodeSource) and verify **checksums / signatures** per the
    vendor docs — do not blindly re-run `curl | sh` on every deploy.
 3. Prefer cloning or unpacking a **tagged Guartrix release** (`--repo` + `--branch`) rather
    than pulling arbitrary `main` on sensitive hosts.
+4. Keep the daemon firewall rule **panel-IP only** (`PANEL_URL` + ufw) so a compromised
+   install script still cannot expose the daemon to the world.
 
 See also [Security — install supply chain](security.md#install-script-supply-chain-residual-risk).
