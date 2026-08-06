@@ -467,6 +467,23 @@ export const en = {
     portInUse: "Port {port}/{protocol} is already in use on this node",
     portChecking: "Checking port availability…",
     portSuggested: "A free port is suggested automatically when you change node or type.",
+    sectionDetails: "Server details",
+    sectionSoftware: "Software",
+    sectionWorld: "World",
+    sectionResources: "Resources",
+    sectionImport: "Import archive",
+    importHelp:
+      "Upload a .zip or .tar.gz of an existing server folder (world, configs, mods/plugins). Set the correct type and Minecraft version so Guartrix can manage the jar.",
+    importArchive: "Archive",
+    gamemode: "Gamemode",
+    difficulty: "Difficulty",
+    cpuLimit: "CPU limit",
+    cpuLimitHelp: "100% equals one CPU core. Restart the server to apply a new limit.",
+    diskHelp:
+      "Max storage for this server. Uploads are blocked and a running server may stop if this limit is exceeded.",
+    quotaServersLeft: "{count} server slot left",
+    quotaServersLeftPlural: "{count} server slots left",
+    quotaRamLeft: "{gb} GB RAM left in your pool",
   },
   users: {
     title: "Users",

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { Link, Navigate, useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import {
   BEDROCK_SERVER_TYPES,
   JAVA_SERVER_TYPES,
@@ -10,7 +10,6 @@ import {
 import {
   Alert,
   Button,
-  Card,
   Col,
   Form,
   Nav,
@@ -21,9 +20,46 @@ import { api } from "../api";
 import { useAuth } from "../auth";
 import { useI18n } from "../i18n/react";
 import { MemorySelect } from "../components/MemorySelect";
+import {
+  AdminInsetCard,
+  AdminPageShell,
+  AdminPanelCard,
+} from "../components/admin/AdminPageShell";
 import { typeIcon, typeLabel, formatGb } from "../utils";
 
 type Mode = "create" | "import";
+
+function TypePicker({
+  label,
+  types,
+  selected,
+  onSelect,
+}: {
+  label: string;
+  types: ServerType[];
+  selected: ServerType;
+  onSelect: (type: ServerType) => void;
+}) {
+  return (
+    <div className="create-type-group">
+      <p className="create-type-group__label">{label}</p>
+      <div className="create-type-grid" role="group" aria-label={label}>
+        {types.map((st) => (
+          <button
+            key={st}
+            type="button"
+            className={`create-type-tile ${selected === st ? "is-active" : ""}`}
+            aria-pressed={selected === st}
+            onClick={() => onSelect(st)}
+          >
+            <i className={`fa-solid ${typeIcon(st)}`} aria-hidden />
+            <span>{typeLabel(st)}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export function CreateServerPage() {
   const navigate = useNavigate();
@@ -73,6 +109,14 @@ export function CreateServerPage() {
     !selectedNode ||
     selectedNode.memoryMb <= 0 ||
     memoryMb <= (selectedNode.memoryUsableMb ?? selectedNode.memoryAvailableMb);
+
+  const selectedFreeMb =
+    selectedNode == null
+      ? 0
+      : selectedNode.memoryUsableMb ?? selectedNode.memoryAvailableMb;
+
+  const submitDisabled =
+    busy || !mcVersion || !nodeRamOk || !nodeId || !!portError || (mode === "import" && !archive);
 
   useEffect(() => {
     void api
@@ -133,7 +177,7 @@ export function CreateServerPage() {
     return () => {
       cancelled = true;
     };
-  }, [type]);
+  }, [type, t]);
 
   useEffect(() => {
     setPortManuallyEdited(false);
@@ -191,11 +235,6 @@ export function CreateServerPage() {
       window.clearTimeout(timer);
     };
   }, [nodeId, port, type, t]);
-
-  const selectedFreeMb =
-    selectedNode == null
-      ? 0
-      : selectedNode.memoryUsableMb ?? selectedNode.memoryAvailableMb;
 
   async function onCreate(e: FormEvent) {
     e.preventDefault();
@@ -288,8 +327,28 @@ export function CreateServerPage() {
     }
   }
 
-  const metaFields = (
-    <>
+  const quotaChips =
+    serversLeft != null || remainingRamMb != null ? (
+      <div className="create-server-quota">
+        {serversLeft != null && (
+          <span className="account-status-chip is-off">
+            {serversLeft === 1
+              ? t("createServer.quotaServersLeft", { count: serversLeft })
+              : t("createServer.quotaServersLeftPlural", { count: serversLeft })}
+          </span>
+        )}
+        {remainingRamMb != null && (
+          <span className="account-status-chip is-off">
+            {t("createServer.quotaRamLeft", {
+              gb: (remainingRamMb / 1024).toFixed(remainingRamMb % 1024 === 0 ? 0 : 1),
+            })}
+          </span>
+        )}
+      </div>
+    ) : null;
+
+  const detailsCard = (
+    <AdminPanelCard title={t("createServer.sectionDetails")} icon="fa-server">
       <Form.Group className="mb-3" controlId="name">
         <Form.Label>{t("createServer.name")}</Form.Label>
         <Form.Control
@@ -301,7 +360,7 @@ export function CreateServerPage() {
         />
       </Form.Group>
 
-      <Form.Group className="mb-3" controlId="node">
+      <Form.Group className="mb-0" controlId="node">
         <Form.Label>{t("createServer.node")}</Form.Label>
         <Form.Select
           value={nodeId}
@@ -332,79 +391,47 @@ export function CreateServerPage() {
           })}
         </Form.Select>
         {selectedNode && (
-          <Form.Text
-            className={nodeRamOk ? "text-secondary" : "text-danger"}
+          <div
+            className={`create-server-node-meta ${nodeRamOk ? "text-secondary" : "is-error"}`}
           >
             {selectedNode.memoryMb > 0 ? (
               nodeRamOk ? (
-                <>
-                  {t("createServer.nodeHasUsable", {
-                    free: formatGb(selectedFreeMb),
-                    reserved: formatGb(selectedNode.memoryReserveMb ?? 0),
-                    used: formatGb(selectedNode.memoryUsedMb),
-                    total: formatGb(selectedNode.memoryMb),
-                  })}
-                </>
+                t("createServer.nodeHasUsable", {
+                  free: formatGb(selectedFreeMb),
+                  reserved: formatGb(selectedNode.memoryReserveMb ?? 0),
+                  used: formatGb(selectedNode.memoryUsedMb),
+                  total: formatGb(selectedNode.memoryMb),
+                })
               ) : (
-                <>
-                  {t("createServer.notEnoughRamDetail", {
-                    requested: formatGb(memoryMb),
-                    usable: formatGb(selectedFreeMb),
-                  })}
-                </>
+                t("createServer.notEnoughRamDetail", {
+                  requested: formatGb(memoryMb),
+                  usable: formatGb(selectedFreeMb),
+                })
               )
             ) : (
-              <>{t("createServer.nodeCapacityUnknown")}</>
+              t("createServer.nodeCapacityUnknown")
             )}
-          </Form.Text>
+          </div>
         )}
       </Form.Group>
+    </AdminPanelCard>
+  );
 
-      <Form.Group className="mb-3">
-        <Form.Label>{t("createServer.type")}</Form.Label>
-        <div className="mb-2">
-          <Form.Text className="text-muted d-block mb-1">
-            {t("createServer.typeJava")}
-          </Form.Text>
-          <div className="type-picker d-flex flex-wrap gap-2">
-            {JAVA_SERVER_TYPES.map((st) => (
-              <Button
-                key={st}
-                type="button"
-                size="sm"
-                variant={type === st ? "primary" : "outline-secondary"}
-                className="type-picker-btn"
-                onClick={() => setType(st)}
-              >
-                <i className={`fa-solid ${typeIcon(st)} me-1`} />
-                {typeLabel(st)}
-              </Button>
-            ))}
-          </div>
-        </div>
-        <div>
-          <Form.Text className="text-muted d-block mb-1">
-            {t("createServer.typeBedrock")}
-          </Form.Text>
-          <div className="type-picker d-flex flex-wrap gap-2">
-            {BEDROCK_SERVER_TYPES.map((st) => (
-              <Button
-                key={st}
-                type="button"
-                size="sm"
-                variant={type === st ? "primary" : "outline-secondary"}
-                className="type-picker-btn"
-                onClick={() => setType(st)}
-              >
-                <i className={`fa-solid ${typeIcon(st)} me-1`} />
-                {typeLabel(st)}
-              </Button>
-            ))}
-          </div>
-        </div>
-      </Form.Group>
-
-      <Form.Group className="mb-3" controlId="version">
+  const softwareCard = (
+    <AdminPanelCard title={t("createServer.sectionSoftware")} icon="fa-cube">
+      <TypePicker
+        label={t("createServer.typeJava")}
+        types={JAVA_SERVER_TYPES}
+        selected={type}
+        onSelect={setType}
+      />
+      <TypePicker
+        label={t("createServer.typeBedrock")}
+        types={BEDROCK_SERVER_TYPES}
+        selected={type}
+        onSelect={setType}
+      />
+      <Form.Group className="mb-0 mt-3" controlId="version">
         <Form.Label>{t("createServer.version")}</Form.Label>
         <Form.Select
           value={mcVersion}
@@ -420,9 +447,13 @@ export function CreateServerPage() {
           ))}
         </Form.Select>
       </Form.Group>
+    </AdminPanelCard>
+  );
 
-      {mode === "create" && (
-        <Row className="g-3 mb-3">
+  const worldCard =
+    mode === "create" ? (
+      <AdminPanelCard title={t("createServer.sectionWorld")} icon="fa-map">
+        <Row className="g-3">
           <Col md={6}>
             <Form.Group controlId="world-preset">
               <Form.Label>{t("createServer.worldPreset")}</Form.Label>
@@ -453,7 +484,7 @@ export function CreateServerPage() {
           </Col>
           <Col md={6}>
             <Form.Group controlId="gamemode">
-              <Form.Label>Gamemode</Form.Label>
+              <Form.Label>{t("createServer.gamemode")}</Form.Label>
               <Form.Select
                 value={gamemode}
                 onChange={(e) => setGamemode(e.target.value)}
@@ -467,7 +498,7 @@ export function CreateServerPage() {
           </Col>
           <Col md={6}>
             <Form.Group controlId="difficulty">
-              <Form.Label>Difficulty</Form.Label>
+              <Form.Label>{t("createServer.difficulty")}</Form.Label>
               <Form.Select
                 value={difficulty}
                 onChange={(e) => setDifficulty(e.target.value)}
@@ -480,224 +511,181 @@ export function CreateServerPage() {
             </Form.Group>
           </Col>
         </Row>
-      )}
+      </AdminPanelCard>
+    ) : null;
 
-      <Row className="g-3 mb-3">
-        <Col md={6}>
-          <Form.Group controlId="port">
-            <Form.Label>{t("createServer.port")}</Form.Label>
-            <Form.Control
-              type="number"
-              min={1024}
-              max={65535}
-              value={port}
-              onChange={(e) => {
-                setPortManuallyEdited(true);
-                setPort(Number(e.target.value));
-              }}
-              isInvalid={!!portError}
-              required
-            />
-            {portChecking && (
-              <Form.Text className="text-secondary">
-                {t("createServer.portChecking")}
-              </Form.Text>
-            )}
-            {portError && (
-              <Form.Control.Feedback type="invalid">
-                {portError}
-              </Form.Control.Feedback>
-            )}
-            {!portError && !portManuallyEdited && nodeId && (
-              <Form.Text className="text-secondary">
-                {t("createServer.portSuggested")}
-              </Form.Text>
-            )}
-          </Form.Group>
-        </Col>
-        <Col md={6}>
-          <Form.Group controlId="memory">
-            <Form.Label>{t("createServer.memory")}</Form.Label>
-            <MemorySelect
-              valueMb={memoryMb}
-              onChangeMb={setMemoryMb}
-              required
-              maxMb={
-                remainingRamMb != null && selectedNode && selectedNode.memoryMb > 0
-                  ? Math.min(remainingRamMb, selectedFreeMb)
-                  : remainingRamMb != null
-                    ? remainingRamMb
-                    : selectedNode && selectedNode.memoryMb > 0
-                      ? selectedFreeMb
-                      : undefined
-              }
-            />
-            {(serversLeft != null || remainingRamMb != null) && (
-              <Form.Text className="text-secondary">
-                {serversLeft != null && (
-                  <span>
-                    {serversLeft} server slot{serversLeft === 1 ? "" : "s"} left
-                  </span>
-                )}
-                {serversLeft != null && remainingRamMb != null && " · "}
-                {remainingRamMb != null && (
-                  <span>
-                    {(remainingRamMb / 1024).toFixed(
-                      remainingRamMb % 1024 === 0 ? 0 : 1,
-                    )}{" "}
-                    GB RAM left in your pool
-                  </span>
-                )}
-              </Form.Text>
-            )}
-          </Form.Group>
-        </Col>
-      </Row>
+  const importCard =
+    mode === "import" ? (
+      <AdminPanelCard title={t("createServer.sectionImport")} icon="fa-file-import">
+        <Alert variant="secondary" className="small mb-3">
+          {t("createServer.importHelp")}
+        </Alert>
+        <Form.Group className="mb-0" controlId="archive">
+          <Form.Label>{t("createServer.importArchive")}</Form.Label>
+          <Form.Control
+            type="file"
+            accept=".zip,.tar.gz,.tgz,application/zip,application/gzip"
+            required
+            onChange={(e) => {
+              const input = e.target as HTMLInputElement;
+              setArchive(input.files?.[0] ?? null);
+            }}
+          />
+        </Form.Group>
+      </AdminPanelCard>
+    ) : null;
 
-      <Row className="g-3 mb-3">
-        <Col md={6}>
-          <Form.Group controlId="disk">
-            <Form.Label>{t("createServer.disk")}</Form.Label>
-            <MemorySelect valueMb={diskMb} onChangeMb={setDiskMb} required />
-            <Form.Text className="text-secondary">
-              Max storage for this server. Uploads are blocked and a running server
-              may stop if this limit is exceeded.
-            </Form.Text>
-          </Form.Group>
-        </Col>
-        <Col md={6}>
-          <Form.Group controlId="cpu">
-            <Form.Label>CPU limit</Form.Label>
-            <Form.Select
-              value={cpuLimit}
-              onChange={(e) => setCpuLimit(Number(e.target.value))}
-            >
-              <option value={0}>{t("createServer.unlimited")}</option>
-              <option value={50}>0.5 core (50%)</option>
-              <option value={100}>1 core (100%)</option>
-              <option value={200}>2 cores (200%)</option>
-              <option value={400}>4 cores (400%)</option>
-              <option value={800}>8 cores (800%)</option>
-            </Form.Select>
-            <Form.Text className="text-secondary">
-              100% equals one CPU core. Restart the server to apply a new limit.
-            </Form.Text>
-          </Form.Group>
-        </Col>
-      </Row>
-    </>
+  const resourcesCard = (
+    <AdminPanelCard title={t("createServer.sectionResources")} icon="fa-gauge-high">
+      <Form.Group className="mb-3" controlId="port">
+        <Form.Label>{t("createServer.port")}</Form.Label>
+        <Form.Control
+          type="number"
+          min={1024}
+          max={65535}
+          value={port}
+          onChange={(e) => {
+            setPortManuallyEdited(true);
+            setPort(Number(e.target.value));
+          }}
+          isInvalid={!!portError}
+          required
+        />
+        {portChecking && (
+          <Form.Text className="text-secondary">{t("createServer.portChecking")}</Form.Text>
+        )}
+        {portError && (
+          <Form.Control.Feedback type="invalid">{portError}</Form.Control.Feedback>
+        )}
+        {!portError && !portManuallyEdited && nodeId && (
+          <Form.Text className="text-secondary">{t("createServer.portSuggested")}</Form.Text>
+        )}
+      </Form.Group>
+
+      <Form.Group className="mb-3" controlId="memory">
+        <Form.Label>{t("createServer.memory")}</Form.Label>
+        <MemorySelect
+          valueMb={memoryMb}
+          onChangeMb={setMemoryMb}
+          required
+          maxMb={
+            remainingRamMb != null && selectedNode && selectedNode.memoryMb > 0
+              ? Math.min(remainingRamMb, selectedFreeMb)
+              : remainingRamMb != null
+                ? remainingRamMb
+                : selectedNode && selectedNode.memoryMb > 0
+                  ? selectedFreeMb
+                  : undefined
+          }
+        />
+      </Form.Group>
+
+      <Form.Group className="mb-3" controlId="disk">
+        <Form.Label>{t("createServer.disk")}</Form.Label>
+        <MemorySelect valueMb={diskMb} onChangeMb={setDiskMb} required />
+        <Form.Text className="text-secondary">{t("createServer.diskHelp")}</Form.Text>
+      </Form.Group>
+
+      <Form.Group className="mb-0" controlId="cpu">
+        <Form.Label>{t("createServer.cpuLimit")}</Form.Label>
+        <Form.Select value={cpuLimit} onChange={(e) => setCpuLimit(Number(e.target.value))}>
+          <option value={0}>{t("createServer.unlimited")}</option>
+          <option value={50}>0.5 core (50%)</option>
+          <option value={100}>1 core (100%)</option>
+          <option value={200}>2 cores (200%)</option>
+          <option value={400}>4 cores (400%)</option>
+          <option value={800}>8 cores (800%)</option>
+        </Form.Select>
+        <Form.Text className="text-secondary">{t("createServer.cpuLimitHelp")}</Form.Text>
+      </Form.Group>
+    </AdminPanelCard>
   );
+
+  const submitButton =
+    mode === "create" ? (
+      <Button type="submit" variant="primary" disabled={submitDisabled}>
+        {busy ? (
+          <>
+            <Spinner size="sm" className="me-2" />
+            {type === "FORGE" || type === "NEOFORGE"
+              ? t("createServer.installing")
+              : t("createServer.creating")}
+          </>
+        ) : (
+          <>
+            <i className="fa-solid fa-download me-2" aria-hidden />
+            {t("createServer.create")}
+          </>
+        )}
+      </Button>
+    ) : (
+      <Button type="submit" variant="primary" disabled={submitDisabled}>
+        {busy ? (
+          <>
+            <Spinner size="sm" className="me-2" />
+            {t("createServer.importBusy")}
+          </>
+        ) : (
+          <>
+            <i className="fa-solid fa-file-import me-2" aria-hidden />
+            {t("createServer.import")}
+          </>
+        )}
+      </Button>
+    );
 
   if (!allowed) {
     return <Navigate to="/" replace />;
   }
 
   return (
-    <>
-      <div className="d-flex justify-content-between align-items-start gap-3 mb-4">
-        <div>
-          <h1 className="h3 mb-1">
-            <i className="fa-solid fa-plus me-2 text-primary" />
-            {t("createServer.title")}
-          </h1>
-          <p className="text-secondary mb-0">{t("createServer.subtitle")}</p>
+    <AdminPageShell
+      className="create-server-page"
+      title={t("createServer.title")}
+      subtitle={t("createServer.subtitle")}
+      icon="fa-plus"
+      backTo="/"
+      backLabel={t("common.cancel")}
+      error={error}
+      onDismissError={() => setError(null)}
+    >
+      {quotaChips}
+
+      <Nav
+        variant="pills"
+        className="create-server-mode-nav"
+        activeKey={mode}
+        onSelect={(k) => k && setMode(k as Mode)}
+      >
+        <Nav.Item>
+          <Nav.Link eventKey="create">
+            <i className="fa-solid fa-plus" aria-hidden />
+            {t("createServer.modeCreate")}
+          </Nav.Link>
+        </Nav.Item>
+        <Nav.Item>
+          <Nav.Link eventKey="import">
+            <i className="fa-solid fa-file-import" aria-hidden />
+            {t("createServer.modeImport")}
+          </Nav.Link>
+        </Nav.Item>
+      </Nav>
+
+      <Form onSubmit={(e) => void (mode === "create" ? onCreate(e) : onImport(e))}>
+        <div className="create-server-layout">
+          <div className="create-server-stack">
+            {importCard}
+            {detailsCard}
+            {softwareCard}
+            {worldCard}
+          </div>
+
+          <div className="create-server-side">
+            {resourcesCard}
+            <AdminInsetCard className="create-server-submit">{submitButton}</AdminInsetCard>
+          </div>
         </div>
-        <Link to="/" className="btn btn-sm btn-outline-secondary">
-          {t("common.cancel")}
-        </Link>
-      </div>
-
-      {error && (
-        <Alert variant="danger" dismissible onClose={() => setError(null)}>
-          {error}
-        </Alert>
-      )}
-
-      <Card className="border-0 shadow-sm">
-        <Card.Header className="bg-transparent">
-          <Nav variant="tabs" activeKey={mode} onSelect={(k) => k && setMode(k as Mode)}>
-            <Nav.Item>
-              <Nav.Link eventKey="create">{t("createServer.modeCreate")}</Nav.Link>
-            </Nav.Item>
-            <Nav.Item>
-              <Nav.Link eventKey="import">{t("createServer.modeImport")}</Nav.Link>
-            </Nav.Item>
-          </Nav>
-        </Card.Header>
-        <Card.Body>
-          {mode === "create" ? (
-            <Form onSubmit={(e) => void onCreate(e)}>
-              {metaFields}
-              <Button
-                type="submit"
-                variant="primary"
-                disabled={
-                  busy || !mcVersion || !nodeRamOk || !nodeId || !!portError
-                }
-              >
-                {busy ? (
-                  <>
-                    <Spinner size="sm" className="me-2" />
-                    {type === "FORGE" || type === "NEOFORGE"
-                      ? t("createServer.installing")
-                      : t("createServer.creating")}
-                  </>
-                ) : (
-                  <>
-                    <i className="fa-solid fa-download me-2" />
-                    {t("createServer.create")}
-                  </>
-                )}
-              </Button>
-            </Form>
-          ) : (
-            <Form onSubmit={(e) => void onImport(e)}>
-              <Alert variant="light" className="border small mb-3">
-                Upload a <code>.zip</code> or <code>.tar.gz</code> of an existing server folder
-                (world, configs, mods/plugins). Set the correct type and Minecraft version so
-                Guartrix can manage the jar.
-              </Alert>
-              <Form.Group className="mb-3" controlId="archive">
-                <Form.Label>Archive</Form.Label>
-                <Form.Control
-                  type="file"
-                  accept=".zip,.tar.gz,.tgz,application/zip,application/gzip"
-                  required
-                  onChange={(e) => {
-                    const input = e.target as HTMLInputElement;
-                    setArchive(input.files?.[0] ?? null);
-                  }}
-                />
-              </Form.Group>
-              {metaFields}
-              <Button
-                type="submit"
-                variant="primary"
-                disabled={
-                  busy ||
-                  !mcVersion ||
-                  !archive ||
-                  !nodeRamOk ||
-                  !nodeId ||
-                  !!portError
-                }
-              >
-                {busy ? (
-                  <>
-                    <Spinner size="sm" className="me-2" />
-                    {t("createServer.importBusy")}
-                  </>
-                ) : (
-                  <>
-                    <i className="fa-solid fa-file-import me-2" />
-                    {t("createServer.import")}
-                  </>
-                )}
-              </Button>
-            </Form>
-          )}
-        </Card.Body>
-      </Card>
-    </>
+      </Form>
+    </AdminPageShell>
   );
 }

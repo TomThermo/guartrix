@@ -471,6 +471,24 @@ export const nl: Messages = {
     portChecking: "Poortbeschikbaarheid controleren…",
     portSuggested:
       "Een vrije poort wordt automatisch voorgesteld bij wijziging van node of type.",
+    sectionDetails: "Servergegevens",
+    sectionSoftware: "Software",
+    sectionWorld: "Wereld",
+    sectionResources: "Resources",
+    sectionImport: "Archief importeren",
+    importHelp:
+      "Upload een .zip of .tar.gz van een bestaande servermap (wereld, configs, mods/plugins). Stel het juiste type en Minecraft-versie in zodat Guartrix de jar kan beheren.",
+    importArchive: "Archief",
+    gamemode: "Gamemode",
+    difficulty: "Moeilijkheidsgraad",
+    cpuLimit: "CPU-limiet",
+    cpuLimitHelp:
+      "100% is één CPU-kern. Herstart de server om een nieuwe limiet toe te passen.",
+    diskHelp:
+      "Max opslag voor deze server. Uploads worden geblokkeerd en een draaiende server kan stoppen als deze limiet wordt overschreden.",
+    quotaServersLeft: "{count} serverslot over",
+    quotaServersLeftPlural: "{count} serverslots over",
+    quotaRamLeft: "{gb} GB RAM over in je pool",
   },
   users: {
     title: "Gebruikers",
