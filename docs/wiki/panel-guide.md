@@ -64,7 +64,7 @@ More: [Application API & Mollie](application-api.md) · [Billing internals](bill
 
 ## Dashboard (server list)
 
-Home page lists every Minecraft server you can access: status, engine, RAM/CPU meters, and quick Start / Stop / Restart / Manage. A search box plus **status / node / type** filters narrow the list on larger installs.
+Home page lists every Minecraft server you can access: status, engine, RAM/CPU meters, and quick Start / Stop / Restart / Manage. A search box plus **status / node / type** filters narrow the list on larger installs. Large fleets use **paginated** `GET /api/servers` — the UI shows a **Load more** control when more pages remain.
 
 Each row shows clickable chips for **disk used / limit**, **online players** (`0/20`), **Whitelist on/off** (opens a toggle modal), and **plugin/mod updates** (opens Plugin Management). Chips deep-link into the matching server tab via `?tab=`.
 

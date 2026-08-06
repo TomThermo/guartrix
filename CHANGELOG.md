@@ -7,6 +7,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.1.1] — 2026-08-06
+
+- Docs sync: README capabilities + wiki Contents regroup; stats history, pagination, BackupSchedule notes; in-app Bedrock + upgrade-to-1.1
+- Operator-only promo docs index lives under `data/promo-docs/` (never published to GitHub)
+
 ## [1.1.0] — 2026-08-06
 
 ### Scale-ready minor

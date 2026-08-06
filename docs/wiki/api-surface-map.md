@@ -75,7 +75,7 @@ The daemon entrypoint also provides health, readiness, server status/power/comma
 | `files.ts`, `safe-archive.ts`, `sftp-jail.ts`, `sftp-handlers.ts` | Jailed file access, archive safety, SFTP permissions |
 | `mysql.ts` | Node-local MySQL helper and credentials handling |
 | `firewall.ts` | UFW port management |
-| `resource-monitor.ts`, `stats.ts`, `disk-usage.ts`, `disk-quota.ts`, `host-resources.ts` | Resource sampling and quota enforcement |
+| `resource-monitor.ts`, `stats.ts`, `stats-history.ts`, `disk-usage.ts`, `disk-quota.ts`, `host-resources.ts` | Live sampling, ~1h history ring, quota enforcement |
 | `player-history.ts` | Join/leave and recent-player history |
 | `config.ts`, `index.ts`, `default-icon.ts` | Runtime layout, boot wiring, defaults |
 

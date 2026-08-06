@@ -94,6 +94,16 @@ Used for:
 - live console output
 - status changes
 - event fan-out for the panel
+- live `{ type: "stats" }` samples
+
+### Stats routes
+
+Alongside power/status endpoints, the daemon serves:
+
+- live cached stats for a running server
+- `GET /servers/:id/stats/history` — ~1h in-memory ring (`packages/node-agent/src/stats-history.ts`); **lost on daemon restart**
+
+The panel proxies history as `GET /api/servers/:id/stats/history`.
 
 ## Lifecycle model
 

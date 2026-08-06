@@ -107,9 +107,13 @@ Details: [Activity log](activity-log.md)
 While a server is **RUNNING**, the daemon opens a Docker Engine API stats stream (`/containers/…/stats?stream=1`) — same approach as Pterodactyl Wings. Samples are:
 
 1. Cached on the daemon (`resourceMonitor`)
-2. Pushed over `/events` as `{ type: "stats", serverId, stats }`
-3. Forwarded by the panel into the console WebSocket (`type: "stats"`)
-4. Served instantly from cache on `GET /api/servers/:id/stats`
+2. Appended to an in-memory **~1 hour ring buffer** on the daemon (`packages/node-agent/src/stats-history.ts`) for charts
+3. Pushed over `/events` as `{ type: "stats", serverId, stats }`
+4. Forwarded by the panel into the console WebSocket (`type: "stats"`)
+5. Served instantly from cache on `GET /api/servers/:id/stats`
+6. History via panel proxy `GET /api/servers/:id/stats/history` → daemon `GET /servers/:id/stats/history`
+
+**Note:** stats history lives on the **daemon process** — it is lost if that node/daemon restarts (not stored in panel MySQL).
 
 Disk walks use a **30s cache** (stale-while-revalidate) so UI polls never block on large worlds.
 

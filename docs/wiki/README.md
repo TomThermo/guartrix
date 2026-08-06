@@ -19,50 +19,82 @@ Operator and developer documentation for the Guartrix Minecraft hosting panel.
 | **[Panel guide (screenshots)](panel-guide.md)** | Full UI tour — login, dashboard, console, SFTP, mods, admin, … |
 | [Install the panel](install-panel.md) | Ubuntu install (download → run) + existing checkout |
 | [Install nodes](install-nodes.md) | Add remote daemons (SSH wizard / curl) |
+| [Upgrade to 1.1](upgrade-to-1.1.md) | 1.0.x → 1.1.0 migrate, env, scale smoke |
 
-## Contents
+## Getting started
 
 | Page | Description |
 |------|-------------|
-| [Architecture](architecture.md) | Tech stack (Node, Vite, React, Fastify, Prisma/MySQL, Docker, Redis), monorepo, panel ↔ daemon |
-| [API and surface map](api-surface-map.md) | Full inventory of UI pages, route families, daemon routes, packages, scripts, and schema domains |
-| [Environment variables](env-reference.md) | `.env` / daemon env knobs (local `data/daemon.env` vs remote `/var/lib/guartrix/daemon.env`) |
-| [Panel settings (Admin UI)](panel-settings.md) | Domain, SMTP, HTTPS, quotas, alerts via Admin → Settings |
-| [Status overview](statusline.md) | Admin → Status health board (web, API, watchdog, nodes) |
+| [Architecture](architecture.md) | Tech stack, monorepo, panel ↔ daemon, stats history |
+| [Environment variables](env-reference.md) | `.env` / daemon env knobs |
+| [Development](development.md) | Local `dev:*`, Vitest, CI, i18n |
+
+## Panel
+
+| Page | Description |
+|------|-------------|
 | [Accounts & quotas](accounts-and-quotas.md) | Register, verify, reset, quotas, subusers |
-| [Auth and session internals](auth-and-session-internals.md) | Sessions, TOTP, API keys, app passwords, daemon auth, invite/reset token surfaces |
-| [Server management](server-management.md) | Create/import/clone/reinstall/transfer, Java + Bedrock server types, world tools, resource packs |
-| [Databases](databases.md) | Per-server MySQL on the node, quotas, shared Docker MySQL notes |
-| [Files and backups](files-and-backups.md) | File manager, SFTP, jail rules, backup and restore flows |
-| [Networking and allocations](networking-and-allocations.md) | Ports, native Bedrock (UDP), Geyser, BlueMap 8100, Velocity/Bungee helpers, Docker networks |
-| [Player management](player-management.md) | Online players, whitelist, bans, moderation, history |
-| [Mods, plugins, and modpacks](mods-plugins-and-modpacks.md) | Addons, CurseForge, engine compatibility, modpacks |
-| [SFTP](sftp.md) | Per-node SFTP, username format, permissions |
-| [Notifications and alerts](notifications-and-alerts.md) | Email, activity webhook, per-server Discord status, push |
-| [Operations](operations.md) | Start/stop, systemd vs start.sh, watchdog, backups, logs, ports |
-| [Activity log](activity-log.md) | Audit trail, filters, retention, Discord/email alerts |
-| **[API overview](api-overview.md)** | Auth types, quick start, route map |
-| **[API docs UI](api-docs-ui.md)** | Panel `/api-docs` product (separate from wiki) |
-| **[API explorer](api-explorer.md)** | Interactive Try it + cURL/PHP/Python/… |
-| **[API examples](api-examples.md)** | curl + sample JSON request/response |
-| [API conventions](api-conventions.md) | Errors, rate limits, pagination, headers |
-| [Client API](client-api.md) | Personal `gt_` keys — permissions & endpoint index |
-| [OpenAPI](../openapi.yaml) | Machine-readable Client + Application paths |
-| [Application API & Mollie](application-api.md) | Admin `gta_` keys, provisioning, billing automation |
-| [Billing internals](billing-internals.md) | Plan templates, payment lifecycle, quota application, subscriptions, machine API |
-| [Licensing](licensing.md) | License key, Admin → License, remote validate API |
-| [License flow internals](license-flow-internals.md) | Signed claims, daemon ticketing, grace/fallback behavior, repo boundary |
-| [Release builds (sell / ship)](release-builds.md) | Minified bundles, tarball, password `/download` zips |
-| [Build and release internals](build-and-release-internals.md) | `build/`, staging, sanitize rules, package scripts, release pipeline |
-| [Prod-web and downloads](prod-web-and-downloads.md) | Edge server, reverse proxy, TLS, `/download` boundary |
+| [Panel settings (Admin UI)](panel-settings.md) | Domain, SMTP, HTTPS, quotas, alerts |
+| [Status overview](statusline.md) | Admin → Status health board |
+| [Activity log](activity-log.md) | Audit trail, filters, retention, alerts |
+| [Notifications and alerts](notifications-and-alerts.md) | Email, webhook, Discord status, push |
+| [Licensing](licensing.md) | License key, Admin → License, free tier |
+| [Auth and session internals](auth-and-session-internals.md) | Sessions, TOTP, API keys, daemon auth |
+| [Billing internals](billing-internals.md) | Plans, Mollie, subscriptions |
+| [License flow internals](license-flow-internals.md) | Signed claims, tickets, repo boundary |
+
+## Nodes
+
+| Page | Description |
+|------|-------------|
+| [Install nodes](install-nodes.md) | Remote daemons |
+| [Daemon API](daemon-api.md) | Node control plane, routes, auth, metrics, stats history |
+| [Node-agent internals](node-agent-internals.md) | Docker, files, quotas, SFTP, MySQL, stats ring |
+| [SFTP](sftp.md) | Per-node SFTP, username format |
+| [Move between nodes](node-transfer.md) | Admin transfer |
+
+## Servers
+
+| Page | Description |
+|------|-------------|
+| [Server management](server-management.md) | Create/import/clone/reinstall/transfer, Java + Bedrock |
+| [Files and backups](files-and-backups.md) | File manager, SFTP jail, BackupSchedule |
+| [Databases](databases.md) | Per-server MySQL on the node |
+| [Networking and allocations](networking-and-allocations.md) | Ports, Bedrock UDP, Geyser, BlueMap |
+| [Player management](player-management.md) | Online, whitelist, bans, history |
+| [Mods, plugins, and modpacks](mods-plugins-and-modpacks.md) | Addons, CurseForge, modpacks |
 | [Schedules](schedules.md) | Schedule chains: backup → wait → restart → command |
-| [Move between nodes](node-transfer.md) | Admin transfer: stop → sync → rebind ports/DNS → start |
+
+## API
+
+| Page | Description |
+|------|-------------|
+| **[API overview](api-overview.md)** | Auth types, quick start, route map |
+| **[API docs UI](api-docs-ui.md)** | Panel `/api-docs` product |
+| **[API explorer](api-explorer.md)** | Interactive Try it |
+| **[API examples](api-examples.md)** | curl + sample JSON |
+| [API conventions](api-conventions.md) | Errors, rate limits, pagination |
+| [Client API](client-api.md) | Personal `gt_` keys |
+| [Application API & Mollie](application-api.md) | Admin `gta_` keys |
+| [OpenAPI](../openapi.yaml) | Machine-readable paths |
+| [API and surface map](api-surface-map.md) | UI pages, routes, packages, schema |
+
+## Security
+
+| Page | Description |
+|------|-------------|
 | [Security](security.md) | Hardening checklist and known controls |
-| [Scaling](scaling.md) · [100n/1000c roadmap](../scale-100n-1000c-roadmap.md) · [Upgrade to 1.1](upgrade-to-1.1.md) | Multi-node scale; Redis HA; 1.0→1.1 upgrade |
-| [Development](development.md) | Local `dev:*` workflow, Vitest + coverage floor, CI, i18n, Cursor Cloud env |
-| [Daemon API](daemon-api.md) | Node-local control plane, route groups, auth, metrics, reattach model |
-| [Node-agent internals](node-agent-internals.md) | Docker, files, quotas, SFTP, MySQL, firewall, player history |
-| [Shared contracts](shared-contracts.md) | Shared types, permissions, activity taxonomy, daemon JWT, license verification |
+
+## Operations
+
+| Page | Description |
+|------|-------------|
+| [Operations](operations.md) | Start/stop, systemd vs start.sh, watchdog, ports |
+| [Scaling](scaling.md) · [100n/1000c roadmap](../scale-100n-1000c-roadmap.md) | Multi-node scale; Redis HA |
+| [Prod-web and downloads](prod-web-and-downloads.md) | Edge server, TLS, `/download` |
+| [Release builds (sell / ship)](release-builds.md) | Minified bundles, password zips |
+| [Build and release internals](build-and-release-internals.md) | `build/`, staging, package scripts |
+| [Shared contracts](shared-contracts.md) | Types, permissions, daemon JWT, license verify |
 | **[Improvement map](../roadmap.md)** | Shipped product; customer go-live in install docs |
 
 ## Operator scripts
@@ -75,6 +107,7 @@ Operator and developer documentation for the Guartrix Minecraft hosting panel.
 | `scripts/install-panel.sh` / `install-daemon.sh` | Host installers |
 | `scripts/db-migrate.sh` | Prisma migrate deploy |
 | `scripts/monitor.sh` | Watchdog |
+| `scripts/scale-smoke.sh` | 1.1 readiness smoke |
 | `scripts/lib.sh` | Shared helpers |
 
 See also [Operations](operations.md) · [Release builds](release-builds.md) · [API surface map](api-surface-map.md) · [Contributing](../../CONTRIBUTING.md).
@@ -93,4 +126,4 @@ All screenshots live under [`assets/`](assets/) and are embedded in the [Panel g
 
 ## Version
 
-These docs track the **main** branch. When behavior or UI changes, update the relevant wiki page, screenshots (`scripts/capture-wiki-screenshots.mjs`), the public wiki mirror (`apps/web/src/wiki/wiki-content.ts`), and the root README hub.
+These docs track the **main** branch. When behavior or UI changes, update the relevant wiki page, screenshots (`scripts/capture-wiki-screenshots.mjs`), the public wiki mirror (`apps/web/src/wiki/`), and the root README hub.

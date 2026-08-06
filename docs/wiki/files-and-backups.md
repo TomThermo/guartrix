@@ -87,9 +87,11 @@ Main capabilities:
 - upload existing backup archives
 - restore to the current server
 - delete old backups
-- schedule recurring backups (daily, weekly, interval, or **cron** five-field expression)
+- schedule recurring backups (daily, weekly, interval, or **cron** five-field expression) stored as MySQL **`BackupSchedule`** rows (batched by `SCHEDULER_BACKUP_BATCH`)
 - optional **offsite hook** after each backup (`BACKUP_OFFSITE_CMD` or **Admin → Settings → Alerts**)
 - **MySQL dumps** for databases linked to the server are embedded under `guartrix-mysql/` in the archive and restored with the backup
+
+Distinct from [Schedules](schedules.md) step chains (backup → wait → restart → command).
 
 ### Backup behavior
 

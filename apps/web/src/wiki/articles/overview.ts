@@ -21,13 +21,8 @@ export const overviewArticles: WikiArticle[] = [
       {
         title: "Supported server families",
         bullets: [
-          "Vanilla",
-          "Paper",
-          "Purpur",
-          "Fabric",
-          "Quilt",
-          "Forge",
-          "NeoForge",
+          "Java: Vanilla, Paper, Purpur, Fabric, Quilt, Forge, NeoForge (+ optional Geyser)",
+          "Bedrock: official Mojang BDS (stable/preview), PocketMine-MP, Nukkit",
         ],
       },
       {
@@ -91,6 +86,14 @@ export const overviewArticles: WikiArticle[] = [
         paragraphs: [
           "Browsers hit prod-web (:80/:443), which serves the Vite build and proxies `/api` and `/ws` to the API on localhost :3001.",
           "The API talks to daemons with short-lived HS256 JWTs. Game servers run as Docker containers on each node.",
+        ],
+      },
+      {
+        title: "Resource monitoring",
+        bullets: [
+          "Live Docker stats stream while RUNNING (cached on the daemon, pushed over /events).",
+          "~1h in-memory stats history ring on the daemon for console charts (GET /api/servers/:id/stats/history).",
+          "History is lost if that node/daemon restarts — not stored in panel MySQL.",
         ],
       },
       {

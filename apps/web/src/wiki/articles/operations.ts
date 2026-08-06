@@ -191,7 +191,46 @@ export const operationsArticles: WikiArticle[] = [
           "Shared rate limits",
           "Transfer state",
           "Scheduler leader lock",
+          "Backup busy lock (BACKUP_BUSY_TTL_MS)",
+          "Daemon /events single-primary bridge lock + fan-out",
           "Console and event pub/sub across API replicas",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "upgrade-to-1.1",
+    title: "Upgrade to 1.1",
+    summary:
+      "Upgrade an existing 1.0.x panel to Guartrix 1.1.0: env knobs, migrate, rebuild, and scale smoke.",
+    category: "Operations",
+    keywords: ["upgrade", "1.1", "migrate", "scale", "redis", "rate limit"],
+    sourcePath: "docs/wiki/upgrade-to-1.1.md",
+    relatedSlugs: ["scaling", "operations", "env-reference"],
+    sections: [
+      {
+        title: "What 1.1.0 means",
+        paragraphs: [
+          "Control-plane scale work for ~100 nodes / ~1000 servers on one strong panel (batched schedules, pagination, Redis locks, daemon event bridge, server list indexes).",
+        ],
+      },
+      {
+        title: "Steps",
+        bullets: [
+          "Backup panel DB and data/ (tokens, sessions, license).",
+          "Pull or unpack 1.1.0.",
+          "Merge new env knobs (API_SESSION_READ_RATE_LIMIT, BACKUP_BUSY_TTL_MS, DAEMON_BRIDGE_*, ACTIVITY_LOG_RETENTION_DAYS, …).",
+          "npm run db:generate && bash scripts/db-migrate.sh",
+          "Rebuild and restart (operator: build-out + build/start.sh).",
+          "Smoke with scripts/scale-smoke.sh and /api/ready + daemon /ready.",
+        ],
+      },
+      {
+        title: "Known limits in 1.1",
+        bullets: [
+          "World transfers prefer node→node; MySQL dumps on transfer may briefly use panel temp.",
+          "Stats history lives on the daemon (lost if that node restarts).",
+          "Still load-test your fleet size before go-live.",
         ],
       },
     ],

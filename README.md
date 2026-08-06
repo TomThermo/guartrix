@@ -56,17 +56,19 @@ Full UI tour: [Panel guide](docs/wiki/panel-guide.md).
 
 ## Capabilities
 
-**Game servers** — create, import, clone, reinstall; change type/version; world reset and upload; live console and power controls; join card (copy/QR); seed map + optional BlueMap. **Java** and **native Bedrock** server families (BDS, PocketMine-MP, Nukkit) with UDP-primary networking for Bedrock.
+**Game servers** — create, import, clone, reinstall; change type/version; world reset and upload; live console and power controls; join card (copy/QR); seed map + optional BlueMap. **Java** and **native Bedrock** server families (BDS, PocketMine-MP, Nukkit) with UDP-primary networking for Bedrock. Admin **node→node transfer** (rebind ports/DNS).
 
-**Resources** — RAM, CPU, and disk limits; live Docker stats; optional schedules (backup → restart → commands); crash auto-restart; owner alerts and Discord status webhooks.
+**Resources** — RAM, CPU, and disk limits; live Docker stats plus ~1h **daemon-side stats history** for charts; optional Schedules chains and Backup tab schedules; crash auto-restart; owner alerts and Discord status webhooks.
 
-**Files & access** — IDE-style file manager (folder tree, Monaco editor tabs, drag-and-drop upload); SFTP on port 2022 (`{username}.{serverId}`); subusers with invite links and scoped permissions.
+**Files & access** — IDE-style file manager (folder tree, Monaco editor tabs, drag-and-drop upload); SFTP on port 2022 (`{username}.{serverId}`); subusers with invite links and scoped permissions; optional encrypted backups and offsite hook.
+
+**Players** — online list, whitelist, bans, and moderation history tabs.
 
 **Content** — Modrinth plugins/mods and modpacks; recommended plugin stacks; optional CurseForge; one-click Geyser; Velocity/Bungee **backend** helpers (does not host the proxy); BlueMap / world map.
 
-**Data** — backups (manual and scheduled); per-server MySQL on the node (may share Docker MySQL with the panel on full installs).
+**Data** — backups (manual and scheduled via `BackupSchedule`); per-server MySQL on the node (may share Docker MySQL with the panel on full installs).
 
-**Platform** — registration with email verification; quotas (new accounts start at zero); optional TOTP; activity log and alerts; Client API keys; Mollie billing and Application API; license validation via `license.guartrix.com` (unlicensed free tier: 1 node, 1 server, 10 GB disk); i18n EN/NL; Redis HA for multi-API; Admin → Settings for mail/alerts/quotas; Admin → Status health board.
+**Platform** — registration with email verification; quotas (new accounts start at zero); optional TOTP; activity log, Discord/email, and web-push alerts; GDPR export/delete; Client API keys; Mollie billing and Application API; in-panel **`/api-docs`**; license validation via `license.guartrix.com` (unlicensed free tier: 1 node, 1 server, 10 GB disk); i18n EN/NL; Redis HA (sessions, rate limits, backup busy lock, daemon event bridge); dual session rate budgets (`API_SESSION_RATE_LIMIT` + `API_SESSION_READ_RATE_LIMIT`); paginated server lists + dashboard Load more; Admin → Settings / Status; **1.1** control-plane scale path (~100 nodes / ~1000 servers on strong hardware).
 
 ---
 
@@ -241,9 +243,10 @@ Guide: [Development](docs/wiki/development.md)
 | Wiki index | [docs/wiki/README.md](docs/wiki/README.md) |
 | UI tour | [panel-guide.md](docs/wiki/panel-guide.md) |
 | Install panel / nodes | [install-panel.md](docs/wiki/install-panel.md) · [install-nodes.md](docs/wiki/install-nodes.md) |
+| Upgrade 1.0 → 1.1 | [upgrade-to-1.1.md](docs/wiki/upgrade-to-1.1.md) |
 | Architecture & scaling | [architecture.md](docs/wiki/architecture.md) · [scaling.md](docs/wiki/scaling.md) |
-| Feature references | [server-management.md](docs/wiki/server-management.md) · [databases.md](docs/wiki/databases.md) · [files-and-backups.md](docs/wiki/files-and-backups.md) · [networking-and-allocations.md](docs/wiki/networking-and-allocations.md) · [mods-plugins-and-modpacks.md](docs/wiki/mods-plugins-and-modpacks.md) · [statusline.md](docs/wiki/statusline.md) |
-| Internal references | [api-surface-map.md](docs/wiki/api-surface-map.md) · [daemon-api.md](docs/wiki/daemon-api.md) · [node-agent-internals.md](docs/wiki/node-agent-internals.md) · [shared-contracts.md](docs/wiki/shared-contracts.md) |
+| Feature references | [server-management.md](docs/wiki/server-management.md) · [databases.md](docs/wiki/databases.md) · [files-and-backups.md](docs/wiki/files-and-backups.md) · [networking-and-allocations.md](docs/wiki/networking-and-allocations.md) · [player-management.md](docs/wiki/player-management.md) · [mods-plugins-and-modpacks.md](docs/wiki/mods-plugins-and-modpacks.md) · [schedules.md](docs/wiki/schedules.md) · [node-transfer.md](docs/wiki/node-transfer.md) · [notifications-and-alerts.md](docs/wiki/notifications-and-alerts.md) · [statusline.md](docs/wiki/statusline.md) |
+| Internal references | [api-surface-map.md](docs/wiki/api-surface-map.md) · [daemon-api.md](docs/wiki/daemon-api.md) · [node-agent-internals.md](docs/wiki/node-agent-internals.md) · [shared-contracts.md](docs/wiki/shared-contracts.md) · [prod-web-and-downloads.md](docs/wiki/prod-web-and-downloads.md) |
 | Environment | [env-reference.md](docs/wiki/env-reference.md) |
 | **APIs** | Panel **`/api-docs`** · **[api-overview.md](docs/wiki/api-overview.md)** · **[api-explorer](docs/wiki/api-explorer.md)** (Try it) · **[api-examples.md](docs/wiki/api-examples.md)** · [client-api.md](docs/wiki/client-api.md) · [application-api.md](docs/wiki/application-api.md) · [OpenAPI](docs/openapi.yaml) |
 | Licensing & releases | [licensing.md](docs/wiki/licensing.md) · [release-builds.md](docs/wiki/release-builds.md) |

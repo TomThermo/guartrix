@@ -125,9 +125,13 @@ More examples: [API examples — Account](api-examples.md#account).
 
 ```bash
 curl -sS -H "Authorization: Bearer $GT_KEY" "$PANEL/api/servers" | jq
+# Paginated (recommended for large fleets):
+curl -sS -H "Authorization: Bearer $GT_KEY" "$PANEL/api/servers?limit=50&offset=0" | jq
 ```
 
-Returns a **JSON array** of server objects. Each includes `permissions` for your key.
+Without `limit`/`offset`, returns a **JSON array** of server objects. With pagination query params, returns `{ servers, total, limit, offset }`. Each server includes `permissions` for your key.
+
+Browser UI session traffic also uses separate rate budgets (`API_SESSION_RATE_LIMIT` vs `API_SESSION_READ_RATE_LIMIT`) — see [API conventions](api-conventions.md).
 
 **Sample element:**
 

@@ -48,6 +48,7 @@ Key files:
 
 - `resource-monitor.ts`
 - `stats.ts`
+- `stats-history.ts` (~1h in-memory ring; lost on daemon restart)
 - `disk-usage.ts`
 - `disk-quota.ts`
 - `host-resources.ts`
@@ -55,6 +56,7 @@ Key files:
 This layer is responsible for:
 
 - Docker stats sampling
+- ~1h stats history ring for console charts (`GET /servers/:id/stats/history`)
 - CPU, memory, network, and disk reporting
 - over-quota checks before writes or starts
 - stopping servers that exceed allowed disk limits

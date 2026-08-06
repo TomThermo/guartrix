@@ -109,6 +109,7 @@ export const internalsArticles: WikiArticle[] = [
           "Node-local MySQL operations",
           "Firewall open/close actions",
           "SFTP hosting",
+          "Live stats + ~1h history ring (GET /servers/:id/stats/history; lost on daemon restart)",
           "Resource reporting and license gating",
         ],
       },
@@ -136,7 +137,7 @@ export const internalsArticles: WikiArticle[] = [
         bullets: [
           "Runtime layout and config",
           "Process and container lifecycle",
-          "Resource and quota enforcement",
+          "Resource and quota enforcement (incl. ~1h stats-history ring)",
           "Files, archive safety, and SFTP jail",
           "MySQL helper and firewall integration",
           "Player history",

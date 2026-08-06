@@ -27,8 +27,13 @@ apps/license-server/
 apps/license-server/**
 **/guartrix-license-server/
 
+# Operator promo docs (also under data/promo-docs/). Never commit if recreated at these paths.
+docs/site/
+scripts/docs-site.mjs
+
 # Runtime / generated data (never commit)
 data/
+# Operator promo docs index (HTTPS :8443) also lives under data/promo-docs/ — never GitHub.
 # Keep env templates next to live files (data/*.env.example is tracked)
 !data/
 data/**

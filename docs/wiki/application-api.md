@@ -71,6 +71,8 @@ DELETE /api/application/users/:id
 Authorization: Bearer gta_…
 ```
 
+List endpoints support pagination via `?limit=` / `?offset=` and return `{ users|servers, total, limit, offset }` (see [API conventions](api-conventions.md)).
+
 Create body:
 
 ```json
