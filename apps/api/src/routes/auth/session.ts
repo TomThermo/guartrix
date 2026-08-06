@@ -1,11 +1,9 @@
 import { randomBytes } from "node:crypto";
 import type { FastifyInstance, FastifyRequest } from "fastify";
-import type { UserRole } from "@msm/shared";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import { logActivity } from "../../activity-log.js";
 import {
-  assertCanAssignAdminRole,
   ensureBootstrapAdmin,
   findUserByEmailInsensitive,
   findUserByUsernameInsensitive,
@@ -15,21 +13,17 @@ import {
   needsRehash,
   panelBaseUrl,
   passwordSchema,
-  requireAdmin,
-  requireAuth,
   TIMING_DUMMY_HASH,
   toAuthUser,
   verifyPassword,
 } from "../../auth/auth.js";
+import {
+  configQuotaDefaults,
+  usernameSchema,
+} from "../../auth/user-quotas.js";
 import { config } from "../../config.js";
 import { assertSameOrigin, issueSessionCsrfToken } from "../../auth/csrf.js";
 import { prisma } from "../../db.js";
-import {
-  hostNodeName,
-  hostPublicIp,
-  hostTotalMemoryGb,
-  hostTotalMemoryMb,
-} from "../../nodes/host-resources.js";
 import { isSmtpConfigured, sendMail } from "../../mail.js";
 import {
   PASSWORD_MAX_LENGTH,
@@ -41,45 +35,7 @@ import { linkPendingSubUsers } from "../../servers/server-access.js";
 import { destroySessionsForUser } from "../../auth/session-store.js";
 import { consumeRecoveryCode, verifyTotp } from "../../auth/totp.js";
 
-const quotaLimitSchema = z
-  .number()
-  .int()
-  .min(0)
-  .max(10_000)
-  .nullable()
-  .optional();
-
-function memoryQuotaSchema() {
-  // Cap at host RAM (UI uses 1 GB steps → GB × 1024 MB). Allow 0 for "no plan".
-  return z.number().int().min(0).max(hostTotalMemoryMb()).nullable().optional();
-}
-
-const usernameSchema = z
-  .string()
-  .min(3)
-  .max(32)
-  .regex(/^[a-zA-Z0-9_\-]+$/);
-
 const emailSchema = z.string().trim().email().max(254);
-
-const createUserSchema = z.object({
-  username: usernameSchema,
-  password: passwordSchema,
-  role: z.enum(["ADMIN", "OPERATOR", "VIEWER"]),
-  maxServers: quotaLimitSchema,
-  maxMemoryMb: memoryQuotaSchema(),
-  maxDatabases: quotaLimitSchema,
-});
-
-const updateUserSchema = z.object({
-  password: passwordSchema.optional(),
-  role: z.enum(["ADMIN", "OPERATOR", "VIEWER"]).optional(),
-  maxServers: quotaLimitSchema,
-  maxMemoryMb: memoryQuotaSchema(),
-  maxDatabases: quotaLimitSchema,
-  /** Admin lockout escape hatch: wipe the user's TOTP so they can re-enrol. */
-  disableTwoFactor: z.literal(true).optional(),
-});
 
 const registerSchema = z.object({
   username: usernameSchema,
@@ -412,15 +368,7 @@ export function registerAuthRoutes(app: FastifyInstance): void {
           emailVerified: false,
           passwordHash: hashPassword(password),
           role: "OPERATOR",
-          maxServers: Number.isFinite(config.defaultMaxServers)
-            ? Math.max(0, config.defaultMaxServers)
-            : 0,
-          maxMemoryMb: Number.isFinite(config.defaultMaxMemoryMb)
-            ? Math.max(0, config.defaultMaxMemoryMb)
-            : 0,
-          maxDatabases: Number.isFinite(config.defaultMaxDatabases)
-            ? Math.max(0, config.defaultMaxDatabases)
-            : 0,
+          ...configQuotaDefaults(),
         },
       });
     } catch {
@@ -608,253 +556,5 @@ export function registerAuthRoutes(app: FastifyInstance): void {
     logActivity({ action: "auth.password-reset", request, user: row.user });
 
     return { ok: true, message: "Password updated. You can sign in now." };
-  });
-
-  app.get("/api/users", async (request, reply) => {
-    if (!(await requireAdmin(request, reply, "users.read"))) return;
-    const users = await prisma.user.findMany({
-      orderBy: { createdAt: "asc" },
-      include: {
-        servers: {
-          select: {
-            memoryMb: true,
-            _count: { select: { databases: true } },
-          },
-        },
-      },
-    });
-    return users.map((u) =>
-      toAuthUser(u, {
-        serverCount: u.servers.length,
-        memoryUsedMb: u.servers.reduce((sum, s) => sum + s.memoryMb, 0),
-        databaseCount: u.servers.reduce((sum, s) => sum + s._count.databases, 0),
-      }),
-    );
-  });
-
-  app.get("/api/system", async (request, reply) => {
-    if (!(await requireAuth(request, reply))) return;
-    try {
-      const { daemonGetSystem } = await import("../../nodes/daemon-client.js");
-      const sys = await daemonGetSystem();
-      return {
-        totalMemoryMb: sys.totalMemoryMb,
-        totalMemoryGb: sys.totalMemoryGb,
-        nodeName: sys.hostname,
-        publicIp: sys.publicIp,
-      };
-    } catch {
-      return {
-        totalMemoryMb: hostTotalMemoryMb(),
-        totalMemoryGb: hostTotalMemoryGb(),
-        nodeName: hostNodeName(),
-        publicIp: hostPublicIp(),
-      };
-    }
-  });
-
-  app.post("/api/users", async (request, reply) => {
-    const admin = await requireAdmin(request, reply, "users.write");
-    if (!admin) return;
-    const parsed = createUserSchema.safeParse(request.body);
-    if (!parsed.success) {
-      return reply.status(400).send({ error: parsed.error.flatten() });
-    }
-    const exists = await findUserByUsernameInsensitive(parsed.data.username);
-    if (exists) return reply.status(409).send({ error: "Username already taken" });
-
-    const isAdminRole = parsed.data.role === "ADMIN";
-    if (isAdminRole && !assertCanAssignAdminRole(request, reply)) return;
-    const maxServers = isAdminRole
-      ? null
-      : parsed.data.maxServers === undefined
-        ? 1
-        : parsed.data.maxServers;
-    const maxMemoryMb = isAdminRole
-      ? null
-      : parsed.data.maxMemoryMb === undefined
-        ? 4096
-        : parsed.data.maxMemoryMb;
-    const maxDatabases = isAdminRole
-      ? null
-      : parsed.data.maxDatabases === undefined
-        ? 3
-        : parsed.data.maxDatabases;
-
-    const user = await prisma.user.create({
-      data: {
-        id: nanoid(12),
-        username: parsed.data.username,
-        passwordHash: hashPassword(parsed.data.password),
-        role: parsed.data.role,
-        emailVerified: true,
-        maxServers,
-        maxMemoryMb,
-        maxDatabases,
-      },
-    });
-    logActivity({
-      action: "user.create",
-      request,
-      user: admin,
-      metadata: {
-        targetUser: user.username,
-        role: user.role,
-        maxServers,
-        maxMemoryMb,
-        maxDatabases,
-      },
-    });
-    return reply.status(201).send(
-      toAuthUser(user, { serverCount: 0, memoryUsedMb: 0, databaseCount: 0 }),
-    );
-  });
-
-  app.patch<{ Params: { id: string } }>("/api/users/:id", async (request, reply) => {
-    const admin = await requireAdmin(request, reply, "users.write");
-    if (!admin) return;
-    const parsed = updateUserSchema.safeParse(request.body);
-    if (!parsed.success) {
-      return reply.status(400).send({ error: parsed.error.flatten() });
-    }
-    const existing = await prisma.user.findUnique({ where: { id: request.params.id } });
-    if (!existing) return reply.status(404).send({ error: "User not found" });
-
-    const data: {
-      passwordHash?: string;
-      role?: UserRole;
-      maxServers?: number | null;
-      maxMemoryMb?: number | null;
-      maxDatabases?: number | null;
-      totpSecret?: null;
-      totpEnabled?: boolean;
-      totpRecoveryCodes?: null;
-    } = {};
-    if (parsed.data.password) data.passwordHash = hashPassword(parsed.data.password);
-    if (parsed.data.disableTwoFactor) {
-      data.totpSecret = null;
-      data.totpEnabled = false;
-      data.totpRecoveryCodes = null;
-    }
-    if (parsed.data.role) data.role = parsed.data.role;
-    if (parsed.data.maxServers !== undefined) data.maxServers = parsed.data.maxServers;
-    if (parsed.data.maxMemoryMb !== undefined) data.maxMemoryMb = parsed.data.maxMemoryMb;
-    if (parsed.data.maxDatabases !== undefined) data.maxDatabases = parsed.data.maxDatabases;
-
-    const nextRole = parsed.data.role;
-    if (nextRole === "ADMIN") {
-      if (!assertCanAssignAdminRole(request, reply)) return;
-      data.maxServers = null;
-      data.maxMemoryMb = null;
-      data.maxDatabases = null;
-    } else if (nextRole && existing.role === "ADMIN") {
-      const admins = await prisma.user.count({ where: { role: "ADMIN" } });
-      if (admins <= 1) {
-        return reply
-          .status(400)
-          .send({ error: "Cannot demote the last admin" });
-      }
-      // Demotion must not leave unlimited (null) quotas
-      if (data.maxServers === undefined) {
-        data.maxServers = Number.isFinite(config.defaultMaxServers)
-          ? Math.max(0, config.defaultMaxServers)
-          : 0;
-      }
-      if (data.maxMemoryMb === undefined) {
-        data.maxMemoryMb = Number.isFinite(config.defaultMaxMemoryMb)
-          ? Math.max(0, config.defaultMaxMemoryMb)
-          : 0;
-      }
-      if (data.maxDatabases === undefined) {
-        data.maxDatabases = Number.isFinite(config.defaultMaxDatabases)
-          ? Math.max(0, config.defaultMaxDatabases)
-          : 0;
-      }
-    }
-
-    try {
-      const user = await prisma.user.update({
-        where: { id: request.params.id },
-        data,
-        include: {
-          servers: {
-            select: {
-              memoryMb: true,
-              _count: { select: { databases: true } },
-            },
-          },
-        },
-      });
-      if (parsed.data.password) {
-        await destroySessionsForUser(user.id);
-      }
-      logActivity({
-        action: "user.update",
-        request,
-        user: admin,
-        metadata: {
-          targetUser: user.username,
-          fields: Object.keys(parsed.data).filter((k) => k !== "password"),
-          passwordChanged: Boolean(parsed.data.password),
-        },
-      });
-      if (nextRole && nextRole !== existing.role) {
-        logActivity({
-          action: "user.role-change",
-          request,
-          user: admin,
-          metadata: {
-            targetUser: user.username,
-            from: existing.role,
-            to: nextRole,
-          },
-        });
-      }
-      if (parsed.data.disableTwoFactor && existing.totpEnabled) {
-        logActivity({
-          action: "auth.2fa-reset",
-          request,
-          user: admin,
-          metadata: { targetUser: user.username },
-        });
-      }
-      return toAuthUser(user, {
-        serverCount: user.servers.length,
-        memoryUsedMb: user.servers.reduce((sum, s) => sum + s.memoryMb, 0),
-        databaseCount: user.servers.reduce(
-          (sum, s) => sum + s._count.databases,
-          0,
-        ),
-      });
-    } catch {
-      return reply.status(404).send({ error: "User not found" });
-    }
-  });
-
-  app.delete<{ Params: { id: string } }>("/api/users/:id", async (request, reply) => {
-    const me = await requireAdmin(request, reply, "users.delete");
-    if (!me) return;
-    if (me.id === request.params.id) {
-      return reply.status(400).send({ error: "Cannot delete your own account" });
-    }
-    const admins = await prisma.user.count({ where: { role: "ADMIN" } });
-    const target = await prisma.user.findUnique({ where: { id: request.params.id } });
-    if (!target) return reply.status(404).send({ error: "User not found" });
-    if (target.role === "ADMIN" && admins <= 1) {
-      return reply.status(400).send({ error: "Cannot delete the last admin" });
-    }
-    // Orphan their servers to the deleting admin
-    await prisma.server.updateMany({
-      where: { ownerId: target.id },
-      data: { ownerId: me.id },
-    });
-    await prisma.user.delete({ where: { id: request.params.id } });
-    logActivity({
-      action: "user.delete",
-      request,
-      user: me,
-      metadata: { targetUser: target.username, role: target.role },
-    });
-    return { ok: true };
   });
 }

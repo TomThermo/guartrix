@@ -24,6 +24,17 @@ export function apiError(
   return body;
 }
 
+/**
+ * Legacy Zod 400 shape used by most panel routes:
+ * `{ error: ZodFlattenedError }`. Keep for API compatibility.
+ */
+export function sendZodError(
+  reply: { status: (code: number) => { send: (body: unknown) => unknown } },
+  parsed: { error: { flatten: () => unknown } },
+): unknown {
+  return reply.status(400).send({ error: parsed.error.flatten() });
+}
+
 /** Map common Zod / Error failures into a status + envelope. */
 export function fromZodOrError(
   err: unknown,

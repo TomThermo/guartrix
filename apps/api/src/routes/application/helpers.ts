@@ -1,4 +1,5 @@
 import type { AuthUser, UserRole } from "@msm/shared";
+import { displayQuotasForRole } from "../../auth/user-quotas.js";
 
 export function toAppUser(user: {
   id: string;
@@ -11,6 +12,7 @@ export function toAppUser(user: {
   email: string | null;
   emailVerified: boolean;
 }): AuthUser & { email: string | null; emailVerified: boolean } {
+  const quotas = displayQuotasForRole(user.role, user);
   return {
     id: user.id,
     username: user.username,
@@ -18,9 +20,9 @@ export function toAppUser(user: {
     createdAt: user.createdAt.toISOString(),
     twoFactorEnabled: false,
     twoFactorRequired: false,
-    maxServers: user.role === "ADMIN" ? null : user.maxServers,
-    maxMemoryMb: user.role === "ADMIN" ? null : user.maxMemoryMb,
-    maxDatabases: user.role === "ADMIN" ? null : user.maxDatabases,
+    maxServers: quotas.maxServers,
+    maxMemoryMb: quotas.maxMemoryMb,
+    maxDatabases: quotas.maxDatabases,
     serverCount: 0,
     memoryUsedMb: 0,
     databaseCount: 0,

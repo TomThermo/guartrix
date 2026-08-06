@@ -6,6 +6,7 @@ import { assertAdminFullApiKey, requireServerAccess } from "../../auth/auth.js";
 import { logActivity } from "../../activity-log.js";
 import { config } from "../../config.js";
 import { prisma } from "../../db.js";
+import { errorMessage, sendZodError } from "../../http-error.js";
 import {
   assertSafeBrowserUrl,
   assertSafeOutboundUrl,
@@ -23,31 +24,6 @@ import {
 import { processManager } from "../../servers/process-manager.js";
 import { readServerProperties, updateServerProperties } from "../../servers/properties.js";
 import { serverListInclude, toMcServer, toServerDetail } from "../../servers/serialize.js";
-import {
-  applyServerUpdate,
-  checkServerUpdate,
-} from "../../servers/updates.js";
-import {
-  applyVersionChangeViaRuntime,
-  changeServerType,
-  changeTypeRequiresWipeAddons,
-  reinstallServer,
-} from "../../servers/server-lifecycle.js";
-
-const SERVER_TYPES = [
-  "VANILLA",
-  "PAPER",
-  "FABRIC",
-  "FORGE",
-  "PURPUR",
-  "NEOFORGE",
-  "QUILT",
-  "BEDROCK",
-  "BEDROCK_PREVIEW",
-  "POCKETMINE",
-  "NUKKIT",
-] as const;
-
 
 const updateSchema = z.object({
   name: z.string().min(1).max(64).optional(),
@@ -90,158 +66,12 @@ const updateSchema = z.object({
 });
 
 
-/** Settings / lifecycle / engine / proxy routes (split from servers.ts). */
+/** PATCH /api/servers/:id — core server settings. */
 export function registerServerSettingsRoutes(app: FastifyInstance): void {
-  app.get<{ Params: { id: string } }>("/api/servers/:id/updates", async (request, reply) => {
-    const access = await requireServerAccess(request, reply, request.params.id, {
-      permission: "settings.read",
-    });
-    if (!access) return;
-    try {
-      return await checkServerUpdate(access.server);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      return reply.status(502).send({ error: message });
-    }
-  });
-
-  app.post<{
-    Params: { id: string };
-    Body: { mcVersion?: string };
-  }>("/api/servers/:id/update", async (request, reply) => {
-    const access = await requireServerAccess(request, reply, request.params.id, {
-      permission: "settings.update",
-    });
-    if (!access) return;
-    try {
-      const result = request.body?.mcVersion
-        ? await applyVersionChangeViaRuntime(
-            access.server.id,
-            request.body.mcVersion,
-          )
-        : await applyServerUpdate(access.server.id, request.body?.mcVersion);
-      logActivity({
-        action: "server.version-change",
-        request,
-        user: access.user,
-        server: access.server,
-        metadata: {
-          from: access.server.mcVersion,
-          to: result.server.mcVersion,
-          type: result.server.type,
-        },
-      });
-      return {
-        server: toMcServer(result.server),
-        update: result.update,
-      };
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      logActivity({
-        action: "server.version-change",
-        request,
-        user: access.user,
-        server: access.server,
-        success: false,
-        metadata: { error: message, requested: request.body?.mcVersion },
-      });
-      return reply.status(400).send({ error: message });
-    }
-  });
-
-  app.post<{
-    Params: { id: string };
-    Body: { keepWorld?: boolean; keepAddons?: boolean };
-  }>("/api/servers/:id/reinstall", async (request, reply) => {
-    const access = await requireServerAccess(request, reply, request.params.id, {
-      permission: "settings.update",
-    });
-    if (!access) return;
-    const keepWorld = request.body?.keepWorld !== false;
-    const keepAddons = request.body?.keepAddons !== false;
-    try {
-      const server = await reinstallServer(access.server.id, { keepWorld, keepAddons });
-      logActivity({
-        action: "server.reinstall",
-        request,
-        user: access.user,
-        server: access.server,
-        metadata: { keepWorld, keepAddons },
-      });
-      return { server: toMcServer(server) };
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      logActivity({
-        action: "server.reinstall",
-        request,
-        user: access.user,
-        server: access.server,
-        success: false,
-        metadata: { error: message, keepWorld, keepAddons },
-      });
-      return reply.status(400).send({ error: message });
-    }
-  });
-
-  app.post<{
-    Params: { id: string };
-    Body: { type?: string; mcVersion?: string; wipeAddons?: boolean };
-  }>("/api/servers/:id/change-type", async (request, reply) => {
-    const access = await requireServerAccess(request, reply, request.params.id, {
-      permission: "settings.update",
-    });
-    if (!access) return;
-    const type = (request.body?.type ?? "").toUpperCase();
-    const mcVersion = request.body?.mcVersion?.trim() ?? "";
-    if (!(SERVER_TYPES as readonly string[]).includes(type)) {
-      return reply.status(400).send({ error: "Invalid type" });
-    }
-    if (!mcVersion) {
-      return reply.status(400).send({ error: "mcVersion is required" });
-    }
-    const wipeAddons =
-      request.body?.wipeAddons === true ||
-      changeTypeRequiresWipeAddons(
-        access.server.type as ServerType,
-        type as ServerType,
-      );
-    try {
-      const server = await changeServerType(access.server.id, {
-        type: type as ServerType,
-        mcVersion,
-        wipeAddons,
-      });
-      logActivity({
-        action: "server.type-change",
-        request,
-        user: access.user,
-        server: access.server,
-        metadata: {
-          from: access.server.type,
-          to: type,
-          mcVersion,
-          wipeAddons,
-        },
-      });
-      return { server: toMcServer(server) };
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      logActivity({
-        action: "server.type-change",
-        request,
-        user: access.user,
-        server: access.server,
-        success: false,
-        metadata: { error: message, type, mcVersion },
-      });
-      return reply.status(400).send({ error: message });
-    }
-  });
-
   app.patch<{ Params: { id: string } }>("/api/servers/:id", async (request, reply) => {
     const parsed = updateSchema.safeParse(request.body);
     if (!parsed.success) {
-      return reply.status(400).send({ error: parsed.error.flatten() });
+      return sendZodError(reply, parsed);
     }
 
     const access = await requireServerAccess(request, reply, request.params.id);
@@ -293,7 +123,7 @@ export function registerServerSettingsRoutes(app: FastifyInstance): void {
               { extraServer: true },
             );
           } catch (err) {
-            const message = err instanceof Error ? err.message : String(err);
+            const message = errorMessage(err);
             return reply.status(403).send({ error: message });
           }
         }
@@ -321,7 +151,7 @@ export function registerServerSettingsRoutes(app: FastifyInstance): void {
               diskMb: data.diskMb ?? server.diskMb,
             });
           } catch (err) {
-            const message = err instanceof Error ? err.message : String(err);
+            const message = errorMessage(err);
             return reply.status(403).send({ error: message });
           }
         }
@@ -334,7 +164,7 @@ export function registerServerSettingsRoutes(app: FastifyInstance): void {
             excludeServerId: server.id,
           });
         } catch (err) {
-          const message = err instanceof Error ? err.message : String(err);
+          const message = errorMessage(err);
           return reply.status(403).send({ error: message });
         }
       }
@@ -351,7 +181,7 @@ export function registerServerSettingsRoutes(app: FastifyInstance): void {
         const { assertLicenseDiskQuota } = await import("../../license/license.js");
         await assertLicenseDiskQuota(data.diskMb);
       } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
+        const message = errorMessage(err);
         return reply.status(403).send({ error: message });
       }
     }
@@ -425,7 +255,7 @@ export function registerServerSettingsRoutes(app: FastifyInstance): void {
             jar,
           );
         } catch (err) {
-          const message = err instanceof Error ? err.message : String(err);
+          const message = errorMessage(err);
           return reply.status(400).send({ error: `Invalid startup command: ${message}` });
         }
       }
@@ -450,7 +280,7 @@ export function registerServerSettingsRoutes(app: FastifyInstance): void {
           ),
         );
       } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
+        const message = errorMessage(err);
         return reply.status(400).send({
           error: `Cannot set memory: startup command heap exceeds new limit. ${message}`,
         });
@@ -469,7 +299,7 @@ export function registerServerSettingsRoutes(app: FastifyInstance): void {
             server.type as ServerType,
           );
         } catch (err) {
-          const message = err instanceof Error ? err.message : String(err);
+          const message = errorMessage(err);
           return reply.status(400).send({ error: message });
         }
       }
@@ -620,7 +450,7 @@ export function registerServerSettingsRoutes(app: FastifyInstance): void {
             protocol: portProtocol,
           }).catch(() => undefined);
         }
-        const message = err instanceof Error ? err.message : String(err);
+        const message = errorMessage(err);
         return reply
           .status(500)
           .send({ error: `Firewall update failed: ${message}` });
@@ -731,118 +561,4 @@ export function registerServerSettingsRoutes(app: FastifyInstance): void {
     return toServerDetail(updated, properties, players);
   });
 
-
-  app.get<{ Params: { id: string } }>(
-    "/api/servers/:id/engine",
-    async (request, reply) => {
-      const access = await requireServerAccess(request, reply, request.params.id, {
-        permission: "settings.read",
-      });
-      if (!access) return;
-      const { getEngineSettings } = await import("../../servers/engine-config.js");
-      return getEngineSettings(access.server.id, access.server.type as ServerType);
-    },
-  );
-
-  app.patch<{
-    Params: { id: string };
-    Body: { updates?: Record<string, boolean | number | string> };
-  }>("/api/servers/:id/engine", async (request, reply) => {
-    const access = await requireServerAccess(request, reply, request.params.id, {
-      permission: "settings.update",
-    });
-    if (!access) return;
-    const updates = request.body?.updates ?? {};
-    try {
-      const { updateEngineSettings } = await import("../../servers/engine-config.js");
-      const result = await updateEngineSettings(
-        access.server.id,
-        access.server.type as ServerType,
-        updates,
-      );
-      logActivity({
-        action: "settings.engine",
-        request,
-        user: access.user,
-        server: access.server,
-        metadata: { keys: Object.keys(updates) },
-      });
-      return result;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      return reply.status(400).send({ error: message });
-    }
-  });
-
-  app.get<{ Params: { id: string } }>(
-    "/api/servers/:id/console-favorites",
-    async (request, reply) => {
-      const access = await requireServerAccess(request, reply, request.params.id, {
-        permission: "control.console",
-      });
-      if (!access) return;
-      const { getConsoleFavorites } = await import("../../servers/console-favorites.js");
-      return { commands: await getConsoleFavorites(access.server.id) };
-    },
-  );
-
-  app.put<{ Params: { id: string }; Body: { commands?: string[] } }>(
-    "/api/servers/:id/console-favorites",
-    async (request, reply) => {
-      const access = await requireServerAccess(request, reply, request.params.id, {
-        permission: "control.console",
-      });
-      if (!access) return;
-      const commands = Array.isArray(request.body?.commands)
-        ? request.body!.commands!
-        : [];
-      const { setConsoleFavorites } = await import("../../servers/console-favorites.js");
-      return { commands: await setConsoleFavorites(access.server.id, commands) };
-    },
-  );
-
-  app.get<{ Params: { id: string } }>(
-    "/api/servers/:id/proxy",
-    async (request, reply) => {
-      const access = await requireServerAccess(request, reply, request.params.id, {
-        permission: "settings.read",
-      });
-      if (!access) return;
-      const { getProxySetup } = await import("../../servers/proxy-setup.js");
-      return getProxySetup(access.server.id, access.server.type as ServerType);
-    },
-  );
-
-  app.post<{
-    Params: { id: string };
-    Body: { mode?: "none" | "velocity" | "bungeecord" };
-  }>("/api/servers/:id/proxy", async (request, reply) => {
-    const access = await requireServerAccess(request, reply, request.params.id, {
-      permission: "settings.update",
-    });
-    if (!access) return;
-    const mode = request.body?.mode ?? "none";
-    if (!["none", "velocity", "bungeecord"].includes(mode)) {
-      return reply.status(400).send({ error: "Invalid proxy mode" });
-    }
-    try {
-      const { applyProxySetup } = await import("../../servers/proxy-setup.js");
-      const result = await applyProxySetup(
-        access.server.id,
-        access.server.type as ServerType,
-        mode,
-      );
-      logActivity({
-        action: "settings.engine",
-        request,
-        user: access.user,
-        server: access.server,
-        metadata: { proxyMode: mode },
-      });
-      return result;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      return reply.status(400).send({ error: message });
-    }
-  });
 }

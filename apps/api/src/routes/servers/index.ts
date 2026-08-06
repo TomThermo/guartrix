@@ -16,6 +16,8 @@ import { registerServerPlayerRoutes } from "./players.js";
 import { registerServerPowerRoutes } from "./power.js";
 import { registerResourcePackRoutes } from "./resource-pack.js";
 import { registerServerSettingsRoutes } from "./settings.js";
+import { registerServerLifecycleRoutes } from "./lifecycle-routes.js";
+import { registerServerPropertiesRoutes } from "./properties-routes.js";
 import { registerSubUserRoutes } from "./subusers.js";
 import { registerTaskRoutes } from "./tasks.js";
 import { registerServerTransferRoutes } from "./transfer.js";
@@ -46,6 +48,8 @@ export function registerServerRoutes(app: FastifyInstance): void {
   registerServerPowerRoutes(app);
   registerServerWorldRoutes(app);
   registerServerSettingsRoutes(app);
+  registerServerLifecycleRoutes(app);
+  registerServerPropertiesRoutes(app);
   registerServerCrudRoutes(app);
   registerServerTransferRoutes(app);
   registerFileRoutes(app);

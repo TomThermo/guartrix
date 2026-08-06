@@ -27,6 +27,7 @@ import {
   userCanAccessServer,
 } from "../servers/server-access.js";
 import { getRateLimitStore } from "../rate-limit-store.js";
+import { displayQuotasForRole } from "./user-quotas.js";
 
 export {
   hashPassword,
@@ -142,6 +143,11 @@ export function toAuthUser(
     databaseCount?: number;
   },
 ): AuthUser {
+  const quotas = displayQuotasForRole(user.role, {
+    maxServers: user.maxServers,
+    maxMemoryMb: user.maxMemoryMb,
+    maxDatabases: user.maxDatabases,
+  });
   return {
     id: user.id,
     username: user.username,
@@ -149,9 +155,9 @@ export function toAuthUser(
     createdAt: user.createdAt.toISOString(),
     twoFactorEnabled: Boolean(user.totpEnabled),
     twoFactorRequired: roleRequiresTwoFactor(user.role),
-    maxServers: user.role === "ADMIN" ? null : (user.maxServers ?? null),
-    maxMemoryMb: user.role === "ADMIN" ? null : (user.maxMemoryMb ?? null),
-    maxDatabases: user.role === "ADMIN" ? null : (user.maxDatabases ?? null),
+    maxServers: quotas.maxServers,
+    maxMemoryMb: quotas.maxMemoryMb,
+    maxDatabases: quotas.maxDatabases,
     ...(opts?.serverCount !== undefined ? { serverCount: opts.serverCount } : {}),
     ...(opts?.memoryUsedMb !== undefined
       ? { memoryUsedMb: opts.memoryUsedMb }

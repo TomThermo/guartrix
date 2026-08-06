@@ -6,16 +6,21 @@ import { requireApplication } from "../../auth/application-auth.js";
 import {
   findUserByUsernameInsensitive,
   hashPassword,
+  passwordSchema,
 } from "../../auth/auth.js";
 import { destroySessionsForUser } from "../../auth/session-store.js";
 import {
-  PASSWORD_MAX_LENGTH,
-  PASSWORD_MIN_LENGTH,
-  passwordPolicyMessage,
-  strongPasswordRefine,
-} from "../../auth/password-policy.js";
+  APPLICATION_CREATE_QUOTA_DEFAULTS,
+  applicationQuotaLimitSchema,
+  applyRoleChangeQuotas,
+  assertNotLastAdmin,
+  configQuotaDefaults,
+  quotasForCreate,
+  userRoleSchema,
+} from "../../auth/user-quotas.js";
 import { logActivity } from "../../activity-log.js";
 import { prisma } from "../../db.js";
+import { sendZodError } from "../../http-error.js";
 import { toAppUser } from "./helpers.js";
 
 /** Minting/promoting ADMIN needs a full Application key (`*`), not users.write alone. */
@@ -23,33 +28,22 @@ function canAssignAdminRole(scopes: readonly string[]): boolean {
   return scopes.includes("*");
 }
 
-const quotaLimit = z.number().int().min(0).max(100_000).nullable();
-
 const createUserSchema = z.object({
   username: z.string().trim().min(3).max(32),
-  password: z
-    .string()
-    .min(PASSWORD_MIN_LENGTH)
-    .max(PASSWORD_MAX_LENGTH)
-    .refine(strongPasswordRefine, { message: passwordPolicyMessage() }),
+  password: passwordSchema,
   email: z.string().email().max(200).nullable().optional(),
-  role: z.enum(["ADMIN", "OPERATOR", "VIEWER"]).default("OPERATOR"),
-  maxServers: quotaLimit.optional(),
-  maxMemoryMb: quotaLimit.optional(),
-  maxDatabases: quotaLimit.optional(),
+  role: userRoleSchema.default("OPERATOR"),
+  maxServers: applicationQuotaLimitSchema.optional(),
+  maxMemoryMb: applicationQuotaLimitSchema.optional(),
+  maxDatabases: applicationQuotaLimitSchema.optional(),
 });
 
 const updateUserSchema = z.object({
-  password: z
-    .string()
-    .min(PASSWORD_MIN_LENGTH)
-    .max(PASSWORD_MAX_LENGTH)
-    .refine(strongPasswordRefine, { message: passwordPolicyMessage() })
-    .optional(),
-  role: z.enum(["ADMIN", "OPERATOR", "VIEWER"]).optional(),
-  maxServers: quotaLimit.optional(),
-  maxMemoryMb: quotaLimit.optional(),
-  maxDatabases: quotaLimit.optional(),
+  password: passwordSchema.optional(),
+  role: userRoleSchema.optional(),
+  maxServers: applicationQuotaLimitSchema.optional(),
+  maxMemoryMb: applicationQuotaLimitSchema.optional(),
+  maxDatabases: applicationQuotaLimitSchema.optional(),
   email: z.string().email().max(200).nullable().optional(),
 });
 
@@ -76,21 +70,27 @@ export function registerApplicationUserRoutes(app: FastifyInstance): void {
     const ctx = await requireApplication(request, reply, "users.write");
     if (!ctx) return;
     const parsed = createUserSchema.safeParse(request.body);
-    if (!parsed.success) {
-      return reply.status(400).send({ error: parsed.error.flatten() });
-    }
+    if (!parsed.success) return sendZodError(reply, parsed);
 
     if (await findUserByUsernameInsensitive(parsed.data.username)) {
       return reply.status(409).send({ error: "Username already taken" });
     }
 
-    const isAdminRole = parsed.data.role === "ADMIN";
-    if (isAdminRole && !canAssignAdminRole(ctx.scopes)) {
+    if (parsed.data.role === "ADMIN" && !canAssignAdminRole(ctx.scopes)) {
       return reply.status(403).send({
         error:
           "Creating ADMIN accounts requires Application scope * (users.write alone is not enough)",
       });
     }
+    const quotas = quotasForCreate(
+      parsed.data.role,
+      {
+        maxServers: parsed.data.maxServers,
+        maxMemoryMb: parsed.data.maxMemoryMb,
+        maxDatabases: parsed.data.maxDatabases,
+      },
+      APPLICATION_CREATE_QUOTA_DEFAULTS,
+    );
     const user = await prisma.user.create({
       data: {
         id: nanoid(12),
@@ -99,9 +99,7 @@ export function registerApplicationUserRoutes(app: FastifyInstance): void {
         role: parsed.data.role,
         email: parsed.data.email ?? null,
         emailVerified: true,
-        maxServers: isAdminRole ? null : (parsed.data.maxServers ?? 0),
-        maxMemoryMb: isAdminRole ? null : (parsed.data.maxMemoryMb ?? 0),
-        maxDatabases: isAdminRole ? null : (parsed.data.maxDatabases ?? 0),
+        ...quotas,
       },
     });
 
@@ -125,9 +123,7 @@ export function registerApplicationUserRoutes(app: FastifyInstance): void {
       const ctx = await requireApplication(request, reply, "users.write");
       if (!ctx) return;
       const parsed = updateUserSchema.safeParse(request.body);
-      if (!parsed.success) {
-        return reply.status(400).send({ error: parsed.error.flatten() });
-      }
+      if (!parsed.success) return sendZodError(reply, parsed);
       const existing = await prisma.user.findUnique({
         where: { id: request.params.id },
       });
@@ -149,23 +145,21 @@ export function registerApplicationUserRoutes(app: FastifyInstance): void {
       if (parsed.data.email !== undefined) data.email = parsed.data.email;
 
       const nextRole = parsed.data.role;
-      if (nextRole === "ADMIN") {
-        if (!canAssignAdminRole(ctx.scopes)) {
-          return reply.status(403).send({
-            error:
-              "Promoting to ADMIN requires Application scope * (users.write alone is not enough)",
-          });
-        }
-        data.maxServers = null;
-        data.maxMemoryMb = null;
-        data.maxDatabases = null;
-      } else if (nextRole && existing.role === "ADMIN") {
-        const admins = await prisma.user.count({ where: { role: "ADMIN" } });
-        if (admins <= 1) {
-          return reply
-            .status(400)
-            .send({ error: "Cannot demote the last admin" });
-        }
+      if (nextRole === "ADMIN" && !canAssignAdminRole(ctx.scopes)) {
+        return reply.status(403).send({
+          error:
+            "Promoting to ADMIN requires Application scope * (users.write alone is not enough)",
+        });
+      }
+
+      const roleResult = await applyRoleChangeQuotas({
+        existingRole: existing.role as UserRole,
+        nextRole,
+        data,
+        demoteDefaults: configQuotaDefaults(),
+      });
+      if (!roleResult.ok) {
+        return reply.status(400).send({ error: roleResult.error });
       }
 
       const user = await prisma.user.update({
@@ -198,11 +192,11 @@ export function registerApplicationUserRoutes(app: FastifyInstance): void {
         where: { id: request.params.id },
       });
       if (!existing) return reply.status(404).send({ error: "User not found" });
-      if (existing.role === "ADMIN") {
-        const admins = await prisma.user.count({ where: { role: "ADMIN" } });
-        if (admins <= 1) {
-          return reply.status(400).send({ error: "Cannot delete the last admin" });
-        }
+      const lastAdmin = await assertNotLastAdmin({
+        role: existing.role as UserRole,
+      });
+      if (!lastAdmin.ok) {
+        return reply.status(400).send({ error: lastAdmin.error });
       }
       await prisma.user.delete({ where: { id: existing.id } });
       logActivity({

@@ -2,9 +2,11 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { logActivity } from "../../activity-log.js";
 import { requireAuth, verifyAccountPassword } from "../../auth/auth.js";
+import { assertNotLastAdmin } from "../../auth/user-quotas.js";
 import { assertSameOrigin } from "../../auth/csrf.js";
 import { prisma } from "../../db.js";
 import { destroySessionsForUser } from "../../auth/session-store.js";
+import type { UserRole } from "@msm/shared";
 
 const deleteAccountSchema = z.object({
   password: z.string().min(1).max(256),
@@ -316,13 +318,12 @@ export function registerAccountGdprRoutes(app: FastifyInstance): void {
       return reply.status(401).send({ error: "Invalid password" });
     }
 
-    if (row.role === "ADMIN") {
-      const admins = await prisma.user.count({ where: { role: "ADMIN" } });
-      if (admins <= 1) {
-        return reply
-          .status(400)
-          .send({ error: "Cannot delete the last admin account" });
-      }
+    const lastAdmin = await assertNotLastAdmin({
+      role: row.role as UserRole,
+      error: "Cannot delete the last admin account",
+    });
+    if (!lastAdmin.ok) {
+      return reply.status(400).send({ error: lastAdmin.error });
     }
 
     const ownedCount = await prisma.server.count({ where: { ownerId: row.id } });
