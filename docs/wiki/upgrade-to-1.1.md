@@ -38,11 +38,11 @@ npm run db:generate
 bash scripts/db-migrate.sh
 ```
 
-5. **Rebuild & restart** (operator):
+5. **Rebuild & restart** (operator source checkout):
 
 ```bash
 bash scripts/build-out.sh
-bash scripts/package-download-bundle.sh --skip-build   # if you publish /download
+# publish customer download zips on the operator host if you serve /download
 bash build/start.sh
 ```
 
