@@ -313,27 +313,18 @@ body {
 
   .server-detail-name {
     font-size: 1.08rem;
-    max-width: 100%;
-  }
-
-  .server-detail-name-line {
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 0.2rem 0.55rem;
+    max-width: min(100%, 10rem);
   }
 
   .server-detail-address {
-    max-width: min(100%, 18rem);
+    max-width: min(100%, 14rem);
     font-size: 0.72rem;
   }
 
-  .server-detail-meta {
-    gap: 0.25rem;
-  }
-
   .server-detail-meta .badge,
-  .server-detail-meta .status-badge {
+  .server-detail-meta .status-badge,
+  .server-detail-title-text > .badge,
+  .server-detail-title-text > .status-badge {
     font-size: 0.64rem;
     padding: 0.24rem 0.4rem;
     min-height: 1.25rem;
