@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, lazy, Suspense } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import type {
   ConnectInfo,
@@ -12,24 +12,12 @@ import {
   Card,
   Offcanvas,
   Spinner,
-  Tab,
 } from "react-bootstrap";
 import { api, ApiError } from "../api";
 import { useAuth } from "../auth";
 import { useI18n } from "../i18n/react";
-import { ServerConsoleLayout } from "../components/ServerConsoleLayout";
-import { CloneServerModal } from "../components/CloneServerModal";
-import { ChangeTypeModal } from "../components/ChangeTypeModal";
-import { ReinstallServerModal } from "../components/ReinstallServerModal";
-import { DeleteServerModal } from "../components/DeleteServerModal";
 import { UpdateBanner } from "../components/UpdateBanner";
-import { VersionPickerModal } from "../components/VersionPickerModal";
-import { WhitelistStartModal } from "../components/WhitelistStartModal";
-import { WhitelistToggleModal } from "../components/WhitelistToggleModal";
-import { KillServerModal } from "../components/KillServerModal";
-import { TransferOwnerModal } from "../components/TransferOwnerModal";
-import { TransferNodeModal } from "../components/TransferNodeModal";
-import { typeLabel, copyText } from "../utils";
+import { copyText } from "../utils";
 import {
   OnlinePlayersProvider,
   useSharedOnlinePlayers,
@@ -44,91 +32,8 @@ import {
 } from "../components/server-detail/server-tabs";
 import { ServerDetailHeader } from "../components/server-detail/ServerDetailHeader";
 import { ServerDetailSideNav } from "../components/server-detail/ServerDetailSideNav";
-
-const ActivityPanel = lazy(() =>
-  import("../components/ActivityPanel").then((m) => ({ default: m.ActivityPanel })),
-);
-const AddonPanel = lazy(() =>
-  import("../components/AddonPanel").then((m) => ({ default: m.AddonPanel })),
-);
-const BackupPanel = lazy(() =>
-  import("../components/BackupPanel").then((m) => ({ default: m.BackupPanel })),
-);
-const BansPanel = lazy(() =>
-  import("../components/BansPanel").then((m) => ({ default: m.BansPanel })),
-);
-const BotsPanel = lazy(() =>
-  import("../components/BotsPanel").then((m) => ({ default: m.BotsPanel })),
-);
-const DatabasesPanel = lazy(() =>
-  import("../components/DatabasesPanel").then((m) => ({
-    default: m.DatabasesPanel,
-  })),
-);
-const AllocationsPanel = lazy(() =>
-  import("../components/AllocationsPanel").then((m) => ({
-    default: m.AllocationsPanel,
-  })),
-);
-const EngineSettingsPanel = lazy(() =>
-  import("../components/EngineSettingsPanel").then((m) => ({
-    default: m.EngineSettingsPanel,
-  })),
-);
-const ModpackPanel = lazy(() =>
-  import("../components/ModpackPanel").then((m) => ({ default: m.ModpackPanel })),
-);
-const FileManager = lazy(() =>
-  import("../components/FileManager").then((m) => ({ default: m.FileManager })),
-);
-const LogPanel = lazy(() =>
-  import("../components/LogPanel").then((m) => ({ default: m.LogPanel })),
-);
-const OnlinePlayers = lazy(() =>
-  import("../components/OnlinePlayers").then((m) => ({
-    default: m.OnlinePlayers,
-  })),
-);
-const ResourceMeter = lazy(() =>
-  import("../components/ResourceMeter").then((m) => ({
-    default: m.ResourceMeter,
-  })),
-);
-const ServerSettings = lazy(() =>
-  import("../components/ServerSettings").then((m) => ({
-    default: m.ServerSettings,
-  })),
-);
-const WorldSeedMapCard = lazy(() =>
-  import("../components/WorldSeedMapCard").then((m) => ({
-    default: m.WorldSeedMapCard,
-  })),
-);
-const SftpPanel = lazy(() =>
-  import("../components/SftpPanel").then((m) => ({ default: m.SftpPanel })),
-);
-const SubUsersPanel = lazy(() =>
-  import("../components/SubUsersPanel").then((m) => ({
-    default: m.SubUsersPanel,
-  })),
-);
-const TasksPanel = lazy(() =>
-  import("../components/TasksPanel").then((m) => ({ default: m.TasksPanel })),
-);
-const WhitelistManagerPanel = lazy(() =>
-  import("../components/WhitelistManagerPanel").then((m) => ({
-    default: m.WhitelistManagerPanel,
-  })),
-);
-
-function TabFallback() {
-  return (
-    <div className="text-center text-secondary py-5">
-      <Spinner animation="border" size="sm" className="me-2" />
-      Loading…
-    </div>
-  );
-}
+import { ServerDetailModals } from "../components/server-detail/ServerDetailModals";
+import { ServerDetailTabs } from "../components/server-detail/ServerDetailTabs";
 
 export function ServerDetailPage() {
   const { id = "" } = useParams();
@@ -390,8 +295,6 @@ function ServerDetailPageInner({
     }
   }
 
-  // Clone uses CloneServerModal
-
   async function copyConnect() {
     const address = connectInfo?.address ?? `:${server?.port ?? ""}`;
     try {
@@ -467,7 +370,6 @@ function ServerDetailPageInner({
     />
   );
 
-
   return (
     <>
       <ServerDetailHeader
@@ -493,147 +395,37 @@ function ServerDetailPageInner({
         onShowNodeTransfer={() => setShowNodeTransfer(true)}
       />
 
-      {whitelistPrompt && (
-        <WhitelistStartModal
-          serverName={server.name}
-          busy={busy}
-          onCancel={() => setWhitelistPrompt(false)}
-          onStartAnyway={() => void act("start")}
-          onEnableAndStart={() => void act("start", true)}
-        />
-      )}
-
-      {showWhitelistModal && (
-        <WhitelistToggleModal
-          server={server}
-          busy={busy}
-          onCancel={() => setShowWhitelistModal(false)}
-          onError={(message) => setError(message)}
-          onSaved={(updated) => {
-            setServer(updated);
-            setShowWhitelistModal(false);
-            setNotice(
-              updated.properties["white-list"] === "true"
-                ? "Whitelist enabled."
-                : "Whitelist disabled.",
-            );
-          }}
-        />
-      )}
-
-      {killPrompt && (
-        <KillServerModal
-          serverName={server.name}
-          busy={busy}
-          onCancel={() => setKillPrompt(false)}
-          onConfirm={() => void act("kill")}
-        />
-      )}
-
-      {showClone && (
-        <CloneServerModal
-          server={server}
-          busy={busy}
-          onCancel={() => setShowClone(false)}
-          onCloned={async (cloned) => {
-            setShowClone(false);
-            await refreshUser().catch(() => undefined);
-            setNotice(`Cloned as ${cloned.name}`);
-            navigate(`/servers/${cloned.id}`);
-          }}
-        />
-      )}
-
-      {showReinstall && (
-        <ReinstallServerModal
-          server={server}
-          busy={busy}
-          onCancel={() => setShowReinstall(false)}
-          onDone={(next) => {
-            setServer((prev) => (prev ? { ...prev, ...next } : prev));
-            setShowReinstall(false);
-            setNotice("Server reinstalled.");
-          }}
-        />
-      )}
-
-      {showChangeType && (
-        <ChangeTypeModal
-          server={server}
-          busy={busy}
-          onCancel={() => setShowChangeType(false)}
-          onDone={(next) => {
-            setServer((prev) => (prev ? { ...prev, ...next } : prev));
-            setShowChangeType(false);
-            setNotice(`Software changed to ${typeLabel(next.type)}.`);
-          }}
-        />
-      )}
-
-      {showVersionPicker && (
-        <VersionPickerModal
-          show={showVersionPicker}
-          server={server}
-          onHide={() => setShowVersionPicker(false)}
-          onUpdated={(s) => {
-            setServer((prev) => (prev ? { ...prev, ...s } : prev));
-          }}
-          onError={setError}
-          onNotice={setNotice}
-        />
-      )}
-
-      {showTransfer && (
-        <TransferOwnerModal
-          server={server}
-          onCancel={() => setShowTransfer(false)}
-          onTransferred={(updated) => {
-            setServer((prev) => (prev ? { ...prev, ...updated } : prev));
-            setShowTransfer(false);
-            setNotice(
-              updated.ownerUsername
-                ? `Owner set to ${updated.ownerUsername}.`
-                : "Owner cleared (unassigned).",
-            );
-          }}
-        />
-      )}
-
-      {showNodeTransfer && (
-        <TransferNodeModal
-          server={server}
-          busy={busy}
-          onCancel={() => setShowNodeTransfer(false)}
-          onTransferred={(updated) => {
-            setServer((prev) => (prev ? { ...prev, ...updated } : prev));
-            if (updated.status !== "TRANSFERRING") {
-              setShowNodeTransfer(false);
-              if (updated.status === "ERROR") {
-                setError(updated.errorMessage ?? "Transfer failed");
-              } else {
-                setNotice(
-                  `Moved to ${updated.nodeName ?? "new node"}${
-                    updated.port !== server.port ? ` (port ${updated.port})` : ""
-                  }.`,
-                );
-              }
-              void load();
-            }
-          }}
-        />
-      )}
-
-      {showDelete && (
-        <DeleteServerModal
-          serverId={server.id}
-          serverName={server.name}
-          onCancel={() => setShowDelete(false)}
-          onDeleted={() => {
-            setShowDelete(false);
-            navigate("/");
-          }}
-        />
-      )}
+      <ServerDetailModals
+        server={server}
+        busy={busy}
+        whitelistPrompt={whitelistPrompt}
+        showWhitelistModal={showWhitelistModal}
+        killPrompt={killPrompt}
+        showClone={showClone}
+        showReinstall={showReinstall}
+        showChangeType={showChangeType}
+        showVersionPicker={showVersionPicker}
+        showTransfer={showTransfer}
+        showNodeTransfer={showNodeTransfer}
+        showDelete={showDelete}
+        onSetWhitelistPrompt={setWhitelistPrompt}
+        onSetShowWhitelistModal={setShowWhitelistModal}
+        onSetKillPrompt={setKillPrompt}
+        onSetShowClone={setShowClone}
+        onSetShowReinstall={setShowReinstall}
+        onSetShowChangeType={setShowChangeType}
+        onSetShowVersionPicker={setShowVersionPicker}
+        onSetShowTransfer={setShowTransfer}
+        onSetShowNodeTransfer={setShowNodeTransfer}
+        onSetShowDelete={setShowDelete}
+        onAct={act}
+        onSetServer={setServer}
+        onSetError={setError}
+        onSetNotice={setNotice}
+        onRefreshUser={refreshUser}
+        onNavigate={navigate}
+        onLoad={load}
+      />
 
       {error && (
         <Alert variant="danger" dismissible onClose={() => setError(null)}>
@@ -688,229 +480,30 @@ function ServerDetailPageInner({
             </Offcanvas>
 
             <Card.Body className="server-detail-body">
-              <Tab.Content>
-            <Suspense fallback={<TabFallback />}>
-            {tab === "settings" && (
-              <ServerSettings
+              <ServerDetailTabs
+                tab={tab}
                 server={server}
-                canUpdateSettings={can("settings.update")}
-                canUpdateStartup={can("startup.update")}
-                onSaved={(s) => {
-                  setServer(s);
-                  setError(null);
-                }}
-                onError={setError}
-                onNotice={setNotice}
-              />
-            )}
-            {tab === "seedmap" && (
-              <WorldSeedMapCard
-                server={server}
-                formSeed={server.properties?.["level-seed"]}
-                canQueryConsole={can("control.console")}
-                onNotice={setNotice}
-                onError={setError}
-              />
-            )}
-            {tab === "engine" && (
-              <EngineSettingsPanel
-                server={server}
-                canUpdate={can("settings.update")}
-                onError={setError}
-                onNotice={setNotice}
-              />
-            )}
-            {tab === "modpacks" && (
-              <ModpackPanel
-                server={server}
-                canUpdate={can("addon.update")}
-                onError={setError}
-                onNotice={setNotice}
-              />
-            )}
-            {tab === "databases" && (
-              <DatabasesPanel
-                serverId={id}
-                canCreate={can("database.create")}
-                canDelete={can("database.delete")}
-                onError={setError}
-                onNotice={setNotice}
-              />
-            )}
-            {tab === "allocations" && (
-              <AllocationsPanel
-                serverId={id}
-                serverType={server.type}
-                canCreate={can("allocation.create")}
-                canUpdate={can("allocation.update")}
-                canDelete={can("allocation.delete")}
-                canInstallAddons={can("addon.update")}
-                onError={setError}
-                onNotice={setNotice}
-                onPrimaryChanged={() => {
-                  void api.getServer(id).then(setServer).catch(() => undefined);
-                }}
-              />
-            )}
-            {tab === "subusers" && (
-              <SubUsersPanel
-                serverId={id}
-                myPermissions={perms}
-                canManage={can([
-                  "user.read",
-                  "user.create",
-                  "user.update",
-                  "user.delete",
-                ])}
-                onError={setError}
-                onNotice={setNotice}
-              />
-            )}
-            {tab === "addons" && (
-              <AddonPanel
-                serverId={id}
-                serverType={server.type}
-                mcVersion={server.mcVersion}
-                canUpdate={can("addon.update")}
-                onError={setError}
-                onNotice={setNotice}
-                onUpdateCountChange={setAddonUpdateCount}
-              />
-            )}
-            {tab === "whitelist" && (
-              <WhitelistManagerPanel
-                server={server}
-                canUpdate={can("player.update") || can("settings.update")}
-                onSaved={(s) => {
-                  setServer(s);
-                  setError(null);
-                }}
-                onError={setError}
-                onNotice={setNotice}
-              />
-            )}
-            {tab === "players" && (
-              <>
-                <p className="text-secondary">
-                  Live list from status ping and console join/leave. Click a player for actions.
-                </p>
-                <OnlinePlayers
-                  serverId={id}
-                  active={server.status === "RUNNING" || server.status === "STARTING"}
-                  canUpdate={can("player.update")}
-                  onError={setError}
-                  onNotice={setNotice}
-                />
-              </>
-            )}
-            {tab === "bans" && (
-              <BansPanel
-                serverId={id}
-                serverRunning={server.status === "RUNNING" || server.status === "STARTING"}
-                canUpdate={can("player.update")}
-                onError={setError}
-                onNotice={setNotice}
-              />
-            )}
-            {tab === "files" && (
-              <>
-                <p className="text-secondary">
-                  Browse and edit server files. Text up to 2 MB; uploads up to 100 MB.
-                </p>
-                <FileManager
-                  serverId={id}
-                  diskMb={server.diskMb}
-                  active={tab === "files"}
-                  canReadContent={can("file.read-content")}
-                  canUpdate={can("file.update")}
-                  canCreate={can("file.create")}
-                  canUpload={can("file.upload")}
-                  canDelete={can("file.delete")}
-                  canDownload={can("file.download")}
-                  canArchive={can("file.archive")}
-                  onError={setError}
-                />
-              </>
-            )}
-            {tab === "sftp" && (
-              <SftpPanel
-                serverId={id}
-                onError={setError}
-                onNotice={setNotice}
-              />
-            )}
-            {tab === "backups" && (
-              <BackupPanel
-                serverId={id}
-                canCreate={can("backup.create")}
-                canDelete={can("backup.delete")}
-                canRestore={can("backup.restore")}
-                canEditSchedule={can("backup.create")}
-                onError={setError}
-                onNotice={setNotice}
-              />
-            )}
-            {tab === "activity" && (
-              <ActivityPanel serverId={id} onError={setError} />
-            )}
-            {tab === "logs" && <LogPanel serverId={id} onError={setError} />}
-            {tab === "tasks" && (
-              <TasksPanel
-                serverId={id}
-                canCreate={can("schedule.create")}
-                canUpdate={can("schedule.update")}
-                canDelete={can("schedule.delete")}
-                onError={setError}
-                onNotice={setNotice}
-              />
-            )}
-            {tab === "bots" && isAdmin && (
-              <BotsPanel
-                serverId={id}
-                serverRunning={server.status === "RUNNING"}
-                onlineMode={server.properties?.["online-mode"] !== "false"}
-                onError={setError}
-                onNotice={setNotice}
-              />
-            )}
-            {tab === "resources" && (
-              <>
-                <p className="text-secondary mb-3">
-                  Disk breakdown is always available. CPU, memory, and network require a running
-                  server.
-                </p>
-                <ResourceMeter
-                  serverId={id}
-                  active={server.status === "RUNNING" || server.status === "STARTING"}
-                  diskMb={server.diskMb}
-                />
-              </>
-            )}
-            {tab === "console" && (
-              <ServerConsoleLayout
-                server={server}
-                connect={connectInfo}
-                system={systemInfo}
-                canStart={canPowerStart}
-                canStop={canPowerStop}
-                canKill={canPowerKill}
-                canRestart={canPowerRestart}
-                canSendConsole={can("control.console")}
-                canViewPlayers={can("player.read")}
-                canManagePlayers={can("player.update")}
+                id={id}
+                perms={perms}
+                isAdmin={isAdmin}
+                connectInfo={connectInfo}
+                systemInfo={systemInfo}
                 busy={busy}
-                onStatus={onStatus}
-                onStart={requestStart}
-                onStop={() => void act("stop")}
-                onKill={() => setKillPrompt(true)}
-                onRestart={() => void act("restart")}
-                onError={setError}
-                onNotice={setNotice}
                 consoleNotices={consoleNotices}
+                canPowerStart={canPowerStart}
+                canPowerStop={canPowerStop}
+                canPowerKill={canPowerKill}
+                canPowerRestart={canPowerRestart}
+                can={can}
+                onStatus={onStatus}
+                onRequestStart={requestStart}
+                onAct={act}
+                onSetKillPrompt={setKillPrompt}
+                onSetServer={setServer}
+                onSetError={setError}
+                onSetNotice={setNotice}
+                onSetAddonUpdateCount={setAddonUpdateCount}
               />
-            )}
-            </Suspense>
-              </Tab.Content>
             </Card.Body>
           </div>
         </div>

@@ -25,6 +25,8 @@ Key files:
 - `docker.ts`
 - `docker-engine.ts`
 - `process-manager.ts`
+- `process-console.ts`
+- `process-attach.ts`
 - `process-start.ts`
 - `process-lifecycle.ts`
 - `process-types.ts`
@@ -63,7 +65,9 @@ Configured limits and observed usage are related but different; operators should
 
 Key files:
 
-- `files.ts`
+- `files.ts` (façade)
+- `files-crud.ts`
+- `files-archive.ts`
 - `safe-archive.ts`
 - `sftp-jail.ts`
 - `sftp-handlers.ts`
@@ -94,9 +98,12 @@ This embedded `ssh2` server:
 
 ### MySQL helper
 
-Key file:
+Key files:
 
-- `mysql.ts`
+- `mysql.ts` (façade)
+- `mysql-network.ts`
+- `mysql-container.ts`
+- `mysql-crud.ts`
 
 The node-agent manages the node-local `guartrix-mysql` lifecycle and related database operations for game servers.
 

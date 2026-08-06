@@ -12,6 +12,7 @@ import { Alert, Button, Spinner, Stack } from "react-bootstrap";
 import { api } from "../api";
 import { useI18n } from "../i18n/react";
 import { AddonDetailModal } from "./AddonDetailModal";
+import { AbortableBrowse } from "./addon-panel/abortableBrowse";
 import { AddonSearch } from "./addon-panel/AddonSearch";
 import { InstalledAddonsList } from "./addon-panel/InstalledAddonsList";
 import { AddonVersionPickerModal } from "./AddonVersionPickerModal";
@@ -62,8 +63,7 @@ export function AddonPanel({
     currentVersionId?: string | null;
   } | null>(null);
   const limit = 24;
-  const browseAbortRef = useRef<AbortController | null>(null);
-  const browseSeqRef = useRef(0);
+  const browseGateRef = useRef(new AbortableBrowse());
 
   const refreshUpdates = useCallback(async () => {
     setCheckingUpdates(true);
@@ -94,10 +94,7 @@ export function AddonPanel({
   const browse = useCallback(
     async (nextOffset = 0, append = false) => {
       if (!kind) return;
-      browseAbortRef.current?.abort();
-      const ac = new AbortController();
-      browseAbortRef.current = ac;
-      const seq = ++browseSeqRef.current;
+      const { signal, seq } = browseGateRef.current.begin();
       setSearching(true);
       onError(null);
       try {
@@ -110,19 +107,19 @@ export function AddonPanel({
             offset: nextOffset,
             limit,
           },
-          ac.signal,
+          signal,
         );
-        if (seq !== browseSeqRef.current) return;
+        if (!browseGateRef.current.isCurrent(seq)) return;
         setHits((prev) => (append ? [...prev, ...data.hits] : data.hits));
         setTotalHits(data.totalHits);
         setOffset(nextOffset);
       } catch (err) {
-        if (ac.signal.aborted || seq !== browseSeqRef.current) return;
+        if (browseGateRef.current.isStale(seq, signal)) return;
         if (err instanceof DOMException && err.name === "AbortError") return;
         if (err instanceof Error && err.name === "AbortError") return;
         onError(err instanceof Error ? err.message : "Browse failed");
       } finally {
-        if (seq === browseSeqRef.current) setSearching(false);
+        if (browseGateRef.current.isCurrent(seq)) setSearching(false);
       }
     },
     [kind, serverId, query, category, sort, onError],
@@ -143,7 +140,7 @@ export function AddonPanel({
     if (!kind) return;
     void browse(0, false);
     return () => {
-      browseAbortRef.current?.abort();
+      browseGateRef.current.abort();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reload when filters change, not query typing
   }, [kind, category, sort, serverId]);

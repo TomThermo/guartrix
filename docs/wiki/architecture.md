@@ -140,7 +140,7 @@ These folders are the most useful anchors when auditing or documenting the codeb
 | `apps/api/src/billing/` | Mollie checkout, sync, quota application |
 | `apps/api/src/license/` | validate loop, free-tier fallback, daemon ticket generation |
 | `apps/api/src/ws/` | browser-facing console/admin/player event fan-out |
-| `apps/daemon/src/routes/` | node-side file, MySQL, firewall, and WebSocket route families |
+| `apps/daemon/src/routes/` | node-side file, MySQL, firewall, WebSocket, power, and status route families |
 | `packages/node-agent/src/` | host runtime: Docker, SFTP, quotas, jail, networking, MySQL |
 | `packages/shared/src/` | shared payloads, permissions, daemon JWT, license verification, activity taxonomy |
 

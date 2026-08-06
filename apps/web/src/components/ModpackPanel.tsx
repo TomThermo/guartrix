@@ -1,109 +1,24 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import type { AddonSortIndex, McServer } from "@msm/shared";
 import { addonKindFor } from "@msm/shared";
-import {
-  Alert,
-  Badge,
-  Button,
-  Col,
-  Form,
-  ListGroup,
-  Row,
-  Spinner,
-  Stack,
-} from "react-bootstrap";
+import { Alert } from "react-bootstrap";
 import { api } from "../api";
 import { useI18n } from "../i18n/react";
-import { formatCount } from "../utils";
 import { AddonDetailModal } from "./AddonDetailModal";
+import { AbortableBrowse } from "./addon-panel/abortableBrowse";
 import { AddonVersionPickerModal } from "./AddonVersionPickerModal";
+import { ModpackSearch } from "./modpack/ModpackSearch";
+import {
+  normalizeModpackHit,
+  type ModpackHit,
+  type ModpackSource,
+} from "./modpack/normalizeHit";
 
 interface Props {
   server: McServer;
   canUpdate: boolean;
   onNotice: (message: string | null) => void;
   onError: (message: string | null) => void;
-}
-
-type Source = "modrinth" | "curseforge";
-
-type ModpackHit = {
-  key: string;
-  projectId?: string;
-  modId?: number;
-  title: string;
-  description: string;
-  downloads: number;
-  follows: number;
-  author: string;
-  iconUrl: string | null;
-  categories: string[];
-};
-
-const SORT_OPTIONS: { value: AddonSortIndex; labelKey: string }[] = [
-  { value: "relevance", labelKey: "addons.sortRelevance" },
-  { value: "downloads", labelKey: "addons.sortDownloads" },
-  { value: "follows", labelKey: "addons.sortFollows" },
-  { value: "newest", labelKey: "addons.sortNewest" },
-  { value: "updated", labelKey: "addons.sortUpdated" },
-];
-
-function normalizeHit(hit: Record<string, unknown>, source: Source): ModpackHit {
-  if (source === "curseforge") {
-    const authors = Array.isArray(hit.authors)
-      ? (hit.authors as Array<{ name?: string }>)
-      : [];
-    const logo =
-      hit.logo && typeof hit.logo === "object"
-        ? (hit.logo as { thumbnailUrl?: string; url?: string })
-        : null;
-    const categories = Array.isArray(hit.categories)
-      ? (hit.categories as Array<{ name?: string }>)
-          .map((c) => c.name)
-          .filter((n): n is string => Boolean(n))
-      : [];
-    return {
-      key: String(hit.id ?? hit.slug ?? ""),
-      modId: Number(hit.id),
-      title: String(hit.name ?? hit.title ?? hit.id ?? "modpack"),
-      description: String(hit.summary ?? hit.description ?? ""),
-      downloads: Number(hit.downloadCount ?? hit.downloads ?? 0),
-      follows: Number(hit.thumbsUpCount ?? hit.follows ?? 0),
-      author: String(authors[0]?.name ?? ""),
-      iconUrl: logo?.thumbnailUrl || logo?.url || null,
-      categories,
-    };
-  }
-
-  const categories = Array.isArray(hit.categories)
-    ? (hit.categories as string[]).filter(Boolean)
-    : Array.isArray(hit.display_categories)
-      ? (hit.display_categories as string[]).filter(Boolean)
-      : [];
-  const loaders = new Set([
-    "fabric",
-    "forge",
-    "neoforge",
-    "quilt",
-    "bukkit",
-    "spigot",
-    "paper",
-    "purpur",
-    "folia",
-    "rift",
-    "liteloader",
-  ]);
-  return {
-    key: String(hit.project_id ?? hit.slug ?? hit.id ?? ""),
-    projectId: String(hit.project_id ?? hit.slug ?? ""),
-    title: String(hit.title ?? hit.name ?? "modpack"),
-    description: String(hit.description ?? ""),
-    downloads: Number(hit.downloads ?? 0),
-    follows: Number(hit.follows ?? 0),
-    author: String(hit.author ?? ""),
-    iconUrl: typeof hit.icon_url === "string" ? hit.icon_url : null,
-    categories: categories.filter((c) => !loaders.has(c)),
-  };
 }
 
 export function ModpackPanel({
@@ -113,7 +28,7 @@ export function ModpackPanel({
   onError,
 }: Props) {
   const { t } = useI18n();
-  const [source, setSource] = useState<Source>("modrinth");
+  const [source, setSource] = useState<ModpackSource>("modrinth");
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<AddonSortIndex>("relevance");
   const [category, setCategory] = useState("");
@@ -133,8 +48,7 @@ export function ModpackPanel({
     iconUrl?: string | null;
   } | null>(null);
   const limit = 24;
-  const browseAbortRef = useRef<AbortController | null>(null);
-  const browseSeqRef = useRef(0);
+  const browseGateRef = useRef(new AbortableBrowse());
 
   const kind = addonKindFor(server.type);
   const supports =
@@ -146,10 +60,7 @@ export function ModpackPanel({
   const browse = useCallback(
     async (nextOffset = 0, append = false) => {
       if (!supports) return;
-      browseAbortRef.current?.abort();
-      const ac = new AbortController();
-      browseAbortRef.current = ac;
-      const seq = ++browseSeqRef.current;
+      const { signal, seq } = browseGateRef.current.begin();
       setSearching(true);
       onError(null);
       try {
@@ -162,21 +73,21 @@ export function ModpackPanel({
           offset: nextOffset,
           limit,
         });
-        if (seq !== browseSeqRef.current) return;
-        const next = res.hits.map((h) => normalizeHit(h, source));
+        if (!browseGateRef.current.isCurrent(seq)) return;
+        const next = res.hits.map((h) => normalizeModpackHit(h, source));
         setHits((prev) => (append ? [...prev, ...next] : next));
         setTotalHits(res.totalHits);
         setOffset(nextOffset);
         setConfigured(res.configured !== false);
       } catch (err) {
-        if (ac.signal.aborted || seq !== browseSeqRef.current) return;
+        if (browseGateRef.current.isStale(seq, signal)) return;
         onError(err instanceof Error ? err.message : t("modpacks.searchFailed"));
         if (!append) {
           setHits([]);
           setTotalHits(0);
         }
       } finally {
-        if (seq === browseSeqRef.current) setSearching(false);
+        if (browseGateRef.current.isCurrent(seq)) setSearching(false);
       }
     },
     [supports, server.id, query, source, category, sort, onError, t],
@@ -195,7 +106,7 @@ export function ModpackPanel({
     if (source === "curseforge" && category) setCategory("");
     void browse(0, false);
     return () => {
-      browseAbortRef.current?.abort();
+      browseGateRef.current.abort();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reload when filters change
   }, [supports, source, sort, category, server.id]);
@@ -299,223 +210,34 @@ export function ModpackPanel({
       <h2 className="h5 mb-3">{t("modpacks.title")}</h2>
       <p className="text-secondary small">{t("modpacks.help")}</p>
 
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <h3 className="h6 mb-0">
-          <i className="fa-solid fa-cubes me-2" />
-          {t("modpacks.browse")}
-        </h3>
-        <span className="small text-secondary">
-          {t("addons.results", { count: totalHits.toLocaleString() })}
-        </span>
-      </div>
-
-      <Form onSubmit={(e) => void onSearch(e)} className="mb-3">
-        <Row className="g-2">
-          <Col md={3}>
-            <Form.Select
-              size="sm"
-              value={source}
-              onChange={(e) => setSource(e.target.value as Source)}
-              aria-label={t("modpacks.source")}
-            >
-              <option value="modrinth">Modrinth</option>
-              <option value="curseforge">CurseForge</option>
-            </Form.Select>
-          </Col>
-          <Col md={source === "modrinth" ? 4 : 6}>
-            <Form.Control
-              size="sm"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={t("modpacks.search")}
-            />
-          </Col>
-          {source === "modrinth" && (
-            <Col md={3}>
-              <Form.Select
-                size="sm"
-                value={sort}
-                onChange={(e) => setSort(e.target.value as AddonSortIndex)}
-                aria-label={t("addons.sortBy")}
-              >
-                {SORT_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {t(opt.labelKey)}
-                  </option>
-                ))}
-              </Form.Select>
-            </Col>
-          )}
-          <Col md="auto">
-            <Button size="sm" variant="primary" type="submit" disabled={searching}>
-              {searching ? <Spinner size="sm" /> : t("common.search")}
-            </Button>
-          </Col>
-        </Row>
-      </Form>
-
-      {source === "curseforge" && !configured && (
-        <Alert variant="warning">{t("modpacks.curseforgeMissing")}</Alert>
-      )}
-
-      {source === "modrinth" && (
-        <Stack direction="horizontal" gap={2} className="flex-wrap mb-3">
-          <Button
-            size="sm"
-            variant={category === "" ? "primary" : "outline-secondary"}
-            onClick={() => setCategory("")}
-          >
-            {t("common.all")}
-          </Button>
-          {categories.map((cat) => (
-            <Button
-              key={cat.name}
-              size="sm"
-              variant={category === cat.name ? "primary" : "outline-secondary"}
-              onClick={() => setCategory(cat.name)}
-            >
-              {cat.label}
-            </Button>
-          ))}
-        </Stack>
-      )}
-
-      {searching && hits.length === 0 && (
-        <Alert variant="light" className="border small py-2 mb-3">
-          <Spinner size="sm" className="me-2" />
-          {t("modpacks.searchingLibrary")}
-        </Alert>
-      )}
-
-      <ListGroup className="mb-3">
-        {hits.length === 0 && !searching && (
-          <ListGroup.Item className="text-secondary">
-            {t("modpacks.noResults")}
-          </ListGroup.Item>
-        )}
-        {hits.map((h) => {
-          const clickable = source === "modrinth" && Boolean(h.projectId);
-          return (
-            <ListGroup.Item
-              key={h.key}
-              className={`d-flex justify-content-between align-items-start gap-3 flex-wrap${
-                clickable ? " addon-row-clickable" : ""
-              }`}
-              onClick={
-                clickable
-                  ? () => setDetailProjectId(h.projectId!)
-                  : undefined
-              }
-              role={clickable ? "button" : undefined}
-              tabIndex={clickable ? 0 : undefined}
-              onKeyDown={
-                clickable
-                  ? (e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        setDetailProjectId(h.projectId!);
-                      }
-                    }
-                  : undefined
-              }
-            >
-              <div className="d-flex gap-2 min-w-0">
-                {h.iconUrl ? (
-                  <img
-                    className="addon-icon"
-                    src={h.iconUrl}
-                    alt=""
-                    width={40}
-                    height={40}
-                  />
-                ) : (
-                  <div className="addon-icon addon-icon-fallback d-grid place-items-center">
-                    <i className="fa-solid fa-cubes text-secondary" />
-                  </div>
-                )}
-                <div className="min-w-0">
-                  <div className="fw-semibold">{h.title}</div>
-                  <div className="small text-secondary">
-                    {h.author
-                      ? `${t("addons.byAuthor", { author: h.author })} · `
-                      : ""}
-                    {t("addons.downloadsCount", {
-                      count: formatCount(h.downloads),
-                    })}
-                    {h.follows > 0
-                      ? ` · ${t("addons.likesCount", {
-                          count: formatCount(h.follows),
-                        })}`
-                      : ""}
-                  </div>
-                  {h.categories.length > 0 && (
-                    <Stack
-                      direction="horizontal"
-                      gap={1}
-                      className="flex-wrap mt-1"
-                    >
-                      {h.categories.slice(0, 4).map((c) => (
-                        <Badge
-                          key={c}
-                          bg="secondary"
-                          className={
-                            source === "modrinth" ? "cursor-pointer" : undefined
-                          }
-                          onClick={
-                            source === "modrinth"
-                              ? (e) => {
-                                  e.stopPropagation();
-                                  setCategory(c);
-                                }
-                              : undefined
-                          }
-                        >
-                          {c}
-                        </Badge>
-                      ))}
-                    </Stack>
-                  )}
-                  <p className="small text-secondary mb-0 mt-1">{h.description}</p>
-                </div>
-              </div>
-              {canUpdate && (
-                <Button
-                  size="sm"
-                  variant="primary"
-                  disabled={!!installing}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (source === "curseforge") {
-                      void installCurseforge(h);
-                    } else {
-                      openInstallPicker(h);
-                    }
-                  }}
-                >
-                  {installing === (h.projectId ?? h.key) ? (
-                    <Spinner size="sm" />
-                  ) : (
-                    t("modpacks.install")
-                  )}
-                </Button>
-              )}
-            </ListGroup.Item>
-          );
-        })}
-      </ListGroup>
-
-      {canLoadMore && (
-        <div className="text-center">
-          <Button
-            size="sm"
-            variant="outline-secondary"
-            disabled={searching}
-            onClick={() => void browse(offset + limit, true)}
-          >
-            {searching ? t("common.loading") : t("addons.loadMore")}
-          </Button>
-        </div>
-      )}
+      <ModpackSearch
+        source={source}
+        query={query}
+        sort={sort}
+        category={category}
+        categories={categories}
+        hits={hits}
+        totalHits={totalHits}
+        searching={searching}
+        configured={configured}
+        canLoadMore={canLoadMore}
+        installing={installing}
+        canUpdate={canUpdate}
+        onSourceChange={setSource}
+        onQueryChange={setQuery}
+        onSortChange={setSort}
+        onCategoryChange={setCategory}
+        onSearch={(e) => void onSearch(e)}
+        onSelectHit={setDetailProjectId}
+        onInstallHit={(h) => {
+          if (source === "curseforge") {
+            void installCurseforge(h);
+          } else {
+            openInstallPicker(h);
+          }
+        }}
+        onLoadMore={() => void browse(offset + limit, true)}
+      />
 
       {detailProjectId && source === "modrinth" && (
         <AddonDetailModal

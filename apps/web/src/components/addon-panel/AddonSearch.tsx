@@ -3,14 +3,7 @@ import type { AddonCategory, AddonSearchHit, AddonSortIndex } from "@msm/shared"
 import { Alert, Badge, Button, Col, Form, ListGroup, Row, Spinner, Stack } from "react-bootstrap";
 import { useI18n } from "../../i18n/react";
 import { formatCount } from "../../utils";
-
-const SORT_OPTIONS: { value: AddonSortIndex; labelKey: string }[] = [
-  { value: "relevance", labelKey: "addons.sortRelevance" },
-  { value: "downloads", labelKey: "addons.sortDownloads" },
-  { value: "follows", labelKey: "addons.sortFollows" },
-  { value: "newest", labelKey: "addons.sortNewest" },
-  { value: "updated", labelKey: "addons.sortUpdated" },
-];
+import { ADDON_SORT_OPTIONS } from "./sortOptions";
 
 interface Props {
   query: string;
@@ -84,7 +77,7 @@ export function AddonSearch({
               onChange={(e) => onSortChange(e.target.value as AddonSortIndex)}
               aria-label={t("addons.sortBy")}
             >
-              {SORT_OPTIONS.map((opt) => (
+              {ADDON_SORT_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
                   {t(opt.labelKey)}
                 </option>

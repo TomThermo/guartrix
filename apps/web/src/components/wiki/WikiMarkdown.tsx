@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
+import { safeExternalUrl } from "../../lib/safeUrl";
 
 /** Map docs/wiki/*.md → panel routes (API docs live under /api-docs). */
 const MD_TO_HREF: Record<string, string> = {
@@ -38,17 +39,6 @@ function methodClass(method: string): string {
 function MethodBadge({ method }: { method: string }) {
   const m = method.toUpperCase();
   return <span className={methodClass(m)}>{m}</span>;
-}
-
-function safeExternalUrl(raw: string): string | null {
-  try {
-    const u = new URL(raw.trim());
-    if (u.protocol !== "http:" && u.protocol !== "https:") return null;
-    if (u.username || u.password) return null;
-    return u.href;
-  } catch {
-    return null;
-  }
 }
 
 function resolveDocHref(

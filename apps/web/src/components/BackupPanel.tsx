@@ -7,23 +7,20 @@ import {
 } from "@msm/shared";
 import {
   Alert,
-  Badge,
   Button,
   Col,
   Form,
-  ListGroup,
-  ProgressBar,
   Row,
   Spinner,
-  Stack,
 } from "react-bootstrap";
 import { api } from "../api";
 import { useI18n } from "../i18n/react";
 import { formatBytes, formatWhen } from "../utils";
 import { ConfirmModal } from "./ConfirmModal";
-import { EmptyState } from "./EmptyState";
 import { ScheduleFields } from "./ScheduleFields";
 import { TabLoading } from "./TabLoading";
+import { BackupList } from "./backup/BackupList";
+import { BackupTransferControls } from "./backup/BackupTransferControls";
 
 interface Props {
   serverId: string;
@@ -33,22 +30,6 @@ interface Props {
   canDelete?: boolean;
   canRestore?: boolean;
   canEditSchedule?: boolean;
-}
-
-function triggerBadge(
-  trigger: ServerBackup["trigger"],
-  t: (key: string) => string,
-): {
-  bg: string;
-  label: string;
-} {
-  if (trigger === "scheduled") {
-    return { bg: "primary", label: t("backups.triggerScheduled") };
-  }
-  if (trigger === "uploaded") {
-    return { bg: "info", label: t("backups.triggerUploaded") };
-  }
-  return { bg: "secondary", label: t("backups.triggerManual") };
 }
 
 export function BackupPanel({
@@ -382,67 +363,19 @@ export function BackupPanel({
 
             <hr className="my-4" />
 
-            <h3 className="h6 mb-3">
-              <i className="fa-solid fa-cloud-arrow-up me-2" />
-              {t("backups.uploadTitle")}
-            </h3>
-            <Form.Group className="mb-3">
-              <Form.Label>{t("backups.uploadFormats", { max: maxUploadLabel })}</Form.Label>
-              <Form.Control
-                type="file"
-                accept=".tar.gz,.tgz,.zip,application/gzip,application/x-gzip,application/zip,application/x-zip-compressed"
-                disabled={uploading || busy}
-                onChange={(e) => {
-                  const input = e.target as HTMLInputElement;
-                  const file = input.files?.[0] ?? null;
-                  setUploadFile(file);
-                }}
-              />
-              {uploadFile && (
-                <Form.Text className="text-secondary">
-                  {uploadFile.name} · {formatBytes(uploadFile.size)}
-                </Form.Text>
-              )}
-            </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>{t("backups.noteOptional")}</Form.Label>
-              <Form.Control
-                value={uploadNote}
-                onChange={(e) => setUploadNote(e.target.value)}
-                placeholder={t("backups.uploadNotePlaceholder")}
-                maxLength={120}
-                disabled={uploading || busy}
-              />
-            </Form.Group>
-            {uploading && (
-              <div className="mb-3">
-                <ProgressBar now={uploadPct} label={`${uploadPct}%`} className="mb-1" />
-                <div className="small text-secondary">{uploadLabel}</div>
-              </div>
-            )}
-            <Stack direction="horizontal" gap={2}>
-              <Button
-                variant="outline-primary"
-                disabled={uploading || busy || !uploadFile}
-                onClick={() => void onUpload()}
-              >
-                {uploading ? (
-                  <>
-                    <Spinner size="sm" className="me-2" /> {t("backups.uploading")}
-                  </>
-                ) : (
-                  <>
-                    <i className="fa-solid fa-cloud-arrow-up me-2" />
-                    {t("common.upload")}
-                  </>
-                )}
-              </Button>
-              {uploading && (
-                <Button variant="outline-secondary" onClick={onCancelUpload}>
-                  {t("common.cancel")}
-                </Button>
-              )}
-            </Stack>
+            <BackupTransferControls
+              maxUploadLabel={maxUploadLabel}
+              uploadNote={uploadNote}
+              onUploadNoteChange={setUploadNote}
+              uploadFile={uploadFile}
+              onUploadFileChange={setUploadFile}
+              uploading={uploading}
+              uploadPct={uploadPct}
+              uploadLabel={uploadLabel}
+              busy={busy}
+              onUpload={() => void onUpload()}
+              onCancelUpload={onCancelUpload}
+            />
           </Col>
         )}
 
@@ -494,82 +427,19 @@ export function BackupPanel({
         )}
       </Row>
 
-      <h3 className="h6 mb-3">
-        <i className="fa-solid fa-box-archive me-2" />
-        {t("backups.listTitle", { count: backups.length })}
-      </h3>
-      <ListGroup>
-        {backups.length === 0 && (
-          <ListGroup.Item>
-            <EmptyState message={t("backups.empty")} />
-          </ListGroup.Item>
-        )}
-        {backups.map((b) => {
-          const badge = triggerBadge(b.trigger, t);
-          const isDownloading = downloadingId === b.id;
-          return (
-            <ListGroup.Item
-              key={b.id}
-              className="d-flex justify-content-between align-items-center gap-3 flex-wrap"
-            >
-              <div className="min-w-0">
-                <div className="fw-semibold font-monospace text-break">{b.fileName}</div>
-                <div className="small text-secondary">
-                  {formatWhen(b.createdAt)} · {b.sizeLabel}
-                  {b.note ? ` · ${b.note}` : ""}
-                </div>
-                <Badge bg={badge.bg} className="mt-1">
-                  {badge.label}
-                </Badge>
-                {b.encrypted ? (
-                  <Badge bg="dark" className="mt-1 ms-1" title={t("backups.encryptedAtRest")}>
-                    <i className="fa-solid fa-lock me-1" />
-                    {t("backups.encrypted")}
-                  </Badge>
-                ) : null}
-                {isDownloading && (
-                  <div className="mt-2" style={{ minWidth: 180 }}>
-                    <ProgressBar now={downloadPct} label={`${downloadPct}%`} />
-                  </div>
-                )}
-              </div>
-              <Stack direction="horizontal" gap={2}>
-                {isDownloading ? (
-                  <Button size="sm" variant="outline-secondary" onClick={onCancelDownload}>
-                    {t("common.cancel")}
-                  </Button>
-                ) : (
-                  <Button
-                    size="sm"
-                    variant="primary"
-                    disabled={Boolean(downloadingId) || uploading}
-                    onClick={() => void onDownload(b)}
-                  >
-                    <i className="fa-solid fa-download me-1" />
-                    {t("backups.download")}
-                  </Button>
-                )}
-                {canRestore && (
-                  <Button
-                    size="sm"
-                    variant="outline-warning"
-                    disabled={busy || uploading}
-                    onClick={() => onRestore(b)}
-                  >
-                    <i className="fa-solid fa-clock-rotate-left me-1" />
-                    {t("backups.restore")}
-                  </Button>
-                )}
-                {canDelete && (
-                  <Button size="sm" variant="outline-danger" onClick={() => onDelete(b)}>
-                    {t("backups.delete")}
-                  </Button>
-                )}
-              </Stack>
-            </ListGroup.Item>
-          );
-        })}
-      </ListGroup>
+      <BackupList
+        backups={backups}
+        busy={busy}
+        uploading={uploading}
+        downloadingId={downloadingId}
+        downloadPct={downloadPct}
+        canDelete={canDelete}
+        canRestore={canRestore}
+        onDownload={(b) => void onDownload(b)}
+        onCancelDownload={onCancelDownload}
+        onRestore={onRestore}
+        onDelete={onDelete}
+      />
 
       <ConfirmModal
         show={Boolean(deleteTarget)}

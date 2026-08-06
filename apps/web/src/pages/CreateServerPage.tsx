@@ -1,19 +1,10 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
+import { canCreateServer, type DaemonNode, type ServerType } from "@msm/shared";
 import {
-  BEDROCK_SERVER_TYPES,
-  JAVA_SERVER_TYPES,
-  canCreateServer,
-  type DaemonNode,
-  type ServerType,
-} from "@msm/shared";
-import {
-  Alert,
   Button,
-  Col,
   Form,
   Nav,
-  Row,
   Spinner,
 } from "react-bootstrap";
 import { api } from "../api";
@@ -25,41 +16,12 @@ import {
   AdminPageShell,
   AdminPanelCard,
 } from "../components/admin/AdminPageShell";
-import { typeIcon, typeLabel, formatGb } from "../utils";
+import { formatGb } from "../utils";
+import { CreateServerForm } from "./create-server/CreateServerForm";
+import { ImportServerForm } from "./create-server/ImportServerForm";
+import { ServerTypeNodeFields } from "./create-server/ServerTypeNodeFields";
 
 type Mode = "create" | "import";
-
-function TypePicker({
-  label,
-  types,
-  selected,
-  onSelect,
-}: {
-  label: string;
-  types: ServerType[];
-  selected: ServerType;
-  onSelect: (type: ServerType) => void;
-}) {
-  return (
-    <div className="create-type-group">
-      <p className="create-type-group__label">{label}</p>
-      <div className="create-type-grid" role="group" aria-label={label}>
-        {types.map((st) => (
-          <button
-            key={st}
-            type="button"
-            className={`create-type-tile ${selected === st ? "is-active" : ""}`}
-            aria-pressed={selected === st}
-            onClick={() => onSelect(st)}
-          >
-            <i className={`fa-solid ${typeIcon(st)}`} aria-hidden />
-            <span>{typeLabel(st)}</span>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 export function CreateServerPage() {
   const navigate = useNavigate();
@@ -347,194 +309,6 @@ export function CreateServerPage() {
       </div>
     ) : null;
 
-  const detailsCard = (
-    <AdminPanelCard title={t("createServer.sectionDetails")} icon="fa-server">
-      <Form.Group className="mb-3" controlId="name">
-        <Form.Label>{t("createServer.name")}</Form.Label>
-        <Form.Control
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-          maxLength={64}
-          placeholder={t("createServer.namePlaceholder")}
-        />
-      </Form.Group>
-
-      <Form.Group className="mb-0" controlId="node">
-        <Form.Label>{t("createServer.node")}</Form.Label>
-        <Form.Select
-          value={nodeId}
-          onChange={(e) => setNodeId(e.target.value)}
-          required={nodes.length > 0}
-          disabled={nodes.length === 0}
-        >
-          {nodes.length === 0 && <option value="">{t("createServer.noNodes")}</option>}
-          {nodes.map((n, idx) => {
-            const free = n.memoryUsableMb ?? n.memoryAvailableMb;
-            const recommended =
-              idx === 0 && n.status === "ONLINE" && (n.memoryMb <= 0 || free > 0);
-            return (
-              <option key={n.id} value={n.id}>
-                {n.name}
-                {n.location ? ` (${n.location})` : ""}
-                {n.isLocal ? ` ${t("createServer.localSuffix")}` : ""}
-                {recommended ? ` ${t("createServer.recommended")}` : ""}
-                {n.memoryMb > 0
-                  ? t("createServer.nodeOptionUsable", {
-                      free: formatGb(free),
-                      total: formatGb(n.memoryMb),
-                    })
-                  : ""}
-                {n.status !== "ONLINE" ? ` [${n.status}]` : ""}
-              </option>
-            );
-          })}
-        </Form.Select>
-        {selectedNode && (
-          <div
-            className={`create-server-node-meta ${nodeRamOk ? "text-secondary" : "is-error"}`}
-          >
-            {selectedNode.memoryMb > 0 ? (
-              nodeRamOk ? (
-                t("createServer.nodeHasUsable", {
-                  free: formatGb(selectedFreeMb),
-                  reserved: formatGb(selectedNode.memoryReserveMb ?? 0),
-                  used: formatGb(selectedNode.memoryUsedMb),
-                  total: formatGb(selectedNode.memoryMb),
-                })
-              ) : (
-                t("createServer.notEnoughRamDetail", {
-                  requested: formatGb(memoryMb),
-                  usable: formatGb(selectedFreeMb),
-                })
-              )
-            ) : (
-              t("createServer.nodeCapacityUnknown")
-            )}
-          </div>
-        )}
-      </Form.Group>
-    </AdminPanelCard>
-  );
-
-  const softwareCard = (
-    <AdminPanelCard title={t("createServer.sectionSoftware")} icon="fa-cube">
-      <TypePicker
-        label={t("createServer.typeJava")}
-        types={JAVA_SERVER_TYPES}
-        selected={type}
-        onSelect={setType}
-      />
-      <TypePicker
-        label={t("createServer.typeBedrock")}
-        types={BEDROCK_SERVER_TYPES}
-        selected={type}
-        onSelect={setType}
-      />
-      <Form.Group className="mb-0 mt-3" controlId="version">
-        <Form.Label>{t("createServer.version")}</Form.Label>
-        <Form.Select
-          value={mcVersion}
-          onChange={(e) => setMcVersion(e.target.value)}
-          disabled={loadingVersions || versions.length === 0}
-          required
-        >
-          {loadingVersions && <option>{t("common.loading")}…</option>}
-          {versions.map((v) => (
-            <option key={v} value={v}>
-              {v}
-            </option>
-          ))}
-        </Form.Select>
-      </Form.Group>
-    </AdminPanelCard>
-  );
-
-  const worldCard =
-    mode === "create" ? (
-      <AdminPanelCard title={t("createServer.sectionWorld")} icon="fa-map">
-        <Row className="g-3">
-          <Col md={6}>
-            <Form.Group controlId="world-preset">
-              <Form.Label>{t("createServer.worldPreset")}</Form.Label>
-              <Form.Select
-                value={worldPreset}
-                onChange={(e) =>
-                  setWorldPreset(e.target.value as "DEFAULT" | "FLAT" | "VOID")
-                }
-              >
-                <option value="DEFAULT">{t("createServer.presetDefault")}</option>
-                <option value="FLAT">{t("createServer.presetFlat")}</option>
-                <option value="VOID">{t("createServer.presetVoid")}</option>
-              </Form.Select>
-            </Form.Group>
-          </Col>
-          <Col md={6}>
-            <Form.Group controlId="seed">
-              <Form.Label>
-                {t("createServer.seed")} ({t("common.optional")})
-              </Form.Label>
-              <Form.Control
-                value={seed}
-                onChange={(e) => setSeed(e.target.value)}
-                placeholder={t("createServer.seedPlaceholder")}
-                maxLength={128}
-              />
-            </Form.Group>
-          </Col>
-          <Col md={6}>
-            <Form.Group controlId="gamemode">
-              <Form.Label>{t("createServer.gamemode")}</Form.Label>
-              <Form.Select
-                value={gamemode}
-                onChange={(e) => setGamemode(e.target.value)}
-              >
-                <option value="survival">Survival</option>
-                <option value="creative">Creative</option>
-                <option value="adventure">Adventure</option>
-                <option value="spectator">Spectator</option>
-              </Form.Select>
-            </Form.Group>
-          </Col>
-          <Col md={6}>
-            <Form.Group controlId="difficulty">
-              <Form.Label>{t("createServer.difficulty")}</Form.Label>
-              <Form.Select
-                value={difficulty}
-                onChange={(e) => setDifficulty(e.target.value)}
-              >
-                <option value="peaceful">Peaceful</option>
-                <option value="easy">Easy</option>
-                <option value="normal">Normal</option>
-                <option value="hard">Hard</option>
-              </Form.Select>
-            </Form.Group>
-          </Col>
-        </Row>
-      </AdminPanelCard>
-    ) : null;
-
-  const importCard =
-    mode === "import" ? (
-      <AdminPanelCard title={t("createServer.sectionImport")} icon="fa-file-import">
-        <Alert variant="secondary" className="small mb-3">
-          {t("createServer.importHelp")}
-        </Alert>
-        <Form.Group className="mb-0" controlId="archive">
-          <Form.Label>{t("createServer.importArchive")}</Form.Label>
-          <Form.Control
-            type="file"
-            accept=".zip,.tar.gz,.tgz,application/zip,application/gzip"
-            required
-            onChange={(e) => {
-              const input = e.target as HTMLInputElement;
-              setArchive(input.files?.[0] ?? null);
-            }}
-          />
-        </Form.Group>
-      </AdminPanelCard>
-    ) : null;
-
   const resourcesCard = (
     <AdminPanelCard title={t("createServer.sectionResources")} icon="fa-gauge-high">
       <Form.Group className="mb-3" controlId="port">
@@ -674,10 +448,38 @@ export function CreateServerPage() {
       <Form onSubmit={(e) => void (mode === "create" ? onCreate(e) : onImport(e))}>
         <div className="create-server-layout">
           <div className="create-server-stack">
-            {importCard}
-            {detailsCard}
-            {softwareCard}
-            {worldCard}
+            {mode === "import" && (
+              <ImportServerForm onArchiveChange={setArchive} />
+            )}
+            <ServerTypeNodeFields
+              name={name}
+              onNameChange={setName}
+              nodes={nodes}
+              nodeId={nodeId}
+              onNodeIdChange={setNodeId}
+              selectedNode={selectedNode}
+              nodeRamOk={nodeRamOk}
+              selectedFreeMb={selectedFreeMb}
+              memoryMb={memoryMb}
+              type={type}
+              onTypeChange={setType}
+              mcVersion={mcVersion}
+              onMcVersionChange={setMcVersion}
+              versions={versions}
+              loadingVersions={loadingVersions}
+            />
+            {mode === "create" && (
+              <CreateServerForm
+                worldPreset={worldPreset}
+                onWorldPresetChange={setWorldPreset}
+                seed={seed}
+                onSeedChange={setSeed}
+                gamemode={gamemode}
+                onGamemodeChange={setGamemode}
+                difficulty={difficulty}
+                onDifficultyChange={setDifficulty}
+              />
+            )}
           </div>
 
           <div className="create-server-side">

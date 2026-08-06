@@ -1,26 +1,13 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
-import { Alert, Button, Col, Form, ListGroup, Row } from "react-bootstrap";
+import { Alert, Col, Row } from "react-bootstrap";
 import { api } from "../api";
 import { useAuth } from "../auth";
 import { useI18n } from "../i18n/react";
-import type { Locale } from "../i18n";
-import { TotpQr } from "../components/TotpQr";
 import { ApiKeysPanel } from "../components/ApiKeysPanel";
 import { AppPasswordsPanel } from "../components/AppPasswordsPanel";
-import { ConfirmModal } from "../components/ConfirmModal";
-import {
-  AdminInsetCard,
-  AdminPageShell,
-  AdminPanelCard,
-} from "../components/admin/AdminPageShell";
+import { AdminPageShell, AdminPanelCard } from "../components/admin/AdminPageShell";
 import { copyText } from "../utils";
-import {
-  readThemePreference,
-  setThemePreference,
-  watchSystemTheme,
-  type ThemePreference,
-} from "../theme";
 import {
   getExistingPushSubscription,
   pushSupported,
@@ -28,12 +15,20 @@ import {
   subscribeBrowserPush,
   unsubscribeBrowserPush,
 } from "../push";
-
-type Step = "idle" | "setup" | "recovery" | "disable" | "regen";
+import { AppearanceSection } from "./account-security/AppearanceSection";
+import {
+  DeleteAccountModal,
+  DeleteAccountSection,
+} from "./account-security/DeleteAccountSection";
+import { PushNotificationsSection } from "./account-security/PushNotificationsSection";
+import {
+  TwoFactorSection,
+  type TwoFactorStep,
+} from "./account-security/TwoFactorSection";
 
 export function AccountSecurityPage() {
   const { user, refreshUser, authenticated, logout } = useAuth();
-  const { t, locale, setLocale } = useI18n();
+  const { t } = useI18n();
   const navigate = useNavigate();
   const [enabled, setEnabled] = useState(false);
   const [required, setRequired] = useState(false);
@@ -42,7 +37,7 @@ export function AccountSecurityPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [step, setStep] = useState<Step>("idle");
+  const [step, setStep] = useState<TwoFactorStep>("idle");
 
   const [secretGrouped, setSecretGrouped] = useState("");
   const [otpauth, setOtpauth] = useState("");
@@ -55,17 +50,10 @@ export function AccountSecurityPage() {
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [deletePassword, setDeletePassword] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState("");
-  const [themePref, setThemePref] = useState<ThemePreference>(() =>
-    readThemePreference(),
-  );
   const [pushConfigured, setPushConfigured] = useState(false);
   const [pushCount, setPushCount] = useState(0);
   const [pushLocal, setPushLocal] = useState(false);
   const [pushBusy, setPushBusy] = useState(false);
-
-  useEffect(() => {
-    return watchSystemTheme(themePref);
-  }, [themePref]);
 
   const refresh = useCallback(async () => {
     const status = await api.getTwoFactor();
@@ -292,24 +280,6 @@ export function AccountSecurityPage() {
     );
   }
 
-  const themeOptions = [
-    {
-      value: "dark" as const,
-      label: t("account.themeDark"),
-      hint: t("account.themeDarkHint"),
-    },
-    {
-      value: "light" as const,
-      label: t("account.themeLight"),
-      hint: t("account.themeLightHint"),
-    },
-    {
-      value: "system" as const,
-      label: t("account.themeSystem"),
-      hint: t("account.themeSystemHint"),
-    },
-  ];
-
   return (
     <>
       <AdminPageShell
@@ -329,300 +299,54 @@ export function AccountSecurityPage() {
           ) : undefined
         }
       >
-        <div className="account-prefs-grid mb-4">
-          <AdminPanelCard title={t("account.language")} icon="fa-language">
-            <p className="text-secondary small mb-3">{t("account.languageHelp")}</p>
-            <Form.Group controlId="account-language" className="mb-0">
-              <Form.Select
-                value={locale}
-                aria-label={t("account.language")}
-                onChange={(e) => setLocale(e.target.value as Locale)}
-              >
-                <option value="en">{t("account.languageEn")}</option>
-                <option value="nl">{t("account.languageNl")}</option>
-              </Form.Select>
-            </Form.Group>
-          </AdminPanelCard>
+        <AppearanceSection />
 
-          <AdminPanelCard title={t("account.appearance")} icon="fa-palette">
-            <p className="text-secondary small mb-3">{t("account.appearanceHelp")}</p>
-            <div className="account-theme-list" role="radiogroup" aria-label={t("account.appearance")}>
-              {themeOptions.map((opt) => (
-                <label key={opt.value} className="account-theme-option" htmlFor={`theme-${opt.value}`}>
-                  <input
-                    type="radio"
-                    id={`theme-${opt.value}`}
-                    name="guartrix-theme"
-                    checked={themePref === opt.value}
-                    onChange={() => {
-                      setThemePref(opt.value);
-                      setThemePreference(opt.value);
-                    }}
-                  />
-                  <span>
-                    <span className="account-theme-option__label">{opt.label}</span>
-                    <span className="account-theme-option__hint">{opt.hint}</span>
-                  </span>
-                </label>
-              ))}
-            </div>
-          </AdminPanelCard>
-        </div>
+        <PushNotificationsSection
+          pushConfigured={pushConfigured}
+          pushCount={pushCount}
+          pushLocal={pushLocal}
+          pushBusy={pushBusy}
+          onEnable={() => void enablePush()}
+          onDisable={() => void disablePush()}
+        />
 
-        <AdminPanelCard title={t("account.pushTitle")} icon="fa-bell" className="mb-4">
-          <p className="text-secondary small mb-3">{t("account.pushHelp")}</p>
-          {!pushSupported() ? (
-            <p className="text-secondary small mb-0">{t("account.pushUnsupported")}</p>
-          ) : !pushConfigured ? (
-            <Alert variant="secondary" className="py-2 mb-0">
-              {t("account.pushNotConfigured")}
-            </Alert>
-          ) : (
-            <div className="d-flex flex-wrap align-items-center gap-2">
-              <span className="small text-secondary">
-                {t("account.pushThisBrowser")}{" "}
-                <span className={`account-status-chip ${pushLocal ? "is-on" : "is-off"}`}>
-                  <i className={`fa-solid ${pushLocal ? "fa-circle-check" : "fa-circle"}`} aria-hidden />
-                  {pushLocal ? t("account.pushEnabled") : t("account.pushOff")}
-                </span>
-                {pushCount > 0 && (
-                  <>
-                    {" "}
-                    {pushCount === 1
-                      ? t("account.pushDevices", { count: pushCount })
-                      : t("account.pushDevicesPlural", { count: pushCount })}
-                  </>
-                )}
-              </span>
-              {pushLocal ? (
-                <Button
-                  size="sm"
-                  variant="outline-secondary"
-                  disabled={pushBusy}
-                  onClick={() => void disablePush()}
-                >
-                  {pushBusy ? t("common.waiting") : t("account.pushDisable")}
-                </Button>
-              ) : (
-                <Button
-                  size="sm"
-                  variant="primary"
-                  disabled={pushBusy}
-                  onClick={() => void enablePush()}
-                >
-                  {pushBusy ? t("common.waiting") : t("account.pushEnable")}
-                </Button>
-              )}
-            </div>
-          )}
-        </AdminPanelCard>
-
-        <AdminPanelCard title={t("account.totpTitle")} icon="fa-mobile-screen" className="mb-4">
-          <div className="account-status-row">
-            <span>{t("account.totpStatus")}</span>
-            <span className={`account-status-chip ${enabled ? "is-on" : "is-off"}`}>
-              <i className={`fa-solid ${enabled ? "fa-lock" : "fa-lock-open"}`} aria-hidden />
-              {enabled ? t("common.enabled") : t("common.off")}
-            </span>
-            {required && (
-              <span className="account-status-chip is-off">{t("account.totpRequiredRole").replace(/^ · /, "")}</span>
-            )}
-            {enabled && recoveryLeft > 0 && (
-              <span className="account-status-chip is-on">
-                {recoveryLeft === 1
-                  ? t("account.totpRecoveryLeft", { count: recoveryLeft }).replace(/^ · /, "")
-                  : t("account.totpRecoveryLeftPlural", { count: recoveryLeft }).replace(/^ · /, "")}
-              </span>
-            )}
-          </div>
-
-          {step === "idle" && !enabled && (
-            <Button variant="primary" disabled={busy} onClick={() => void startSetup()}>
-              {busy ? t("account.totpStarting") : t("account.totpEnable")}
-            </Button>
-          )}
-
-          {step === "idle" && enabled && (
-            <div className="d-flex flex-wrap gap-2">
-              <Button
-                variant="outline-secondary"
-                size="sm"
-                onClick={() => {
-                  setStep("regen");
-                  setCode("");
-                  setPassword("");
-                  setError(null);
-                }}
-              >
-                {t("account.totpNewRecovery")}
-              </Button>
-              {!required && (
-                <Button
-                  variant="outline-danger"
-                  size="sm"
-                  onClick={() => {
-                    setStep("disable");
-                    setCode("");
-                    setPassword("");
-                    setError(null);
-                  }}
-                >
-                  {t("account.totpDisable")}
-                </Button>
-              )}
-            </div>
-          )}
-
-          {step === "setup" && (
-            <AdminInsetCard>
-              <ol className="small text-secondary mb-3 ps-3">
-                <li>{t("account.totpStep1")}</li>
-                <li>{t("account.totpStep2")}</li>
-                <li>{t("account.totpStep3")}</li>
-              </ol>
-              <div className="d-flex flex-column flex-sm-row align-items-center gap-3 mb-3">
-                <TotpQr value={otpauth} size={208} />
-                <div className="w-100">
-                  <div className="small text-secondary mb-1">{t("account.totpManualSecret")}</div>
-                  <div className="account-totp-secret">{secretGrouped}</div>
-                  <div className="mt-2 small">
-                    <a href={otpauth} className="link-primary">
-                      {t("account.totpOpenApp")}
-                    </a>
-                  </div>
-                </div>
-              </div>
-              <Form onSubmit={confirmEnable}>
-                <Form.Group className="mb-3" controlId="enable-code">
-                  <Form.Label>{t("account.totpConfirmCode")}</Form.Label>
-                  <Form.Control
-                    type="text"
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    value={code}
-                    onChange={(e) => setCode(e.target.value)}
-                    required
-                    autoFocus
-                  />
-                </Form.Group>
-                <div className="d-flex flex-wrap gap-2">
-                  <Button type="submit" variant="primary" disabled={busy}>
-                    {busy ? t("auth.verifying") : t("account.totpConfirmEnable")}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline-secondary"
-                    disabled={busy}
-                    onClick={() => void cancelSetup()}
-                  >
-                    {t("common.cancel")}
-                  </Button>
-                </div>
-              </Form>
-            </AdminInsetCard>
-          )}
-
-          {step === "disable" && (
-            <AdminInsetCard>
-              <Form onSubmit={onDisable}>
-                <Form.Group className="mb-3" controlId="disable-password">
-                  <Form.Label>{t("common.password")}</Form.Label>
-                  <Form.Control
-                    type="password"
-                    autoComplete="current-password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                </Form.Group>
-                <Form.Group className="mb-3" controlId="disable-code">
-                  <Form.Label>{t("account.totpAuthenticatorCode")}</Form.Label>
-                  <Form.Control
-                    type="text"
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    value={code}
-                    onChange={(e) => setCode(e.target.value)}
-                    required
-                  />
-                </Form.Group>
-                <div className="d-flex flex-wrap gap-2">
-                  <Button type="submit" variant="danger" disabled={busy}>
-                    {busy ? t("account.totpDisabling") : t("account.totpDisableConfirm")}
-                  </Button>
-                  <Button type="button" variant="outline-secondary" onClick={() => setStep("idle")}>
-                    {t("common.cancel")}
-                  </Button>
-                </div>
-              </Form>
-            </AdminInsetCard>
-          )}
-
-          {step === "regen" && (
-            <AdminInsetCard>
-              <Form onSubmit={onRegen}>
-                <p className="small text-secondary">{t("account.totpRegenHelp")}</p>
-                <Form.Group className="mb-3" controlId="regen-password">
-                  <Form.Label>{t("common.password")}</Form.Label>
-                  <Form.Control
-                    type="password"
-                    autoComplete="current-password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                </Form.Group>
-                <Form.Group className="mb-3" controlId="regen-code">
-                  <Form.Label>{t("account.totpAuthenticatorCode")}</Form.Label>
-                  <Form.Control
-                    type="text"
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    value={code}
-                    onChange={(e) => setCode(e.target.value)}
-                    required
-                  />
-                </Form.Group>
-                <div className="d-flex flex-wrap gap-2">
-                  <Button type="submit" variant="primary" disabled={busy}>
-                    {busy ? t("account.totpGenerating") : t("account.totpGenerateCodes")}
-                  </Button>
-                  <Button type="button" variant="outline-secondary" onClick={() => setStep("idle")}>
-                    {t("common.cancel")}
-                  </Button>
-                </div>
-              </Form>
-            </AdminInsetCard>
-          )}
-
-          {step === "recovery" && recoveryCodes && (
-            <AdminInsetCard>
-              <Alert variant="warning" className="small">
-                {t("account.totpSaveCodes")}
-              </Alert>
-              <ListGroup className="mb-3 font-monospace">
-                {recoveryCodes.map((c) => (
-                  <ListGroup.Item key={c}>{c}</ListGroup.Item>
-                ))}
-              </ListGroup>
-              <div className="d-flex flex-wrap gap-2">
-                <Button variant="outline-secondary" size="sm" onClick={copyCodes}>
-                  {t("account.totpCopyAll")}
-                </Button>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={() => {
-                    setRecoveryCodes(null);
-                    setStep("idle");
-                  }}
-                >
-                  {t("common.done")}
-                </Button>
-              </div>
-            </AdminInsetCard>
-          )}
-        </AdminPanelCard>
+        <TwoFactorSection
+          enabled={enabled}
+          required={required}
+          recoveryLeft={recoveryLeft}
+          busy={busy}
+          step={step}
+          secretGrouped={secretGrouped}
+          otpauth={otpauth}
+          code={code}
+          password={password}
+          recoveryCodes={recoveryCodes}
+          onCodeChange={setCode}
+          onPasswordChange={setPassword}
+          onStartSetup={() => void startSetup()}
+          onConfirmEnable={confirmEnable}
+          onCancelSetup={() => void cancelSetup()}
+          onDisable={onDisable}
+          onRegen={onRegen}
+          onCopyCodes={copyCodes}
+          onBeginRegen={() => {
+            setStep("regen");
+            setCode("");
+            setPassword("");
+            setError(null);
+          }}
+          onBeginDisable={() => {
+            setStep("disable");
+            setCode("");
+            setPassword("");
+            setError(null);
+          }}
+          onCancelStep={() => setStep("idle")}
+          onDoneRecovery={() => {
+            setRecoveryCodes(null);
+            setStep("idle");
+          }}
+        />
 
         <Row className="g-4 mb-4">
           <Col lg={6}>
@@ -637,70 +361,27 @@ export function AccountSecurityPage() {
           </Col>
         </Row>
 
-        <AdminPanelCard
-          title={t("account.yourData")}
-          icon="fa-file-export"
-          className="account-danger-card"
-        >
-          <p className="small text-secondary mb-3">{t("account.yourDataHelp")}</p>
-          <div className="d-flex flex-wrap gap-2">
-            <Button
-              variant="outline-primary"
-              disabled={busy || exportBusy}
-              onClick={() => void onExportData()}
-            >
-              {exportBusy ? t("account.exportPreparing") : t("account.exportData")}
-            </Button>
-            <Button
-              variant="outline-danger"
-              disabled={busy}
-              onClick={() => {
-                setDeletePassword("");
-                setDeleteConfirm("");
-                setShowDelete(true);
-              }}
-            >
-              {t("account.deleteAccount")}
-            </Button>
-          </div>
-        </AdminPanelCard>
+        <DeleteAccountSection
+          busy={busy}
+          exportBusy={exportBusy}
+          onExportData={() => void onExportData()}
+          onOpenDelete={() => {
+            setDeletePassword("");
+            setDeleteConfirm("");
+            setShowDelete(true);
+          }}
+        />
       </AdminPageShell>
 
-      <ConfirmModal
-        show={showDelete}
-        title={t("account.deleteAccountTitle")}
-        variant="danger"
-        confirmLabel={t("account.deleteAccount")}
-        busy={deleteBusy}
-        onCancel={() => {
-          if (!deleteBusy) setShowDelete(false);
-        }}
-        onConfirm={() => void onDeleteAccount()}
-        body={
-          <div>
-            <p className="mb-3">{t("account.deleteAccountBody")}</p>
-            <Form.Group className="mb-3" controlId="delete-confirm">
-              <Form.Label>{t("account.deleteConfirmation")}</Form.Label>
-              <Form.Control
-                value={deleteConfirm}
-                onChange={(e) => setDeleteConfirm(e.target.value)}
-                placeholder="DELETE"
-                autoComplete="off"
-                disabled={deleteBusy}
-              />
-            </Form.Group>
-            <Form.Group controlId="delete-password">
-              <Form.Label>{t("common.password")}</Form.Label>
-              <Form.Control
-                type="password"
-                autoComplete="current-password"
-                value={deletePassword}
-                onChange={(e) => setDeletePassword(e.target.value)}
-                disabled={deleteBusy}
-              />
-            </Form.Group>
-          </div>
-        }
+      <DeleteAccountModal
+        showDelete={showDelete}
+        deleteBusy={deleteBusy}
+        deletePassword={deletePassword}
+        deleteConfirm={deleteConfirm}
+        onDeletePasswordChange={setDeletePassword}
+        onDeleteConfirmChange={setDeleteConfirm}
+        onCancelDelete={() => setShowDelete(false)}
+        onConfirmDelete={() => void onDeleteAccount()}
       />
     </>
   );

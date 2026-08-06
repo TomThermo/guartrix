@@ -1,30 +1,14 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { DaemonNode } from "@msm/shared";
-import {
-  Alert,
-  Badge,
-  Button,
-  Col,
-  Form,
-  Modal,
-  Row,
-  Spinner,
-  Stack,
-} from "react-bootstrap";
+import { Alert, Button, Modal, Spinner } from "react-bootstrap";
 import { api } from "../api";
 import { useI18n } from "../i18n/react";
-import { copyText } from "../utils";
+import { DetailsStep } from "./add-node/DetailsStep";
+import { DoneStep } from "./add-node/DoneStep";
+import { HowtoStep } from "./add-node/HowtoStep";
+import { InstallStep, type InstallInfo } from "./add-node/InstallStep";
 
 type Step = "howto" | "details" | "install" | "done";
-
-type InstallInfo = {
-  nodeId: string;
-  token: string;
-  publicUrl: string;
-  envFile: string;
-  installCommand: string;
-  steps: string[];
-};
 
 type Props = {
   /** When set, skip create and open install for this node. */
@@ -284,329 +268,59 @@ export function AddNodeModal({ existingNode, onClose, onChanged }: Props) {
           </Alert>
         )}
 
-        {step === "howto" && (
-          <div>
-            <p className="mb-3">
-              A <strong>node</strong> is a separate VPS running the Guartrix daemon.
-              Minecraft servers run on that machine; the
-              panel sends power, console, and file actions using the node token.
-            </p>
-            <ol className="mb-3">
-              <li>
-                Create an Ubuntu VPS and note its <strong>public IP</strong> (or
-                hostname).
-              </li>
-              <li>
-                Make sure the <strong>panel host</strong> can reach that VPS on port{" "}
-                <code>8081</code> (daemon) and <code>2022</code> (SFTP) — open the
-                firewall, or let the installer open it.
-              </li>
-              <li>
-                Important: for Host / FQDN, use the IP/hostname the <em>panel</em>{" "}
-                uses to reach the daemon (not only an internal LAN IP if the panel is
-                external).
-              </li>
-              <li>
-                Then install via <strong>SSH</strong> in this wizard (live log), or
-                copy the curl command and run it yourself on the VPS.
-              </li>
-              <li>
-                Click <strong>Test connection</strong> until the node is{" "}
-                <Badge bg="success">ONLINE</Badge>. Then create a Minecraft server and
-                pick this node.
-              </li>
-            </ol>
-            <Alert variant="info" className="small mb-0">
-              SSH password/key are <strong>not stored</strong> — only used for this
-              one-time install. User may be <code>ubuntu</code>, <code>root</code>, or
-              another sudo user.
-            </Alert>
-          </div>
-        )}
+        {step === "howto" && <HowtoStep />}
 
         {step === "details" && (
-          <Form id="add-node-details" onSubmit={(e) => void onCreate(e)}>
-            <p className="small text-secondary mb-3">
-              Register the node in the panel. You install the daemon in the next step.
-            </p>
-            <Row className="g-2">
-              <Col md={6}>
-                <Form.Group>
-                  <Form.Label>Name</Form.Label>
-                  <Form.Control
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                    placeholder="node-2"
-                    autoFocus
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group>
-                  <Form.Label>Host / FQDN</Form.Label>
-                  <Form.Control
-                    value={fqdn}
-                    onChange={(e) => setFqdn(e.target.value)}
-                    required
-                    placeholder="192.168.1.10 or node2.example.com"
-                  />
-                  <Form.Text className="text-secondary">
-                    IP/hostname reachable from the panel server.
-                  </Form.Text>
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group>
-                  <Form.Label>Scheme</Form.Label>
-                  <Form.Select
-                    value={scheme}
-                    onChange={(e) => setScheme(e.target.value as "http" | "https")}
-                  >
-                    <option value="http">http (default LAN/VPS)</option>
-                    <option value="https">https (TLS for the daemon)</option>
-                  </Form.Select>
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group>
-                  <Form.Label>Daemon port</Form.Label>
-                  <Form.Control
-                    type="number"
-                    value={daemonPort}
-                    onChange={(e) => setDaemonPort(Number(e.target.value) || 8081)}
-                    min={1}
-                    max={65535}
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={12}>
-                <Form.Group>
-                  <Form.Label>{t("admin.locationLabel")}</Form.Label>
-                  <Form.Control
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    maxLength={64}
-                    placeholder={t("admin.locationPlaceholder")}
-                  />
-                  <Form.Text className="text-secondary">
-                    {t("admin.locationHint")}
-                  </Form.Text>
-                </Form.Group>
-              </Col>
-            </Row>
-          </Form>
+          <DetailsStep
+            name={name}
+            onNameChange={setName}
+            fqdn={fqdn}
+            onFqdnChange={setFqdn}
+            scheme={scheme}
+            onSchemeChange={setScheme}
+            daemonPort={daemonPort}
+            onDaemonPortChange={setDaemonPort}
+            location={location}
+            onLocationChange={setLocation}
+            onSubmit={(e) => void onCreate(e)}
+          />
         )}
 
         {step === "install" && (
-          <div>
-            {busy && !install && (
-              <div className="text-center py-4">
-                <Spinner animation="border" />
-              </div>
-            )}
-            {install && (
-              <>
-                <p className="small text-secondary mb-2">
-                  Panel reaches this node at{" "}
-                  <code className="user-select-all">{install.publicUrl}</code>
-                </p>
-                <Form onSubmit={(e) => void onRemoteInstall(e)} className="mb-3">
-                  <Row className="g-2">
-                    <Col md={5}>
-                      <Form.Group>
-                        <Form.Label>SSH host</Form.Label>
-                        <Form.Control
-                          value={sshHost}
-                          onChange={(e) => setSshHost(e.target.value)}
-                          required
-                          disabled={busy}
-                        />
-                      </Form.Group>
-                    </Col>
-                    <Col md={2}>
-                      <Form.Group>
-                        <Form.Label>Port</Form.Label>
-                        <Form.Control
-                          type="number"
-                          value={sshPort}
-                          onChange={(e) => setSshPort(Number(e.target.value) || 22)}
-                          disabled={busy}
-                        />
-                      </Form.Group>
-                    </Col>
-                    <Col md={5}>
-                      <Form.Group>
-                        <Form.Label>Username</Form.Label>
-                        <Form.Control
-                          value={sshUser}
-                          onChange={(e) => setSshUser(e.target.value)}
-                          placeholder="ubuntu"
-                          required
-                          disabled={busy}
-                        />
-                      </Form.Group>
-                    </Col>
-                    <Col md={6}>
-                      <Form.Group>
-                        <Form.Label>Password</Form.Label>
-                        <Form.Control
-                          type="password"
-                          value={sshPassword}
-                          onChange={(e) => setSshPassword(e.target.value)}
-                          autoComplete="new-password"
-                          placeholder="Ubuntu / root password"
-                          disabled={busy}
-                        />
-                      </Form.Group>
-                    </Col>
-                    <Col md={6}>
-                      <Form.Group>
-                        <Form.Label>Private key (optional)</Form.Label>
-                        <Form.Control
-                          as="textarea"
-                          rows={2}
-                          value={sshKey}
-                          onChange={(e) => setSshKey(e.target.value)}
-                          placeholder="-----BEGIN OPENSSH PRIVATE KEY-----"
-                          className="font-monospace small"
-                          disabled={busy}
-                        />
-                      </Form.Group>
-                    </Col>
-                  </Row>
-                  <Form.Text className="text-secondary d-block mb-2">
-                    Password or key is enough. For key + passphrase, fill in both.
-                    The first SSH attempt shows the host-key fingerprint; confirm it,
-                    then enable trust and install again (MITM protection).
-                  </Form.Text>
-                  {hostKeyFingerprint && (
-                    <Alert variant="secondary" className="py-2 small font-monospace">
-                      Host key: {hostKeyFingerprint}
-                    </Alert>
-                  )}
-                  {!hostKeyMismatch &&
-                    (hostKeyNeedsTrust ||
-                      (!!hostKeyFingerprint &&
-                        !existingNode?.sshHostKeyFingerprint)) && (
-                    <Form.Check
-                      className="mb-2"
-                      type="checkbox"
-                      id="trust-host-key"
-                      checked={trustHostKey}
-                      disabled={busy}
-                      onChange={(e) => setTrustHostKey(e.target.checked)}
-                      label="Trust this host key and store it on the node"
-                    />
-                  )}
-                  {hostKeyMismatch && (
-                    <Form.Check
-                      className="mb-2"
-                      type="checkbox"
-                      id="replace-host-key"
-                      checked={replaceHostKey}
-                      disabled={busy}
-                      onChange={(e) => setReplaceHostKey(e.target.checked)}
-                      label="Replace stored host key (only after verifying the VPS was rebuilt)"
-                    />
-                  )}
-                  <Button
-                    type="submit"
-                    variant="success"
-                    disabled={
-                      busy ||
-                      (!sshPassword && !sshKey.trim()) ||
-                      (hostKeyNeedsTrust && !trustHostKey) ||
-                      (hostKeyMismatch && !replaceHostKey)
-                    }
-                  >
-                    {busy ? (
-                      <>
-                        <Spinner size="sm" className="me-2" /> Installing on VPS…
-                      </>
-                    ) : (
-                      <>
-                        <i className="fa-solid fa-cloud-arrow-up me-2" />
-                        Install via SSH
-                      </>
-                    )}
-                  </Button>
-                </Form>
-
-                <div className="small text-secondary mb-1">
-                  Live feedback from the remote server
-                </div>
-                <pre
-                  ref={logRef}
-                  className="bg-dark text-light p-3 rounded small mb-3"
-                  style={{
-                    maxHeight: 260,
-                    overflow: "auto",
-                    minHeight: 120,
-                    whiteSpace: "pre-wrap",
-                    wordBreak: "break-word",
-                  }}
-                >
-                  {log ||
-                    (busy
-                      ? "Waiting for output…"
-                      : "No output yet — start the install.")}
-                </pre>
-
-                <details>
-                  <summary className="small text-secondary">
-                    Manual: download-then-run install
-                  </summary>
-                  <pre className="bg-dark text-light p-2 rounded small mt-2 user-select-all">
-                    {install.installCommand}
-                  </pre>
-                  <Stack direction="horizontal" gap={2} className="flex-wrap mt-2">
-                    <Button
-                      size="sm"
-                      variant="outline-primary"
-                      onClick={() => void copyText(install.installCommand)}
-                    >
-                      Copy command
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline-secondary"
-                      onClick={() => void copyText(install.envFile)}
-                    >
-                      Copy daemon.env
-                    </Button>
-                  </Stack>
-                </details>
-              </>
-            )}
-          </div>
+          <InstallStep
+            busy={busy}
+            install={install}
+            existingNodeHasHostKey={!!existingNode?.sshHostKeyFingerprint}
+            sshHost={sshHost}
+            onSshHostChange={setSshHost}
+            sshPort={sshPort}
+            onSshPortChange={setSshPort}
+            sshUser={sshUser}
+            onSshUserChange={setSshUser}
+            sshPassword={sshPassword}
+            onSshPasswordChange={setSshPassword}
+            sshKey={sshKey}
+            onSshKeyChange={setSshKey}
+            trustHostKey={trustHostKey}
+            onTrustHostKeyChange={setTrustHostKey}
+            replaceHostKey={replaceHostKey}
+            onReplaceHostKeyChange={setReplaceHostKey}
+            hostKeyFingerprint={hostKeyFingerprint}
+            hostKeyNeedsTrust={hostKeyNeedsTrust}
+            hostKeyMismatch={hostKeyMismatch}
+            log={log}
+            logRef={logRef}
+            onSubmit={(e) => void onRemoteInstall(e)}
+          />
         )}
 
         {step === "done" && (
-          <div>
-            <Alert variant={installOk ? "success" : "warning"}>
-              {installOk
-                ? t("admin.daemonInstalled")
-                : t("admin.installFinishedWarnings")}
-            </Alert>
-            {testSummary && <p className="mb-2">{testSummary}</p>}
-            <ol className="mb-0">
-              <li>{t("admin.doneCheckOnline")}</li>
-              <li>{t("admin.doneCheckFirewall")}</li>
-              <li>{t("admin.doneCreateServer", { name: nodeLabel })}</li>
-            </ol>
-            {log && (
-              <details className="mt-3">
-                <summary className="small text-secondary">Install log</summary>
-                <pre
-                  className="bg-dark text-light p-2 rounded small mt-2"
-                  style={{ maxHeight: 200, overflow: "auto", whiteSpace: "pre-wrap" }}
-                >
-                  {log}
-                </pre>
-              </details>
-            )}
-          </div>
+          <DoneStep
+            installOk={installOk}
+            testSummary={testSummary}
+            nodeLabel={nodeLabel}
+            log={log}
+          />
         )}
       </Modal.Body>
       <Modal.Footer className="flex-wrap gap-2">

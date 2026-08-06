@@ -1,14 +1,10 @@
-import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { EventEmitter } from "node:events";
 import fs from "node:fs";
-import fsp from "node:fs/promises";
 import path from "node:path";
 import type { ServerStatus } from "@msm/shared";
 import {
   assertSafeStartupCommandForType,
   BEDROCK_BINARY,
-  consoleLineIndicatesBootFailure,
-  consoleLineIndicatesReady,
   containerEnvForRuntime,
   defaultServerExecutable,
   dockerImageForServerType,
@@ -17,16 +13,14 @@ import {
   runtimeKindFor,
   runtimeLabelForServerType,
 } from "@msm/shared";
-import { config, serverDir } from "./config.js";
+import { serverDir } from "./config.js";
 import {
   containerName,
   docker,
   ensureDockerReady,
   ensureJavaImage,
   isContainerRunning,
-  listGuartrixContainers,
   removeContainer,
-  resolveContainerName,
 } from "./docker.js";
 import {
   connectContainerToSharedNetwork,
@@ -41,15 +35,13 @@ import {
   isOverDiskQuota,
   cpuLimitToDockerCpus,
 } from "./disk-quota.js";
-import {
-  recordPlayerJoin,
-  recordPlayerLeave,
-  syncOnlineSet,
-} from "./player-history.js";
 import { ensureDefaultServerIcon } from "./default-icon.js";
-import { ensureBdsBootProperties, bedrockContainerDnsServers, ensureBedrockRuntimeImage, bedrockRuntimeImageExists } from "./bedrock-boot.js";
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
+import {
+  ensureBdsBootProperties,
+  bedrockContainerDnsServers,
+  ensureBedrockRuntimeImage,
+  bedrockRuntimeImageExists,
+} from "./bedrock-boot.js";
 import {
   stopProcess,
   killProcess,
@@ -59,11 +51,23 @@ import {
 import {
   buildDockerRunArgs,
   checkPortFree,
-  computeDiskUsageMessage,
   fixDataOwnership,
   resolveRuntimeCommand,
   writeForgeJvmArgsFile,
 } from "./process-start.js";
+import {
+  adoptRunning as adoptRunningFn,
+  attachToContainer,
+  reattachOrphans as reattachOrphansFn,
+} from "./process-attach.js";
+import {
+  daemonSay as daemonSayFn,
+  emitDiskUsage,
+  emitStartupBanner,
+  getConsoleHistory,
+  persistConsoleHistory,
+  pushConsoleLine as pushConsoleLineFn,
+} from "./process-console.js";
 import type {
   DaemonPortPublish,
   DaemonServerConfig,
@@ -93,119 +97,19 @@ function resolvePublishPorts(server: DaemonServerConfig): DaemonPortPublish[] {
     : [{ port: server.port, protocol: "tcp" }];
 }
 
-const execFileAsync = promisify(execFile);
-
-const MAX_HISTORY = 500;
-const CONSOLE_HISTORY_FILE = "guartrix-console-history.json";
-
-/**
- * Kill leftover `docker run` / `docker attach` client processes for a
- * container without stopping the container itself. After a daemon restart the
- * previous client's process can stay alive (reparented to init) and keep
- * holding stdin — which blocks the new daemon from sending console commands.
- *
- * Uses SIGKILL so Docker's default sig-proxy cannot forward SIGTERM into the
- * Minecraft process.
- */
-async function killOrphanDockerClients(container: string): Promise<void> {
-  try {
-    const { stdout } = await execFileAsync("ps", ["-eo", "pid=,args="], {
-      timeout: 5_000,
-    });
-    const pids: number[] = [];
-    for (const line of stdout.split(/\r?\n/)) {
-      const trimmed = line.trim();
-      if (!trimmed) continue;
-      const space = trimmed.indexOf(" ");
-      if (space <= 0) continue;
-      const pid = Number(trimmed.slice(0, space));
-      const args = trimmed.slice(space + 1);
-      if (!Number.isFinite(pid) || pid === process.pid) continue;
-      if (
-        !args.includes(`--name ${container}`) &&
-        !args.includes(`--name=${container}`) &&
-        !args.endsWith(` ${container}`) &&
-        !args.includes(` ${container} `)
-      ) {
-        // Also match bare attach/run with container as last arg
-        if (!args.includes(container)) continue;
-      }
-      if (!/\bdocker\b/.test(args)) continue;
-      if (!/\b(run|attach)\b/.test(args)) continue;
-      pids.push(pid);
-    }
-    for (const pid of pids) {
-      try {
-        await execFileAsync("sudo", ["-n", "kill", "-9", String(pid)], {
-          timeout: 5_000,
-        });
-      } catch {
-        try {
-          process.kill(pid, "SIGKILL");
-        } catch {
-          // already gone
-        }
-      }
-    }
-    if (pids.length) {
-      await new Promise((r) => setTimeout(r, 400));
-    }
-  } catch {
-    // best-effort
-  }
-}
-
-function consoleHistoryPath(serverId: string): string {
-  return path.join(serverDir(serverId), CONSOLE_HISTORY_FILE);
-}
-
-/** Panel polls `/list` for online players — hide that spam from the console. */
-function isPlayersListLine(line: string): boolean {
-  return /There are \d+ of a max of \d+ players online:/i.test(line);
-}
-
-function loadPersistedConsoleHistory(serverId: string): string[] {
-  try {
-    const raw = fs.readFileSync(consoleHistoryPath(serverId), "utf8");
-    const data = JSON.parse(raw) as { lines?: unknown };
-    if (!Array.isArray(data.lines)) return [];
-    return data.lines
-      .filter((line): line is string => typeof line === "string")
-      .filter((line) => !isPlayersListLine(line))
-      .slice(-MAX_HISTORY);
-  } catch {
-    return [];
-  }
-}
-
-/** Fallback when no Guartrix history yet: last lines from Minecraft latest.log */
-function loadLatestLogTail(serverId: string): string[] {
-  const logPath = path.join(serverDir(serverId), "logs", "latest.log");
-  try {
-    const raw = fs.readFileSync(logPath, "utf8");
-    const lines = raw
-      .split(/\r?\n/)
-      .filter((l) => l !== "")
-      .filter((l) => !isPlayersListLine(l));
-    return lines.slice(-MAX_HISTORY);
-  } catch {
-    return [];
-  }
-}
-
 class ProcessManager extends EventEmitter {
-  // Note: `processes` / `intentionalStops` / `restartAttempts` and the
-  // daemonSay/setStatus/persistHistory methods below are intentionally not
-  // `private` — process-lifecycle.ts (stop/kill/sendCommand) needs to read
-  // and mutate them via the LifecycleHost interface. This class remains the
+  // Note: `processes` / `intentionalStops` / `restartAttempts` / console maps
+  // and the daemonSay/setStatus/persistHistory methods below are intentionally
+  // not `private` — process-lifecycle.ts / process-console.ts / process-attach.ts
+  // need to read and mutate them via host interfaces. This class remains the
   // only place that constructs/owns that state; nothing outside this package
   // touches them.
   processes = new Map<string, ManagedProcess>();
   /** Survives stop/exit so the console still shows output when the server is offline. */
-  private histories = new Map<string, string[]>();
-  private persistTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  histories = new Map<string, string[]>();
+  persistTimers = new Map<string, ReturnType<typeof setTimeout>>();
   /** Last start config per server — used for auto-restart without a DB. */
-  private lastConfigs = new Map<string, DaemonServerConfig>();
+  lastConfigs = new Map<string, DaemonServerConfig>();
   restartAttempts = new Map<string, { count: number; at: number }>();
   private statuses = new Map<string, ServerStatus>();
   /** Panel-issued stop/kill — never treat the following exit as a crash. */
@@ -224,51 +128,11 @@ class ProcessManager extends EventEmitter {
   }
 
   getHistory(serverId: string): string[] {
-    let lines = this.histories.get(serverId);
-    if (!lines) {
-      lines = loadPersistedConsoleHistory(serverId);
-      if (lines.length === 0) {
-        lines = loadLatestLogTail(serverId);
-      }
-      this.histories.set(serverId, lines);
-    } else if (lines.some(isPlayersListLine)) {
-      lines = lines.filter((l) => !isPlayersListLine(l));
-      this.histories.set(serverId, lines);
-      this.schedulePersistHistory(serverId);
-    }
-    // multi-node resume banner when opening the console (not persisted)
-    return [
-      `[${this.formatDaemonClock()}] [Guartrix Daemon] Resuming log starting from: ${this.formatDaemonStamp()}`,
-      ...lines,
-    ];
-  }
-
-  private schedulePersistHistory(serverId: string): void {
-    const existing = this.persistTimers.get(serverId);
-    if (existing) clearTimeout(existing);
-    this.persistTimers.set(
-      serverId,
-      setTimeout(() => {
-        this.persistTimers.delete(serverId);
-        this.persistHistory(serverId);
-      }, 750),
-    );
+    return getConsoleHistory(this, serverId);
   }
 
   persistHistory(serverId: string): void {
-    const lines = this.histories.get(serverId);
-    if (!lines) return;
-    try {
-      const dir = serverDir(serverId);
-      fs.mkdirSync(dir, { recursive: true });
-      fs.writeFileSync(
-        consoleHistoryPath(serverId),
-        JSON.stringify({ lines: lines.slice(-MAX_HISTORY) }) + "\n",
-        "utf8",
-      );
-    } catch {
-      // best-effort
-    }
+    persistConsoleHistory(this, serverId);
   }
 
   getContainerName(serverId: string): string | null {
@@ -283,65 +147,12 @@ class ProcessManager extends EventEmitter {
     );
   }
 
-  private trackPlayerLine(serverId: string, line: string): void {
-    const managed = this.processes.get(serverId);
-    if (!managed) return;
-
-    // Strip ANSI / log prefixes loosely and match join/leave
-    const join =
-      line.match(/\b([A-Za-z0-9_]{3,16}) joined the game\b/) ??
-      line.match(/\b([A-Za-z0-9_]{3,16}) logged in with entity id\b/) ??
-      line.match(/Player connected:\s*([A-Za-z0-9_]{3,16})/i);
-    if (join?.[1]) {
-      managed.onlinePlayers.add(join[1]);
-      void recordPlayerJoin(serverId, join[1]);
-      this.emit("players", serverId, this.getOnlinePlayerNames(serverId));
-      return;
-    }
-
-    const leave =
-      line.match(/\b([A-Za-z0-9_]{3,16}) left the game\b/) ??
-      line.match(/\b([A-Za-z0-9_]{3,16}) lost connection:/) ??
-      line.match(/\b([A-Za-z0-9_]{3,16}) was kicked\b/) ??
-      line.match(/Player disconnected:\s*([A-Za-z0-9_]{3,16})/i);
-    if (leave?.[1]) {
-      managed.onlinePlayers.delete(leave[1]);
-      void recordPlayerLeave(serverId, leave[1]);
-      this.emit("players", serverId, this.getOnlinePlayerNames(serverId));
-      return;
-    }
-
-    // /list output: "There are 2 of a max of 20 players online: Steve, Alex"
-    const listMatch = line.match(
-      /There are \d+ of a max of \d+ players online:\s*(.*)$/i,
-    );
-    if (listMatch) {
-      managed.onlinePlayers.clear();
-      const names = (listMatch[1] ?? "")
-        .split(",")
-        .map((n) => n.trim())
-        .filter((n) => /^[A-Za-z0-9_]{3,16}$/.test(n));
-      for (const name of names) managed.onlinePlayers.add(name);
-      void syncOnlineSet(serverId, names);
-      this.emit("players", serverId, this.getOnlinePlayerNames(serverId));
-    }
-  }
-
-  private appendHistory(serverId: string, line: string): void {
-    this.trackPlayerLine(serverId, line);
-    // Still parse /list for online tracking, but do not clutter the console UI.
-    if (isPlayersListLine(line)) return;
-
-    let history = this.histories.get(serverId);
-    if (!history) {
-      history = loadPersistedConsoleHistory(serverId);
-      this.histories.set(serverId, history);
-    }
-    history.push(line);
-    if (history.length > MAX_HISTORY) {
-      history.splice(0, history.length - MAX_HISTORY);
-    }
-    this.schedulePersistHistory(serverId);
+  pushConsoleLine(
+    serverId: string,
+    line: string,
+    stream: "stdout" | "stderr" = "stdout",
+  ): void {
+    pushConsoleLineFn(this, serverId, line, stream);
   }
 
   setStatus(
@@ -369,225 +180,8 @@ class ProcessManager extends EventEmitter {
     return checkPortFree(port, protocol);
   }
 
-  private formatDaemonStamp(at = new Date()): string {
-    const pad = (n: number) => n.toString().padStart(2, "0");
-    return `${pad(at.getDate())}-${pad(at.getMonth() + 1)}-${at.getFullYear()} ${pad(at.getHours())}:${pad(at.getMinutes())}:${pad(at.getSeconds())}`;
-  }
-
-  /** Minecraft-style clock for console lines (`[05:30:33]`). */
-  private formatDaemonClock(at = new Date()): string {
-    const pad = (n: number) => n.toString().padStart(2, "0");
-    return `${pad(at.getHours())}:${pad(at.getMinutes())}:${pad(at.getSeconds())}`;
-  }
-
-  private pushConsoleLine(
-    serverId: string,
-    line: string,
-    stream: "stdout" | "stderr" = "stdout",
-  ): void {
-    this.appendHistory(serverId, line);
-    if (isPlayersListLine(line)) return;
-    this.emit("output", serverId, line, stream);
-  }
-
   daemonSay(serverId: string, message: string): void {
-    if (!this.histories.has(serverId)) {
-      this.histories.set(serverId, loadPersistedConsoleHistory(serverId));
-    }
-    this.pushConsoleLine(
-      serverId,
-      `[${this.formatDaemonClock()}] [Guartrix Daemon] ${message}`,
-    );
-  }
-
-  private async emitDiskUsage(serverId: string): Promise<void> {
-    this.daemonSay(serverId, "Checking size of server data directory...");
-    const message = await computeDiskUsageMessage(serverId, serverDir(serverId));
-    this.daemonSay(serverId, message);
-  }
-
-  private async emitStartupBanner(
-    serverId: string,
-    javaCmd: string[],
-  ): Promise<void> {
-    if (!this.histories.has(serverId)) {
-      this.histories.set(serverId, loadPersistedConsoleHistory(serverId));
-    }
-    this.daemonSay(
-      serverId,
-      `Resuming log starting from: ${this.formatDaemonStamp()}`,
-    );
-    const serverType = this.lastConfigs.get(serverId)?.type;
-    if (runtimeKindFor(serverType ?? "VANILLA") === "java") {
-      try {
-        const image = dockerImageForServerType(
-          serverType ?? "VANILLA",
-          this.lastConfigs.get(serverId)?.javaVersion,
-        );
-        const { stdout, stderr } = await docker(
-          ["run", "--rm", image, "java", "-version"],
-          { timeout: 20_000 },
-        );
-        const text = `${stderr || ""}${stdout || ""}`;
-        for (const line of text.split(/\r?\n/)) {
-          if (line.trim()) this.pushConsoleLine(serverId, line.trim());
-        }
-      } catch {
-        // java -version is best-effort
-      }
-    }
-    this.pushConsoleLine(
-      serverId,
-      `container@guartrix~ ${javaCmd.join(" ")}`,
-    );
-  }
-
-  private wireManagedChild(
-    serverId: string,
-    name: string,
-    child: ChildProcessWithoutNullStreams,
-    opts?: { waitForDone?: boolean },
-  ): ManagedProcess {
-    if (!this.histories.has(serverId)) {
-      this.histories.set(serverId, loadPersistedConsoleHistory(serverId));
-    }
-
-    const managed: ManagedProcess = {
-      process: child,
-      container: name,
-      onlinePlayers: new Set(),
-    };
-    this.processes.set(serverId, managed);
-
-    const waitForDone = opts?.waitForDone === true;
-    let sawDone = !waitForDone;
-    const serverType = this.lastConfigs.get(serverId)?.type;
-
-    const handleChunk = (stream: "stdout" | "stderr") => (data: Buffer) => {
-      const text = data.toString("utf8");
-      for (const line of text.split(/\r?\n/)) {
-        if (line === "") continue;
-        this.appendHistory(serverId, line);
-        if (!sawDone && consoleLineIndicatesReady(line, serverType)) {
-          sawDone = true;
-          this.daemonSay(serverId, "Server marked as RUNNING");
-          this.setStatus(serverId, "RUNNING");
-        }
-        if (consoleLineIndicatesBootFailure(line, serverType)) {
-          const msg = line.trim();
-          this.daemonSay(serverId, `ERROR: ${msg}`);
-          this.setStatus(serverId, "ERROR", msg);
-        }
-        if (isPlayersListLine(line)) continue;
-        this.emit("output", serverId, line, stream);
-      }
-    };
-
-    child.stdout.on("data", handleChunk("stdout"));
-    child.stderr.on("data", handleChunk("stderr"));
-
-    child.on("exit", () => {
-      const current = this.processes.get(serverId);
-      if (!current || current.process !== child) return;
-      this.processes.delete(serverId);
-      this.persistHistory(serverId);
-
-      // Attach can drop while the container keeps running (daemon restart,
-      // orphan takeover, etc.). Don't mark the server STOPPED in that case.
-      void isContainerRunning(serverId)
-        .then((still) => {
-          if (still) {
-            this.daemonSay(
-              serverId,
-              "Console attachment lost — container still running.",
-            );
-            this.setStatus(serverId, "RUNNING");
-            return;
-          }
-          const code = child.exitCode;
-          const signal = child.signalCode;
-          // 137 = 128+SIGKILL — typical Docker OOM kill; do not treat as clean stop.
-          const oom = code === 137 || code === 137 - 256;
-          // SIGTERM/SIGINT via docker stop often surface as exit 143/130 with no signalCode.
-          const intentional =
-            this.intentionalStops.has(serverId) ||
-            this.getStatus(serverId) === "STOPPING";
-          const clean =
-            intentional ||
-            (!oom &&
-              (code === 0 ||
-                code === 130 ||
-                code === 143 ||
-                signal === "SIGTERM" ||
-                signal === "SIGINT"));
-          if (intentional) {
-            this.intentionalStops.delete(serverId);
-            this.restartAttempts.delete(serverId);
-          }
-          if (clean) {
-            // Intentional stop()/kill() already announces OFF after wait.
-            // Do not key off status===STOPPING — stopProcess may already have
-            // set STOPPED by the time this async container check finishes.
-            if (!intentional) {
-              this.daemonSay(serverId, "Server marked as OFF");
-            }
-            this.setStatus(serverId, "STOPPED", null);
-            return;
-          }
-          const message = oom
-            ? `Out of memory (exit 137): heap + JVM overhead exceeded the container limit, or the host ran out of RAM. Remove -XX:+AlwaysPreTouch, lower -Xmx, or free host memory.`
-            : `Container exited with code ${code ?? "null"} signal ${signal ?? "null"}`;
-          this.daemonSay(serverId, `ERROR: ${message}`);
-          this.pushConsoleLine(serverId, `[error] ${message}`, "stderr");
-          if (!intentional) {
-            this.daemonSay(serverId, "Server marked as OFF");
-          }
-          this.setStatus(serverId, "ERROR", message);
-          void this.maybeAutoRestart(serverId, message);
-        })
-        .catch(() => {
-          if (!this.intentionalStops.has(serverId) && this.getStatus(serverId) !== "STOPPING") {
-            this.daemonSay(serverId, "Server marked as OFF");
-          }
-          this.setStatus(serverId, "STOPPED", null);
-        });
-    });
-
-    return managed;
-  }
-
-  /**
-   * Attach to an already-running container's stdin/stdout so console commands
-   * and live logs work again after a daemon restart.
-   */
-  private async attachToContainer(
-    serverId: string,
-    name: string,
-    opts?: { waitForDone?: boolean },
-  ): Promise<void> {
-    await killOrphanDockerClients(name);
-
-    const child = spawn(
-      "sudo",
-      ["-n", "docker", "attach", "--sig-proxy=false", name],
-      {
-        env: { ...process.env },
-        stdio: ["pipe", "pipe", "pipe"],
-      },
-    );
-
-    await new Promise<void>((resolve, reject) => {
-      child.once("spawn", () => resolve());
-      child.once("error", (err) => {
-        this.processes.delete(serverId);
-        reject(err);
-      });
-    });
-
-    this.wireManagedChild(serverId, name, child, opts);
-    if (!opts?.waitForDone) {
-      this.setStatus(serverId, "RUNNING");
-    }
+    daemonSayFn(this, serverId, message);
   }
 
   /**
@@ -595,40 +189,12 @@ class ProcessManager extends EventEmitter {
    * restart) but we have no stdin handle, reattach so commands work again.
    */
   async adoptRunning(serverId: string): Promise<boolean> {
-    if (this.processes.has(serverId)) return true;
-    const running = await isContainerRunning(serverId).catch(() => false);
-    if (!running) return false;
-    const name =
-      (await resolveContainerName(serverId).catch(() => null)) ??
-      containerName(serverId);
-    this.daemonSay(
-      serverId,
-      "Reattaching to running container after daemon restart…",
-    );
-    await this.attachToContainer(serverId, name);
-    this.daemonSay(serverId, "Console reattached.");
-    return true;
+    return adoptRunningFn(this, serverId);
   }
 
   /** On daemon boot: reclaim every live Guartrix Minecraft container. */
   async reattachOrphans(): Promise<number> {
-    let adopted = 0;
-    const containers = await listGuartrixContainers().catch(() => []);
-    for (const c of containers) {
-      if (!c.serverId || c.isMysql) continue;
-      if (c.state.toLowerCase() !== "running") continue;
-      if (this.processes.has(c.serverId)) continue;
-      try {
-        await this.adoptRunning(c.serverId);
-        adopted += 1;
-      } catch (err) {
-        console.error(
-          `[daemon] failed to reattach ${c.name}:`,
-          err instanceof Error ? err.message : err,
-        );
-      }
-    }
-    return adopted;
+    return reattachOrphansFn(this);
   }
 
   async start(server: DaemonServerConfig): Promise<void> {
@@ -772,7 +338,7 @@ class ProcessManager extends EventEmitter {
     );
     this.daemonSay(serverId, "Server marked as STARTING");
 
-    await this.emitDiskUsage(serverId);
+    await emitDiskUsage(this, serverId);
 
     this.daemonSay(serverId, "Ensuring correct ownership of files.");
     await fixDataOwnership(dir);
@@ -798,14 +364,19 @@ class ProcessManager extends EventEmitter {
 
     // Docker memory limit must cover heap + metaspace + native + threads.
     // AlwaysPreTouch + Xms=Xmx needs even more; 512MB was too tight for large heaps.
-    const containerMemoryMb = server.memoryMb + Math.max(1024, Math.ceil(server.memoryMb * 0.1));
+    const containerMemoryMb =
+      server.memoryMb + Math.max(1024, Math.ceil(server.memoryMb * 0.1));
     const cpus = cpuLimitToDockerCpus(server.cpuLimit ?? 0);
     const cpuArgs = cpus ? (["--cpus", cpus] as const) : [];
     const uid = typeof process.getuid === "function" ? process.getuid() : 1000;
     const gid = typeof process.getgid === "function" ? process.getgid() : 1000;
 
     if (isForgeRuntime) {
-      const { warnings } = await writeForgeJvmArgsFile(dir, server, executableName);
+      const { warnings } = await writeForgeJvmArgsFile(
+        dir,
+        server,
+        executableName,
+      );
       for (const warning of warnings) this.daemonSay(serverId, warning);
     }
 
@@ -828,7 +399,7 @@ class ProcessManager extends EventEmitter {
     }
 
     this.daemonSay(serverId, "Starting server container.");
-    await this.emitStartupBanner(serverId, runtimeCmd);
+    await emitStartupBanner(this, serverId, runtimeCmd);
 
     const { primary: gameNetwork, attachSharedDb } =
       runtimeKind === "bedrock_native"
@@ -882,7 +453,7 @@ class ProcessManager extends EventEmitter {
     }
 
     try {
-      await this.attachToContainer(serverId, name, { waitForDone: true });
+      await attachToContainer(this, serverId, name, { waitForDone: true });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       this.daemonSay(serverId, `ERROR: ${message}`);
@@ -905,7 +476,7 @@ class ProcessManager extends EventEmitter {
         throw new Error(message);
       }
       // Container up but attach dropped — try once more
-      await this.attachToContainer(serverId, name, { waitForDone: true });
+      await attachToContainer(this, serverId, name, { waitForDone: true });
     }
 
     // If boot log never matched (Bedrock / odd runtimes), promote when container stays up.
@@ -922,7 +493,7 @@ class ProcessManager extends EventEmitter {
     }, 45_000);
   }
 
-  private async maybeAutoRestart(serverId: string, reason: string): Promise<void> {
+  async maybeAutoRestart(serverId: string, reason: string): Promise<void> {
     try {
       // Never revive a panel-issued stop/kill.
       if (this.intentionalStops.has(serverId)) return;
