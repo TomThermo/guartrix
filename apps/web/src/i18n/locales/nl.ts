@@ -123,6 +123,7 @@ export const nl: Messages = {
     type: "Type",
     allTypes: "Alle types",
     noMatch: "Geen servers komen overeen met deze filters.",
+    loadMore: "Meer laden ({loaded}/{total})",
     selectAllFiltered: "Selecteer gefilterd",
     selectedCount: "{count} geselecteerd",
     bulkStart: "Start geselecteerd",

@@ -6,6 +6,7 @@ import {
   getServerPermissionsBatch,
   listVisibleServerIds,
   listVisibleServers,
+  countVisibleServers,
 } from "../../servers/server-access.js";
 import { checkInstalledAddonUpdates } from "../../servers/addons.js";
 import { serverDir } from "../../config.js";
@@ -49,15 +50,72 @@ export function registerServerDashboardRoutes(app: FastifyInstance): void {
       if (rate) return reply.status(429).send({ error: rate });
       return reply.status(401).send({ error: "Unauthorized" });
     }
-    const servers = await listVisibleServers(user, request);
+    const q = (request.query ?? {}) as Record<string, unknown>;
+    const paged =
+      q.limit != null ||
+      q.offset != null ||
+      q.page != null ||
+      q.paged === "1" ||
+      q.paged === "true";
+
+    const limit = paged
+      ? Math.min(
+          500,
+          Math.max(
+            1,
+            Math.floor(
+              Number.isFinite(Number(q.limit)) ? Number(q.limit) : 100,
+            ),
+          ),
+        )
+      : // Safety cap for legacy array responses on large installs
+        user.role === "ADMIN"
+        ? 500
+        : undefined;
+    const offset = paged
+      ? q.offset != null && Number.isFinite(Number(q.offset))
+        ? Math.max(0, Math.floor(Number(q.offset)))
+        : q.page != null && Number.isFinite(Number(q.page))
+          ? Math.max(0, (Math.floor(Number(q.page)) - 1) * limit!)
+          : 0
+      : 0;
+
+    const opts = {
+      limit,
+      offset: paged || limit != null ? offset : undefined,
+      nodeId: typeof q.nodeId === "string" ? q.nodeId : undefined,
+      status: typeof q.status === "string" ? q.status : undefined,
+      q: typeof q.q === "string" ? q.q : undefined,
+    };
+
+    const [servers, total] = await Promise.all([
+      listVisibleServers(user, request, opts),
+      countVisibleServers(user, request, {
+        nodeId: opts.nodeId,
+        status: opts.status,
+        q: opts.q,
+      }),
+    ]);
     const perms = await getServerPermissionsBatch(
       user,
       servers.map((s) => ({ id: s.id, ownerId: s.ownerId })),
     );
-    return servers.map((server) => ({
+    const mapped = servers.map((server) => ({
       ...toMcServer(server),
       permissions: perms.get(server.id) ?? [],
     }));
+
+    void reply.header("x-total-count", String(total));
+    if (limit != null) void reply.header("x-limit", String(limit));
+    if (paged) {
+      return {
+        servers: mapped,
+        total,
+        limit: limit ?? mapped.length,
+        offset,
+      };
+    }
+    return mapped;
   });
 
   app.get("/api/servers/stats", async (request, reply) => {

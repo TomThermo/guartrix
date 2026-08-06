@@ -121,6 +121,7 @@ export const en = {
     type: "Type",
     allTypes: "All types",
     noMatch: "No servers match these filters.",
+    loadMore: "Load more ({loaded}/{total})",
     selectAllFiltered: "Select all filtered",
     selectedCount: "{count} selected",
     bulkStart: "Start selected",

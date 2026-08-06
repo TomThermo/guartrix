@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import type { Server, SubUser } from "@prisma/client";
+import type { Prisma, Server, SubUser } from "@prisma/client";
 import {
   ALL_PERMISSIONS_WILDCARD,
   applyLicenseFeatureCeiling,
@@ -288,35 +288,95 @@ export function hasServerPermission(
 }
 
 /** Servers the user may see (owner / subuser / admin), optionally API-key scoped. */
+export type ListVisibleServersOpts = {
+  limit?: number;
+  offset?: number;
+  nodeId?: string;
+  status?: string;
+  q?: string;
+};
+
+function clampLimit(raw: number | undefined, fallback: number): number {
+  if (raw == null || !Number.isFinite(raw)) return fallback;
+  return Math.min(500, Math.max(1, Math.floor(raw)));
+}
+
+function visibleServerWhere(
+  user: AuthUser,
+  opts?: ListVisibleServersOpts,
+): Prisma.ServerWhereInput {
+  const parts: Prisma.ServerWhereInput[] = [];
+  if (user.role !== "ADMIN") {
+    parts.push({
+      OR: [
+        { ownerId: user.id },
+        { subUsers: { some: { userId: user.id } } },
+      ],
+    });
+  }
+  if (opts?.nodeId && opts.nodeId !== "all") {
+    parts.push({ nodeId: opts.nodeId });
+  }
+  if (opts?.status && opts.status !== "all") {
+    parts.push({ status: opts.status as never });
+  }
+  if (opts?.q?.trim()) {
+    const q = opts.q.trim();
+    parts.push({
+      OR: [
+        { name: { contains: q } },
+        { id: { contains: q } },
+      ],
+    });
+  }
+  if (parts.length === 0) return {};
+  if (parts.length === 1) return parts[0]!;
+  return { AND: parts };
+}
+
 export async function listVisibleServers(
   user: AuthUser,
   request?: { apiKeyAuth?: { serverIds: string[] | null } | null },
+  opts?: ListVisibleServersOpts,
 ) {
   const { serverListInclude } = await import("./serialize.js");
-  let rows;
-  if (user.role === "ADMIN") {
-    rows = await prisma.server.findMany({
-      orderBy: { createdAt: "desc" },
-      include: serverListInclude,
-    });
-  } else {
-    rows = await prisma.server.findMany({
-      where: {
-        OR: [
-          { ownerId: user.id },
-          { subUsers: { some: { userId: user.id } } },
-        ],
-      },
-      orderBy: { createdAt: "desc" },
-      include: serverListInclude,
-    });
-  }
+  const where = visibleServerWhere(user, opts);
+  const limit = opts?.limit != null ? clampLimit(opts.limit, 100) : undefined;
+  const offset = opts?.offset != null && Number.isFinite(opts.offset)
+    ? Math.max(0, Math.floor(opts.offset))
+    : 0;
+
+  let rows = await prisma.server.findMany({
+    where,
+    orderBy: { createdAt: "desc" },
+    include: serverListInclude,
+    ...(limit != null ? { take: limit, skip: offset } : {}),
+  });
   const allow = request?.apiKeyAuth?.serverIds;
   if (allow) {
     const set = new Set(allow);
     rows = rows.filter((s) => set.has(s.id));
   }
   return rows;
+}
+
+export async function countVisibleServers(
+  user: AuthUser,
+  request?: { apiKeyAuth?: { serverIds: string[] | null } | null },
+  opts?: ListVisibleServersOpts,
+): Promise<number> {
+  const where = visibleServerWhere(user, opts);
+  const allow = request?.apiKeyAuth?.serverIds;
+  if (allow) {
+    // API-key scope is a post-filter; count via id list for correctness.
+    const rows = await prisma.server.findMany({
+      where,
+      select: { id: true },
+    });
+    const set = new Set(allow);
+    return rows.filter((s) => set.has(s.id)).length;
+  }
+  return prisma.server.count({ where });
 }
 
 /** Same visibility as listVisibleServers, ids only (dashboard bulk polls). */

@@ -16,6 +16,9 @@ import { logger } from "../logger.js";
 import { processManager } from "./process-manager.js";
 import { safeExtractArchive } from "@msm/node-agent";
 import {
+  computeBackupNextRun,
+  listDueBackupScheduleServerIds,
+  migrateBackupSchedulesFromFiles,
   readBackupSchedule,
   writeBackupSchedule,
 } from "./backup-schedule.js";
@@ -32,7 +35,13 @@ import {
   restoreMysqlFromBackupDir,
 } from "./backup-mysql.js";
 
-export { readBackupSchedule, writeBackupSchedule };
+export {
+  computeBackupNextRun,
+  listDueBackupScheduleServerIds,
+  migrateBackupSchedulesFromFiles,
+  readBackupSchedule,
+  writeBackupSchedule,
+};
 export {
   assertSafeBackupId,
   formatBackupSize,
@@ -424,14 +433,15 @@ export async function assertBackupExists(
   return file;
 }
 
-/** Run due scheduled backups for all known server ids that have schedules. */
+/** Run due scheduled backups (indexed BackupSchedule rows; batched). */
 export async function runDueBackupSchedules(
-  serverIds: string[],
+  _serverIds?: string[],
 ): Promise<{ serverId: string; backupId: string }[]> {
   const done: { serverId: string; backupId: string }[] = [];
   const now = Date.now();
+  const dueIds = await listDueBackupScheduleServerIds(new Date(now));
 
-  for (const serverId of serverIds) {
+  for (const serverId of dueIds) {
     if (busyServers.has(serverId)) continue;
     const schedule = await readBackupSchedule(serverId);
     if (schedule.mode === "off" || !schedule.nextRunAt) continue;

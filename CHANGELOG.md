@@ -7,6 +7,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.165] — 2026-08-06
+
+- Scale phase 1: due scheduled tasks + backup schedules via indexed DB queries (BackupSchedule model); disk-watch paged/concurrent + lock
+- Scale phase 2: paginated GET /api/servers + Application users/servers; Admin Status cache; dashboard Load more
+- Env: SCHEDULER_*_BATCH, DISK_WATCH_PAGE/CONCURRENCY, ADMIN_STATUS_* knobs
+
 ## [1.0.164] — 2026-08-06
 
 - Scorecard ≥99 push: coverage floor 95% on expanded security/helpers; OpenAPI + critical audit in CI; locale EN/NL parity test

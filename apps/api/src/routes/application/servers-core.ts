@@ -33,11 +33,26 @@ const createServerSchema = z.object({
 export function registerApplicationServerCoreRoutes(app: FastifyInstance): void {
   app.get("/api/application/servers", async (request, reply) => {
     if (!(await requireApplication(request, reply, "servers.read"))) return;
-    const rows = await prisma.server.findMany({
-      include: serverListInclude,
-      orderBy: { createdAt: "desc" },
-    });
-    return { servers: rows.map(toMcServer) };
+    const q = (request.query ?? {}) as Record<string, unknown>;
+    const limit = Math.min(
+      500,
+      Math.max(1, Math.floor(Number.isFinite(Number(q.limit)) ? Number(q.limit) : 100)),
+    );
+    const offset = Math.max(
+      0,
+      Math.floor(Number.isFinite(Number(q.offset)) ? Number(q.offset) : 0),
+    );
+    const [rows, total] = await Promise.all([
+      prisma.server.findMany({
+        include: serverListInclude,
+        orderBy: { createdAt: "desc" },
+        take: limit,
+        skip: offset,
+      }),
+      prisma.server.count(),
+    ]);
+    void reply.header("x-total-count", String(total));
+    return { servers: rows.map(toMcServer), total, limit, offset };
   });
 
   app.post("/api/application/servers", async (request, reply) => {

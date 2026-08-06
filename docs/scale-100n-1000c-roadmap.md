@@ -13,20 +13,20 @@ Open via **Command Palette → Open Canvas** (Cursor 3.1+), or open that file in
 
 ## Fase 1 — O(N) panel-jobs (P0)
 
-| # | Item | Wat | Files |
-|---|------|-----|-------|
-| 1 | Due-schedules batch | Geen “alle servers → per server taken”; één due-window query + batch | `scheduled-tasks.ts`, scheduler tick |
-| 2 | Backup-schedules indexed | Geen file-read per server elk tick | `backups.ts`, `backup-schedule.ts` |
-| 3 | Disk-watch queue | Geen sequentieel `daemonDisk` voor alle servers; queue of node-side report | `disk-watch.ts`, node-agent |
+| # | Item | Status | Wat | Files |
+|---|------|--------|-----|-------|
+| 1 | Due-schedules batch | **done (1.0.165)** | Indexed `nextRunAt` query + batch cap; DB nextRunAt preserved | `scheduled-tasks.ts` |
+| 2 | Backup-schedules indexed | **done (1.0.165)** | Prisma `BackupSchedule` + file dual-write/migrate | `backup-schedule.ts`, migration |
+| 3 | Disk-watch queue | **done (1.0.165)** | Paged + concurrency + Redis leader lock | `disk-watch.ts` |
 
 ## Fase 2 — Lijsten & admin API (P0)
 
-| # | Item | Wat | Files |
-|---|------|-----|-------|
-| 4 | Server lists pagineren | Cursor/offset + filter node/owner/status | `server-access.ts`, dashboard |
-| 5 | Application API limits | Max page size (bijv. 100), geen unbounded `findMany` | `routes/application/*` |
-| 6 | Admin Status cache | 5–15s cache, parallel met concurrency-cap | `routes/admin/status.ts` |
-| 7 | Dashboard lazy | Virtual lists / tab-lazy / minder hard poll | `DashboardPage` |
+| # | Item | Status | Wat | Files |
+|---|------|--------|-----|-------|
+| 4 | Server lists pagineren | **done (1.0.165)** | `?limit=&offset=` → `{ servers, total }`; dashboard Load more | `dashboard.ts`, `DashboardPage` |
+| 5 | Application API limits | **done (1.0.165)** | Default limit 100 + total | `application/users`, `servers-core` |
+| 6 | Admin Status cache | **done (1.0.165)** | 10s cache + node probe concurrency | `admin/status.ts` |
+| 7 | Dashboard lazy | **done (1.0.165)** | Page size 100 + load more | `DashboardPage` |
 
 ## Fase 3 — Live state uit API-proces (P1)
 

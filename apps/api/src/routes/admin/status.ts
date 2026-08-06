@@ -96,8 +96,28 @@ function mergeNodeContainers(
 }
 
 export function registerStatusRoutes(app: FastifyInstance): void {
+  let statusCache: { at: number; body: AdminStatusResponse } | null = null;
+  const STATUS_CACHE_MS = (() => {
+    const raw = Number(process.env.ADMIN_STATUS_CACHE_MS ?? 10_000);
+    if (!Number.isFinite(raw) || raw < 0) return 10_000;
+    return Math.min(60_000, Math.floor(raw));
+  })();
+  const NODE_PROBE_CONCURRENCY = (() => {
+    const raw = Number(process.env.ADMIN_STATUS_NODE_CONCURRENCY ?? 8);
+    if (!Number.isFinite(raw) || raw < 1) return 8;
+    return Math.min(32, Math.floor(raw));
+  })();
+
   app.get("/api/admin/status", async (request, reply) => {
     if (!(await requireAdmin(request, reply, "status.read"))) return;
+
+    const q = (request.query ?? {}) as Record<string, unknown>;
+    const bypass =
+      q.refresh === "1" || q.refresh === "true" || q.nocache === "1";
+    if (!bypass && statusCache && Date.now() - statusCache.at < STATUS_CACHE_MS) {
+      void reply.header("x-status-cache", "hit");
+      return statusCache.body;
+    }
 
     const [nodes, servers] = await Promise.all([
       prisma.node.findMany({
@@ -123,80 +143,93 @@ export function registerStatusRoutes(app: FastifyInstance): void {
       serversByNode.set(key, list);
     }
 
-    const statusNodes: StatusNode[] = await Promise.all(
-      nodes.map(async (node): Promise<StatusNode> => {
-        const publicUrl = nodePublicUrl(node);
-        const nodeServers = serversByNode.get(node.id) ?? [];
-        try {
-          const snapshot = await daemonGetStatus(node.id);
-          await prisma.node.update({
-            where: { id: node.id },
-            data: { status: "ONLINE", lastSeenAt: new Date() },
-          });
-          const fromDocker: StatusContainer[] = snapshot.containers.map((c) => {
-            const server = c.serverId ? serverById.get(c.serverId) : undefined;
-            return {
-              ...c,
-              serverName: server?.name ?? null,
-              serverStatus: server?.status ?? null,
-            };
-          });
+    async function probeNode(node: (typeof nodes)[number]): Promise<StatusNode> {
+      const publicUrl = nodePublicUrl(node);
+      const nodeServers = serversByNode.get(node.id) ?? [];
+      try {
+        const snapshot = await daemonGetStatus(node.id);
+        await prisma.node.update({
+          where: { id: node.id },
+          data: { status: "ONLINE", lastSeenAt: new Date() },
+        });
+        const fromDocker: StatusContainer[] = snapshot.containers.map((c) => {
+          const server = c.serverId ? serverById.get(c.serverId) : undefined;
           return {
-            id: node.id,
-            name: node.name,
-            isLocal: node.isLocal,
-            publicUrl,
-            reachable: true,
-            daemon: {
-              hostname: snapshot.hostname,
-              publicIp: snapshot.publicIp,
-              localIps: snapshot.localIps,
-              osVersion: snapshot.osVersion,
-              arch: snapshot.arch,
-              cpuCount: snapshot.cpuCount,
-              loadAvg: snapshot.loadAvg,
-              dockerVersion: snapshot.dockerVersion,
-              daemonVersion: snapshot.daemonVersion,
-              daemonPid: snapshot.daemonPid,
-              daemonPort: snapshot.daemonPort,
-              daemonMemoryRssMb: snapshot.daemonMemoryRssMb,
-              uptime: snapshot.uptime,
-              totalMemoryMb: snapshot.totalMemoryMb,
-              totalMemoryGb: snapshot.totalMemoryGb,
-              freeMemoryMb: snapshot.freeMemoryMb,
-              disk: snapshot.disk,
-            },
-            mysql: snapshot.mysql,
-            sftp: {
-              listening: Boolean(snapshot.sftp?.listening),
-              port: snapshot.sftp?.port ?? node.sftpPort ?? 2022,
-              hostname: node.sftpHostname ?? null,
-            },
-            containers: mergeNodeContainers(fromDocker, nodeServers),
+            ...c,
+            serverName: server?.name ?? null,
+            serverStatus: server?.status ?? null,
           };
-        } catch (err) {
-          await prisma.node.update({
-            where: { id: node.id },
-            data: { status: "OFFLINE" },
-          });
-          return {
-            id: node.id,
-            name: node.name,
-            isLocal: node.isLocal,
-            publicUrl,
-            reachable: false,
-            error: err instanceof Error ? err.message : String(err),
-            sftp: node.sftpHostname
-              ? {
-                  listening: false,
-                  port: node.sftpPort ?? 2022,
-                  hostname: node.sftpHostname,
-                }
-              : null,
-            containers: mergeNodeContainers([], nodeServers),
-          };
-        }
-      }),
+        });
+        return {
+          id: node.id,
+          name: node.name,
+          isLocal: node.isLocal,
+          publicUrl,
+          reachable: true,
+          daemon: {
+            hostname: snapshot.hostname,
+            publicIp: snapshot.publicIp,
+            localIps: snapshot.localIps,
+            osVersion: snapshot.osVersion,
+            arch: snapshot.arch,
+            cpuCount: snapshot.cpuCount,
+            loadAvg: snapshot.loadAvg,
+            dockerVersion: snapshot.dockerVersion,
+            daemonVersion: snapshot.daemonVersion,
+            daemonPid: snapshot.daemonPid,
+            daemonPort: snapshot.daemonPort,
+            daemonMemoryRssMb: snapshot.daemonMemoryRssMb,
+            uptime: snapshot.uptime,
+            totalMemoryMb: snapshot.totalMemoryMb,
+            totalMemoryGb: snapshot.totalMemoryGb,
+            freeMemoryMb: snapshot.freeMemoryMb,
+            disk: snapshot.disk,
+          },
+          mysql: snapshot.mysql,
+          sftp: {
+            listening: Boolean(snapshot.sftp?.listening),
+            port: snapshot.sftp?.port ?? node.sftpPort ?? 2022,
+            hostname: node.sftpHostname ?? null,
+          },
+          containers: mergeNodeContainers(fromDocker, nodeServers),
+        };
+      } catch (err) {
+        await prisma.node.update({
+          where: { id: node.id },
+          data: { status: "OFFLINE" },
+        });
+        return {
+          id: node.id,
+          name: node.name,
+          isLocal: node.isLocal,
+          publicUrl,
+          reachable: false,
+          error: err instanceof Error ? err.message : String(err),
+          sftp: node.sftpHostname
+            ? {
+                listening: false,
+                port: node.sftpPort ?? 2022,
+                hostname: node.sftpHostname,
+              }
+            : null,
+          containers: mergeNodeContainers([], nodeServers),
+        };
+      }
+    }
+
+    const statusNodes: StatusNode[] = new Array(nodes.length);
+    let nextIdx = 0;
+    await Promise.all(
+      Array.from(
+        { length: Math.min(NODE_PROBE_CONCURRENCY, Math.max(1, nodes.length)) },
+        async () => {
+          for (;;) {
+            const i = nextIdx++;
+            if (i >= nodes.length) return;
+            statusNodes[i] = await probeNode(nodes[i]!);
+          }
+        },
+      ),
     );
 
     const webPort = Number(process.env.WEB_PORT ?? 80);
@@ -254,6 +287,8 @@ export function registerStatusRoutes(app: FastifyInstance): void {
       },
       nodes: statusNodes,
     };
+    statusCache = { at: Date.now(), body: response };
+    void reply.header("x-status-cache", "miss");
     return response;
   });
 

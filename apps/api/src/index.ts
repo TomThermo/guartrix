@@ -149,6 +149,22 @@ async function main() {
     logger.warn({ err: msg }, "Scheduled-task JSON migration skipped");
   }
 
+  try {
+    const { migrateBackupSchedulesFromFiles } = await import(
+      "./servers/backup-schedule.js"
+    );
+    const ids = (
+      await prisma.server.findMany({ select: { id: true } })
+    ).map((s) => s.id);
+    const n = await migrateBackupSchedulesFromFiles(ids);
+    if (n > 0) {
+      logger.info({ count: n }, "Migrated backup schedule(s) from JSON to DB");
+    }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    logger.warn({ err: msg }, "Backup-schedule JSON migration skipped");
+  }
+
   // Reconcile status with reality instead of blindly marking everything
   // STOPPED. A server whose container is still actually running (e.g. after
   // an API/daemon restart, deploy, or watchdog-triggered restart) must stay
@@ -411,16 +427,15 @@ async function main() {
             app.log.info({ pruned }, "Pruned expired activity events");
           }
         }
-        const servers = await prisma.server.findMany({ select: { id: true } });
-        const ids = servers.map((s) => s.id);
-        const backups = await runDueBackupSchedules(ids);
+        // Due queries are indexed — no full server-id scan required.
+        const backups = await runDueBackupSchedules();
         for (const item of backups) {
           app.log.info(
             { serverId: item.serverId, backupId: item.backupId },
             "Scheduled backup created",
           );
         }
-        const tasks = await runDueScheduledTasks(ids);
+        const tasks = await runDueScheduledTasks();
         for (const item of tasks) {
           app.log.info(
             { serverId: item.serverId, taskId: item.taskId, kind: item.kind },

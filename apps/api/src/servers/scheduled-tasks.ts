@@ -213,7 +213,7 @@ function rowToTask(row: {
   const rawSteps = Array.isArray(row.stepsJson)
     ? (row.stepsJson as Partial<ScheduleStep>[])
     : [];
-  return normalizeTask({
+  const task = normalizeTask({
     id: row.id,
     enabled: row.enabled,
     mode: schedule.mode,
@@ -228,6 +228,11 @@ function rowToTask(row: {
     lastRunAt: row.lastRunAt?.toISOString() ?? null,
     lastError: row.lastError,
   });
+  // Due ticks and UI must honor the persisted nextRunAt (normalizeTask recomputes from "now").
+  if (row.nextRunAt) {
+    task.nextRunAt = row.nextRunAt.toISOString();
+  }
+  return task;
 }
 
 async function readJsonFileTasks(
@@ -512,32 +517,45 @@ export async function runScheduledTaskNow(
   return next;
 }
 
+function taskDueBatchSize(): number {
+  const raw = Number(process.env.SCHEDULER_TASK_BATCH ?? 50);
+  if (!Number.isFinite(raw) || raw < 1) return 50;
+  return Math.min(500, Math.floor(raw));
+}
+
+/** Run due scheduled tasks via indexed nextRunAt query (no per-server scan). */
 export async function runDueScheduledTasks(
-  serverIds: string[],
+  _serverIds?: string[],
 ): Promise<{ serverId: string; taskId: string; kind: string }[]> {
   const done: { serverId: string; taskId: string; kind: string }[] = [];
   const now = Date.now();
+  const dueRows = await prisma.scheduledTask.findMany({
+    where: {
+      enabled: true,
+      nextRunAt: { lte: new Date(now) },
+    },
+    orderBy: { nextRunAt: "asc" },
+    take: taskDueBatchSize(),
+  });
 
-  for (const serverId of serverIds) {
-    const tasks = await listScheduledTasks(serverId);
-    for (const task of tasks) {
-      if (!task.enabled || !task.nextRunAt) continue;
-      if (new Date(task.nextRunAt).getTime() > now) continue;
+  for (const row of dueRows) {
+    const task = rowToTask(row);
+    if (!task.enabled || !task.nextRunAt) continue;
+    if (new Date(task.nextRunAt).getTime() > now) continue;
 
-      try {
-        await executeScheduledTask(serverId, task);
-        done.push({ serverId, taskId: task.id, kind: task.kind });
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        await prisma.scheduledTask.updateMany({
-          where: { id: task.id, serverId },
-          data: {
-            nextRunAt: new Date(now + 15 * 60_000),
-            lastError: message,
-          },
-        });
-        console.error(`[tasks] failed ${serverId}/${task.id}:`, err);
-      }
+    try {
+      await executeScheduledTask(row.serverId, task);
+      done.push({ serverId: row.serverId, taskId: task.id, kind: task.kind });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      await prisma.scheduledTask.updateMany({
+        where: { id: task.id, serverId: row.serverId },
+        data: {
+          nextRunAt: new Date(now + 15 * 60_000),
+          lastError: message,
+        },
+      });
+      console.error(`[tasks] failed ${row.serverId}/${task.id}:`, err);
     }
   }
 

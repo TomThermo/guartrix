@@ -22,8 +22,43 @@ import { serverSubusersApi } from "./server-subusers";
 import { serverTasksApi } from "./server-tasks";
 import { serverWorldApi } from "./server-world";
 
+function listServers(): Promise<McServer[]>;
+function listServers(opts: {
+  limit?: number;
+  offset?: number;
+  nodeId?: string;
+  status?: string;
+  q?: string;
+}): Promise<{
+  servers: McServer[];
+  total: number;
+  limit: number;
+  offset: number;
+}>;
+function listServers(opts?: {
+  limit?: number;
+  offset?: number;
+  nodeId?: string;
+  status?: string;
+  q?: string;
+}) {
+  if (!opts) return request<McServer[]>("/api/servers");
+  const params = new URLSearchParams();
+  if (opts.limit != null) params.set("limit", String(opts.limit));
+  if (opts.offset != null) params.set("offset", String(opts.offset));
+  if (opts.nodeId) params.set("nodeId", opts.nodeId);
+  if (opts.status) params.set("status", opts.status);
+  if (opts.q) params.set("q", opts.q);
+  return request<{
+    servers: McServer[];
+    total: number;
+    limit: number;
+    offset: number;
+  }>(`/api/servers?${params.toString()}`);
+}
+
 const serverCoreApi = {
-  listServers: () => request<McServer[]>("/api/servers"),
+  listServers,
   getServer: (id: string) => request<ServerDetail>(`/api/servers/${id}`),
   createServer: (body: CreateServerRequest) =>
     request<McServer>("/api/servers", {

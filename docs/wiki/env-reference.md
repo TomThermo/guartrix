@@ -117,6 +117,12 @@ The license **server** is hosted separately by Guartrix (default `https://licens
 | `EXTRA_MOUNTS_ALLOW_PREFIX` | Comma-separated host path prefixes allowed for server extra mounts (default `/var/lib/guartrix/shared,/opt/guartrix/shared`). Changing mounts requires **ADMIN** |
 | `DISK_USAGE_CACHE_MS` | Stale-while-revalidate TTL for per-server disk walks on the node (default **30000**; clamp 1s–10m; daemon/node-agent) |
 | `DISK_WATCH_INTERVAL_MS` | Panel interval for disk-quota high alerts (default **300000** = 5m; clamp 30s–1h) |
+| `DISK_WATCH_PAGE_SIZE` | Servers per disk-watch page (default **100**; clamp 10–500) |
+| `DISK_WATCH_CONCURRENCY` | Parallel `daemonDisk` probes per page (default **8**; clamp 1–32) |
+| `SCHEDULER_TASK_BATCH` | Max due scheduled tasks per 60s tick (default **50**) |
+| `SCHEDULER_BACKUP_BATCH` | Max due backup schedules per 60s tick (default **50**) |
+| `ADMIN_STATUS_CACHE_MS` | Admin Status response cache TTL (default **10000**; `?refresh=1` bypass) |
+| `ADMIN_STATUS_NODE_CONCURRENCY` | Parallel daemon status probes (default **8**) |
 | `SERVER_LIST_FS_CACHE_MS` | TTL for cached `hasIcon` / `whitelistEnabled` when serializing server lists (default **15000**; clamp 1s–2m) |
 | `SFTP_PORT` / `SFTP_ENABLED` | Embedded SFTP per node |
 | `PANEL_URL` | URL the daemon uses for SFTP password checks |

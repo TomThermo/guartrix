@@ -48,6 +48,9 @@ export function DashboardPage() {
   const canCreate = canCreateServer(user);
   const isAdmin = user?.role === "ADMIN";
   const [servers, setServers] = useState<McServer[]>([]);
+  const [serverTotal, setServerTotal] = useState(0);
+  const [listOffset, setListOffset] = useState(0);
+  const PAGE_SIZE = 100;
   const [statsMap, setStatsMap] = useState<Record<string, ServerStats>>({});
   const [onlineMap, setOnlineMap] = useState<Record<string, OnlinePlayersResponse>>({});
   const [updatesMap, setUpdatesMap] = useState<Record<string, ServerUpdateInfo>>({});
@@ -55,6 +58,7 @@ export function DashboardPage() {
     Record<string, { available: number }>
   >({});
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [whitelistPrompt, setWhitelistPrompt] = useState<McServer | null>(null);
@@ -84,12 +88,16 @@ export function DashboardPage() {
 
   const refresh = useCallback(async () => {
     try {
-      const [list, stats, online] = await Promise.all([
-        api.listServers(),
+      const [page, stats, online] = await Promise.all([
+        api.listServers({ limit: PAGE_SIZE, offset: 0 }),
         api.getAllStats(),
         api.getAllOnlinePlayers(),
       ]);
+      const list = Array.isArray(page) ? page : page.servers;
+      const total = Array.isArray(page) ? page.length : page.total;
       setServers(list);
+      setServerTotal(total);
+      setListOffset(list.length);
       setStatsMap(stats);
       setOnlineMap(online);
       setError(null);
@@ -98,7 +106,30 @@ export function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
+
+  const loadMoreServers = useCallback(async () => {
+    if (loadingMore || servers.length >= serverTotal) return;
+    setLoadingMore(true);
+    try {
+      const page = await api.listServers({
+        limit: PAGE_SIZE,
+        offset: listOffset,
+      });
+      const list = Array.isArray(page) ? page : page.servers;
+      const total = Array.isArray(page) ? servers.length + list.length : page.total;
+      setServers((prev) => {
+        const seen = new Set(prev.map((s) => s.id));
+        return [...prev, ...list.filter((s) => !seen.has(s.id))];
+      });
+      setServerTotal(total);
+      setListOffset((o) => o + list.length);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("dashboard.loadFailed"));
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [loadingMore, servers.length, serverTotal, listOffset, t]);
 
   const refreshUpdates = useCallback(async () => {
     try {
@@ -530,6 +561,23 @@ export function DashboardPage() {
             />
           ))}
         </div>
+        {servers.length < serverTotal && (
+          <div className="d-flex justify-content-center mt-3">
+            <Button
+              variant="outline-secondary"
+              size="sm"
+              disabled={loadingMore}
+              onClick={() => void loadMoreServers()}
+            >
+              {loadingMore
+                ? t("common.loading")
+                : t("dashboard.loadMore", {
+                    loaded: servers.length,
+                    total: serverTotal,
+                  })}
+            </Button>
+          </div>
+        )}
         </>
           )}
         </>

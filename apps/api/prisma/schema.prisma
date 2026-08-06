@@ -140,10 +140,12 @@ model Server {
   activity            ActivityEvent[]
   moderationEvents    PlayerModerationEvent[]
   scheduledTasks      ScheduledTask[]
+  backupSchedule      BackupSchedule?
 
   @@unique([nodeId, port])
   @@index([ownerId])
   @@index([nodeId])
+  @@index([status])
 }
 
 /**
@@ -170,6 +172,26 @@ model ScheduledTask {
 
   @@index([serverId])
   @@index([nextRunAt, enabled])
+}
+
+/**
+ * Per-server backup schedule (was data/backups/<id>/schedule.json).
+ * File dual-write remains during migration; due ticks query this table.
+ */
+model BackupSchedule {
+  serverId       String   @id
+  server         Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  /** off | daily | interval | cron */
+  mode           String   @default("off")
+  intervalHours  Int      @default(6)
+  dailyAt        String   @default("03:00")
+  cronExpression String   @default("0 3 * * *")
+  keepCount      Int      @default(7)
+  lastRunAt      DateTime?
+  nextRunAt      DateTime?
+  updatedAt      DateTime @updatedAt
+
+  @@index([nextRunAt, mode])
 }
 
 /** Kick/ban/op/whitelist actions for the in-panel player history. */
