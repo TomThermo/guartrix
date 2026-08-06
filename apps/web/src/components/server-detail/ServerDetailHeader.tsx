@@ -1,15 +1,49 @@
+import type { KeyboardEvent } from "react";
 import type {
   ConnectInfo,
   OnlinePlayersResponse,
   ServerDetail,
   ServerPermission,
 } from "@msm/shared";
-import { Badge, Button, Dropdown } from "react-bootstrap";
+import { Button, Dropdown } from "react-bootstrap";
 import { useI18n } from "../../i18n/react";
 import { statusBadgeClass, typeIcon, typeLabel } from "../../utils";
 import type { TabId } from "./server-tabs";
 
 type OnlineInfo = Pick<OnlinePlayersResponse, "playersOnline" | "playersMax"> | null;
+
+function StatChip({
+  icon,
+  label,
+  title,
+  tone = "neutral",
+  onClick,
+  onKeyDown,
+}: {
+  icon: string;
+  label: string;
+  title?: string;
+  tone?: "neutral" | "success" | "warning" | "danger" | "info";
+  onClick?: () => void;
+  onKeyDown?: (e: KeyboardEvent) => void;
+}) {
+  const interactive = Boolean(onClick);
+  return (
+    <span
+      className={`server-detail-stat server-detail-stat--${tone}${
+        interactive ? " is-clickable" : ""
+      }`}
+      title={title}
+      role={interactive ? "button" : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      onClick={onClick}
+      onKeyDown={onKeyDown}
+    >
+      <i className={`fa-solid ${icon}`} aria-hidden />
+      <span>{label}</span>
+    </span>
+  );
+}
 
 export function ServerDetailHeader({
   server,
@@ -56,9 +90,67 @@ export function ServerDetailHeader({
 }) {
   const { t } = useI18n();
 
+  const versionLine = [
+    server.mcVersion,
+    server.fabricLoaderVersion ? `loader ${server.fabricLoaderVersion}` : null,
+    server.forgeVersion ? `forge ${server.forgeVersion}` : null,
+    server.paperBuild ? `build ${server.paperBuild}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  const showActions = canClone || isAdmin || can("settings.update");
+
+  const manageMenu = (
+    <>
+      <Dropdown.Header>{t("serverDetail.serverActions")}</Dropdown.Header>
+      {can("settings.update") && (
+        <Dropdown.Item as="button" disabled={busy} onClick={onShowVersionPicker}>
+          <i className="fa-solid fa-code-branch fa-fw me-2 text-secondary" />
+          {t("serverDetail.changeVersion")}
+        </Dropdown.Item>
+      )}
+      {can("settings.update") && (
+        <Dropdown.Item as="button" disabled={busy} onClick={onShowChangeType}>
+          <i className="fa-solid fa-puzzle-piece fa-fw me-2 text-secondary" />
+          {t("serverDetail.changeSoftware")}
+        </Dropdown.Item>
+      )}
+      {canClone && (
+        <Dropdown.Item as="button" disabled={busy} onClick={onShowClone}>
+          <i className="fa-solid fa-clone fa-fw me-2 text-secondary" />
+          {t("serverDetail.cloneServer")}
+        </Dropdown.Item>
+      )}
+      {can("settings.update") && (
+        <Dropdown.Item as="button" disabled={busy} onClick={onShowReinstall}>
+          <i className="fa-solid fa-rotate fa-fw me-2 text-secondary" />
+          {t("serverDetail.reinstall")}
+        </Dropdown.Item>
+      )}
+      {isAdmin && (
+        <>
+          <Dropdown.Divider />
+          <Dropdown.Item
+            as="button"
+            disabled={busy || server.status === "TRANSFERRING"}
+            onClick={onShowNodeTransfer}
+          >
+            <i className="fa-solid fa-right-left fa-fw me-2 text-secondary" />
+            {t("serverDetail.moveToNode")}
+          </Dropdown.Item>
+          <Dropdown.Item as="button" disabled={busy} onClick={onShowTransfer}>
+            <i className="fa-solid fa-user-tag fa-fw me-2 text-secondary" />
+            {t("serverDetail.transferOwnerAction")}
+          </Dropdown.Item>
+        </>
+      )}
+    </>
+  );
+
   return (
-    <div className="server-detail-header mb-3">
-      <div className="server-detail-title-row">
+    <header className="server-detail-header mb-3">
+      <div className="server-detail-header__main">
         <Button
           variant="outline-secondary"
           className="server-burger-btn"
@@ -67,19 +159,25 @@ export function ServerDetailHeader({
         >
           <i className="fa-solid fa-bars" aria-hidden />
         </Button>
+
         <img
-          className="server-icon-badge"
+          className="server-detail-header__icon"
           src={`/api/servers/${server.id}/icon?t=${server.hasIcon ? server.updatedAt : "default"}`}
           alt=""
-          width={40}
-          height={40}
+          width={48}
+          height={48}
         />
-        <div className="server-detail-title-text min-w-0">
-          <h1 className="server-detail-name text-truncate">{server.name}</h1>
-          <Button
-            size="sm"
-            variant="link"
-            className="server-detail-address p-0 text-secondary text-decoration-none text-truncate"
+
+        <div className="server-detail-header__identity min-w-0">
+          <div className="server-detail-header__title-row">
+            <h1 className="server-detail-header__name text-truncate">{server.name}</h1>
+            <span className={`server-detail-header__status ${statusBadgeClass(server.status)}`}>
+              {server.status}
+            </span>
+          </div>
+          <button
+            type="button"
+            className="server-detail-header__address"
             onClick={onCopyConnect}
             title={t("serverDetail.copyAddress")}
           >
@@ -87,129 +185,15 @@ export function ServerDetailHeader({
             <span className="text-truncate">
               {connectInfo?.address ?? `:${server.port}`}
             </span>
-          </Button>
-          <span className={statusBadgeClass(server.status)}>{server.status}</span>
-          <Badge bg="secondary">
-            <i className={`fa-solid ${typeIcon(server.type)}`} aria-hidden />
-            {typeLabel(server.type)}
-          </Badge>
-          {isAdmin || server.ownerUsername ? (
-            <Badge
-              bg={server.ownerUsername ? "dark" : "secondary"}
-              title={
-                isAdmin ? t("serverDetail.transferOwner") : t("serverDetail.owner")
-              }
-              role={isAdmin ? "button" : undefined}
-              style={isAdmin ? { cursor: "pointer" } : undefined}
-              onClick={isAdmin ? onShowTransfer : undefined}
-            >
-              <i className="fa-solid fa-user" aria-hidden />
-              {server.ownerUsername ?? t("serverDetail.unassigned")}
-            </Badge>
+          </button>
+          {versionLine ? (
+            <div className="server-detail-header__version">{versionLine}</div>
           ) : null}
-          <span className="server-detail-meta-text">
-            {[
-              server.mcVersion,
-              server.fabricLoaderVersion
-                ? `loader ${server.fabricLoaderVersion}`
-                : null,
-              server.forgeVersion ? `forge ${server.forgeVersion}` : null,
-              server.paperBuild ? `build ${server.paperBuild}` : null,
-            ]
-              .filter(Boolean)
-              .join(" · ")}
-          </span>
-          {can("player.read") && (
-            <Badge
-              bg="secondary"
-              className="server-detail-meta-action"
-              role="button"
-              tabIndex={0}
-              title={t("serverDetail.onlinePlayersTitle")}
-              onClick={() => onChangeTab("players")}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  onChangeTab("players");
-                }
-              }}
-            >
-              <i className="fa-solid fa-users" aria-hidden />
-              {online
-                ? `${online.playersOnline}${online.playersMax > 0 ? `/${online.playersMax}` : ""}`
-                : server.status === "RUNNING"
-                  ? "…/…"
-                  : "0/0"}
-            </Badge>
-          )}
-          {can("settings.read") && (
-            <Badge
-              bg={whitelistOn ? "success" : "warning"}
-              text={whitelistOn ? undefined : "dark"}
-              className="server-detail-meta-action"
-              role="button"
-              tabIndex={0}
-              title={
-                can("settings.update")
-                  ? t("serverDetail.clickWhitelist")
-                  : whitelistOn
-                    ? t("serverDetail.whitelistEnabled")
-                    : t("serverDetail.whitelistDisabled")
-              }
-              onClick={() => {
-                if (can("settings.update")) onShowWhitelistModal();
-                else onChangeTab("whitelist");
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  if (can("settings.update")) onShowWhitelistModal();
-                  else onChangeTab("whitelist");
-                }
-              }}
-            >
-              <i
-                className={`fa-solid ${whitelistOn ? "fa-shield-halved" : "fa-shield"}`}
-                aria-hidden
-              />
-              {whitelistOn ? t("serverDetail.wlOn") : t("serverDetail.wlOff")}
-            </Badge>
-          )}
-          {supportsAddons && can("addon.read") && (
-            <Badge
-              bg={addonUpdateCount > 0 ? "danger" : "secondary"}
-              className="server-detail-meta-action"
-              role="button"
-              tabIndex={0}
-              title={t("serverDetail.openAddons")}
-              onClick={() => onChangeTab("addons")}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  onChangeTab("addons");
-                }
-              }}
-            >
-              <i className="fa-solid fa-puzzle-piece" aria-hidden />
-              {addonUpdateCount > 0
-                ? addonUpdateCount === 1
-                  ? t("common.updateOne", { count: addonUpdateCount })
-                  : t("common.updateMany", { count: addonUpdateCount })
-                : t("serverDetail.upToDate")}
-            </Badge>
-          )}
-          {server.autoRestart && (
-            <Badge bg="info" text="dark">
-              {t("serverDetail.autoRestart")}
-            </Badge>
-          )}
         </div>
-        {(canClone || isAdmin || can("settings.update")) && (
-          <>
-            <div
-              className="server-toolbar btn-group btn-group-sm"
-              role="group"
-            >
+
+        {showActions && (
+          <div className="server-detail-header__actions">
+            <div className="server-toolbar btn-group btn-group-sm" role="group">
               {can("settings.update") && (
                 <Button
                   variant="outline-secondary"
@@ -289,74 +273,100 @@ export function ServerDetailHeader({
                 <i className="fa-solid fa-ellipsis-vertical" aria-hidden />
                 <span>{t("serverDetail.manage")}</span>
               </Dropdown.Toggle>
-              <Dropdown.Menu className="server-manage-menu">
-                <Dropdown.Header>{t("serverDetail.serverActions")}</Dropdown.Header>
-                {can("settings.update") && (
-                  <Dropdown.Item
-                    as="button"
-                    disabled={busy}
-                    onClick={onShowVersionPicker}
-                  >
-                    <i className="fa-solid fa-code-branch fa-fw me-2 text-secondary" />
-                    {t("serverDetail.changeVersion")}
-                  </Dropdown.Item>
-                )}
-                {can("settings.update") && (
-                  <Dropdown.Item
-                    as="button"
-                    disabled={busy}
-                    onClick={onShowChangeType}
-                  >
-                    <i className="fa-solid fa-puzzle-piece fa-fw me-2 text-secondary" />
-                    {t("serverDetail.changeSoftware")}
-                  </Dropdown.Item>
-                )}
-                {canClone && (
-                  <Dropdown.Item
-                    as="button"
-                    disabled={busy}
-                    onClick={onShowClone}
-                  >
-                    <i className="fa-solid fa-clone fa-fw me-2 text-secondary" />
-                    {t("serverDetail.cloneServer")}
-                  </Dropdown.Item>
-                )}
-                {can("settings.update") && (
-                  <Dropdown.Item
-                    as="button"
-                    disabled={busy}
-                    onClick={onShowReinstall}
-                  >
-                    <i className="fa-solid fa-rotate fa-fw me-2 text-secondary" />
-                    {t("serverDetail.reinstall")}
-                  </Dropdown.Item>
-                )}
-                {isAdmin && (
-                  <>
-                    <Dropdown.Divider />
-                    <Dropdown.Item
-                      as="button"
-                      disabled={busy || server.status === "TRANSFERRING"}
-                      onClick={onShowNodeTransfer}
-                    >
-                      <i className="fa-solid fa-right-left fa-fw me-2 text-secondary" />
-                      {t("serverDetail.moveToNode")}
-                    </Dropdown.Item>
-                    <Dropdown.Item
-                      as="button"
-                      disabled={busy}
-                      onClick={onShowTransfer}
-                    >
-                      <i className="fa-solid fa-user-tag fa-fw me-2 text-secondary" />
-                      {t("serverDetail.transferOwnerAction")}
-                    </Dropdown.Item>
-                  </>
-                )}
-              </Dropdown.Menu>
+              <Dropdown.Menu className="server-manage-menu">{manageMenu}</Dropdown.Menu>
             </Dropdown>
-          </>
+          </div>
         )}
       </div>
-    </div>
+
+      <div className="server-detail-header__stats">
+        <StatChip
+          icon={typeIcon(server.type)}
+          label={typeLabel(server.type)}
+          title={typeLabel(server.type)}
+        />
+        {(isAdmin || server.ownerUsername) && (
+          <StatChip
+            icon="fa-user"
+            label={server.ownerUsername ?? t("serverDetail.unassigned")}
+            title={isAdmin ? t("serverDetail.transferOwner") : t("serverDetail.owner")}
+            onClick={isAdmin ? onShowTransfer : undefined}
+          />
+        )}
+        {can("player.read") && (
+          <StatChip
+            icon="fa-users"
+            label={
+              online
+                ? `${online.playersOnline}${online.playersMax > 0 ? `/${online.playersMax}` : ""}`
+                : server.status === "RUNNING"
+                  ? "…/…"
+                  : "0/0"
+            }
+            title={t("serverDetail.onlinePlayersTitle")}
+            onClick={() => onChangeTab("players")}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onChangeTab("players");
+              }
+            }}
+          />
+        )}
+        {can("settings.read") && (
+          <StatChip
+            icon={whitelistOn ? "fa-shield-halved" : "fa-shield"}
+            label={whitelistOn ? t("serverDetail.wlOn") : t("serverDetail.wlOff")}
+            title={
+              can("settings.update")
+                ? t("serverDetail.clickWhitelist")
+                : whitelistOn
+                  ? t("serverDetail.whitelistEnabled")
+                  : t("serverDetail.whitelistDisabled")
+            }
+            tone={whitelistOn ? "success" : "warning"}
+            onClick={() => {
+              if (can("settings.update")) onShowWhitelistModal();
+              else onChangeTab("whitelist");
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                if (can("settings.update")) onShowWhitelistModal();
+                else onChangeTab("whitelist");
+              }
+            }}
+          />
+        )}
+        {supportsAddons && can("addon.read") && (
+          <StatChip
+            icon="fa-puzzle-piece"
+            label={
+              addonUpdateCount > 0
+                ? addonUpdateCount === 1
+                  ? t("common.updateOne", { count: addonUpdateCount })
+                  : t("common.updateMany", { count: addonUpdateCount })
+                : t("serverDetail.upToDate")
+            }
+            title={t("serverDetail.openAddons")}
+            tone={addonUpdateCount > 0 ? "danger" : "neutral"}
+            onClick={() => onChangeTab("addons")}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onChangeTab("addons");
+              }
+            }}
+          />
+        )}
+        {server.autoRestart && (
+          <StatChip
+            icon="fa-rotate"
+            label={t("serverDetail.autoRestart")}
+            tone="info"
+          />
+        )}
+      </div>
+    </header>
   );
 }
