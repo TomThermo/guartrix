@@ -2,6 +2,30 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  assertNotSensitive,
+  isSensitiveFileName,
+} from "./files-crud.js";
+
+describe("sensitive control files", () => {
+  it("recognizes protected Guartrix and legacy BlockHost file names", () => {
+    expect(isSensitiveFileName("guartrix-addons.json")).toBe(true);
+    expect(isSensitiveFileName("nested/GUARTRIX-custom.json")).toBe(true);
+    expect(isSensitiveFileName("world/blockhost-console-history.json")).toBe(true);
+    expect(isSensitiveFileName("server.properties")).toBe(false);
+    expect(isSensitiveFileName("world/ops.json")).toBe(false);
+  });
+
+  it("rejects protected control files and permits ordinary server files", () => {
+    expect(() => assertNotSensitive("config/guartrix-limits.json")).toThrow(
+      /control file cannot be edited/i,
+    );
+    expect(() => assertNotSensitive("BLOCKHOST-private.json")).toThrow(
+      /control file cannot be edited/i,
+    );
+    expect(() => assertNotSensitive("server.properties")).not.toThrow();
+  });
+});
 
 describe("resolveSafePath", () => {
   let dataDir: string;

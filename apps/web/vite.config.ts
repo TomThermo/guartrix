@@ -160,6 +160,31 @@ export default defineConfig(({ mode }) => {
     worker: {
       format: "es",
     },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (!id.includes("node_modules")) return;
+            if (id.includes("monaco-editor") || id.includes("@monaco-editor")) {
+              return "monaco";
+            }
+            if (
+              id.includes("react-bootstrap") ||
+              id.includes("/bootstrap/")
+            ) {
+              return "bootstrap";
+            }
+            if (
+              id.includes("/react-dom/") ||
+              id.includes("/react/") ||
+              id.includes("/scheduler/")
+            ) {
+              return "react-vendor";
+            }
+          },
+        },
+      },
+    },
     server: {
       host: "0.0.0.0",
       port: 5173,

@@ -127,11 +127,38 @@ Remote node install (`scripts/install-daemon.sh` and the panel wizard) may run
 are missing. That is convenient but not fully pinned — treat it as a **residual risk**
 on production VPS hosts.
 
-Mitigations: pre-install Docker and Node from official packages with **pinned versions**
-and verified checksums; skip the pipe-to-shell step; deploy from a **tagged release**
-branch. Full notes: [Install nodes — supply chain](install-nodes.md#install-script-supply-chain-residual-risk).
+### Preseed checklist (preferred)
 
-## Reporting
+On each new node **before** running the Guartrix installer:
+
+1. Install **Docker Engine** from the vendor’s package repo (pin a CE version; verify apt/yum signatures).
+2. Install **Node.js 22.x** from a pinned NodeSource or distro package (verify `node -v` ≥ 22).
+3. Confirm both are on `PATH` (`command -v docker`, `command -v node`).
+4. Run `install-daemon.sh` / Add-node wizard — the script **skips** curl|sh when tools already exist.
+5. Prefer a **tagged Guartrix release** branch for `--repo` / `--branch`.
+6. Keep daemon firewall **panel-IP only** via `PANEL_URL` + ufw.
+
+When you cannot preseed, pin versions and checksums per vendor docs — do not re-run
+unpinned `curl | sh` on every redeploy.
+
+Full notes: [Install nodes — supply chain](install-nodes.md#install-script-supply-chain-residual-risk).
+
+## Daemon JWT defaults (mitigation)
+
+Panel→daemon auth uses short-lived HS256 JWTs signed with `DAEMON_TOKEN`:
+
+| Knob | Default | Purpose |
+|------|---------|---------|
+| `DAEMON_JWT_TTL` | `900` | HTTP access JWT lifetime (seconds) |
+| `DAEMON_JWT_WS_TTL` | `3600` | WebSocket JWT lifetime |
+| `DAEMON_JWT_LEGACY` | `false` | When `true`, also accept raw long-lived bearer (deprecated) |
+
+Keep **`DAEMON_JWT_LEGACY=false`** on all nodes after migration. Rotate node tokens from
+**System → Nodes** (or Admin Status) if a token may have leaked. TLS on the daemon
+public URL remains required for production.
+
+A stolen valid JWT or token still grants **full node** access — that residual is inherent
+to the Wings-style model; mitigations shorten the window and remove legacy bearer.
 
 Treat this panel like production hosting software: rotate any secrets that appear in chat or tickets, and keep the OS and Docker patched.
 

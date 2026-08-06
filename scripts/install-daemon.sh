@@ -83,15 +83,19 @@ apt-get update -y >/dev/null
 apt-get install -y ca-certificates curl gnupg git openssl tar ufw >/dev/null
 
 # Supply-chain note: curl|sh installs below are skipped when docker/node already exist.
-# For pinned packages / checksum verification see docs/wiki/install-nodes.md#install-script-supply-chain-residual-risk
+# Preferred production path: preseed Docker Engine + Node.js 22 from pinned packages
+# (see docs/wiki/install-nodes.md#install-script-supply-chain-residual-risk).
+# Offline / air-gapped: install both on PATH before this script — then these blocks are no-ops.
 if ! command -v docker >/dev/null 2>&1; then
-  echo "[guartrix] Installing Docker…"
+  echo "[guartrix] Installing Docker via get.docker.com (unpinned convenience script)…"
+  echo "[guartrix] Tip: pre-install docker from pinned CE packages to skip this step."
   curl -fsSL https://get.docker.com | sh
   systemctl enable --now docker
 fi
 
 if ! command -v node >/dev/null 2>&1 || [[ "$(node -v 2>/dev/null | sed 's/^v//' | cut -d. -f1)" -lt 22 ]]; then
-  echo "[guartrix] Installing Node.js 22…"
+  echo "[guartrix] Installing Node.js 22 via NodeSource setup (unpinned convenience script)…"
+  echo "[guartrix] Tip: pre-install nodejs 22.x from a pinned repo to skip this step."
   curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
   apt-get install -y nodejs
 fi

@@ -21,6 +21,18 @@ Do **not** mix: restarting only the API with `systemctl` while `scripts/start.sh
 
 Alternatives: `npm run prod` or `npm run build && npm run start:prod`.
 
+### Operator health smoke (after restart)
+
+```bash
+curl -sf http://127.0.0.1:3001/api/health   # API liveness
+curl -sf http://127.0.0.1:3001/api/ready    # API + DB
+curl -sf http://127.0.0.1:8081/health       # local daemon
+curl -sf http://127.0.0.1:8081/ready        # daemon + Docker
+curl -sfI http://127.0.0.1/                 # web (or https://YOUR_HOST/)
+```
+
+Expect HTTP 200 on each. The watchdog (`scripts/monitor.sh`) repeats similar checks on `MONITOR_INTERVAL`.
+
 Operational internals reference:
 
 - [Prod-web and downloads](prod-web-and-downloads.md)

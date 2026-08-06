@@ -1,7 +1,4 @@
 import fs from "node:fs/promises";
-import path from "node:path";
-import { nanoid } from "nanoid";
-import type { PanelVersionStatus } from "@msm/shared";
 import { normalizeLicenseFeatures } from "@msm/shared";
 import type { LicenseSignedClaims } from "@msm/shared/license-signing";
 import {
@@ -24,49 +21,43 @@ import {
   getUnlicensedFreeTier,
   stopServersExceedingLicenseQuota,
 } from "./license-quota.js";
+import {
+  getInstallId,
+  getLicenseCacheEntry,
+  getLicenseKey,
+  getLicenseServerUrl,
+  lastLicenseOkAt,
+  LICENSE_CACHE_MS,
+  LICENSE_PUBLIC_KEY_FILE,
+  markLicenseOk,
+  maskLicenseKey,
+  registerLicenseKeyClearedHandler,
+  setCachedLicenseState,
+} from "./license-store.js";
+import type {
+  LicensePanelStatus,
+  LicenseState,
+} from "./license-store.js";
 
-export type LicensePanelStatus =
-  | "valid"
-  | "expired"
-  | "revoked"
-  | "unknown"
-  | "unreachable"
-  | "missing"
-  | "in_use";
+export {
+  clearLicenseKey,
+  getCachedLicenseState,
+  getInstallId,
+  getLicenseKey,
+  getLicenseServerUrl,
+  getLicenseServerUrlInfo,
+  parseLicenseServerUrl,
+  setLicenseKey,
+  setLicenseServerUrl,
+  userFacingLicenseMessage,
+} from "./license-store.js";
+export type { LicensePanelStatus, LicenseState } from "./license-store.js";
+export { getPanelVersionStatus } from "./license-version.js";
+export {
+  startLicenseWatcher,
+  stopLicenseWatcher,
+} from "./license-watcher.js";
 
-export interface LicenseState {
-  valid: boolean;
-  status: LicensePanelStatus;
-  message: string;
-  expiresAt: string | null;
-  label: string | null;
-  checkedAt: string;
-  keyMasked: string;
-  /** Channel info from last successful license-server contact */
-  latestVersion?: string | null;
-  minVersion?: string | null;
-  updateAvailable?: boolean;
-  belowMinimum?: boolean;
-  versionNotes?: string | null;
-  /** Panel-wide caps from the license (null = unlimited) */
-  maxServers?: number | null;
-  maxNodes?: number | null;
-  maxMemoryMb?: number | null;
-  maxMemoryMbPerServer?: number | null;
-  /**
-   * Enabled permission-group ids (null = all features).
-   * Empty array = none enabled.
-   */
-  features?: string[] | null;
-  boundIp?: string | null;
-  boundIps?: string[];
-}
-
-/** How often the panel contacts the license server (default 10 minutes). */
-const CACHE_MS = Math.max(
-  60_000,
-  Number(process.env.LICENSE_VALIDATE_INTERVAL_MS ?? 10 * 60 * 1000),
-);
 /** After this many ms without a successful signed validate, treat as invalid (default 12h). */
 const UNREACHABLE_GRACE_MS = Number(
   process.env.LICENSE_UNREACHABLE_GRACE_MS ?? 12 * 60 * 60 * 1000,
@@ -82,12 +73,6 @@ let lastSignedTicket: {
   signature: string;
 } | null = null;
 let consecutiveValidateFailures = 0;
-const KEY_FILE = () => path.join(config.dataDir, "license-key");
-const INSTALL_ID_FILE = () => path.join(config.dataDir, "license-install-id");
-const SERVER_URL_FILE = () => path.join(config.dataDir, "license-server-url");
-const LAST_OK_FILE = () => path.join(config.dataDir, "license-last-ok");
-const PUBLIC_KEY_FILE = () =>
-  path.join(config.dataDir, "licenses", "signing-public.pem");
 
 let cachedPublicKeyPem: string | null | undefined;
 
@@ -101,25 +86,10 @@ async function loadVerifyPublicKey(): Promise<string | null> {
     return cachedPublicKeyPem;
   }
   try {
-    cachedPublicKeyPem = await fs.readFile(PUBLIC_KEY_FILE(), "utf8");
+    cachedPublicKeyPem = await fs.readFile(LICENSE_PUBLIC_KEY_FILE(), "utf8");
     return cachedPublicKeyPem;
   } catch {
     cachedPublicKeyPem = null;
-    return null;
-  }
-}
-
-async function markLicenseOk(): Promise<void> {
-  await fs.mkdir(config.dataDir, { recursive: true });
-  await fs.writeFile(LAST_OK_FILE(), String(Date.now()) + "\n", { mode: 0o600 });
-}
-
-async function lastLicenseOkAt(): Promise<number | null> {
-  try {
-    const raw = (await fs.readFile(LAST_OK_FILE(), "utf8")).trim();
-    const n = Number(raw);
-    return Number.isFinite(n) ? n : null;
-  } catch {
     return null;
   }
 }
@@ -144,178 +114,8 @@ function allowUnsigned(): boolean {
   }
   return true;
 }
-let cached: LicenseState | null = null;
-let cachedAt = 0;
 let lastValid: boolean | null = null;
-let intervalHandle: ReturnType<typeof setInterval> | null = null;
 let inFlight: Promise<LicenseState> | null = null;
-/** In-memory override after admin saves (avoids re-reading disk every call). */
-let serverUrlOverride: string | null | undefined = undefined;
-
-function normalizeLicenseServerUrl(raw: string): string {
-  return raw.trim().replace(/\/+$/, "");
-}
-
-function defaultLicenseServerUrl(): string {
-  const fromEnv = process.env.LICENSE_SERVER_URL?.trim();
-  if (fromEnv) return normalizeLicenseServerUrl(fromEnv);
-  const publicLicense =
-    process.env.LICENSE_PUBLIC_HOST?.trim() ||
-    (process.env.PUBLIC_HOST?.trim() &&
-    process.env.PUBLIC_HOST.trim() !== "localhost"
-      ? `license.${process.env.PUBLIC_HOST.trim().replace(/^www\./i, "")}`
-      : "license.guartrix.com");
-  const host = publicLicense
-    .replace(/^https?:\/\//i, "")
-    .replace(/\/+$/, "")
-    .toLowerCase();
-  return normalizeLicenseServerUrl(`https://${host}`);
-}
-
-/** Validate http(s) URL for a remote or local license server. */
-export function parseLicenseServerUrl(raw: string): string {
-  let trimmed = raw.trim();
-  if (!trimmed) throw new Error("License server URL is required");
-  // Accept bare hostnames: license.example.com → https://license.example.com
-  if (!/^[a-z][a-z0-9+.-]*:/i.test(trimmed)) {
-    const hostOnly = trimmed.replace(/\/+$/, "");
-    const isLocal =
-      /^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/i.test(hostOnly) ||
-      /^(\d{1,3}\.){3}\d{1,3}(:\d+)?$/.test(hostOnly);
-    trimmed = `${isLocal ? "http" : "https"}://${hostOnly}`;
-  }
-  let parsed: URL;
-  try {
-    parsed = new URL(trimmed);
-  } catch {
-    throw new Error("Invalid license server URL");
-  }
-  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-    throw new Error("License server URL must start with http:// or https://");
-  }
-  if (parsed.username || parsed.password) {
-    throw new Error("License server URL must not include credentials");
-  }
-  const pathPart = parsed.pathname.replace(/\/+$/, "");
-  const basePath = !pathPart || pathPart === "/" ? "" : pathPart;
-  return `${parsed.protocol}//${parsed.host}${basePath}`;
-}
-
-export async function getLicenseServerUrl(): Promise<string> {
-  if (serverUrlOverride !== undefined) {
-    return serverUrlOverride || defaultLicenseServerUrl();
-  }
-  try {
-    const fromFile = (await fs.readFile(SERVER_URL_FILE(), "utf8")).trim();
-    if (fromFile) {
-      serverUrlOverride = parseLicenseServerUrl(fromFile);
-      return serverUrlOverride;
-    }
-  } catch {
-    /* none */
-  }
-  serverUrlOverride = null;
-  return defaultLicenseServerUrl();
-}
-
-export async function getLicenseServerUrlInfo(): Promise<{
-  url: string;
-  source: "file" | "env" | "default";
-  envDefault: string;
-}> {
-  const envDefault = defaultLicenseServerUrl();
-  try {
-    const fromFile = (await fs.readFile(SERVER_URL_FILE(), "utf8")).trim();
-    if (fromFile) {
-      const url = parseLicenseServerUrl(fromFile);
-      return { url, source: "file", envDefault };
-    }
-  } catch {
-    /* none */
-  }
-  const fromEnv = process.env.LICENSE_SERVER_URL?.trim();
-  return {
-    url: envDefault,
-    source: fromEnv ? "env" : "default",
-    envDefault,
-  };
-}
-
-export async function setLicenseServerUrl(url: string | null): Promise<string> {
-  await fs.mkdir(config.dataDir, { recursive: true });
-  if (!url || !url.trim()) {
-    await fs.rm(SERVER_URL_FILE(), { force: true });
-    serverUrlOverride = null;
-    cached = null;
-    cachedAt = 0;
-    return defaultLicenseServerUrl();
-  }
-  const normalized = parseLicenseServerUrl(url);
-  await fs.writeFile(SERVER_URL_FILE(), normalized + "\n", { mode: 0o600 });
-  serverUrlOverride = normalized;
-  cached = null;
-  cachedAt = 0;
-  return normalized;
-}
-
-function maskKey(key: string): string {
-  if (!key) return "";
-  if (key.length < 10) return "••••";
-  return `${key.slice(0, 6)}…${key.slice(-4)}`;
-}
-
-export async function getLicenseKey(): Promise<string> {
-  // The key file is authoritative once it exists: an empty file means the
-  // admin removed the license via the UI, so LICENSE_KEY in .env is ignored.
-  try {
-    return (await fs.readFile(KEY_FILE(), "utf8")).trim();
-  } catch {
-    /* no file — fall back to env */
-  }
-  return process.env.LICENSE_KEY?.trim() || "";
-}
-
-export async function setLicenseKey(key: string): Promise<void> {
-  await fs.mkdir(config.dataDir, { recursive: true });
-  await fs.writeFile(KEY_FILE(), key.trim() + "\n", { mode: 0o600 });
-  cached = null;
-  cachedAt = 0;
-}
-
-/** Remove the license key — panel drops to the unlicensed free tier. */
-export async function clearLicenseKey(): Promise<void> {
-  await fs.mkdir(config.dataDir, { recursive: true });
-  // Empty file (not deletion) so a LICENSE_KEY left in .env does not resurface.
-  await fs.writeFile(KEY_FILE(), "", { mode: 0o600 });
-  await fs.rm(LAST_OK_FILE(), { force: true });
-  cached = null;
-  cachedAt = 0;
-  lastSignedTicket = null;
-  await pushDaemonLicenseTicket({
-    valid: false,
-    status: "missing",
-    message: "License key cleared",
-    expiresAt: null,
-    label: null,
-    checkedAt: new Date().toISOString(),
-    keyMasked: "",
-  });
-}
-
-export async function getInstallId(): Promise<string> {
-  const fromEnv = process.env.LICENSE_INSTALL_ID?.trim();
-  if (fromEnv) return fromEnv;
-  try {
-    const existing = (await fs.readFile(INSTALL_ID_FILE(), "utf8")).trim();
-    if (existing) return existing;
-  } catch {
-    /* create */
-  }
-  const id = nanoid(16);
-  await fs.mkdir(config.dataDir, { recursive: true });
-  await fs.writeFile(INSTALL_ID_FILE(), id + "\n", { mode: 0o600 });
-  return id;
-}
 
 async function pushDaemonLicenseTicket(state: LicenseState): Promise<void> {
   let ticket: DaemonLicenseTicket;
@@ -362,6 +162,11 @@ async function pushDaemonLicenseTicket(state: LicenseState): Promise<void> {
   }
 }
 
+registerLicenseKeyClearedHandler(async (state) => {
+  lastSignedTicket = null;
+  await pushDaemonLicenseTicket(state);
+});
+
 function noteValidateFailure(message: string): void {
   consecutiveValidateFailures += 1;
   if (consecutiveValidateFailures === VALIDATE_FAIL_ALERT_THRESHOLD) {
@@ -383,27 +188,15 @@ function noteValidateSuccess(): void {
   consecutiveValidateFailures = 0;
 }
 
-export function getCachedLicenseState(): LicenseState | null {
-  return cached;
-}
-
-/** Safe message for any logged-in user (no key / internal details). */
-export function userFacingLicenseMessage(state: LicenseState | null): string {
-  if (!state) return "License status is unknown. Please try again shortly.";
-  if (state.valid && state.status === "unreachable") {
-    return "License server is temporarily unreachable; the panel is in a short grace period.";
-  }
-  if (state.valid) return "License is valid.";
-  if (state.status === "unreachable") {
-    return "License could not be verified and grace has expired. Free tier applies: 1 node, 1 server, 10 GB disk.";
-  }
-  return "No valid license. Free tier applies: 1 node, 1 Minecraft server, 10 GB disk.";
-}
-
 export async function validateLicense(force = false): Promise<LicenseState> {
   const now = Date.now();
-  if (!force && cached && now - cachedAt < CACHE_MS) {
-    return cached;
+  const cache = getLicenseCacheEntry();
+  if (
+    !force &&
+    cache.state &&
+    now - cache.cachedAt < LICENSE_CACHE_MS
+  ) {
+    return cache.state;
   }
   if (inFlight) return inFlight;
 
@@ -417,6 +210,7 @@ async function doValidateLicense(): Promise<LicenseState> {
   const now = Date.now();
   const key = await getLicenseKey();
   const checkedAt = new Date().toISOString();
+  let cached = getLicenseCacheEntry().state;
 
   if (!key) {
     cached = {
@@ -428,7 +222,7 @@ async function doValidateLicense(): Promise<LicenseState> {
       checkedAt,
       keyMasked: "",
     };
-    cachedAt = now;
+    setCachedLicenseState(cached, now);
     await maybeEnforceTransition(false, cached.message);
     await pushDaemonLicenseTicket(cached);
     return cached;
@@ -548,9 +342,9 @@ async function doValidateLicense(): Promise<LicenseState> {
           expiresAt: null,
           label: null,
           checkedAt,
-          keyMasked: maskKey(key),
+          keyMasked: maskLicenseKey(key),
         };
-        cachedAt = now;
+        setCachedLicenseState(cached, now);
         await maybeEnforceTransition(false, cached.message);
         noteValidateFailure(cached.message);
         await pushDaemonLicenseTicket(cached);
@@ -574,7 +368,7 @@ async function doValidateLicense(): Promise<LicenseState> {
       expiresAt: data.expiresAt ?? null,
       label: data.label ?? null,
       checkedAt,
-      keyMasked: maskKey(key),
+      keyMasked: maskLicenseKey(key),
       latestVersion: latest,
       minVersion,
       updateAvailable:
@@ -609,6 +403,7 @@ async function doValidateLicense(): Promise<LicenseState> {
           ? [data.boundIp]
           : [],
     };
+    setCachedLicenseState(cached, now);
     if (valid) await markLicenseOk();
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -627,7 +422,7 @@ async function doValidateLicense(): Promise<LicenseState> {
       expiresAt: cached?.expiresAt ?? null,
       label: cached?.label ?? null,
       checkedAt,
-      keyMasked: maskKey(key),
+      keyMasked: maskLicenseKey(key),
       maxServers: cached?.maxServers,
       maxNodes: cached?.maxNodes,
       maxMemoryMb: cached?.maxMemoryMb,
@@ -636,14 +431,13 @@ async function doValidateLicense(): Promise<LicenseState> {
       boundIp: cached?.boundIp,
       boundIps: cached?.boundIps,
     };
-    cachedAt = now;
+    setCachedLicenseState(cached, now);
     await maybeEnforceTransition(cached.valid, cached.message);
     noteValidateFailure(cached.message);
     await pushDaemonLicenseTicket(cached);
     return cached;
   }
 
-  cachedAt = now;
   await maybeEnforceTransition(cached.valid, cached.message);
   if (cached.valid) {
     noteValidateSuccess();
@@ -686,93 +480,5 @@ async function maybeEnforceTransition(
         freeTier: getUnlicensedFreeTier(),
       },
     });
-  }
-}
-
-export function startLicenseWatcher(): void {
-  void validateLicense(true).catch((err) => {
-    console.warn(
-      "[license] initial validate failed:",
-      err instanceof Error ? err.message : err,
-    );
-  });
-  if (intervalHandle) clearInterval(intervalHandle);
-  intervalHandle = setInterval(() => {
-    void validateLicense(true).catch(() => undefined);
-  }, CACHE_MS);
-  console.info(
-    `[license] validate interval ${Math.round(CACHE_MS / 1000)}s (LICENSE_VALIDATE_INTERVAL_MS)`,
-  );
-}
-
-export function stopLicenseWatcher(): void {
-  if (intervalHandle) {
-    clearInterval(intervalHandle);
-    intervalHandle = null;
-  }
-}
-
-/** Admin-facing version / update status (uses license cache + optional /v1/latest). */
-export async function getPanelVersionStatus(
-  force = false,
-): Promise<PanelVersionStatus> {
-  const current = getProductVersion();
-  const checkedAt = new Date().toISOString();
-  try {
-    const state = await validateLicense(force);
-    if (
-      state.status !== "unreachable" &&
-      (state.latestVersion || state.minVersion)
-    ) {
-      const latest = state.latestVersion ?? current;
-      return {
-        current,
-        latest: state.latestVersion ?? null,
-        minVersion: state.minVersion ?? null,
-        upToDate: !state.updateAvailable,
-        updateAvailable: Boolean(state.updateAvailable),
-        belowMinimum: Boolean(state.belowMinimum),
-        notes: state.versionNotes ?? null,
-        checkedAt,
-        source: "license-server",
-      };
-    }
-    // No key / unknown — still try public channel endpoint
-    const base = await getLicenseServerUrl();
-    const res = await fetch(`${base}/v1/latest`, {
-      headers: { Accept: "application/json" },
-      signal: AbortSignal.timeout(5_000),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = (await res.json()) as {
-      latestVersion?: string;
-      minVersion?: string;
-      notes?: string;
-    };
-    const latest = data.latestVersion?.trim() || null;
-    const minVersion = data.minVersion?.trim() || null;
-    return {
-      current,
-      latest,
-      minVersion,
-      upToDate: latest ? !isUpdateAvailable(current, latest) : true,
-      updateAvailable: latest ? isUpdateAvailable(current, latest) : false,
-      belowMinimum: minVersion ? !meetsMinVersion(current, minVersion) : false,
-      notes: data.notes?.trim() || null,
-      checkedAt,
-      source: "license-server",
-    };
-  } catch {
-    return {
-      current,
-      latest: null,
-      minVersion: null,
-      upToDate: true,
-      updateAvailable: false,
-      belowMinimum: false,
-      notes: null,
-      checkedAt,
-      source: "unreachable",
-    };
   }
 }

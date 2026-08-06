@@ -1,20 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { AddonProjectDetails, AddonVersionInfo } from "@msm/shared";
-import {
-  Badge,
-  Button,
-  Col,
-  ListGroup,
-  Modal,
-  Nav,
-  Row,
-  Spinner,
-  Stack,
-} from "react-bootstrap";
+import { Badge, Button, Modal, Nav, Spinner, Stack } from "react-bootstrap";
 import { api } from "../api";
 import { useI18n } from "../i18n/react";
-import { formatBytes, formatCount, formatWhen } from "../utils";
-import { SimpleMarkdown } from "./addon-panel/simpleMarkdown";
+import { formatCount, formatWhen } from "../utils";
+import { AddonDetailChangelog } from "./addon-panel/AddonDetailChangelog";
+import { AddonDetailDescription } from "./addon-panel/AddonDetailDescription";
+import { AddonDetailGallery } from "./addon-panel/AddonDetailGallery";
+import { AddonDetailVersions } from "./addon-panel/AddonDetailVersions";
 
 interface Props {
   serverId: string;
@@ -37,14 +30,6 @@ interface Props {
 }
 
 type DetailTab = "description" | "gallery" | "changelog" | "versions";
-
-function channelBadge(channel: string) {
-  const c = channel.toLowerCase();
-  if (c === "release") return "success";
-  if (c === "beta") return "warning";
-  if (c === "alpha") return "danger";
-  return "secondary";
-}
 
 export function AddonDetailModal({
   serverId,
@@ -305,215 +290,32 @@ export function AddonDetailModal({
             </Nav>
 
             {tab === "description" && (
-              <>
-                <h3 className="h6">{t("addons.about")}</h3>
-                <SimpleMarkdown text={project.body} />
-                <Stack direction="horizontal" gap={2} className="flex-wrap mt-3">
-                  <a
-                    className="btn btn-sm btn-outline-secondary"
-                    href={project.modrinthUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    <i className="fa-solid fa-arrow-up-right-from-square me-1" />
-                    Modrinth
-                  </a>
-                  {project.sourceUrl && (
-                    <a
-                      className="btn btn-sm btn-outline-secondary"
-                      href={project.sourceUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      {t("addons.source")}
-                    </a>
-                  )}
-                  {project.issuesUrl && (
-                    <a
-                      className="btn btn-sm btn-outline-secondary"
-                      href={project.issuesUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      {t("addons.issues")}
-                    </a>
-                  )}
-                  {project.wikiUrl && (
-                    <a
-                      className="btn btn-sm btn-outline-secondary"
-                      href={project.wikiUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      {t("addons.wiki")}
-                    </a>
-                  )}
-                  {project.discordUrl && (
-                    <a
-                      className="btn btn-sm btn-outline-secondary"
-                      href={project.discordUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Discord
-                    </a>
-                  )}
-                </Stack>
-              </>
+              <AddonDetailDescription project={project} />
             )}
 
             {tab === "gallery" && (
-              <div className="addon-gallery">
-                {project.gallery.length === 0 ? (
-                  <div className="text-secondary small p-3">{t("addons.noGallery")}</div>
-                ) : (
-                  <>
-                    <div className="addon-gallery-slide">
-                      <img
-                        src={project.gallery[galleryIndex]?.url}
-                        alt={
-                          project.gallery[galleryIndex]?.title || project.title
-                        }
-                      />
-                    </div>
-                    {(project.gallery[galleryIndex]?.title ||
-                      project.gallery[galleryIndex]?.description) && (
-                      <div className="addon-gallery-caption px-3 py-2">
-                        {project.gallery[galleryIndex]?.title && (
-                          <div className="fw-semibold small">
-                            {project.gallery[galleryIndex]?.title}
-                          </div>
-                        )}
-                        {project.gallery[galleryIndex]?.description && (
-                          <div className="small text-secondary">
-                            {project.gallery[galleryIndex]?.description}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    <div className="addon-gallery-thumbs p-2">
-                      <Row className="g-2">
-                        {project.gallery.map((img, i) => (
-                          <Col key={img.url} xs={4} sm={3} md={2}>
-                            <button
-                              type="button"
-                              className={`addon-gallery-thumb${
-                                i === galleryIndex ? " is-active" : ""
-                              }`}
-                              onClick={() => setGalleryIndex(i)}
-                              aria-label={img.title || `Image ${i + 1}`}
-                            >
-                              <img src={img.url} alt="" />
-                            </button>
-                          </Col>
-                        ))}
-                      </Row>
-                      <div className="small text-secondary text-center mt-2">
-                        {galleryIndex + 1} / {project.gallery.length}
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
+              <AddonDetailGallery
+                project={project}
+                galleryIndex={galleryIndex}
+                onGalleryIndexChange={setGalleryIndex}
+              />
             )}
 
             {tab === "changelog" && (
-              <>
-                {versionsLoading && (
-                  <div className="text-center py-4 text-secondary">
-                    <Spinner size="sm" className="me-2" />
-                    {t("addons.loadingVersions")}
-                  </div>
-                )}
-                {!versionsLoading && versions.length === 0 && (
-                  <div className="text-secondary small">{t("addons.noChangelog")}</div>
-                )}
-                {!versionsLoading &&
-                  versions.map((v) => (
-                    <div key={v.versionId} className="addon-changelog-entry mb-4">
-                      <div className="d-flex flex-wrap align-items-center gap-2 mb-2">
-                        <span className="fw-semibold">{v.versionNumber}</span>
-                        <Badge bg={channelBadge(v.releaseChannel)}>
-                          {v.releaseChannel}
-                        </Badge>
-                        {v.datePublished && (
-                          <span className="small text-secondary">
-                            {formatWhen(v.datePublished)}
-                          </span>
-                        )}
-                      </div>
-                      {v.changelog?.trim() ? (
-                        <SimpleMarkdown text={v.changelog} />
-                      ) : (
-                        <div className="small text-secondary">
-                          {t("addons.noChangelogEntry")}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-              </>
+              <AddonDetailChangelog
+                versions={versions}
+                loading={versionsLoading}
+              />
             )}
 
             {tab === "versions" && (
-              <>
-                {versionsLoading && (
-                  <div className="text-center py-4 text-secondary">
-                    <Spinner size="sm" className="me-2" />
-                    {t("addons.loadingVersions")}
-                  </div>
-                )}
-                {!versionsLoading && versions.length === 0 && (
-                  <div className="text-secondary small">
-                    {t("addons.noBuildsFor", { version: "" })}
-                  </div>
-                )}
-                {!versionsLoading && versions.length > 0 && (
-                  <ListGroup variant="flush" className="border rounded">
-                    {versions.map((v, index) => (
-                      <ListGroup.Item
-                        key={v.versionId}
-                        className="d-flex justify-content-between align-items-start gap-3 flex-wrap"
-                      >
-                        <div className="min-w-0">
-                          <div className="fw-semibold d-flex flex-wrap align-items-center gap-1">
-                            <span>{v.versionNumber}</span>
-                            {index === 0 && (
-                              <Badge bg="primary">{t("addons.latest")}</Badge>
-                            )}
-                            <Badge bg={channelBadge(v.releaseChannel)}>
-                              {v.releaseChannel}
-                            </Badge>
-                          </div>
-                          <div className="small text-secondary">
-                            {v.gameVersions.slice(0, 6).join(", ")}
-                            {v.gameVersions.length > 6
-                              ? ` +${v.gameVersions.length - 6}`
-                              : ""}
-                            {v.fileSize > 0 ? ` · ${formatBytes(v.fileSize)}` : ""}
-                            {v.datePublished
-                              ? ` · ${formatWhen(v.datePublished)}`
-                              : ""}
-                          </div>
-                        </div>
-                        {canUpdate && (
-                          <Button
-                            size="sm"
-                            variant="primary"
-                            disabled={installing}
-                            onClick={() => installVersion(v.versionId)}
-                          >
-                            {installing ? (
-                              <Spinner size="sm" />
-                            ) : (
-                              t("addons.install")
-                            )}
-                          </Button>
-                        )}
-                      </ListGroup.Item>
-                    ))}
-                  </ListGroup>
-                )}
-              </>
+              <AddonDetailVersions
+                versions={versions}
+                loading={versionsLoading}
+                installing={installing}
+                canUpdate={canUpdate}
+                onInstallVersion={installVersion}
+              />
             )}
           </>
         )}

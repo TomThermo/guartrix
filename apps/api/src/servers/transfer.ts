@@ -21,214 +21,27 @@ import {
   sealDatabasePassword,
   unsealDatabasePassword,
 } from "../db-password.js";
-import { config } from "../config.js";
 import { assertNodeCapacity } from "../nodes/nodes.js";
 import { processManager } from "./process-manager.js";
 import { updateServerProperties } from "./properties.js";
 import { logger } from "../logger.js";
+import {
+  getTransferJob,
+  getTransferJobInMemory,
+  persistTransferJob,
+  scheduleTransferJobCleanup,
+  setTransferChunkProgress,
+  setTransferJobInMemory,
+  setTransferStep,
+  TRANSFER_STEPS,
+  type TransferJob,
+} from "./transfer-jobs.js";
 
-const STEPS = [
-  "Validate",
-  "Export from source node",
-  "Rebind network",
-  "Deploy to destination",
-  "Update DNS & clean up",
-  "Finish",
-] as const;
-
-type Job = TransferJobStatus & {
-  fromNodeId: string;
-  toNodeId: string;
-  startAfter: boolean;
-  actor: { id: string; username: string } | null;
-};
-
-const jobs = new Map<string, Job>();
-
-function transferJobDir(): string {
-  return path.join(config.dataDir, "transfers");
-}
-
-function transferJobPath(serverId: string): string {
-  return path.join(transferJobDir(), `${serverId}.json`);
-}
-
-async function persistTransferJob(job: Job): Promise<void> {
-  try {
-    await fs.mkdir(transferJobDir(), { recursive: true });
-    const tmp = `${transferJobPath(job.serverId)}.tmp`;
-    await fs.writeFile(tmp, JSON.stringify(job), "utf8");
-    await fs.rename(tmp, transferJobPath(job.serverId));
-  } catch {
-    // Persistence must never break a live transfer.
-  }
-  try {
-    const { getRedis, transferRedisKey } = await import("../redis.js");
-    const redis = await getRedis();
-    if (redis) {
-      await redis.set(transferRedisKey(job.serverId), JSON.stringify(job));
-    }
-  } catch {
-    // ignore Redis blips
-  }
-}
-
-async function clearPersistedTransferJob(serverId: string): Promise<void> {
-  await fs.unlink(transferJobPath(serverId)).catch(() => undefined);
-  try {
-    const { getRedis, transferRedisKey } = await import("../redis.js");
-    const redis = await getRedis();
-    if (redis) await redis.del(transferRedisKey(serverId));
-  } catch {
-    // ignore
-  }
-}
-
-function jobFromDisk(raw: unknown): Job | null {
-  if (!raw || typeof raw !== "object") return null;
-  const j = raw as Partial<Job>;
-  if (typeof j.serverId !== "string" || typeof j.step !== "string") return null;
-  return {
-    serverId: j.serverId,
-    step: j.step,
-    steps: Array.isArray(j.steps) ? (j.steps as string[]) : [...STEPS],
-    stepIndex: typeof j.stepIndex === "number" ? j.stepIndex : 0,
-    error: typeof j.error === "string" ? j.error : null,
-    done: Boolean(j.done),
-    ok: Boolean(j.ok),
-    percent: typeof j.percent === "number" ? j.percent : 0,
-    detail: typeof j.detail === "string" ? j.detail : null,
-    bytesTransferred:
-      typeof j.bytesTransferred === "number" ? j.bytesTransferred : null,
-    bytesTotal: typeof j.bytesTotal === "number" ? j.bytesTotal : null,
-    fromNodeId: typeof j.fromNodeId === "string" ? j.fromNodeId : "",
-    toNodeId: typeof j.toNodeId === "string" ? j.toNodeId : "",
-    startAfter: Boolean(j.startAfter),
-    actor: j.actor ?? null,
-  };
-}
-
-/** Restore incomplete transfer UI state after an API restart (no auto-resume). */
-export async function hydrateTransferJobsFromDisk(): Promise<void> {
-  const ingest = (raw: unknown) => {
-    const job = jobFromDisk(raw);
-    if (!job || jobs.has(job.serverId)) return;
-    if (!job.done) {
-      job.error =
-        job.error ??
-        "API restarted during transfer — progress restored; re-run move if needed.";
-      job.done = true;
-      job.ok = false;
-    }
-    jobs.set(job.serverId, job);
-  };
-
-  try {
-    const { getRedis, scanRedisKeys, TRANSFER_KEY_PREFIX } = await import(
-      "../redis.js"
-    );
-    const redis = await getRedis();
-    if (redis) {
-      const keys = await scanRedisKeys(`${TRANSFER_KEY_PREFIX}*`);
-      for (const key of keys) {
-        try {
-          const raw = await redis.get(key);
-          if (!raw) continue;
-          ingest(JSON.parse(raw) as unknown);
-        } catch {
-          // ignore corrupt keys
-        }
-      }
-    }
-  } catch {
-    // Redis optional
-  }
-
-  let names: string[] = [];
-  try {
-    names = await fs.readdir(transferJobDir());
-  } catch {
-    return;
-  }
-  for (const name of names) {
-    if (!name.endsWith(".json")) continue;
-    try {
-      const raw = JSON.parse(
-        await fs.readFile(path.join(transferJobDir(), name), "utf8"),
-      ) as unknown;
-      ingest(raw);
-    } catch {
-      // ignore corrupt files
-    }
-  }
-}
-
-/** In-memory transfer job count (for Prometheus). */
-export function countTransferJobsInMemory(): number {
-  return jobs.size;
-}
-
-export function getTransferJob(serverId: string): TransferJobStatus | null {
-  const job = jobs.get(serverId);
-  if (!job) return null;
-  const {
-    serverId: id,
-    step,
-    steps,
-    stepIndex,
-    error,
-    done,
-    ok,
-    percent,
-    detail,
-    bytesTransferred,
-    bytesTotal,
-  } = job;
-  return {
-    serverId: id,
-    step,
-    steps,
-    stepIndex,
-    error,
-    done,
-    ok,
-    percent,
-    detail,
-    bytesTransferred: bytesTransferred ?? null,
-    bytesTotal: bytesTotal ?? null,
-  };
-}
-
-/** Base % at the start of each step index (last = done). */
-const STEP_PERCENT = [0, 8, 42, 52, 88, 96, 100] as const;
-
-function setStep(job: Job, stepIndex: number, detail: string | null = null): void {
-  job.stepIndex = stepIndex;
-  job.step = STEPS[stepIndex] ?? "Working";
-  job.detail = detail;
-  job.percent = STEP_PERCENT[Math.min(stepIndex, STEP_PERCENT.length - 1)] ?? 0;
-  void persistTransferJob(job);
-}
-
-function setChunkProgress(
-  job: Job,
-  stepIndex: number,
-  fraction: number,
-  detail: string | null,
-  bytesTransferred?: number,
-  bytesTotal?: number,
-): void {
-  const start = STEP_PERCENT[stepIndex] ?? 0;
-  const end = STEP_PERCENT[stepIndex + 1] ?? 100;
-  const f = Math.min(1, Math.max(0, fraction));
-  job.stepIndex = stepIndex;
-  job.step = STEPS[stepIndex] ?? "Working";
-  job.detail = detail;
-  job.percent = Math.round(start + (end - start) * f);
-  if (bytesTransferred !== undefined) job.bytesTransferred = bytesTransferred;
-  if (bytesTotal !== undefined) job.bytesTotal = bytesTotal;
-  void persistTransferJob(job);
-}
+export {
+  countTransferJobsInMemory,
+  getTransferJob,
+  hydrateTransferJobsFromDisk,
+} from "./transfer-jobs.js";
 
 async function setServerProgress(
   serverId: string,
@@ -256,7 +69,7 @@ export interface StartTransferInput {
 export async function startServerTransfer(
   input: StartTransferInput,
 ): Promise<TransferJobStatus> {
-  const existing = jobs.get(input.serverId);
+  const existing = getTransferJobInMemory(input.serverId);
   if (existing && !existing.done) {
     throw new Error("A transfer is already in progress for this server");
   }
@@ -344,10 +157,10 @@ export async function startServerTransfer(
     }
   }
 
-  const job: Job = {
+  const job: TransferJob = {
     serverId: server.id,
-    step: STEPS[0],
-    steps: [...STEPS],
+    step: TRANSFER_STEPS[0],
+    steps: [...TRANSFER_STEPS],
     stepIndex: 0,
     error: null,
     done: false,
@@ -361,7 +174,7 @@ export async function startServerTransfer(
     startAfter: Boolean(input.startAfter),
     actor: input.actor ?? null,
   };
-  jobs.set(server.id, job);
+  setTransferJobInMemory(job);
   void persistTransferJob(job);
 
   await setServerProgress(server.id, "TRANSFERRING", "Transfer: starting…");
@@ -379,7 +192,7 @@ export async function startServerTransfer(
 }
 
 async function runTransfer(
-  job: Job,
+  job: TransferJob,
   meta: {
     oldPort: number;
     newPort: number;
@@ -394,13 +207,13 @@ async function runTransfer(
   let cutOver = false;
 
   try {
-    setStep(job, 1, "Exporting archive from source…");
+    setTransferStep(job, 1, "Exporting archive from source…");
     await setServerProgress(serverId, "TRANSFERRING", "Transfer: exporting files…");
     const archivePath = path.join(staging, "source.tar.gz");
     await daemonExportArchiveToFileOnNode(serverId, fromNodeId, archivePath);
     const archiveStat = await fs.stat(archivePath);
     const payloadBytes = archiveStat.size;
-    setChunkProgress(
+    setTransferChunkProgress(
       job,
       1,
       1,
@@ -409,7 +222,7 @@ async function runTransfer(
       payloadBytes,
     );
 
-    setStep(job, 2, "Rebinding allocations…");
+    setTransferStep(job, 2, "Rebinding allocations…");
     await setServerProgress(serverId, "TRANSFERRING", "Transfer: rebinding network…");
     await closeServerAllocationFirewalls(serverId, fromNodeId).catch(() => undefined);
 
@@ -448,9 +261,9 @@ async function runTransfer(
 
     await openServerAllocationFirewalls(serverId, toNodeId);
 
-    setStep(job, 3, `Deploying ${formatBytes(payloadBytes)}…`);
+    setTransferStep(job, 3, `Deploying ${formatBytes(payloadBytes)}…`);
     await setServerProgress(serverId, "TRANSFERRING", "Transfer: deploying to destination…");
-    setChunkProgress(
+    setTransferChunkProgress(
       job,
       3,
       0.15,
@@ -461,7 +274,7 @@ async function runTransfer(
     // Stream archive to dest without unpacking on the panel (one temp copy only).
     await daemonDeployArchiveFileOnNode(serverId, toNodeId, archivePath);
     await fs.rm(archivePath, { force: true }).catch(() => undefined);
-    setChunkProgress(
+    setTransferChunkProgress(
       job,
       3,
       0.75,
@@ -489,7 +302,7 @@ async function runTransfer(
       await daemonMysqlEnsure(toNodeId);
       for (let di = 0; di < dbRows.length; di++) {
         const db = dbRows[di];
-        setChunkProgress(
+        setTransferChunkProgress(
           job,
           3,
           0.75 + (0.25 * (di + 0.5)) / dbRows.length,
@@ -529,9 +342,16 @@ async function runTransfer(
         await fs.rm(dumpPath, { force: true }).catch(() => undefined);
       }
     }
-    setChunkProgress(job, 3, 1, "Deploy complete", payloadBytes, payloadBytes);
+    setTransferChunkProgress(
+      job,
+      3,
+      1,
+      "Deploy complete",
+      payloadBytes,
+      payloadBytes,
+    );
 
-    setStep(job, 4, "Updating DNS & wiping source…");
+    setTransferStep(job, 4, "Updating DNS & wiping source…");
     await setServerProgress(serverId, "TRANSFERRING", "Transfer: DNS & cleanup…");
     try {
       const { ensureServerSubdomain, cloudflareConfigured } = await import(
@@ -566,7 +386,7 @@ async function runTransfer(
       );
     });
 
-    setStep(job, 5, null);
+    setTransferStep(job, 5, null);
     job.percent = 100;
     job.detail = null;
     await setServerProgress(serverId, "STOPPED", null);
@@ -638,12 +458,6 @@ async function runTransfer(
   } finally {
     await fs.rm(staging, { recursive: true, force: true }).catch(() => undefined);
     // Keep job status around for a bit so the UI can poll the result.
-    setTimeout(() => {
-      const current = jobs.get(serverId);
-      if (current?.done) {
-        jobs.delete(serverId);
-        void clearPersistedTransferJob(serverId);
-      }
-    }, 30 * 60_000);
+    scheduleTransferJobCleanup(serverId);
   }
 }

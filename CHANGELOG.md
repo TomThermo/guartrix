@@ -7,6 +7,20 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.162] — 2026-08-06
+
+- Scorecard all dimensions ≥95: coverage floor 75% + JWT/authz/file-jail tests; install preseed tips; NL locale lazy-load + vendor manualChunks
+- Wiki: security JWT defaults, install-nodes preseed checklist, operations health smoke
+
+## [1.0.161] — 2026-08-06
+
+- Code-schoonheid peels: jars, billing, license store/watcher, transfer jobs, backup mysql/offsite/paths, auth session register/password
+- Web: split `api/servers` into domain modules; AddonDetail tab bodies into `addon-panel/`
+
+## [1.0.160] — 2026-08-06
+
+- Fix file browser row layout: desktop keeps 5 columns; Fold compact 4-col no longer overrides landscape monitors
+
 ## [1.0.159] — 2026-08-06
 
 - Runtime speed: prod-web gzip/brotli + ETag; API `@fastify/compress`; SW cache-first for hashed `/assets/*`

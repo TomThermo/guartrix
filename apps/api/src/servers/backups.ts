@@ -2,10 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import type {
-  BackupSchedule,
-  ServerBackup,
-} from "@msm/shared";
+import type { ServerBackup } from "@msm/shared";
 import { formatBytes } from "@msm/shared";
 import { logActivity } from "../activity-log.js";
 import {
@@ -14,227 +11,37 @@ import {
   isBackupEncryptionEnabled,
   isEncryptedBackupPath,
 } from "./backup-crypto.js";
-import { serverBackupsDir, serverDir, config } from "../config.js";
+import { serverBackupsDir, serverDir } from "../config.js";
 import { logger } from "../logger.js";
-import { prisma } from "../db.js";
 import { processManager } from "./process-manager.js";
 import { safeExtractArchive } from "@msm/node-agent";
 import {
   readBackupSchedule,
   writeBackupSchedule,
 } from "./backup-schedule.js";
+import { runOffsiteBackupHook } from "./backup-offsite.js";
+import {
+  archivePath,
+  encryptedPath,
+  metaPath,
+  resolveBackupArchivePath,
+  TAR_EXCLUDES,
+} from "./backup-paths.js";
+import {
+  embedMysqlDumpsInArchive,
+  restoreMysqlFromBackupDir,
+} from "./backup-mysql.js";
 
 export { readBackupSchedule, writeBackupSchedule };
-
-const MYSQL_BACKUP_DIR = "guartrix-mysql";
+export {
+  assertSafeBackupId,
+  formatBackupSize,
+  resolveBackupArchivePath,
+} from "./backup-paths.js";
 
 const execFileAsync = promisify(execFile);
 
-function shellSingleQuote(s: string): string {
-  return `'${s.replace(/'/g, `'\\''`)}'`;
-}
-
-/** Reject shell metacharacters outside known placeholders in operator templates. */
-function assertSafeOffsiteTemplate(template: string): void {
-  const stripped = template
-    .replaceAll("{path}", "")
-    .replaceAll("{serverId}", "")
-    .replaceAll("{backupId}", "")
-    .replaceAll("{fileName}", "");
-  if (/[;|&$`<>]/.test(stripped)) {
-    throw new Error(
-      "BACKUP_OFFSITE_CMD contains disallowed shell metacharacters outside placeholders",
-    );
-  }
-}
-
-/**
- * Optional offsite copy after a successful backup.
- * Set BACKUP_OFFSITE_CMD to a shell command; placeholders:
- *   {path} {serverId} {backupId} {fileName}
- * Example: rclone copy "{path}" b2:guartrix-backups/{serverId}/
- */
-async function runOffsiteBackupHook(opts: {
-  archivePath: string;
-  serverId: string;
-  backupId: string;
-  fileName: string;
-}): Promise<void> {
-  const template = config.backupOffsiteCmd?.trim();
-  if (!template) return;
-  assertSafeOffsiteTemplate(template);
-  const cmd = template
-    .replaceAll("{path}", shellSingleQuote(opts.archivePath))
-    .replaceAll("{serverId}", shellSingleQuote(opts.serverId))
-    .replaceAll("{backupId}", shellSingleQuote(opts.backupId))
-    .replaceAll("{fileName}", shellSingleQuote(opts.fileName));
-  try {
-    await execFileAsync("bash", ["-c", cmd], {
-      timeout: 10 * 60_000,
-      maxBuffer: 4 * 1024 * 1024,
-    });
-    logger.info(
-      { serverId: opts.serverId, backupId: opts.backupId },
-      "offsite backup hook completed",
-    );
-  } catch (err) {
-    logger.warn(
-      { err, serverId: opts.serverId, backupId: opts.backupId },
-      "offsite backup hook failed",
-    );
-  }
-}
-
-const TAR_EXCLUDES = [
-  "--exclude=logs",
-  "--exclude=crash-reports",
-  "--exclude=*.log",
-  "--exclude=cache",
-  "--exclude=.cache",
-  "--exclude=versions",
-  "--exclude=libraries",
-  "--exclude=.fabric",
-  "--exclude=session.lock",
-];
-
 const busyServers = new Set<string>();
-
-/** Backup ids are ISO-like timestamps (e.g. 2026-08-06T13-45-00-000Z) — never path segments. */
-export function assertSafeBackupId(backupId: string): void {
-  if (!backupId || !/^[A-Za-z0-9._-]{1,128}$/.test(backupId) || backupId.includes("..")) {
-    throw new Error("Invalid backup id");
-  }
-}
-
-export function formatBackupSize(bytes: number): string {
-  return formatBytes(bytes);
-}
-
-function metaPath(serverId: string, backupId: string): string {
-  assertSafeBackupId(backupId);
-  return path.join(serverBackupsDir(serverId), `${backupId}.json`);
-}
-
-function archivePath(serverId: string, backupId: string): string {
-  assertSafeBackupId(backupId);
-  return path.join(serverBackupsDir(serverId), `${backupId}.tar.gz`);
-}
-
-function encryptedPath(serverId: string, backupId: string): string {
-  assertSafeBackupId(backupId);
-  return path.join(serverBackupsDir(serverId), `${backupId}.tar.gz.enc`);
-}
-
-/** Resolve on-disk archive path (plain or encrypted). */
-export async function resolveBackupArchivePath(
-  serverId: string,
-  backupId: string,
-): Promise<{ path: string; encrypted: boolean }> {
-  assertSafeBackupId(backupId);
-  const root = path.resolve(serverBackupsDir(serverId));
-  const enc = path.resolve(encryptedPath(serverId, backupId));
-  const plain = path.resolve(archivePath(serverId, backupId));
-  if (!enc.startsWith(root + path.sep) || !plain.startsWith(root + path.sep)) {
-    throw new Error("Invalid backup id");
-  }
-  try {
-    await fs.access(enc);
-    return { path: enc, encrypted: true };
-  } catch {
-    // continue
-  }
-  try {
-    await fs.access(plain);
-    return { path: plain, encrypted: false };
-  } catch {
-    throw new Error("Backup not found");
-  }
-}
-
-async function embedMysqlDumpsInArchive(
-  serverId: string,
-  archivePath: string,
-): Promise<void> {
-  const server = await prisma.server.findUnique({
-    where: { id: serverId },
-    select: { nodeId: true },
-  });
-  if (!server) return;
-  const dbs = await prisma.database.findMany({
-    where: { serverId },
-    select: { name: true },
-  });
-  if (dbs.length === 0) return;
-
-  const stage = `${archivePath}.mysql-stage-${process.pid}`;
-  await fs.mkdir(stage, { recursive: true });
-  try {
-    await execFileAsync("tar", ["-xzf", archivePath, "-C", stage], {
-      maxBuffer: 16 * 1024 * 1024,
-    });
-    const mysqlDir = path.join(stage, MYSQL_BACKUP_DIR);
-    await fs.mkdir(mysqlDir, { recursive: true });
-    const { daemonMysqlDumpToFile } = await import("../nodes/daemon-client.js");
-    for (const db of dbs) {
-      const dumpPath = path.join(mysqlDir, `${db.name}.sql`);
-      await daemonMysqlDumpToFile(server.nodeId, db.name, dumpPath);
-    }
-    await fs.writeFile(
-      path.join(mysqlDir, "manifest.json"),
-      `${JSON.stringify({ version: 1, databases: dbs.map((d) => d.name) }, null, 2)}\n`,
-      "utf8",
-    );
-    const repacked = `${archivePath}.repack`;
-    await execFileAsync(
-      "tar",
-      ["-czf", repacked, ...TAR_EXCLUDES, "-C", stage, "."],
-      { maxBuffer: 16 * 1024 * 1024 },
-    );
-    await fs.rename(repacked, archivePath);
-  } finally {
-    await fs.rm(stage, { recursive: true, force: true }).catch(() => undefined);
-  }
-}
-
-async function restoreMysqlFromBackupDir(
-  serverId: string,
-  dest: string,
-): Promise<void> {
-  const mysqlDir = path.join(dest, MYSQL_BACKUP_DIR);
-  try {
-    await fs.access(mysqlDir);
-  } catch {
-    return;
-  }
-  const server = await prisma.server.findUnique({
-    where: { id: serverId },
-    select: { nodeId: true },
-  });
-  if (!server) return;
-  let databases: string[] = [];
-  try {
-    const manifest = JSON.parse(
-      await fs.readFile(path.join(mysqlDir, "manifest.json"), "utf8"),
-    ) as { databases?: string[] };
-    databases = Array.isArray(manifest.databases) ? manifest.databases : [];
-  } catch {
-    const entries = await fs.readdir(mysqlDir);
-    databases = entries
-      .filter((n) => n.endsWith(".sql"))
-      .map((n) => n.replace(/\.sql$/, ""));
-  }
-  const { daemonMysqlRestoreFromFile } = await import("../nodes/daemon-client.js");
-  for (const name of databases) {
-    const sqlPath = path.join(mysqlDir, `${name}.sql`);
-    try {
-      await fs.access(sqlPath);
-      await daemonMysqlRestoreFromFile(server.nodeId, name, sqlPath);
-    } catch (err) {
-      logger.warn({ err, serverId, name }, "mysql restore from backup failed");
-    }
-  }
-  await fs.rm(mysqlDir, { recursive: true, force: true }).catch(() => undefined);
-}
 
 function isBusy(serverId: string): boolean {
   return busyServers.has(serverId);

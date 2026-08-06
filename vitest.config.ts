@@ -16,13 +16,15 @@ export default defineConfig({
         "apps/api/src/auth/api-rate-limit.ts",
         "apps/api/src/auth/password-hash.ts",
         "apps/api/src/safe-url.ts",
+        "packages/shared/src/daemon-jwt.ts",
+        "apps/api/src/servers/server-access.ts",
       ],
       exclude: ["**/*.test.ts", "**/node_modules/**"],
       // Floor for critical security modules (raises as more fetchPinned paths are tested).
       thresholds: {
-        lines: 65,
-        functions: 60,
-        statements: 65,
+        lines: 75,
+        functions: 70,
+        statements: 75,
       },
     },
   },

@@ -133,16 +133,32 @@ may install Docker and Node.js via upstream convenience scripts when they are mi
 These are common for greenfield VPS installs but carry **residual supply-chain risk**
 (pipe-to-shell without pinning). For production hardening:
 
-1. **Preferred:** Pre-install Docker Engine and Node.js 22 from **pinned packages** or
-   official repos on the node **before** running the Guartrix installer. When
-   `docker` / `node` already exist on `PATH`, `install-daemon.sh` **skips** the
-   curl|bash convenience scripts entirely (offline / air-gapped friendly).
-2. When you must use the convenience scripts, **pin versions** (e.g. specific Docker CE
-   package, Node 22.x from NodeSource) and verify **checksums / signatures** per the
-   vendor docs — do not blindly re-run `curl | sh` on every deploy.
-3. Prefer cloning or unpacking a **tagged Guartrix release** (`--repo` + `--branch`) rather
+### Preseed checklist (skip curl|sh)
+
+Run on the **node** before Guartrix install:
+
+```bash
+# 1) Docker Engine from vendor packages (example: Ubuntu apt — pin versions in real deploys)
+sudo apt-get update
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io
+sudo systemctl enable --now docker
+docker --version
+
+# 2) Node.js 22.x from a pinned repo / package (verify version)
+node -v   # must be v22.x
+```
+
+Then run `install-daemon.sh` / Add-node. When `docker` and `node` are already on `PATH`
+with Node ≥ 22, the installer **prints a tip and skips** the convenience scripts
+(offline / air-gapped friendly).
+
+### Additional mitigations
+
+1. Prefer cloning or unpacking a **tagged Guartrix release** (`--repo` + `--branch`) rather
    than pulling arbitrary `main` on sensitive hosts.
-4. Keep the daemon firewall rule **panel-IP only** (`PANEL_URL` + ufw) so a compromised
+2. Keep the daemon firewall rule **panel-IP only** (`PANEL_URL` + ufw) so a compromised
    install script still cannot expose the daemon to the world.
+3. If you must use convenience scripts once, pin versions and verify **checksums / signatures**
+   per vendor docs — do not blindly re-run `curl | sh` on every deploy.
 
 See also [Security — install supply chain](security.md#install-script-supply-chain-residual-risk).

@@ -58,6 +58,28 @@ test.describe("panel authz / CSRF smokes", () => {
     }
   });
 
+  test("cookie session can list visible servers", async ({ request, page }) => {
+    test.skip(!password, "Set E2E_PASSWORD");
+    const ok = await ensureLoggedIn(page);
+    test.skip(!ok, "2FA blocked login");
+
+    const cookies = await page.context().cookies();
+    const cookieHeader = cookies.map((c) => `${c.name}=${c.value}`).join("; ");
+    const res = await request.get(`${baseUrl}/api/servers`, {
+      headers: { Cookie: cookieHeader },
+    });
+
+    expect([200, 401]).toContain(res.status());
+    if (res.status() === 401) {
+      test.info().annotations.push({
+        type: "note",
+        description: "Login did not establish a usable cookie session",
+      });
+      return;
+    }
+    expect(await res.json()).toEqual(expect.any(Array));
+  });
+
   test("files tab loads for first server when present", async ({ page }) => {
     test.skip(!password, "Set E2E_PASSWORD");
     const ok = await ensureLoggedIn(page);

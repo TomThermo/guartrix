@@ -1469,6 +1469,25 @@ body.file-fm-resizing {
   text-align: left;
 }
 
+.file-browser-col-check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.file-browser-col-name {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.file-browser-col-size,
+.file-browser-col-modified {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .file-browser-header {
   position: sticky;
   top: 0;

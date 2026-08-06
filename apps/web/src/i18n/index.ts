@@ -1,5 +1,4 @@
 import { en, type Messages } from "./locales/en";
-import { nl } from "./locales/nl";
 
 export type Locale = "en" | "nl";
 export type { Messages };
@@ -7,7 +6,20 @@ export type { Messages };
 export const LOCALES: readonly Locale[] = ["en", "nl"] as const;
 export const LOCALE_STORAGE_KEY = "guartrix.locale";
 
-const catalogs: Record<Locale, Messages> = { en, nl };
+/** English is always eager (fallback). Dutch loads on demand to shrink the main chunk. */
+const catalogs: Partial<Record<Locale, Messages>> = { en };
+
+let nlLoad: Promise<void> | null = null;
+
+function ensureNlCatalog(): Promise<void> {
+  if (catalogs.nl) return Promise.resolve();
+  if (!nlLoad) {
+    nlLoad = import("./locales/nl").then((m) => {
+      catalogs.nl = m.nl;
+    });
+  }
+  return nlLoad;
+}
 
 type NestedPaths<T, Prefix extends string = ""> = T extends string
   ? Prefix extends ""
@@ -75,7 +87,11 @@ export function setLocale(locale: Locale): void {
     /* ignore */
   }
   applyDocumentLang(locale);
-  notify();
+  if (locale === "nl") {
+    void ensureNlCatalog().then(() => notify());
+  } else {
+    notify();
+  }
 }
 
 export function applyDocumentLang(locale: Locale = currentLocale): void {
@@ -103,16 +119,23 @@ function interpolate(template: string, params?: TranslateParams): string {
 /**
  * Translate a message key for the current locale.
  * Falls back to English, then to the key itself.
+ * Dutch may briefly fall back to English until the lazy catalog resolves.
  */
 export function t(key: MessageKey | string, params?: TranslateParams): string {
-  const primary = resolvePath(catalogs[currentLocale], key);
+  if (currentLocale === "nl" && !catalogs.nl) {
+    void ensureNlCatalog().then(() => notify());
+  }
+  const primary = catalogs[currentLocale]
+    ? resolvePath(catalogs[currentLocale]!, key)
+    : undefined;
   const fallback =
-    currentLocale === "en"
-      ? undefined
-      : resolvePath(catalogs.en, key);
+    currentLocale === "en" ? undefined : resolvePath(catalogs.en!, key);
   const template = primary ?? fallback ?? key;
   return interpolate(template, params);
 }
 
-/** Ensure `document.documentElement.lang` matches stored/detected locale on boot. */
+/** Kick off NL catalog if boot locale is Dutch; set document lang. */
 applyDocumentLang(currentLocale);
+if (currentLocale === "nl") {
+  void ensureNlCatalog().then(() => notify());
+}

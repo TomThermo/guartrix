@@ -517,6 +517,16 @@ body {
     justify-content: center;
   }
 
+  .console-panel {
+    min-height: 0;
+    height: min(62vh, 560px);
+  }
+}
+
+/* Fold / compact tablet only: 4 cols (hide row actions; context menu remains).
+   Do NOT apply on desktop — min-aspect-ratio alone matches every landscape monitor
+   and used to smash the 5-column file list into a broken wrap. */
+@media (max-width: 767.98px) and (min-aspect-ratio: 3/4) {
   .file-browser-header,
   .file-browser-row {
     grid-template-columns: 2rem minmax(0, 1fr) 4.5rem 5.5rem;
@@ -526,9 +536,8 @@ body {
     display: block;
   }
 
-  .console-panel {
-    min-height: 0;
-    height: min(62vh, 560px);
+  .file-browser-col-actions {
+    display: none;
   }
 }
 
@@ -671,6 +680,21 @@ body {
   .file-workbench-tree {
     width: auto !important;
     flex: 0 0 auto;
+  }
+
+  /* Restore full file list columns on desktop (check · name · size · modified · actions). */
+  .file-browser-header,
+  .file-browser-row {
+    grid-template-columns: 2.25rem minmax(0, 1fr) 6.5rem 10rem 7.5rem;
+  }
+
+  .file-browser-col-modified,
+  .file-browser-col-actions {
+    display: block;
+  }
+
+  .file-browser-col-actions {
+    display: flex;
   }
 }
 
