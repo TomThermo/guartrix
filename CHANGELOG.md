@@ -7,6 +7,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.163] — 2026-08-06
+
+- Docs audit: OpenAPI/roadmap version sync; development (coverage + NL lazy-load); billing/license/daemon/backup internals; README ops smoke + preseed; in-app wiki mirror for security/install-nodes/operations
+
 ## [1.0.162] — 2026-08-06
 
 - Scorecard all dimensions ≥95: coverage floor 75% + JWT/authz/file-jail tests; install preseed tips; NL locale lazy-load + vendor manualChunks

@@ -112,10 +112,10 @@ Panel-to-daemon auth is intentionally separate from end-user auth:
 
 Relevant files:
 
-- `apps/api/src/nodes/daemon-client.ts`
+- `apps/api/src/nodes/daemon-client.ts` (barrel) + `daemon-client-{core,power,files,mysql,deploy}.ts`
 - `apps/api/src/nodes/node-token-vault.ts`
 - `apps/daemon/src/auth.ts`
-- `packages/shared/src/daemon-jwt.ts`
+- `packages/shared/src/daemon-jwt.ts` (`DAEMON_JWT_TTL` / `DAEMON_JWT_WS_TTL` / `DAEMON_JWT_LEGACY`)
 
 ## Related
 

@@ -90,13 +90,16 @@ Unit tests use [Vitest](https://vitest.dev/) at the repo root (`apps/api` + `pac
 
 ```bash
 npm test              # vitest run (CI gate)
+npm run test:coverage # vitest + coverage floor on critical auth/JWT/safe-url modules (see vitest.config.ts)
 npm run test:watch    # vitest watch mode
 npm run lint          # Biome check (formatter + lint)
 ```
 
-GitHub Actions (`.github/workflows/ci.yml`) on push/PR to `main`: install → Prisma generate → build shared → typecheck API/web → `npm test` → `npm audit` (high+, non-blocking) → `npm run build`.
+CI runs `npm test` then `npm run test:coverage` (thresholds: lines/statements ≥75%, functions ≥70% on the included security modules in `vitest.config.ts`). Unit tests live under `apps/api`, `apps/web`, and `packages/*/src/**/*.test.ts` (~100+ cases).
 
-Playwright smoke under `e2e/` is **optional** and skipped unless `E2E_BASE_URL` is set:
+GitHub Actions (`.github/workflows/ci.yml`) on push/PR to `main`: install → Prisma generate → build shared → typecheck API/web → `npm test` → `npm run test:coverage` → `npm audit` (high+, non-blocking) → `npm run build`.
+
+Playwright under `e2e/` is **optional** and skipped unless `E2E_BASE_URL` is set:
 
 ```bash
 npx playwright install chromium
@@ -112,9 +115,11 @@ Health probes: `/api/health` (liveness) vs `/api/ready` (DB + local daemon). Dae
 The web UI uses a tiny custom i18n layer (no i18next):
 
 - Catalogs: `apps/web/src/i18n/locales/en.ts` and `nl.ts` (nested objects)
-- Core API: `apps/web/src/i18n/index.ts` — `t(key)`, `getLocale()`, `setLocale()`, persisted in `localStorage` key `guartrix.locale` (default from `navigator.language`: `nl*` → `nl`, else `en`)
+- **English is eager** (always available as fallback). **Dutch is lazy-loaded** via dynamic `import()` when the locale is `nl` or the user switches to Dutch — so the main JS chunk stays smaller.
+- Core API: `apps/web/src/i18n/index.ts` — `t(key)`, `getLocale()`, `setLocale()`, persisted in `localStorage` key `guartrix.locale` (default from `navigator.language`: `nl*` → `nl`, else `en`). Until the NL chunk resolves, `t()` may briefly fall back to English.
 - React: wrap with `I18nProvider` / `useI18n()` from `apps/web/src/i18n/react.tsx` (wired in `main.tsx`). Changing locale updates `document.documentElement.lang`.
 - Language picker: Account → Security.
+- Production Vite also splits vendor chunks (`react-vendor`, `bootstrap`, `monaco`) via `manualChunks` in `apps/web/vite.config.ts`; Font Awesome glyphs are subset via safelist.
 
 UI chrome across pages, server tabs/panels, and modals is keyed in both locale files. Call `t("section.key")` where needed; prefer `{name}` placeholders via `t(key, { name })`. Legal page bodies stay English; Minecraft property/permission technical labels often stay English too. When adding strings: update **both** `en.ts` and `nl.ts`, then wire `useI18n()` / `t()`.
 

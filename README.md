@@ -160,6 +160,16 @@ npm run build          # compile (use build:release for minified shipping builds
 bash scripts/start.sh  # stop previous processes, health-check, start watchdog
 ```
 
+After restart, smoke liveness (expect HTTP 200):
+
+```bash
+curl -sf http://127.0.0.1:3001/api/health
+curl -sf http://127.0.0.1:8081/health
+curl -sfI http://127.0.0.1/
+```
+
+For production nodes, **preseed Docker Engine + Node 22** before `install-daemon.sh` / the Add-node wizard so the installer skips unpinned `curl | sh` (see [Install nodes](docs/wiki/install-nodes.md) and [Security](docs/wiki/security.md)).
+
 | Port | Binding | Purpose |
 |------|---------|---------|
 | 80 / 443 | Public | Web UI (HTTP→HTTPS when TLS is enabled) |

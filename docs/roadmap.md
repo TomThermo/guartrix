@@ -5,7 +5,7 @@ Formerly called “roadmap”; same file, clearer name.
 
 **Live:** [guartrix.com](https://guartrix.com) · **Wiki:** [docs/wiki/README.md](wiki/README.md) · **History:** [CHANGELOG.md](../CHANGELOG.md)
 
-Last updated: **2026-08-06** · product **v1.0.159**
+Last updated: **2026-08-06** · product **v1.0.163**
 
 ---
 
@@ -69,7 +69,7 @@ See [panel-settings.md](wiki/panel-settings.md) · [install-panel.md](wiki/insta
 | Item | Target | Status |
 |------|--------|--------|
 | OpenAPI full coverage | `npm run check:openapi --strict` | [x] 165/165 (100%) |
-| OpenAPI `info.version` sync | Match root `package.json` / `VERSION` on each release | [x] 1.0.158 |
+| OpenAPI `info.version` sync | Match root `package.json` / `VERSION` on each release | [x] 1.0.163 |
 | Regenerate stubs after new routes | `node scripts/generate-openapi-stubs.mjs` | [x] script added |
 | Web Sentry | `VITE_SENTRY_DSN` at build time | [x] wired in apps/web |
 | Biome `noExplicitAny` | warn → error | [x] |

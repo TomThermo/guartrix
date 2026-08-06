@@ -12,7 +12,7 @@ This repository does **not** include the private license issuer or signing priva
 
 - `apps/api/src/routes/license.ts`
 - `apps/api/src/license/license.ts`
-- `apps/api/src/license/license-validate.ts`
+- `apps/api/src/license/license-validate.ts` (validate core) + `license-store.ts` / `license-version.ts` / `license-watcher.ts` (barrel via `license.ts`)
 - `apps/api/src/license/license-quota.ts`
 - `apps/daemon/src/license-gate.ts`
 - `packages/shared/src/license-signing.ts`

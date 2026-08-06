@@ -60,7 +60,7 @@ Operator and developer documentation for the Guartrix Minecraft hosting panel.
 | [Move between nodes](node-transfer.md) | Admin transfer: stop → sync → rebind ports/DNS → start |
 | [Security](security.md) | Hardening checklist and known controls |
 | [Scaling](scaling.md) | Multi-node scale; when Redis is (not) needed |
-| [Development](development.md) | Local `dev:*` workflow, Vitest, CI |
+| [Development](development.md) | Local `dev:*` workflow, Vitest + coverage floor, CI, i18n |
 | [Daemon API](daemon-api.md) | Node-local control plane, route groups, auth, metrics, reattach model |
 | [Node-agent internals](node-agent-internals.md) | Docker, files, quotas, SFTP, MySQL, firewall, player history |
 | [Shared contracts](shared-contracts.md) | Shared types, permissions, activity taxonomy, daemon JWT, license verification |

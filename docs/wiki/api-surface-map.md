@@ -47,9 +47,9 @@ These code folders hold most of the behavior behind the route layer:
 |------|-------|
 | `apps/api/src/auth/` | Sessions, CSRF, TOTP, password policy, application auth |
 | `apps/api/src/servers/` | Provisioning, lifecycle, files, backups, schedules, players, moderation, stats, addons, modpacks |
-| `apps/api/src/nodes/` | Daemon client, event bridge, remote install, token vault, Cloudflare DNS, firewall helpers |
-| `apps/api/src/billing/` | Mollie integration, quota application, payment sync |
-| `apps/api/src/license/` | Validation, quotas, signed claims, ticket generation |
+| `apps/api/src/nodes/` | Daemon client barrel (`daemon-client.ts` → `daemon-client-{core,power,files,mysql,deploy}.ts`), event bridge, remote install, token vault, Cloudflare DNS, firewall helpers |
+| `apps/api/src/billing/` | Barrel `billing.ts` → records / provision / subscriptions / webhook / Mollie sync |
+| `apps/api/src/license/` | Barrel `license.ts` → validate / store / version / watcher; quotas, signed claims, ticket generation |
 | `apps/api/src/bots/` and `apps/api/src/bot-movement/` | Bot worker, command proxying, movement helpers |
 | `apps/api/src/ws/` | Console, admin-log, and players WebSocket fan-out |
 

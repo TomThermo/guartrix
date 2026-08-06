@@ -51,7 +51,7 @@ Code anchors:
 
 - `apps/daemon/src/auth.ts`
 - `packages/shared/src/daemon-jwt.ts`
-- `apps/api/src/nodes/daemon-client.ts`
+- `apps/api/src/nodes/daemon-client.ts` (barrel re-exporting `daemon-client-*.ts` domain modules)
 
 ## Main route groups
 
