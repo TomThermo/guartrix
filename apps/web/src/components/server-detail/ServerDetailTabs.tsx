@@ -98,7 +98,6 @@ export function ServerDetailTabs({
   server,
   id,
   perms,
-  isAdmin,
   connectInfo,
   systemInfo,
   busy,
@@ -121,7 +120,6 @@ export function ServerDetailTabs({
   server: ServerDetail;
   id: string;
   perms: string[];
-  isAdmin: boolean;
   connectInfo: ConnectInfo | null;
   systemInfo: SystemInfo | null;
   busy: boolean;

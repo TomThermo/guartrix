@@ -485,7 +485,6 @@ function ServerDetailPageInner({
                 server={server}
                 id={id}
                 perms={perms}
-                isAdmin={isAdmin}
                 connectInfo={connectInfo}
                 systemInfo={systemInfo}
                 busy={busy}
