@@ -993,6 +993,10 @@ export const nl: Messages = {
   },
   console: {
     title: "Console",
+    controls: "Besturing",
+    metricsTitle: "Resourcegebruik",
+    metricsHint: "Laatste uur · hover over grafieken voor details",
+    killTitle: "Server geforceerd stoppen",
     placeholder: "Stuur een commando…",
     send: "Versturen",
     clear: "Wissen",

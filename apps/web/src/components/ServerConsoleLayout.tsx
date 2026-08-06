@@ -237,45 +237,51 @@ export function ServerConsoleLayout({
   return (
     <Row className="g-3 console-layout">
       <Col xs={12} lg={8}>
-        <div className="console-with-online">
-          <div className="console-toolbar">
-            <span className="text-secondary small">{t("console.title")}</span>
+        <div className="console-shell">
+          <div className="console-shell__toolbar">
+            <span className="console-shell__label">
+              <i className="fa-solid fa-terminal" aria-hidden />
+              {t("console.title")}
+            </span>
             <div className="flex-grow-1" />
             <Button
               size="sm"
               variant="outline-secondary"
+              className="console-shell__popout"
               title={t("console.openPopoutTitle")}
               onClick={() => openConsolePopout(server.id)}
             >
-              <i className="fa-solid fa-up-right-from-square me-1" />
-              {t("console.openPopout")}
+              <i className="fa-solid fa-up-right-from-square" aria-hidden />
+              <span className="btn-label">{t("console.openPopout")}</span>
             </Button>
           </div>
-          {canViewPlayers && (
-            <ConsoleOnlineHeads
+          <div className="console-with-online">
+            {canViewPlayers && (
+              <ConsoleOnlineHeads
+                serverId={server.id}
+                active={serverActive}
+                canUpdate={canManagePlayers}
+                onError={onError}
+                onNotice={onNotice}
+              />
+            )}
+            <Console
               serverId={server.id}
-              active={serverActive}
-              canUpdate={canManagePlayers}
-              onError={onError}
-              onNotice={onNotice}
+              onStatus={onStatus}
+              onStats={pushSample}
+              canSend={canSendConsole}
+              panelNotices={consoleNotices}
             />
-          )}
-          <Console
-            serverId={server.id}
-            onStatus={onStatus}
-            onStats={pushSample}
-            canSend={canSendConsole}
-            panelNotices={consoleNotices}
-          />
+          </div>
         </div>
       </Col>
       <Col xs={12} lg={4}>
-        <div className="d-flex flex-column gap-3 h-100">
+        <div className="console-sidebar">
           {showControls && (
             <div className="server-controls-panel">
               <div className="server-controls-title">
-                <i className="fa-solid fa-gamepad" />
-                Controls
+                <i className="fa-solid fa-gamepad" aria-hidden />
+                {t("console.controls")}
               </div>
               <div className="server-controls-actions">
                 {allowStart && (
@@ -307,7 +313,7 @@ export function ServerConsoleLayout({
                     variant="warning"
                     className="server-control-kill"
                     disabled={busy || isStopped}
-                    title="Force-kill server"
+                    title={t("console.killTitle")}
                     onClick={() => onKill?.()}
                   >
                     <i className="fa-solid fa-skull-crossbones me-1" />
@@ -337,63 +343,66 @@ export function ServerConsoleLayout({
           />
         </div>
       </Col>
-      <Col xs={12} md={6}>
-        <div className="chart-matrix-card">
-          <MatrixChart
-            title={t("resources.ram")}
-            points={memPoints}
-            max={memMax}
-            unit=" MB"
-            color="#6b9e8a"
-            fillId={`${chartId}-mem`}
-            yTicks={[0, memMax * 0.25, memMax * 0.5, memMax * 0.75, memMax]}
-            formatY={formatMem}
-            tall
-          />
-        </div>
-      </Col>
-      <Col xs={12} md={6}>
-        <div className="chart-matrix-card">
-          <MatrixChart
-            title={t("resources.cpu")}
-            points={cpuPoints}
-            max={100}
-            unit="%"
-            color="#5dba6a"
-            fillId={`${chartId}-cpu`}
-            yTicks={[0, 25, 50, 75, 100]}
-            formatY={(v) => `${Math.round(v)}`}
-            tall
-          />
-        </div>
-      </Col>
-      <Col xs={12} md={6}>
-        <div className="chart-matrix-card">
-          <MatrixChart
-            title={t("resources.network")}
-            points={rxPoints}
-            max={netMax}
-            unit={netMax >= 1024 ? " MiB/s" : " KiB/s"}
-            color="#6a9ed4"
-            fillId={`${chartId}-rx`}
-            formatY={formatNet}
-            tall
-          />
-        </div>
-      </Col>
-      <Col xs={12} md={6}>
-        <div className="chart-matrix-card">
-          <MatrixChart
-            title={t("resources.network")}
-            points={txPoints}
-            max={netMax}
-            unit={netMax >= 1024 ? " MiB/s" : " KiB/s"}
-            color="#c9a066"
-            fillId={`${chartId}-tx`}
-            formatY={formatNet}
-            tall
-          />
-        </div>
+      <Col xs={12}>
+        <section className="console-metrics" aria-label={t("console.metricsTitle")}>
+          <div className="console-metrics__head">
+            <h3 className="console-metrics__title">{t("console.metricsTitle")}</h3>
+            <span className="console-metrics__hint">{t("console.metricsHint")}</span>
+          </div>
+          <div className="console-metrics-grid">
+            <article className="chart-matrix-card">
+              <MatrixChart
+                title={t("resources.ram")}
+                points={memPoints}
+                max={memMax}
+                unit=" MB"
+                color="#6b9e8a"
+                fillId={`${chartId}-mem`}
+                yTicks={[0, memMax * 0.25, memMax * 0.5, memMax * 0.75, memMax]}
+                formatY={formatMem}
+                tall
+              />
+            </article>
+            <article className="chart-matrix-card">
+              <MatrixChart
+                title={t("resources.cpu")}
+                points={cpuPoints}
+                max={100}
+                unit="%"
+                color="#5dba6a"
+                fillId={`${chartId}-cpu`}
+                yTicks={[0, 25, 50, 75, 100]}
+                formatY={(v) => `${Math.round(v)}`}
+                formatLatest={(v) => `${v.toFixed(1)}%`}
+                tall
+              />
+            </article>
+            <article className="chart-matrix-card">
+              <MatrixChart
+                title={t("resources.networkRx")}
+                points={rxPoints}
+                max={netMax}
+                unit={netMax >= 1024 ? " MiB/s" : " KiB/s"}
+                color="#6a9ed4"
+                fillId={`${chartId}-rx`}
+                formatY={formatNet}
+                tall
+              />
+            </article>
+            <article className="chart-matrix-card">
+              <MatrixChart
+                title={t("resources.networkTx")}
+                points={txPoints}
+                max={netMax}
+                unit={netMax >= 1024 ? " MiB/s" : " KiB/s"}
+                color="#c9a066"
+                fillId={`${chartId}-tx`}
+                formatY={formatNet}
+                tall
+              />
+            </article>
+          </div>
+        </section>
       </Col>
     </Row>
   );

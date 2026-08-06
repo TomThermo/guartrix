@@ -988,6 +988,10 @@ export const en = {
   },
   console: {
     title: "Console",
+    controls: "Controls",
+    metricsTitle: "Resource usage",
+    metricsHint: "Last hour · hover charts for details",
+    killTitle: "Force-kill server",
     placeholder: "Send a command…",
     send: "Send",
     clear: "Clear",
