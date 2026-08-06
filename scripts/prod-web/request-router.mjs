@@ -115,11 +115,11 @@ export function createRequestRouter(config, proxy, staticFiles, loadDownloadApi)
     }
 
     if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
-      sendFile(res, filePath);
+      sendFile(res, filePath, req);
       return;
     }
 
-    sendFile(res, path.join(DIST, "index.html"));
+    sendFile(res, path.join(DIST, "index.html"), req);
   }
 
   function handleRequest(req, res) {

@@ -5,7 +5,7 @@ Formerly called “roadmap”; same file, clearer name.
 
 **Live:** [guartrix.com](https://guartrix.com) · **Wiki:** [docs/wiki/README.md](wiki/README.md) · **History:** [CHANGELOG.md](../CHANGELOG.md)
 
-Last updated: **2026-08-06** · product **v1.0.158**
+Last updated: **2026-08-06** · product **v1.0.159**
 
 ---
 

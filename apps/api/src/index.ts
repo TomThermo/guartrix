@@ -6,6 +6,7 @@ import Fastify from "fastify";
 // Prefer IPv4 for outbound HTTPS (Modrinth/Cloudflare). Broken IPv6 on the host
 // makes undici fetch hang until timeout while curl -4 works fine.
 dns.setDefaultResultOrder("ipv4first");
+import compress from "@fastify/compress";
 import cors from "@fastify/cors";
 import cookie from "@fastify/cookie";
 import session from "@fastify/session";
@@ -302,6 +303,12 @@ async function main() {
       "Content-Length",
       "X-Request-Id",
     ],
+  });
+  // Gzip/brotli for JSON and other compressible API responses (skips already-encoded).
+  await app.register(compress, {
+    global: true,
+    threshold: 1024,
+    encodings: ["br", "gzip"],
   });
   await app.register(cookie);
   await app.register(session, {

@@ -1,5 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
+import zlib from "node:zlib";
+import { pipeline } from "node:stream";
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -18,6 +20,19 @@ const MIME = {
   ".txt": "text/plain; charset=utf-8",
   ".wasm": "application/wasm",
 };
+
+/** Extensions worth compressing (text-like). Skip already-compressed formats. */
+const COMPRESSIBLE = new Set([
+  ".html",
+  ".js",
+  ".css",
+  ".json",
+  ".svg",
+  ".txt",
+  ".map",
+  ".xml",
+  ".wasm",
+]);
 
 export function contentType(filePath) {
   return MIME[path.extname(filePath).toLowerCase()] ?? "application/octet-stream";
@@ -43,7 +58,23 @@ export function safeJoin(root, urlPath) {
   return fullResolved;
 }
 
-export function sendFile(res, filePath) {
+function preferEncoding(acceptEncoding) {
+  const ae = String(acceptEncoding || "").toLowerCase();
+  if (ae.includes("br")) return "br";
+  if (ae.includes("gzip")) return "gzip";
+  return null;
+}
+
+function weakEtag(st) {
+  return `W/"${st.size.toString(16)}-${Math.trunc(st.mtimeMs).toString(16)}"`;
+}
+
+/**
+ * @param {import('node:http').ServerResponse & { cspNonce?: string }} res
+ * @param {string} filePath
+ * @param {import('node:http').IncomingMessage} [req]
+ */
+export function sendFile(res, filePath, req) {
   const st = fs.statSync(filePath);
   const base = path.basename(filePath).toLowerCase();
   const ext = path.extname(filePath).toLowerCase();
@@ -57,17 +88,95 @@ export function sendFile(res, filePath) {
       ? "public, max-age=3600"
       : "public, max-age=31536000, immutable";
 
+  const etag = weakEtag(st);
+  const inm = req?.headers?.["if-none-match"];
+  if (inm && String(inm) === etag && !isHtml) {
+    res.writeHead(304, {
+      ETag: etag,
+      "Cache-Control": cacheControl,
+    });
+    res.end();
+    return;
+  }
+
+  const encoding =
+    !isHtml && COMPRESSIBLE.has(ext)
+      ? preferEncoding(req?.headers?.["accept-encoding"])
+      : null;
+
   if (isHtml && res.cspNonce) {
     let html = fs.readFileSync(filePath, "utf8");
     const nonceAttr = ` nonce="${res.cspNonce}"`;
     html = html.replace(/<script(?![^>]*\bnonce=)/gi, `<script${nonceAttr}`);
-    const body = Buffer.from(html, "utf8");
+    let body = Buffer.from(html, "utf8");
+    const headers = {
+      "Content-Type": contentType(filePath),
+      "Cache-Control": cacheControl,
+      Vary: "Accept-Encoding",
+    };
+    const htmlEnc = preferEncoding(req?.headers?.["accept-encoding"]);
+    if (htmlEnc === "br") {
+      body = zlib.brotliCompressSync(body, {
+        params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 4 },
+      });
+      headers["Content-Encoding"] = "br";
+    } else if (htmlEnc === "gzip") {
+      body = zlib.gzipSync(body, { level: 6 });
+      headers["Content-Encoding"] = "gzip";
+    }
+    headers["Content-Length"] = body.length;
+    res.writeHead(200, headers);
+    res.end(body);
+    return;
+  }
+
+  // Prefer precompressed siblings produced at build time when present.
+  if (encoding === "br" && fs.existsSync(`${filePath}.br`)) {
+    const brSt = fs.statSync(`${filePath}.br`);
     res.writeHead(200, {
       "Content-Type": contentType(filePath),
-      "Content-Length": body.length,
+      "Content-Length": brSt.size,
+      "Content-Encoding": "br",
       "Cache-Control": cacheControl,
+      ETag: etag,
+      Vary: "Accept-Encoding",
     });
-    res.end(body);
+    fs.createReadStream(`${filePath}.br`).pipe(res);
+    return;
+  }
+  if (encoding === "gzip" && fs.existsSync(`${filePath}.gz`)) {
+    const gzSt = fs.statSync(`${filePath}.gz`);
+    res.writeHead(200, {
+      "Content-Type": contentType(filePath),
+      "Content-Length": gzSt.size,
+      "Content-Encoding": "gzip",
+      "Cache-Control": cacheControl,
+      ETag: etag,
+      Vary: "Accept-Encoding",
+    });
+    fs.createReadStream(`${filePath}.gz`).pipe(res);
+    return;
+  }
+
+  if (encoding === "br" || encoding === "gzip") {
+    const headers = {
+      "Content-Type": contentType(filePath),
+      "Content-Encoding": encoding,
+      "Cache-Control": cacheControl,
+      ETag: etag,
+      Vary: "Accept-Encoding",
+    };
+    res.writeHead(200, headers);
+    const raw = fs.createReadStream(filePath);
+    const transform =
+      encoding === "br"
+        ? zlib.createBrotliCompress({
+            params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 4 },
+          })
+        : zlib.createGzip({ level: 6 });
+    pipeline(raw, transform, res, () => {
+      /* client disconnect / stream end */
+    });
     return;
   }
 
@@ -75,6 +184,7 @@ export function sendFile(res, filePath) {
     "Content-Type": contentType(filePath),
     "Content-Length": st.size,
     "Cache-Control": cacheControl,
+    ETag: etag,
   });
   fs.createReadStream(filePath).pipe(res);
 }

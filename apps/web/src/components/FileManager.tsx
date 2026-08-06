@@ -1,8 +1,8 @@
+import { lazy, Suspense } from "react";
 import { ConfirmModal } from "./ConfirmModal";
 import { DiskUsageCard } from "./DiskUsageCard";
 import { FileBrowserTable } from "./file-manager/FileBrowserTable";
 import { FileContextMenu } from "./file-manager/FileContextMenu";
-import { FileEditorPane } from "./file-manager/FileEditorPane";
 import { FileEditorTabs } from "./file-manager/FileEditorTabs";
 import { FileManagerToolbar } from "./file-manager/FileManagerToolbar";
 import { FileTree } from "./file-manager/FileTree";
@@ -11,6 +11,10 @@ import {
   type FileManagerActionsProps,
 } from "./file-manager/useFileManagerActions";
 import { PromptModal } from "./PromptModal";
+
+const FileEditorPane = lazy(() =>
+  import("./file-manager/FileEditorPane").then((m) => ({ default: m.FileEditorPane })),
+);
 
 export function FileManager(props: FileManagerActionsProps) {
   const {
@@ -163,18 +167,26 @@ export function FileManager(props: FileManagerActionsProps) {
           />
 
           {showEditor && activeTab ? (
-            <FileEditorPane
-              path={activeTab.path}
-              content={activeTab.content}
-              dirty={activeTab.dirty}
-              busy={busy}
-              canUpdate={canUpdate}
-              onChange={updateActiveContent}
-              onClose={() => closeTab(activeTab.path)}
-              onSave={() => void saveFile()}
-              onAskDiscard={askDiscard}
-              onShowBrowser={() => setPaneMode("browser")}
-            />
+            <Suspense
+              fallback={
+                <div className="file-editor-loading text-secondary small p-3">
+                  {t("common.loading")}…
+                </div>
+              }
+            >
+              <FileEditorPane
+                path={activeTab.path}
+                content={activeTab.content}
+                dirty={activeTab.dirty}
+                busy={busy}
+                canUpdate={canUpdate}
+                onChange={updateActiveContent}
+                onClose={() => closeTab(activeTab.path)}
+                onSave={() => void saveFile()}
+                onAskDiscard={askDiscard}
+                onShowBrowser={() => setPaneMode("browser")}
+              />
+            </Suspense>
           ) : (
             <FileBrowserTable
               cwd={cwd}

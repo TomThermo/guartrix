@@ -1,5 +1,5 @@
 /* Guartrix app-shell service worker — offline shell + Web Push alerts. */
-const CACHE = "guartrix-shell-v33";
+const CACHE = "guartrix-shell-v34";
 const SHELL = ["/", "/index.html", "/site.webmanifest"];
 
 self.addEventListener("install", (event) => {
@@ -31,8 +31,28 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Network-first for hashed assets so FA/CSS updates are not stuck behind
-  // a stale Cache Storage entry after deploys.
+  // Content-hashed Vite assets: cache-first (immutable filenames).
+  // Other static JS/CSS/fonts stay network-first so non-hashed updates apply.
+  const isHashedAsset =
+    url.pathname.startsWith("/assets/") &&
+    /-[A-Za-z0-9_-]{6,}\.(js|css|woff2?|wasm)(\?|$)/.test(url.pathname);
+
+  if (isHashedAsset) {
+    event.respondWith(
+      caches.match(request).then((cached) => {
+        if (cached) return cached;
+        return fetch(request).then((res) => {
+          if (res.ok) {
+            const copy = res.clone();
+            void caches.open(CACHE).then((cache) => cache.put(request, copy));
+          }
+          return res;
+        });
+      }),
+    );
+    return;
+  }
+
   const isAsset =
     url.pathname.startsWith("/assets/") ||
     url.pathname.endsWith(".css") ||

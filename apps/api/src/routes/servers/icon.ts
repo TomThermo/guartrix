@@ -7,6 +7,7 @@ import {
   readServerIcon,
   saveServerIcon,
 } from "../../servers/server-icon.js";
+import { invalidateServerListFsMeta } from "../../servers/serialize.js";
 
 export function registerIconRoutes(app: FastifyInstance): void {
   app.addHook("preHandler", async (request, reply) => {
@@ -26,7 +27,8 @@ export function registerIconRoutes(app: FastifyInstance): void {
     const buf = await readServerIcon(access.server.id);
     return reply
       .header("Content-Type", "image/png")
-      .header("Cache-Control", "no-cache")
+      .header("Cache-Control", "private, max-age=60")
+      .header("ETag", `W/"icon-${access.server.id}-${buf.length}"`)
       .send(buf);
   });
 
@@ -60,6 +62,7 @@ export function registerIconRoutes(app: FastifyInstance): void {
 
       try {
         const size = await saveServerIcon(access.server.id, buffer);
+        invalidateServerListFsMeta(access.server.id);
         logActivity({
           action: "settings.icon",
           request,
@@ -84,6 +87,7 @@ export function registerIconRoutes(app: FastifyInstance): void {
       if (!access) return;
       try {
         await deleteServerIcon(access.server.id);
+        invalidateServerListFsMeta(access.server.id);
         logActivity({
           action: "settings.icon",
           request,

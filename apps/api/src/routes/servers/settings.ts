@@ -23,7 +23,7 @@ import {
 } from "../../servers/players.js";
 import { processManager } from "../../servers/process-manager.js";
 import { readServerProperties, updateServerProperties } from "../../servers/properties.js";
-import { serverListInclude, toMcServer, toServerDetail } from "../../servers/serialize.js";
+import { serverListInclude, toMcServer, toServerDetail, invalidateServerListFsMeta } from "../../servers/serialize.js";
 
 const updateSchema = z.object({
   name: z.string().min(1).max(64).optional(),
@@ -522,6 +522,12 @@ export function registerServerSettingsRoutes(app: FastifyInstance): void {
       });
     }
     if (data.properties && Object.keys(data.properties).length > 0) {
+      if (
+        data.properties["white-list"] !== undefined ||
+        data.properties["allow-list"] !== undefined
+      ) {
+        invalidateServerListFsMeta(updated.id);
+      }
       logActivity({
         action: "settings.properties",
         request,

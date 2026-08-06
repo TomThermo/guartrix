@@ -9,9 +9,10 @@ import {
   registerGuartrixMonacoThemes,
 } from "./monacoTheme";
 
-configureMonacoLoader();
-
-const MonacoEditor = lazy(() => import("@monaco-editor/react"));
+const MonacoEditor = lazy(() => {
+  configureMonacoLoader();
+  return import("@monaco-editor/react");
+});
 
 interface Props {
   path: string;

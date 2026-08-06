@@ -7,6 +7,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.159] — 2026-08-06
+
+- Runtime speed: prod-web gzip/brotli + ETag; API `@fastify/compress`; SW cache-first for hashed `/assets/*`
+- Defer Monaco until file editor opens; dashboard polls stats/online every 15s and full list every ~60s
+- `SERVER_LIST_FS_CACHE_MS` for list `hasIcon`/`whitelistEnabled`; server icon `Cache-Control: private, max-age=60`
+
 ## [1.0.158] — 2026-08-06
 
 - Session API rate limit keyed by **userId** (NAT-safe); security test floor + CI coverage gate

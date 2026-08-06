@@ -68,6 +68,20 @@ export function DashboardPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
 
+  const refreshLive = useCallback(async () => {
+    try {
+      const [stats, online] = await Promise.all([
+        api.getAllStats(),
+        api.getAllOnlinePlayers(),
+      ]);
+      setStatsMap(stats);
+      setOnlineMap(online);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("dashboard.loadFailed"));
+    }
+  }, []);
+
   const refresh = useCallback(async () => {
     try {
       const [list, stats, online] = await Promise.all([
@@ -110,13 +124,14 @@ export function DashboardPage() {
     void refreshAddonUpdates();
   }, [refresh, refreshUpdates, refreshAddonUpdates]);
 
-  // Single visible-tab timer: list+stats+online every 15s; server/addon update
-  // checks keep ~60s / ~120s cadence via tick counters (pause-on-hidden preserved).
+  // Visible-tab timer: stats+online every 15s; full server list every ~60s;
+  // update checks keep ~60s / ~120s cadence (pause-on-hidden preserved).
   const pollTick = useRef(0);
   useVisibleInterval(() => {
     pollTick.current += 1;
     const n = pollTick.current;
-    void refresh();
+    if (n % 4 === 0) void refresh();
+    else void refreshLive();
     if (n % 4 === 0) void refreshUpdates();
     if (n % 8 === 0) void refreshAddonUpdates();
   }, 15_000);

@@ -25,12 +25,15 @@ Optional operator-only module:
 The production edge process is responsible for:
 
 - serving `apps/web/dist`
+- **gzip / brotli** for compressible static assets (and HTML), plus weak **ETag** / `304` for cache revalidation
 - reverse proxying `/api` and `/ws`
 - redirecting HTTP to HTTPS when enabled
 - applying security headers and CSP behavior
 - looking up cert/key material for TLS
 - optionally handling daemon/public-node hostname proxying
 - optionally wiring in `/download`
+
+If a build step left sibling `.br` / `.gz` files next to an asset, those are preferred over on-the-fly compression.
 
 ## `/download` boundary
 

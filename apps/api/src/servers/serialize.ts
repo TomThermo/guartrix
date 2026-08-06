@@ -12,6 +12,17 @@ type ServerWithRelations = Server & {
   node?: Pick<Node, "id" | "name"> | null;
 };
 
+type FsMeta = { hasIcon: boolean; whitelistEnabled: boolean; expiresAt: number };
+
+const fsMetaCache = new Map<string, FsMeta>();
+
+function listFsMetaTtlMs(): number {
+  // default 15000; clamp 1s–2m
+  const n = Number(process.env.SERVER_LIST_FS_CACHE_MS ?? 15_000);
+  if (!Number.isFinite(n)) return 15_000;
+  return Math.min(120_000, Math.max(1_000, Math.trunc(n)));
+}
+
 function readWhitelistEnabled(serverId: string, type?: ServerType): boolean {
   try {
     const raw = readFileSync(path.join(serverDir(serverId), "server.properties"), "utf8");
@@ -25,12 +36,32 @@ function readWhitelistEnabled(serverId: string, type?: ServerType): boolean {
   }
 }
 
+function getListFsMeta(serverId: string, type?: ServerType): Omit<FsMeta, "expiresAt"> {
+  const now = Date.now();
+  const hit = fsMetaCache.get(serverId);
+  if (hit && hit.expiresAt > now) {
+    return { hasIcon: hit.hasIcon, whitelistEnabled: hit.whitelistEnabled };
+  }
+  const meta = {
+    hasIcon: hasServerIcon(serverId),
+    whitelistEnabled: readWhitelistEnabled(serverId, type),
+  };
+  fsMetaCache.set(serverId, { ...meta, expiresAt: now + listFsMetaTtlMs() });
+  return meta;
+}
+
+/** Drop cached icon/whitelist flags after mutations (icon upload, properties write). */
+export function invalidateServerListFsMeta(serverId: string): void {
+  fsMetaCache.delete(serverId);
+}
+
 export const serverListInclude = {
   owner: { select: { id: true, username: true } },
   node: { select: { id: true, name: true } },
 } as const;
 
 export function toMcServer(server: ServerWithRelations): McServer {
+  const fsMeta = getListFsMeta(server.id, server.type as ServerType);
   return {
     id: server.id,
     name: server.name,
@@ -50,8 +81,8 @@ export function toMcServer(server: ServerWithRelations): McServer {
     forgeVersion: server.forgeVersion,
     paperBuild: server.paperBuild,
     errorMessage: server.errorMessage,
-    hasIcon: hasServerIcon(server.id),
-    whitelistEnabled: readWhitelistEnabled(server.id, server.type as ServerType),
+    hasIcon: fsMeta.hasIcon,
+    whitelistEnabled: fsMeta.whitelistEnabled,
     autoRestart: server.autoRestart,
     startOnBoot: server.startOnBoot,
     stoppedByUser: server.stoppedByUser,

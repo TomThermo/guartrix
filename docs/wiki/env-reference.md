@@ -115,6 +115,7 @@ The license **server** is hosted separately by Guartrix (default `https://licens
 | `EXTRA_MOUNTS_ALLOW_PREFIX` | Comma-separated host path prefixes allowed for server extra mounts (default `/var/lib/guartrix/shared,/opt/guartrix/shared`). Changing mounts requires **ADMIN** |
 | `DISK_USAGE_CACHE_MS` | Stale-while-revalidate TTL for per-server disk walks on the node (default **30000**; clamp 1s–10m; daemon/node-agent) |
 | `DISK_WATCH_INTERVAL_MS` | Panel interval for disk-quota high alerts (default **300000** = 5m; clamp 30s–1h) |
+| `SERVER_LIST_FS_CACHE_MS` | TTL for cached `hasIcon` / `whitelistEnabled` when serializing server lists (default **15000**; clamp 1s–2m) |
 | `SFTP_PORT` / `SFTP_ENABLED` | Embedded SFTP per node |
 | `PANEL_URL` | URL the daemon uses for SFTP password checks |
 | `GUARTRIX_REPO_URL` | Git URL for remote install scripts |
