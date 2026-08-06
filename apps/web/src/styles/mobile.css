@@ -603,37 +603,22 @@ body {
     font-size: 0.85rem;
   }
 
-  .server-detail-title-row {
-    flex-wrap: wrap;
-  }
-
-  .server-detail-title-text {
-    flex: 1 1 calc(100% - 5.5rem);
-  }
-
-  .server-detail-name-line {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.15rem;
-  }
-
-  .server-detail-address {
-    max-width: 100%;
-  }
-
-  .server-detail-meta-text {
-    flex: 1 1 100%;
-    padding: 0.1rem 0;
-  }
-
-  .server-manage-dropdown {
-    order: 2;
-    width: 100%;
-    margin-left: 0;
+  /* Keep header horizontal in both orientations (Fold rotate included). */
+  .server-manage-toggle > span {
+    display: none;
   }
 
   .server-manage-toggle {
-    width: 100%;
+    min-width: 2.2rem;
+    padding-inline: 0.5rem;
+  }
+
+  .server-manage-toggle::after {
+    display: none;
+  }
+
+  .server-detail-address {
+    max-width: min(100%, 14rem);
   }
 }
 
