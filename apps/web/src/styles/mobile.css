@@ -458,10 +458,6 @@ body {
     grid-template-columns: repeat(2, minmax(7rem, 1fr)) !important;
   }
 
-  .server-action-btn {
-    width: auto !important;
-  }
-
   .file-toolbar .file-path,
   .file-toolbar .file-mkdir {
     width: auto !important;
@@ -590,17 +586,15 @@ body {
 
   .server-row__actions {
     width: 100%;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(2.5rem, 1fr));
+    display: flex;
+    flex-wrap: wrap;
     gap: 0.4rem;
-    justify-content: stretch;
+    justify-content: flex-end;
     margin-left: 0;
   }
 
   .server-action-btn {
-    width: 100%;
-    height: 2.45rem;
-    border-radius: 0.5rem !important;
+    --server-action-size: 2.45rem;
   }
 
   .server-row__metrics {

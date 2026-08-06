@@ -505,11 +505,23 @@
 }
 
 .server-action-btn {
-  width: 2.15rem;
-  height: 2.15rem;
-  padding: 0;
+  --server-action-size: 2.25rem;
+  width: var(--server-action-size);
+  height: var(--server-action-size);
+  min-width: var(--server-action-size);
+  min-height: var(--server-action-size);
+  padding: 0 !important;
   display: inline-grid;
   place-items: center;
+  flex-shrink: 0;
+  aspect-ratio: 1;
+  line-height: 1;
   border-radius: var(--bh-radius-sm) !important;
+}
+
+.server-action-btn > i {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1;
 }
 
