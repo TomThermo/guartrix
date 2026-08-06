@@ -17,6 +17,7 @@ import {
   Spinner,
 } from "react-bootstrap";
 import { api } from "../api";
+import { AdminPageShell } from "../components/admin/AdminPageShell";
 import { useI18n } from "../i18n/react";
 
 interface LicenseInfo {
@@ -305,13 +306,17 @@ export function AdminLicensePage() {
         : [];
 
   return (
-    <div className="license-page">
-      <div className="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-3">
-        <div>
-          <h1 className="h4 mb-0">{t("admin.licenseTitle")}</h1>
-          <p className="text-secondary small mb-0 mt-1">{t("admin.licenseSubtitle")}</p>
-        </div>
-        {version && (
+    <AdminPageShell
+      title={t("admin.licenseTitle")}
+      subtitle={t("admin.licenseSubtitle")}
+      icon="fa-key"
+      error={error}
+      notice={notice}
+      onDismissError={() => setError(null)}
+      onDismissNotice={() => setNotice(null)}
+      loading={!info}
+      extraHeader={
+        version ? (
           <div className="d-flex flex-wrap align-items-center gap-2 license-version-chip">
             <span className="small text-secondary">Panel</span>
             <Badge bg="dark" className="font-monospace">
@@ -329,25 +334,11 @@ export function AdminLicensePage() {
               <Badge bg="secondary">Channel offline</Badge>
             )}
           </div>
-        )}
-      </div>
-
-      {error && (
-        <Alert variant="danger" className="py-2 small" dismissible onClose={() => setError(null)}>
-          {error}
-        </Alert>
-      )}
-      {notice && (
-        <Alert variant="success" className="py-2 small" dismissible onClose={() => setNotice(null)}>
-          {notice}
-        </Alert>
-      )}
-
-      {!info ? (
-        <div className="text-center py-5">
-          <Spinner />
-        </div>
-      ) : (
+        ) : null
+      }
+    >
+      {info && (
+    <div className="license-page">
         <Row className="g-3">
           <Col lg={7}>
             <section className="license-panel">
@@ -563,7 +554,8 @@ export function AdminLicensePage() {
             </section>
           </Col>
         </Row>
-      )}
     </div>
+      )}
+    </AdminPageShell>
   );
 }

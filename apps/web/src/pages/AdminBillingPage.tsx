@@ -14,12 +14,12 @@ import {
   Form,
   ListGroup,
   Row,
-  Spinner,
   Stack,
   Table,
 } from "react-bootstrap";
 import { api } from "../api";
 import { useAuth } from "../auth";
+import { AdminInsetCard, AdminPageShell, AdminPanelCard } from "../components/admin/AdminPageShell";
 import { useI18n } from "../i18n/react";
 import { formatMoney } from "../utils";
 
@@ -168,44 +168,38 @@ export function AdminBillingPage() {
   }
 
   return (
-    <div>
-      <h1 className="h3 mb-1">{t("admin.billingTitle")}</h1>
-      <p className="text-secondary mb-3">{t("admin.billingSubtitle")}</p>
-
-      {error && (
-        <Alert variant="danger" dismissible onClose={() => setError(null)}>
-          {error}
-        </Alert>
-      )}
-      {notice && (
-        <Alert variant="success" dismissible onClose={() => setNotice(null)}>
-          {notice}
-        </Alert>
-      )}
-      {newToken && (
-        <Alert variant="warning">
-          <strong>{t("admin.copyAppTokenNow")}</strong>
-          <code className="d-block mt-2 user-select-all text-break">{newToken}</code>
-        </Alert>
-      )}
-
-      {loading ? (
-        <div className="text-secondary py-4">
-          <Spinner size="sm" className="me-2" />
-          {t("common.loading")}…
-        </div>
-      ) : (
-        <Row className="g-4">
+    <AdminPageShell
+      title={t("admin.billingTitle")}
+      subtitle={t("admin.billingSubtitle")}
+      icon="fa-file-invoice-dollar"
+      error={error}
+      notice={notice}
+      onDismissError={() => setError(null)}
+      onDismissNotice={() => setNotice(null)}
+      warning={
+        newToken ? (
+          <Alert variant="warning">
+            <strong>{t("admin.copyAppTokenNow")}</strong>
+            <code className="d-block mt-2 user-select-all text-break">{newToken}</code>
+          </Alert>
+        ) : null
+      }
+      loading={loading}
+      loadingLabel={`${t("common.loading")}…`}
+    >
+      <Row className="g-4">
           <Col lg={6}>
-            <h2 className="h5 mb-2">Mollie</h2>
-            <p className="small text-secondary">
+            <AdminPanelCard title="Mollie" icon="fa-credit-card">
+            <p className="small text-secondary mb-0">
               {mollie.configured
                 ? `Configured${mollie.testMode ? " (test mode)" : " (live)"}. Webhook: /api/public/billing/mollie`
                 : "Set MOLLIE_API_KEY in .env (test_… or live_…) and restart the panel."}
             </p>
+            </AdminPanelCard>
 
-            <h2 className="h5 mb-3 mt-4">Plans</h2>
-            <Form onSubmit={(e) => void onCreatePlan(e)} className="border rounded p-3 mb-3 bg-body-tertiary">
+            <AdminPanelCard title="Plans" icon="fa-layer-group" className="mt-4">
+            <AdminInsetCard className="mb-3">
+            <Form onSubmit={(e) => void onCreatePlan(e)}>
               <Row className="g-2">
                 <Col sm={6}>
                   <Form.Label className="small">Slug</Form.Label>
@@ -384,6 +378,7 @@ export function AdminBillingPage() {
                 {t("common.create")} plan
               </Button>
             </Form>
+            </AdminInsetCard>
 
             <ListGroup>
               {plans.map((plan) => (
@@ -430,11 +425,13 @@ export function AdminBillingPage() {
                 <ListGroup.Item className="text-secondary">No plans yet</ListGroup.Item>
               )}
             </ListGroup>
+            </AdminPanelCard>
           </Col>
 
           <Col lg={6}>
-            <h2 className="h5 mb-3">Application API keys</h2>
-            <Form onSubmit={(e) => void onCreateKey(e)} className="border rounded p-3 mb-3 bg-body-tertiary">
+            <AdminPanelCard title="Application API keys" icon="fa-key">
+            <AdminInsetCard className="mb-3">
+            <Form onSubmit={(e) => void onCreateKey(e)}>
               <Form.Group className="mb-2">
                 <Form.Label className="small">{t("common.name")}</Form.Label>
                 <Form.Control
@@ -467,6 +464,7 @@ export function AdminBillingPage() {
                 {t("common.create")} key
               </Button>
             </Form>
+            </AdminInsetCard>
             <ListGroup className="mb-4">
               {keys.map((key) => (
                 <ListGroup.Item
@@ -498,8 +496,11 @@ export function AdminBillingPage() {
               )}
             </ListGroup>
 
-            <h2 className="h5 mb-3">Recent payments</h2>
-            <div className="table-responsive border rounded surface">
+            <h2 className="admin-section-title">
+              <i className="fa-solid fa-clock-rotate-left" aria-hidden />
+              Recent payments
+            </h2>
+            <div className="table-responsive admin-inset-card p-0 overflow-hidden">
               <Table hover size="sm" className="mb-0 align-middle">
                 <thead>
                   <tr className="text-secondary">
@@ -532,9 +533,9 @@ export function AdminBillingPage() {
                 </tbody>
               </Table>
             </div>
+            </AdminPanelCard>
           </Col>
         </Row>
-      )}
-    </div>
+    </AdminPageShell>
   );
 }

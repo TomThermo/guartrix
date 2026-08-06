@@ -8,15 +8,22 @@ import {
   Nav,
   Row,
   Spinner,
-  Tab,
 } from "react-bootstrap";
 import { api, type PanelSettings } from "../api";
 import { useAuth } from "../auth";
+import { AdminInsetCard, AdminPageShell, AdminPanelCard } from "../components/admin/AdminPageShell";
 import { useI18n } from "../i18n/react";
 
 type SettingsTab = "general" | "mail" | "security" | "alerts";
 
 const ROLE_OPTIONS = ["ADMIN", "OPERATOR", "VIEWER"] as const;
+
+const SETTINGS_TABS: Array<{ id: SettingsTab; icon: string; labelKey: string }> = [
+  { id: "general", icon: "fa-sliders", labelKey: "adminSettings.tabGeneral" },
+  { id: "mail", icon: "fa-paper-plane", labelKey: "adminSettings.tabMail" },
+  { id: "security", icon: "fa-shield-halved", labelKey: "adminSettings.tabSecurity" },
+  { id: "alerts", icon: "fa-bell", labelKey: "adminSettings.tabAlerts" },
+];
 
 export function AdminSettingsPage() {
   const { user, authenticated } = useAuth();
@@ -217,64 +224,46 @@ export function AdminSettingsPage() {
   }
 
   return (
-    <div className="page-narrow">
-      <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-        <div>
-          <h1 className="h3 mb-1">{t("adminSettings.title")}</h1>
-          <p className="text-secondary mb-0 small">
-            {t("adminSettings.subtitle")}
-          </p>
-        </div>
-      </div>
-
-      {error && (
-        <Alert variant="danger" dismissible onClose={() => setError(null)}>
-          {error}
-        </Alert>
-      )}
-      {notice && (
-        <Alert variant="success" dismissible onClose={() => setNotice(null)}>
-          {notice}
-        </Alert>
-      )}
-      {restartRequired && (
-        <Alert variant="warning">{t("adminSettings.restartBanner")}</Alert>
-      )}
-
-      {loading ? (
-        <div className="text-center py-5 text-secondary">
-          <Spinner size="sm" className="me-2" />
-          {t("common.loading")}
-        </div>
-      ) : (
-        <Form onSubmit={onSave}>
-          <Tab.Container
-            activeKey={tab}
-            onSelect={(k) => k && setTab(k as SettingsTab)}
-          >
-            <Nav variant="tabs" className="mb-3 flex-wrap">
-              <Nav.Item>
-                <Nav.Link eventKey="general">
-                  {t("adminSettings.tabGeneral")}
-                </Nav.Link>
-              </Nav.Item>
-              <Nav.Item>
-                <Nav.Link eventKey="mail">{t("adminSettings.tabMail")}</Nav.Link>
-              </Nav.Item>
-              <Nav.Item>
-                <Nav.Link eventKey="security">
-                  {t("adminSettings.tabSecurity")}
-                </Nav.Link>
-              </Nav.Item>
-              <Nav.Item>
-                <Nav.Link eventKey="alerts">
-                  {t("adminSettings.tabAlerts")}
-                </Nav.Link>
-              </Nav.Item>
-            </Nav>
-
-            <Tab.Content>
-              <Tab.Pane eventKey="general">
+    <AdminPageShell
+      title={t("adminSettings.title")}
+      subtitle={t("adminSettings.subtitle")}
+      icon="fa-gears"
+      error={error}
+      notice={notice}
+      onDismissError={() => setError(null)}
+      onDismissNotice={() => setNotice(null)}
+      warning={
+        restartRequired ? (
+          <Alert variant="warning">{t("adminSettings.restartBanner")}</Alert>
+        ) : null
+      }
+      loading={loading}
+      loadingLabel={t("common.loading")}
+    >
+      <Form onSubmit={onSave}>
+        <Row className="g-4 admin-settings-layout">
+          <Col xs={12} md={4} lg={3}>
+            <div className="settings-nav-wrap admin-nav-wrap">
+              <Nav
+                variant="pills"
+                className="settings-nav admin-nav gap-1"
+                activeKey={tab}
+                onSelect={(k) => k && setTab(k as SettingsTab)}
+              >
+                {SETTINGS_TABS.map((item) => (
+                  <Nav.Item key={item.id}>
+                    <Nav.Link eventKey={item.id}>
+                      <i className={`fa-solid ${item.icon}`} aria-hidden />
+                      {t(item.labelKey)}
+                    </Nav.Link>
+                  </Nav.Item>
+                ))}
+              </Nav>
+            </div>
+          </Col>
+          <Col xs={12} md={8} lg={9} className="admin-settings-content">
+            <AdminPanelCard>
+              {tab === "general" && (
                 <Row className="g-3">
                   <Col md={6}>
                     <Form.Group>
@@ -354,7 +343,8 @@ export function AdminSettingsPage() {
                     </Form.Group>
                   </Col>
                   <Col xs={12}>
-                    <h2 className="h6 mt-2 mb-2">
+                    <h2 className="admin-section-title">
+                      <i className="fa-solid fa-cloud" aria-hidden />
                       {t("adminSettings.cloudflareHeading")}
                     </h2>
                   </Col>
@@ -410,9 +400,9 @@ export function AdminSettingsPage() {
                     </Form.Group>
                   </Col>
                 </Row>
-              </Tab.Pane>
+              )}
 
-              <Tab.Pane eventKey="mail">
+              {tab === "mail" && (
                 <Row className="g-3">
                   <Col md={6}>
                     <Form.Group>
@@ -507,9 +497,9 @@ export function AdminSettingsPage() {
                     )}
                   </Col>
                 </Row>
-              </Tab.Pane>
+              )}
 
-              <Tab.Pane eventKey="security">
+              {tab === "security" && (
                 <Row className="g-3">
                   <Col xs={12}>
                     <Form.Check
@@ -533,8 +523,11 @@ export function AdminSettingsPage() {
                     />
                   </Col>
                   <Col xs={12}>
-                    <div className="border rounded p-3 bg-body-tertiary">
-                      <div className="fw-semibold mb-1">Redis (multi-API HA)</div>
+                    <AdminInsetCard>
+                      <div className="fw-semibold mb-1">
+                        <i className="fa-solid fa-database me-2 text-secondary" aria-hidden />
+                        Redis (multi-API HA)
+                      </div>
                       <p className="small text-secondary mb-2">
                         Configure via installer or <code>.env</code> (
                         <code>REDIS_URL</code>, <code>SESSION_STORE</code>,{" "}
@@ -542,25 +535,23 @@ export function AdminSettingsPage() {
                         env changes.
                       </p>
                       {redisInfo ? (
-                        <dl className="row small mb-2">
-                          <dt className="col-sm-3 text-secondary">Status</dt>
-                          <dd className="col-sm-9">
+                        <dl className="admin-kv mb-2">
+                          <dt>Status</dt>
+                          <dd>
                             {!redisInfo.configured
                               ? "Not configured"
                               : redisInfo.connected
                                 ? "Connected"
                                 : redisInfo.error || "Disconnected"}
                           </dd>
-                          <dt className="col-sm-3 text-secondary">URL</dt>
-                          <dd className="col-sm-9 font-monospace text-break">
-                            {redisInfo.urlMasked ?? "—"}
-                          </dd>
-                          <dt className="col-sm-3 text-secondary">Sessions</dt>
-                          <dd className="col-sm-9">{redisInfo.sessionStore}</dd>
-                          <dt className="col-sm-3 text-secondary">Rate limits</dt>
-                          <dd className="col-sm-9">{redisInfo.rateLimitStore}</dd>
-                          <dt className="col-sm-3 text-secondary">Latency</dt>
-                          <dd className="col-sm-9">
+                          <dt>URL</dt>
+                          <dd className="font-monospace">{redisInfo.urlMasked ?? "—"}</dd>
+                          <dt>Sessions</dt>
+                          <dd>{redisInfo.sessionStore}</dd>
+                          <dt>Rate limits</dt>
+                          <dd>{redisInfo.rateLimitStore}</dd>
+                          <dt>Latency</dt>
+                          <dd>
                             {redisInfo.latencyMs != null
                               ? `${redisInfo.latencyMs} ms`
                               : "—"}
@@ -578,7 +569,7 @@ export function AdminSettingsPage() {
                       >
                         Test Redis connection
                       </Button>
-                    </div>
+                    </AdminInsetCard>
                   </Col>
                   <Col xs={12}>
                     <Form.Label className="fw-semibold">
@@ -601,9 +592,9 @@ export function AdminSettingsPage() {
                     </Form.Text>
                   </Col>
                 </Row>
-              </Tab.Pane>
+              )}
 
-              <Tab.Pane eventKey="alerts">
+              {tab === "alerts" && (
                 <Row className="g-3">
                   <Col md={6}>
                     <Form.Group>
@@ -659,24 +650,24 @@ export function AdminSettingsPage() {
                     </Form.Group>
                   </Col>
                 </Row>
-              </Tab.Pane>
-            </Tab.Content>
-          </Tab.Container>
-
-          <div className="mt-4 d-flex gap-2">
-            <Button type="submit" variant="primary" disabled={busy}>
-              {busy ? (
-                <>
-                  <Spinner size="sm" className="me-2" />
-                  {t("common.saving")}
-                </>
-              ) : (
-                t("common.save")
               )}
-            </Button>
-          </div>
-        </Form>
-      )}
-    </div>
+
+              <div className="admin-form-actions">
+                <Button type="submit" variant="primary" disabled={busy}>
+                  {busy ? (
+                    <>
+                      <Spinner size="sm" className="me-2" />
+                      {t("common.saving")}
+                    </>
+                  ) : (
+                    t("common.save")
+                  )}
+                </Button>
+              </div>
+            </AdminPanelCard>
+          </Col>
+        </Row>
+      </Form>
+    </AdminPageShell>
   );
 }
