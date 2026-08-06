@@ -1,0 +1,32 @@
+{
+  "name": "guartrix-panel",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "install": "npm ci && npm run db:generate && npx playwright install --with-deps chromium || true",
+  "start": "bash scripts/cloud-agent-start.sh",
+  "terminals": [
+    {
+      "name": "api",
+      "command": "npm run dev:api",
+      "description": "Panel API on :3001 (DATABASE_URL from .env → docker-compose.dev MySQL)"
+    },
+    {
+      "name": "web",
+      "command": "npm run dev:web",
+      "description": "Panel web Vite/dev server"
+    },
+    {
+      "name": "daemon",
+      "command": "npm run dev:daemon",
+      "description": "Local daemon on :8081 (needs Docker for Minecraft containers)"
+    }
+  ],
+  "ports": [
+    { "name": "api", "port": 3001 },
+    { "name": "web", "port": 5173 },
+    { "name": "daemon", "port": 8081 },
+    { "name": "mysql", "port": 3306 }
+  ]
+}

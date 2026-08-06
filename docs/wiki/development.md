@@ -61,6 +61,12 @@ docker compose -f docker-compose.dev.yml up -d
 
 Then `bash scripts/db-migrate.sh` and start the API/web as above.
 
+### Cursor Cloud Agents
+
+Repo config: [`.cursor/environment.json`](../../.cursor/environment.json) + [`.cursor/Dockerfile`](../../.cursor/Dockerfile). Boot helper: `bash scripts/cloud-agent-start.sh` (Docker + compose MySQL + migrate).
+
+Cloud VMs are for tests and panel/dev smoke — not the live operator host or `guartrix.com`. See root [`AGENTS.md`](../../AGENTS.md).
+
 
 Schema changes: edit `apps/api/prisma/schema.prisma`, then
 `npm run db:migrate:dev -w @msm/api` (creates a migration). Installs and
