@@ -46,6 +46,7 @@ type RedisClient = {
 const INSTANCE_ID = randomUUID();
 const EVENTS_CHANNEL = "guartrix:events";
 const SCHEDULER_LOCK_KEY = "guartrix:scheduler:lock";
+const BRIDGE_LOCK_KEY = "guartrix:bridge:lock";
 const TRANSFER_KEY_PREFIX = "guartrix:transfer:";
 const RATE_LIMIT_KEY_PREFIX = "guartrix:rl:";
 
@@ -219,6 +220,11 @@ export function schedulerLockTtlMs(): number {
   return Number.isFinite(n) && n >= 3000 ? Math.floor(n) : 15_000;
 }
 
+export function bridgeLockTtlMs(): number {
+  const n = Number(process.env.DAEMON_BRIDGE_LOCK_TTL_MS ?? 15_000);
+  return Number.isFinite(n) && n >= 3000 ? Math.floor(n) : 15_000;
+}
+
 /**
  * Try to hold / renew the scheduler lock. Returns true if this instance is leader.
  * Without Redis, always true (single-API mode).
@@ -245,6 +251,37 @@ export async function acquireSchedulerLock(): Promise<boolean> {
     lastError = err instanceof Error ? err.message : String(err);
     // Fail open so a single API keeps ticking if Redis blips.
     return true;
+  }
+}
+
+/**
+ * Who owns daemon `/events` bridges across API replicas.
+ * Without Redis: always true (single-API bridges everything).
+ * With Redis: SET NX leader — **fail-closed** on errors so replicas do not
+ * all reconnect and duplicate console/stats fan-out.
+ */
+export async function acquireBridgeLock(): Promise<boolean> {
+  if (!isRedisEnabled()) return true;
+  const redis = await getRedis();
+  if (!redis) return false;
+  const ttl = bridgeLockTtlMs();
+  try {
+    const current = await redis.get(BRIDGE_LOCK_KEY);
+    if (current === INSTANCE_ID) {
+      await redis.pexpire(BRIDGE_LOCK_KEY, ttl);
+      return true;
+    }
+    const result = await redis.set(
+      BRIDGE_LOCK_KEY,
+      INSTANCE_ID,
+      "PX",
+      ttl,
+      "NX",
+    );
+    return result === "OK";
+  } catch (err) {
+    lastError = err instanceof Error ? err.message : String(err);
+    return false;
   }
 }
 

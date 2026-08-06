@@ -1,7 +1,7 @@
 # Scale roadmap — 100 nodes / 1000 customers
 
 **Status:** yellow → target green on one strong panel  
-**Product:** Guartrix 1.0.167+  
+**Product:** Guartrix 1.0.168+  
 **Assumption:** ~100 daemons, ~1000 accounts, ~1k–5k game servers  
 
 Nodes already scale. This roadmap fixes the **control-plane**.
@@ -39,10 +39,10 @@ Open via **Command Palette → Open Canvas** (Cursor 3.1+), or open that file in
 
 ## Fase 4 — Daemon bridges @ 100 nodes (P1)
 
-| # | Item | Wat | Files |
-|---|------|-----|-------|
-| 11 | Bridge sharding | Niet elke replica × 100 `/events`; shard of single-primary + Redis fan-out | `daemon-events.ts` |
-| 12 | Reconnect backoff | Geen reconnect-storm na panel-restart | `daemon-events.ts`, `daemon-client-core.ts` |
+| # | Item | Status | Wat | Files |
+|---|------|--------|-----|-------|
+| 11 | Bridge primary + Redis fan-out | **done (1.0.168)** | Only Redis bridge-lock leader opens `/events`; others use bus | `daemon-events.ts`, `redis.ts` |
+| 12 | Reconnect backoff | **done (1.0.168)** | Exp backoff + jitter + connect stagger | `daemon-events.ts` |
 
 ## Ops / DB (parallel)
 
@@ -64,7 +64,7 @@ Open via **Command Palette → Open Canvas** (Cursor 3.1+), or open that file in
 ## Definition of done
 
 **Must:** batch scheduler/backups, disk-watch niet O(all), gepagineerde lists, gecachte Admin Status.  
-**Should:** stats niet in API-heap (**done**), transfers zonder panel-temp (**done**, fallback blijft), backup busy cross-replica (**done**), bridges niet N×100 (fase 4).  
+**Should:** stats niet in API-heap (**done**), transfers zonder panel-temp (**done**, fallback blijft), backup busy cross-replica (**done**), bridges niet N×R (**done** — single primary + Redis fan-out + backoff).  
 **Ops:** indexed MySQL, Redis alleen bij multi-API.
 
 Zie ook: [Scaling](wiki/scaling.md).

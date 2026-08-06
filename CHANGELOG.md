@@ -7,6 +7,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.168] — 2026-08-06
+
+- Scale fase 4: daemon `/events` single-primary via Redis `guartrix:bridge:lock` + Redis fan-out
+- Reconnect exponential backoff, jitter, and connect stagger (no panel-restart storm)
+- Env: `DAEMON_BRIDGE_*` knobs
+
 ## [1.0.167] — 2026-08-06
 
 - Scale fase 3 complete: backup/restore busy lock via Redis SET NX + TTL (local Set without Redis)

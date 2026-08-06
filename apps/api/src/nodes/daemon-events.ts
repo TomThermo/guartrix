@@ -5,6 +5,8 @@ import { daemonWsAuthorization, daemonWsUrl, getNodeToken } from "./daemon-clien
 import { prisma } from "../db.js";
 import { processManager } from "../servers/process-manager.js";
 import {
+  acquireBridgeLock,
+  isRedisEnabled,
   onPanelBusEvent,
   startPanelEventBus,
   type PanelBusEvent,
@@ -14,15 +16,77 @@ type Bridge = {
   nodeId: string;
   socket: WebSocket | null;
   reconnectTimer: ReturnType<typeof setTimeout> | null;
+  attempt: number;
 };
 
 const bridges = new Map<string, Bridge>();
 let stopped = false;
 let refreshTimer: ReturnType<typeof setTimeout> | null = null;
 let busUnsub: (() => void) | null = null;
+/** Whether this process currently owns daemon `/events` ingress. */
+let bridgeIngress = true;
 
 /** Last reachability we logged per node, so reconnect churn stays quiet. */
 const loggedNodeStatus = new Map<string, NodeStatus>();
+
+function envInt(name: string, fallback: number, min: number, max: number): number {
+  const n = Number(process.env[name] ?? fallback);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.min(max, Math.max(min, Math.trunc(n)));
+}
+
+export function bridgeReconnectBaseMs(): number {
+  return envInt("DAEMON_BRIDGE_RECONNECT_BASE_MS", 1000, 200, 30_000);
+}
+
+export function bridgeReconnectMaxMs(): number {
+  return envInt("DAEMON_BRIDGE_RECONNECT_MAX_MS", 60_000, 1000, 300_000);
+}
+
+export function bridgeReconnectJitterMs(): number {
+  return envInt("DAEMON_BRIDGE_RECONNECT_JITTER_MS", 1000, 0, 30_000);
+}
+
+export function bridgeConnectStaggerMs(): number {
+  return envInt("DAEMON_BRIDGE_CONNECT_STAGGER_MS", 10_000, 0, 120_000);
+}
+
+/** `auto` (default) | `always` | `never` — debug overrides for bridge ownership. */
+export function bridgeMode(): "auto" | "always" | "never" {
+  const raw = (process.env.DAEMON_BRIDGE_MODE ?? "auto").trim().toLowerCase();
+  if (raw === "always" || raw === "never") return raw;
+  return "auto";
+}
+
+/** Pure delay helper (exported for tests). */
+export function computeBridgeReconnectDelayMs(
+  attempt: number,
+  opts?: {
+    baseMs?: number;
+    maxMs?: number;
+    jitterMs?: number;
+    random?: () => number;
+  },
+): number {
+  const base = opts?.baseMs ?? bridgeReconnectBaseMs();
+  const max = opts?.maxMs ?? bridgeReconnectMaxMs();
+  const jitter = opts?.jitterMs ?? bridgeReconnectJitterMs();
+  const rnd = opts?.random ?? Math.random;
+  const exp = Math.min(Math.max(0, Math.floor(attempt)), 6);
+  const core = Math.min(max, base * 2 ** exp);
+  const jitterAdd = jitter > 0 ? Math.floor(rnd() * jitter) : 0;
+  return Math.min(max, core + jitterAdd);
+}
+
+function staggerOffsetMs(nodeId: string): number {
+  const window = bridgeConnectStaggerMs();
+  if (window <= 0) return 0;
+  let h = 0;
+  for (let i = 0; i < nodeId.length; i++) {
+    h = (h * 31 + nodeId.charCodeAt(i)) >>> 0;
+  }
+  return h % window;
+}
 
 function logNodeStatus(
   nodeId: string,
@@ -44,6 +108,7 @@ function logNodeStatus(
 
 export function stopDaemonEventBridge(): void {
   stopped = true;
+  bridgeIngress = false;
   if (refreshTimer) clearTimeout(refreshTimer);
   refreshTimer = null;
   if (busUnsub) {
@@ -79,10 +144,20 @@ function applyBusEvent(event: PanelBusEvent): void {
   }
 }
 
+async function shouldOwnBridges(): Promise<boolean> {
+  const mode = bridgeMode();
+  if (mode === "always") return true;
+  if (mode === "never") return false;
+  // auto: single-API always; multi-API only Redis bridge leader.
+  if (!isRedisEnabled()) return true;
+  return acquireBridgeLock();
+}
+
 /**
  * multi-node: one live event WebSocket per daemon node so console/status/players
  * from every node flow into the panel processManager.
- * With Redis, events are published for other API replicas (console fan-out).
+ * With Redis HA: only the bridge-lock leader opens `/events`; others consume
+ * `guartrix:events` fan-out (no N×R duplicate bridges).
  */
 export async function startDaemonEventBridge(): Promise<void> {
   stopped = false;
@@ -103,8 +178,28 @@ function scheduleRefresh(): void {
   }, 15_000);
 }
 
+function tearDownAllBridgesQuiet(): void {
+  for (const bridge of bridges.values()) {
+    tearDownBridge(bridge, false);
+  }
+  bridges.clear();
+}
+
 async function refreshBridges(): Promise<void> {
   if (stopped) return;
+
+  const own = await shouldOwnBridges();
+  if (!own) {
+    if (bridgeIngress) {
+      tearDownAllBridgesQuiet();
+    }
+    bridgeIngress = false;
+    return;
+  }
+
+  const gained = !bridgeIngress;
+  bridgeIngress = true;
+
   const nodes = await prisma.node.findMany({
     select: { id: true, name: true },
   });
@@ -124,13 +219,16 @@ async function refreshBridges(): Promise<void> {
         nodeId: node.id,
         socket: null,
         reconnectTimer: null,
+        attempt: 0,
       };
       bridges.set(node.id, bridge);
-      void connectBridge(bridge);
+      // Stagger first connect (and after leadership gain) to avoid storms.
+      scheduleBridgeConnect(bridge, staggerOffsetMs(node.id));
     } else {
       const bridge = bridges.get(node.id)!;
       if (!bridge.socket && !bridge.reconnectTimer) {
-        void connectBridge(bridge);
+        const delay = gained ? staggerOffsetMs(node.id) : 0;
+        scheduleBridgeConnect(bridge, delay);
       }
     }
   }
@@ -160,8 +258,20 @@ function tearDownBridge(bridge: Bridge, markOffline: boolean): void {
   }
 }
 
+function scheduleBridgeConnect(bridge: Bridge, delayMs?: number): void {
+  if (stopped || !bridgeIngress) return;
+  if (bridge.reconnectTimer) return;
+  const delay =
+    delayMs ?? computeBridgeReconnectDelayMs(bridge.attempt);
+  bridge.reconnectTimer = setTimeout(() => {
+    bridge.reconnectTimer = null;
+    void connectBridge(bridge);
+  }, delay);
+  bridge.reconnectTimer.unref?.();
+}
+
 async function connectBridge(bridge: Bridge): Promise<void> {
-  if (stopped) return;
+  if (stopped || !bridgeIngress) return;
 
   const node = await prisma.node.findUnique({ where: { id: bridge.nodeId } });
   if (!node) {
@@ -170,7 +280,8 @@ async function connectBridge(bridge: Bridge): Promise<void> {
   }
   const token = getNodeToken(node.id);
   if (!token) {
-    scheduleBridgeReconnect(bridge);
+    bridge.attempt += 1;
+    scheduleBridgeConnect(bridge);
     return;
   }
 
@@ -191,14 +302,18 @@ async function connectBridge(bridge: Bridge): Promise<void> {
       headers: {
         Authorization: `Bearer ${daemonWsAuthorization(node.id, token)}`,
       },
+      handshakeTimeout: 15_000,
     });
   } catch {
-    scheduleBridgeReconnect(bridge);
+    bridge.attempt += 1;
+    scheduleBridgeConnect(bridge);
     return;
   }
   bridge.socket = socket;
 
   socket.on("open", () => {
+    bridge.attempt = 0;
+    if (!bridgeIngress) return;
     void prisma.node
       .update({
         where: { id: node.id },
@@ -241,6 +356,7 @@ async function connectBridge(bridge: Bridge): Promise<void> {
 
   socket.on("close", () => {
     if (bridge.socket === socket) bridge.socket = null;
+    if (!bridgeIngress || stopped) return;
     void prisma.node
       .update({
         where: { id: node.id },
@@ -248,19 +364,11 @@ async function connectBridge(bridge: Bridge): Promise<void> {
       })
       .catch(() => undefined);
     logNodeStatus(node.id, node.name, "OFFLINE");
-    scheduleBridgeReconnect(bridge);
+    bridge.attempt += 1;
+    scheduleBridgeConnect(bridge);
   });
 
   socket.on("error", () => {
     // close handler reconnects
   });
-}
-
-function scheduleBridgeReconnect(bridge: Bridge): void {
-  if (stopped) return;
-  if (bridge.reconnectTimer) clearTimeout(bridge.reconnectTimer);
-  bridge.reconnectTimer = setTimeout(() => {
-    bridge.reconnectTimer = null;
-    void connectBridge(bridge);
-  }, 3000);
 }

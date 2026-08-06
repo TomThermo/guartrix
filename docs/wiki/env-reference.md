@@ -79,6 +79,12 @@ Installer: `--mysql-docker` (default) or `--mysql-external` / `--database-url`.
 | `REDIS_ENABLED` | `0` disables Redis even if `REDIS_URL` is set; default on when URL is present |
 | `SCHEDULER_LOCK_TTL_MS` | Redis leader-lock TTL for backup/schedule ticks (default **15000**) |
 | `BACKUP_BUSY_TTL_MS` | Redis TTL for per-server backup/restore busy lock (default **7200000** = 2h; clamp 1m–24h). Without Redis, lock is process-local. |
+| `DAEMON_BRIDGE_RECONNECT_BASE_MS` | Exp backoff base for daemon `/events` reconnect (default **1000**) |
+| `DAEMON_BRIDGE_RECONNECT_MAX_MS` | Exp backoff cap (default **60000**) |
+| `DAEMON_BRIDGE_RECONNECT_JITTER_MS` | Full jitter added to reconnect delay (default **1000**) |
+| `DAEMON_BRIDGE_CONNECT_STAGGER_MS` | Max stagger window for first connect / leadership gain (default **10000**; `0` = no stagger) |
+| `DAEMON_BRIDGE_LOCK_TTL_MS` | Redis leader-lock TTL for who opens `/events` bridges (default **15000**). Renewed on the 15s refresh tick. |
+| `DAEMON_BRIDGE_MODE` | `auto` (default): bridge always without Redis, else only lock leader; `always` / `never` for debug |
 | `CSP_REPORT_ONLY` | `1` = prod-web also sends CSP Report-Only (stricter `style-src 'self'`) for violation telemetry |
 | `CSP_SCRIPT_SRC_EXTRA` | Extra `script-src` tokens (space-separated hosts/hashes) appended to the enforcing CSP |
 | `CSP_ALLOW_UNSAFE_INLINE_SCRIPT` | `1` = allow `'unsafe-inline'` in `script-src` (last resort; browsers ignore it when a nonce is present). Prefer disabling Cloudflare Email Obfuscation / fixing injects instead |
