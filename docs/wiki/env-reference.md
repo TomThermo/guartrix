@@ -66,7 +66,9 @@ Installer: `--mysql-docker` (default) or `--mysql-external` / `--database-url`.
 | `DEFAULT_MAX_SERVERS` | New-user server quota (default **0**) |
 | `DEFAULT_MAX_MEMORY_MB` | New-user RAM quota (default **0**) |
 | `DEFAULT_MAX_DATABASES` | New-user DB quota (default **0**) |
-| `MAIL_FROM` / `SMTP_*` | Password reset & invite mail; else `data/mail-outbox/` |
+| `MAIL_FROM` | Envelope From for outbound mail |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_SECURE` / `SMTP_USER` / `SMTP_PASS` | SMTP relay (when unset, mail goes to `data/mail-outbox/`) |
+| `SMTP_STARTTLS` | Force STARTTLS when not using implicit TLS (`SMTP_SECURE`) |
 | `TWO_FACTOR_REQUIRED_ROLES` | Comma-separated roles that must enable TOTP (e.g. `ADMIN`). Empty = optional |
 | `API_KEY_RATE_LIMIT` | Max Client API requests per minute per key (default **120**) |
 | `APPLICATION_API_RATE_LIMIT` | Max Application API (`gta_`) requests per minute per key (default **120**) |
@@ -121,13 +123,16 @@ The license **server** is hosted separately by Guartrix (default `https://licens
 | `GUARTRIX_REPO_URL` | Git URL for remote install scripts |
 | `GUARTRIX_SERVER_ID` / `GUARTRIX_TOTP_FROM_DB` / `GUARTRIX_TOTP_SECRET` / `GUARTRIX_TOTP` | Docs host only — wiki screenshot capture (`scripts/capture-wiki-screenshots.mjs`); not used by panel runtime |
 | `MYSQL_PORT` / `MYSQL_IMAGE` | Per-node game MySQL container |
+| `MYSQL_ROOT_PASSWORD` | Root password for the node game-MySQL container (daemon env — never commit) |
 | `MYSQL_PUBLIC_HOST` | Hostname plugins use for game MySQL (default Docker DNS `guartrix-mysql`) |
+| `GUARTRIX_DEMO_SERVER_NAME` | Optional demo/bootstrap server display name (installer / docs demos) |
+| `GUARTRIX_BASE_URL` | Docs/demo helper base URL (screenshot tooling; not required for panel runtime) |
 
 ## Cloudflare / TLS (optional)
 
 | Variable | Purpose |
 |----------|---------|
-| `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ZONE_ID` / `CLOUDFLARE_DOMAIN` | Auto A/SRV records (token: Zone DNS Edit on one zone — see [security.md](security.md)) |
+| `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ZONE_ID` / `CLOUDFLARE_ACCOUNT_ID` / `CLOUDFLARE_DOMAIN` | Auto A/SRV records (token: Zone DNS Edit on one zone — see [security.md](security.md)) |
 | `ALLOW_INSECURE_DEFAULTS` | Set `1` only for local dev — otherwise API refuses default `SESSION_SECRET` / `ADMIN_PASSWORD` |
 | `TLS_CERT_FILE` / `TLS_KEY_FILE` | Override Origin cert paths (panel behind Cloudflare) |
 | `DAEMON_TLS_CERT_FILE` / `DAEMON_TLS_KEY_FILE` | SNI cert for DNS-only `node1.*` / `DAEMON_PUBLIC_HOST` (LE by default) |
@@ -145,7 +150,8 @@ The license **server** is hosted separately by Guartrix (default `https://licens
 | Variable | Purpose |
 |----------|---------|
 | `ACTIVITY_LOG_RETENTION_DAYS` | Days of activity history to keep (default **90**, `0` = forever) |
-| `ACTIVITY_WEBHOOK_URL` | Webhook for critical events; Discord URLs get embeds, others a generic JSON POST |
+| `ACTIVITY_WEBHOOK_URL` | Webhook for critical events; Discord URLs get embeds, others a generic JSON POST (SSRF-safe via DNS-pinned `fetchSafeWebhook`) |
+| `BILLING_WEBHOOK_URL` | Optional outbound JSON webhook for billing events (same SSRF-safe fetch helper) |
 | `ALERT_EMAIL` | Address that also receives critical-event mail (needs `SMTP_*`) |
 | `VAPID_PUBLIC_KEY` | Web Push public key (Account → Security opt-in; `npx web-push generate-vapid-keys`) |
 | `VAPID_PRIVATE_KEY` | Web Push private key (keep secret) |

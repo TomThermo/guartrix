@@ -1,21 +1,70 @@
-import { describe, expect, it } from "vitest";
-import type { FastifyRequest } from "fastify";
+import { afterEach, describe, expect, it } from "vitest";
+import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import {
   isApiSessionRateLimitExempt,
+  registerApiSessionRateLimit,
   sessionRateLimitKey,
 } from "./api-rate-limit.js";
-import { MemoryRateLimitStore } from "../rate-limit-store.js";
+import {
+  MemoryRateLimitStore,
+  setActiveRateLimitStore,
+} from "../rate-limit-store.js";
 
 function fakeReq(
   url: string,
-  extras?: { apiKeyAuth?: unknown; applicationAuth?: unknown },
+  extras?: {
+    apiKeyAuth?: unknown;
+    applicationAuth?: unknown;
+    session?: { authenticated?: boolean; userId?: string };
+    ip?: string;
+  },
 ): FastifyRequest {
   return { url, ...extras } as FastifyRequest;
 }
 
+function mockApp(): {
+  app: FastifyInstance;
+  run: (
+    request: FastifyRequest,
+  ) => Promise<{ statusCode?: number; body?: unknown } | undefined>;
+} {
+  let hook:
+    | ((request: FastifyRequest, reply: FastifyReply) => Promise<unknown>)
+    | undefined;
+  const app = {
+    addHook: (
+      _name: string,
+      fn: (request: FastifyRequest, reply: FastifyReply) => Promise<unknown>,
+    ) => {
+      hook = fn;
+    },
+  } as unknown as FastifyInstance;
+  return {
+    app,
+    run: async (request) => {
+      let sent: { statusCode?: number; body?: unknown } | undefined;
+      const reply = {
+        status(code: number) {
+          sent = { ...(sent ?? {}), statusCode: code };
+          return this;
+        },
+        send(body: unknown) {
+          sent = { ...(sent ?? {}), body };
+          return sent;
+        },
+      } as unknown as FastifyReply;
+      await hook!(request, reply);
+      return sent;
+    },
+  };
+}
+
 describe("isApiSessionRateLimitExempt", () => {
   it("exempts health, public, internal, and bearer key traffic", () => {
+    expect(isApiSessionRateLimitExempt(fakeReq("/not-api"))).toBe(true);
     expect(isApiSessionRateLimitExempt(fakeReq("/api/health"))).toBe(true);
+    expect(isApiSessionRateLimitExempt(fakeReq("/api/ready"))).toBe(true);
+    expect(isApiSessionRateLimitExempt(fakeReq("/api/metrics"))).toBe(true);
     expect(isApiSessionRateLimitExempt(fakeReq("/api/public/invite"))).toBe(
       true,
     );
@@ -23,6 +72,11 @@ describe("isApiSessionRateLimitExempt", () => {
     expect(
       isApiSessionRateLimitExempt(
         fakeReq("/api/servers", { apiKeyAuth: { id: "k" } }),
+      ),
+    ).toBe(true);
+    expect(
+      isApiSessionRateLimitExempt(
+        fakeReq("/api/servers", { applicationAuth: { id: "a" } }),
       ),
     ).toBe(true);
     expect(isApiSessionRateLimitExempt(fakeReq("/api/servers"))).toBe(false);
@@ -54,6 +108,9 @@ describe("sessionRateLimitKey", () => {
     expect(
       sessionRateLimitKey({ authenticated: true }, "203.0.113.9"),
     ).toBe("api-session:ip:203.0.113.9");
+    expect(sessionRateLimitKey({ authenticated: true }, "")).toBe(
+      "api-session:ip:unknown",
+    );
   });
 });
 
@@ -81,5 +138,55 @@ describe("session rate limit isolation", () => {
     expect(store.hit(keyB, windowMs, max).limited).toBe(false);
     expect(store.hit(keyB, windowMs, max).limited).toBe(false);
     expect(store.hit(keyB, windowMs, max).limited).toBe(true);
+  });
+});
+
+describe("registerApiSessionRateLimit", () => {
+  const prevMax = process.env.API_SESSION_RATE_LIMIT;
+
+  afterEach(() => {
+    if (prevMax === undefined) delete process.env.API_SESSION_RATE_LIMIT;
+    else process.env.API_SESSION_RATE_LIMIT = prevMax;
+    setActiveRateLimitStore(new MemoryRateLimitStore());
+  });
+
+  it("skips exempt and unauthenticated requests", async () => {
+    const store = new MemoryRateLimitStore();
+    setActiveRateLimitStore(store);
+    const { app, run } = mockApp();
+    registerApiSessionRateLimit(app);
+    expect(await run(fakeReq("/api/health"))).toBeUndefined();
+    expect(
+      await run(
+        fakeReq("/api/servers", {
+          session: { authenticated: false },
+          ip: "1.2.3.4",
+        }),
+      ),
+    ).toBeUndefined();
+  });
+
+  it("returns 429 when the session budget is exhausted", async () => {
+    process.env.API_SESSION_RATE_LIMIT = "2";
+    // Re-import would keep MAX from module load — exercise via store with low max
+    // by hitting the store directly through the hook when MAX was set at import.
+    // Module MAX is fixed at load time; use a store that always limits.
+    const store: {
+      hit: () => { limited: true; remaining: 0 };
+      clear: () => void;
+    } = {
+      hit: () => ({ limited: true, remaining: 0 }),
+      clear: () => undefined,
+    };
+    setActiveRateLimitStore(store as unknown as MemoryRateLimitStore);
+    const { app, run } = mockApp();
+    registerApiSessionRateLimit(app);
+    const sent = await run(
+      fakeReq("/api/servers", {
+        session: { authenticated: true, userId: "u1" },
+        ip: "203.0.113.1",
+      }),
+    );
+    expect(sent?.statusCode).toBe(429);
   });
 });

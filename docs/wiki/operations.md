@@ -2,14 +2,22 @@
 
 ## Preferred restart
 
-On customer installs with **systemd** (`guartrix-api`, `guartrix-web`, `guartrix-daemon`):
+Pick **one** supervision model per host — never mix.
+
+### Customer / systemd installs
+
+Units from `install-panel.sh`: `guartrix-api`, `guartrix-web`, `guartrix-daemon`.
 
 ```bash
 sudo systemctl restart guartrix-api guartrix-web guartrix-daemon
 sudo systemctl status guartrix-api guartrix-web guartrix-daemon
 ```
 
-On a **source/operator** checkout (or when units are not used), prefer the process manager:
+Disable the process watchdog if you previously used `scripts/start.sh` on the same host (`NO_MONITOR=1` or stop leftover monitor PIDs under `data/run/`).
+
+### Operator / source checkout
+
+Prefer the process manager (no systemd units, or units stopped):
 
 ```bash
 npm run build              # after code changes (readable tsc)
@@ -17,7 +25,7 @@ npm run build              # after code changes (readable tsc)
 bash scripts/start.sh      # stop old procs → health-check → watchdog
 ```
 
-Do **not** mix: restarting only the API with `systemctl` while `scripts/start.sh`’s watchdog is also running can fight over PIDs. Pick one supervision model per host.
+`scripts/start.sh` **refuses to start** when `guartrix-*.service` units are active, unless you set `ALLOW_MIXED_SUPERVISION=1` (escape hatch for emergencies only).
 
 Alternatives: `npm run prod` or `npm run build && npm run start:prod`.
 

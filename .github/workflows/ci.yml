@@ -13,6 +13,9 @@ jobs:
     env:
       # prisma generate / schema parse only — no live DB in this job
       DATABASE_URL: mysql://ci:ci@127.0.0.1:3306/ci
+      # config.ts refuses weak SESSION_SECRET unless ALLOW_INSECURE_DEFAULTS
+      SESSION_SECRET: ci-github-actions-session-secret-xx
+      ALLOW_INSECURE_DEFAULTS: "1"
     steps:
       - uses: actions/checkout@v4
 
@@ -36,15 +39,17 @@ jobs:
       - name: Typecheck web
         run: npm run typecheck -w @msm/web
 
+      - name: OpenAPI coverage
+        run: npm run check:openapi
+
       - name: Unit tests
         run: npm test
 
-      - name: Coverage floor (auth + safe-url)
+      - name: Coverage floor (auth + safe-url + shared helpers)
         run: npm run test:coverage
 
-      - name: npm audit (high+, production deps)
-        continue-on-error: true
-        run: npm audit --omit=dev --audit-level=high
+      - name: npm audit (critical+, production deps)
+        run: npm audit --omit=dev --audit-level=critical
 
       - name: Build workspaces
         run: npm run build

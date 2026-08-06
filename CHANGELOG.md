@@ -7,6 +7,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 -
 
+## [1.0.164] — 2026-08-06
+
+- Scorecard ≥99 push: coverage floor 95% on expanded security/helpers; OpenAPI + critical audit in CI; locale EN/NL parity test
+- Security: billing webhook via fetchSafeWebhook; SSRF notes in security wiki
+- Ops: start.sh refuses active guartrix systemd units (ALLOW_MIXED_SUPERVISION escape); ops docs single-supervision model
+- Clean/UX: peel in-app wiki into articles/*; BotsPanel polls via useVisibleInterval
+- Docs: roadmap hygiene → v1.0.163+; env-reference SMTP/Cloudflare/MySQL gaps filled
+
 ## [1.0.163] — 2026-08-06
 
 - Docs audit: OpenAPI/roadmap sync; development (coverage + NL lazy-load); billing/license/daemon/backup internals; README ops smoke + preseed; in-app wiki mirror

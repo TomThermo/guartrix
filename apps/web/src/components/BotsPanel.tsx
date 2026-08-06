@@ -12,6 +12,7 @@ import {
 } from "react-bootstrap";
 import { api } from "../api";
 import { useI18n } from "../i18n/react";
+import { useVisibleInterval } from "../hooks/useVisibleInterval";
 import { BotCommandForm } from "./bots/BotCommandForm";
 import { buildBotCommand, type CmdType } from "./bots/buildBotCommand";
 
@@ -116,22 +117,28 @@ export function BotsPanel({
       .finally(() => setLoading(false));
   }, [refresh, onError]);
 
-  // Live bot status/activity: fast while connecting, steady while online
-  useEffect(() => {
-    if (!serverRunning && bots.length === 0) return;
-    const connecting = bots.some((b) => b.status === "connecting");
-    const intervalMs = connecting || busy ? 400 : 1000;
-    const t = setInterval(() => {
+  // Live bot status/activity: fast while connecting, steady while online (pause when tab hidden)
+  const connecting = bots.some((b) => b.status === "connecting");
+  const botPollMs = connecting || busy ? 400 : 1000;
+  const botPollActive = serverRunning || bots.length > 0;
+  useVisibleInterval(
+    () => {
       void refresh().catch(() => undefined);
-    }, intervalMs);
-    return () => clearInterval(t);
-  }, [bots, refresh, serverRunning, busy]);
+    },
+    botPollMs,
+    botPollActive,
+  );
+
+  useVisibleInterval(
+    () => {
+      void refreshPlayers();
+    },
+    8_000,
+    serverRunning,
+  );
 
   useEffect(() => {
-    void refreshPlayers();
-    if (!serverRunning) return;
-    const t = setInterval(() => void refreshPlayers(), 5000);
-    return () => clearInterval(t);
+    if (serverRunning) void refreshPlayers();
   }, [refreshPlayers, serverRunning]);
 
   const onlineCount = bots.filter((b) => b.status === "online").length;

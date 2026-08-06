@@ -165,6 +165,24 @@ stop_old() {
 preflight() {
   info "Preflight checks…"
 
+  # Refuse mixed supervision: systemd units + this process watchdog fight over PIDs.
+  if [[ "${ALLOW_MIXED_SUPERVISION:-0}" != "1" && "${ALLOW_MIXED_SUPERVISION:-}" != "true" ]]; then
+    if command -v systemctl >/dev/null 2>&1; then
+      local active_units=()
+      local u
+      for u in guartrix-api guartrix-web guartrix-daemon; do
+        if systemctl is-active --quiet "$u" 2>/dev/null; then
+          active_units+=("$u")
+        fi
+      done
+      if ((${#active_units[@]} > 0)); then
+        fail "Active systemd unit(s): ${active_units[*]} — use systemctl on customer installs, or stop those units before scripts/start.sh. Escape hatch: ALLOW_MIXED_SUPERVISION=1"
+      fi
+    fi
+  else
+    warn "ALLOW_MIXED_SUPERVISION=1 — systemd + start.sh watchdog may fight over PIDs"
+  fi
+
   command -v node >/dev/null || fail "node not found"
   command -v npm >/dev/null || fail "npm not found"
   command -v curl >/dev/null || fail "curl not found"

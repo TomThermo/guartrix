@@ -1,17 +1,56 @@
-import { describe, expect, it } from "vitest";
-import type { FastifyRequest } from "fastify";
+import { afterEach, describe, expect, it } from "vitest";
+import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import {
   assertCsrfToken,
   assertSameOrigin,
   CSRF_HEADER,
   issueSessionCsrfToken,
+  registerCsrfGuard,
 } from "./csrf.js";
 
 function req(
   headers: Record<string, string | undefined>,
   session?: { csrfToken?: string; authenticated?: boolean },
+  extras?: Partial<FastifyRequest>,
 ): FastifyRequest {
-  return { headers, session } as FastifyRequest;
+  return { headers, session, ...extras } as FastifyRequest;
+}
+
+function mockApp(): {
+  app: FastifyInstance;
+  run: (
+    request: FastifyRequest,
+  ) => Promise<{ statusCode?: number; body?: unknown } | undefined>;
+} {
+  let hook:
+    | ((request: FastifyRequest, reply: FastifyReply) => Promise<unknown>)
+    | undefined;
+  const app = {
+    addHook: (
+      _name: string,
+      fn: (request: FastifyRequest, reply: FastifyReply) => Promise<unknown>,
+    ) => {
+      hook = fn;
+    },
+  } as unknown as FastifyInstance;
+  return {
+    app,
+    run: async (request) => {
+      let sent: { statusCode?: number; body?: unknown } | undefined;
+      const reply = {
+        status(code: number) {
+          sent = { ...(sent ?? {}), statusCode: code };
+          return this;
+        },
+        send(body: unknown) {
+          sent = { ...(sent ?? {}), body };
+          return sent;
+        },
+      } as unknown as FastifyReply;
+      await hook!(request, reply);
+      return sent;
+    },
+  };
 }
 
 describe("assertSameOrigin", () => {
@@ -38,6 +77,151 @@ describe("assertSameOrigin", () => {
     expect(
       assertSameOrigin(req({ referer: "https://evil.example/phish" })),
     ).toBe("Invalid referer");
+    expect(assertSameOrigin(req({ referer: "not-a-url" }))).toBe(
+      "Invalid referer",
+    );
+  });
+
+  it("allows missing Origin when CSRF_ALLOW_MISSING_ORIGIN=1", () => {
+    const prev = process.env.CSRF_ALLOW_MISSING_ORIGIN;
+    process.env.CSRF_ALLOW_MISSING_ORIGIN = "1";
+    try {
+      expect(assertSameOrigin(req({}))).toBeNull();
+    } finally {
+      if (prev === undefined) delete process.env.CSRF_ALLOW_MISSING_ORIGIN;
+      else process.env.CSRF_ALLOW_MISSING_ORIGIN = prev;
+    }
+  });
+});
+
+describe("registerCsrfGuard", () => {
+  afterEach(() => {
+    delete process.env.CSRF_ALLOW_MISSING_ORIGIN;
+  });
+
+  it("skips non-mutating, non-api, and exempt paths", async () => {
+    const { app, run } = mockApp();
+    registerCsrfGuard(app);
+    expect(
+      await run(
+        req({}, undefined, { method: "GET", url: "/api/servers" }),
+      ),
+    ).toBeUndefined();
+    expect(
+      await run(
+        req({}, undefined, { method: "POST", url: "/not-api" }),
+      ),
+    ).toBeUndefined();
+    expect(
+      await run(
+        req({}, undefined, { method: "POST", url: "/api/health" }),
+      ),
+    ).toBeUndefined();
+    expect(
+      await run(
+        req({}, undefined, { method: "POST", url: "/api/ready" }),
+      ),
+    ).toBeUndefined();
+    expect(
+      await run(
+        req({}, undefined, { method: "POST", url: "/api/metrics" }),
+      ),
+    ).toBeUndefined();
+    expect(
+      await run(
+        req({}, undefined, { method: "POST", url: "/metrics" }),
+      ),
+    ).toBeUndefined();
+    expect(
+      await run(
+        req({}, undefined, { method: "POST", url: "/api/internal/x" }),
+      ),
+    ).toBeUndefined();
+    expect(
+      await run(
+        req({}, undefined, { method: "POST", url: "/api/public/y" }),
+      ),
+    ).toBeUndefined();
+  });
+
+  it("skips bearer-only clients without a cookie session", async () => {
+    const { app, run } = mockApp();
+    registerCsrfGuard(app);
+    expect(
+      await run(
+        req(
+          {},
+          { authenticated: false },
+          {
+            method: "POST",
+            url: "/api/servers",
+            apiKeyAuth: { id: "k" },
+          } as Partial<FastifyRequest>,
+        ),
+      ),
+    ).toBeUndefined();
+  });
+
+  it("rejects bad origin and missing CSRF on authenticated sessions", async () => {
+    const { app, run } = mockApp();
+    registerCsrfGuard(app);
+    const badOrigin = await run(
+      req(
+        { origin: "https://evil.example" },
+        { authenticated: true, csrfToken: "tok" },
+        { method: "POST", url: "/api/servers" },
+      ),
+    );
+    expect(badOrigin?.statusCode).toBe(403);
+
+    const missingCsrf = await run(
+      req(
+        { origin: "http://127.0.0.1:5173" },
+        { authenticated: true, csrfToken: "tok" },
+        { method: "DELETE", url: "/api/servers/1" },
+      ),
+    );
+    expect(missingCsrf?.statusCode).toBe(403);
+
+    const okLogin = await run(
+      req(
+        { origin: "http://127.0.0.1:5173" },
+        {},
+        { method: "POST", url: "/api/auth/login" },
+      ),
+    );
+    expect(okLogin).toBeUndefined();
+
+    const okToken = await run(
+      req(
+        { origin: "http://127.0.0.1:5173", [CSRF_HEADER]: "tok" },
+        { authenticated: true, csrfToken: "tok" },
+        { method: "POST", url: "/api/servers" },
+      ),
+    );
+    expect(okToken).toBeUndefined();
+  });
+
+  it("skips CSRF token check on auth bootstrap routes", async () => {
+    const { app, run } = mockApp();
+    registerCsrfGuard(app);
+    for (const path of [
+      "/api/auth/login/2fa",
+      "/api/auth/register",
+      "/api/auth/forgot-password",
+      "/api/auth/reset-password",
+      "/api/auth/verify-email",
+    ]) {
+      expect(
+        await run(
+          req(
+            { origin: "http://127.0.0.1:5173" },
+            { authenticated: true, csrfToken: "tok" },
+            { method: "POST", url: path },
+          ),
+        ),
+      ).toBeUndefined();
+    }
   });
 });
 

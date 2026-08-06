@@ -160,6 +160,10 @@ public URL remains required for production.
 A stolen valid JWT or token still grants **full node** access — that residual is inherent
 to the Wings-style model; mitigations shorten the window and remove legacy bearer.
 
+Outbound webhooks (`ACTIVITY_WEBHOOK_URL`, `BILLING_WEBHOOK_URL`, per-server owner
+webhooks) go through **DNS-pinned** `fetchSafeWebhook` / `assertSafeOutboundUrl` so
+SSRF to loopback/link-local/metadata is rejected.
+
 Treat this panel like production hosting software: rotate any secrets that appear in chat or tickets, and keep the OS and Docker patched.
 
 For alert delivery paths and event sinks, see [Notifications and alerts](notifications-and-alerts.md).

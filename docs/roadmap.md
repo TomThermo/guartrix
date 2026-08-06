@@ -5,7 +5,7 @@ Formerly called “roadmap”; same file, clearer name.
 
 **Live:** [guartrix.com](https://guartrix.com) · **Wiki:** [docs/wiki/README.md](wiki/README.md) · **History:** [CHANGELOG.md](../CHANGELOG.md)
 
-Last updated: **2026-08-06** · product **v1.0.163**
+Last updated: **2026-08-06** · product **v1.0.164**
 
 ---
 
@@ -69,7 +69,7 @@ See [panel-settings.md](wiki/panel-settings.md) · [install-panel.md](wiki/insta
 | Item | Target | Status |
 |------|--------|--------|
 | OpenAPI full coverage | `npm run check:openapi --strict` | [x] 165/165 (100%) |
-| OpenAPI `info.version` sync | Match root `package.json` / `VERSION` on each release | [x] 1.0.163 |
+| OpenAPI `info.version` sync | Match root `package.json` / `VERSION` on each release | [x] 1.0.164 |
 | Regenerate stubs after new routes | `node scripts/generate-openapi-stubs.mjs` | [x] script added |
 | Web Sentry | `VITE_SENTRY_DSN` at build time | [x] wired in apps/web |
 | Biome `noExplicitAny` | warn → error | [x] |
@@ -113,17 +113,20 @@ Polish items for sprints 2–8 (screenshots, Prisma schedules, OpenAPI sketch, M
 
 ---
 
-## Recent shipments (v1.0.44 – v1.0.72)
+## Recent shipments (v1.0.44 – v1.0.164)
 
 Full release notes: [CHANGELOG.md](../CHANGELOG.md). Highlights:
 
+- **1.0.164** — Scorecard ≥99: coverage 95%, OpenAPI/CI audit, wiki peels, supervision guard
+- **1.0.163** — Docs audit + always-commit-push rule; OpenAPI/wiki sync
+- **1.0.162** — Scorecard peels, coverage floor, NL lazy-load, install preseed
+- **1.0.158–161** — Security tests, daemon-client peels, runtime compress/caches
 - **1.0.72** — `stoppedByUser`; startOnBoot skips user-stopped servers
 - **1.0.68** — Redis multi-API HA
 - **1.0.62** — Admin → Settings (General / Mail / Security / Alerts)
 - **1.0.63–65** — License hardening + usage/quota reporting
 - **1.0.45** — PWA Web Push
 - **1.0.44–48** — i18n EN/NL
-- **1.0.52–67** — Route peels, perf (dashboard N+1), modpack UX, CSS split, OpenAPI drift check
 
 Earlier backlog (Jul–Aug): extra mounts, join card, hosting tools, modpacks, license enforcement, stats persist, per-server Docker networks — see CHANGELOG ≤ 1.0.43.
 
@@ -137,8 +140,9 @@ Hardening checklist: [security.md](wiki/security.md). Code-side controls are shi
 
 ## Docs hygiene (doorlopend)
 
-- [ ] Wiki + README bij elke feature ([keep-docs-updated](../.cursor/rules/keep-docs-updated.mdc))
-- [x] Improvement map bijgewerkt t/m v1.0.72 (2026-08-04)
+- [x] Wiki + README bij elke feature ([keep-docs-updated](../.cursor/rules/keep-docs-updated.mdc))
+- [x] Improvement map bijgewerkt t/m v1.0.164 (2026-08-06)
+- [x] Always commit+push bij afronden ([always-commit-push](../.cursor/rules/always-commit-push.mdc))
 
 ---
 
@@ -152,9 +156,9 @@ Hardening checklist: [security.md](wiki/security.md). Code-side controls are shi
 
 ## Nederlands — detail (sprints 1–8, historisch)
 
-Laatst bijgewerkt: 2026-08-04 · **v1.0.72**
+Laatst bijgewerkt: 2026-08-06 · **v1.0.164**
 
-Alle sprints hieronder zijn **af**. Geen Sprint 10 gedefinieerd; zie Sprint 9 hierboven.
+Alle sprints hieronder zijn **af**. Geen Sprint 10 gedefinieerd; zie Sprint 9 hierboven. Historical sprint checklists remain for archive only — current product version is **v1.0.164**.
 
 <details>
 <summary>Sprint polish-checklists (ingeklapt — alles afgevinkt)</summary>

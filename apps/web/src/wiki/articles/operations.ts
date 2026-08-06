@@ -1,0 +1,251 @@
+import type { WikiArticle } from "../wiki-types";
+import { wikiAsset } from "../wiki-assets";
+
+export const operationsArticles: WikiArticle[] = [
+  {
+    slug: "statusline",
+    title: "Status overview",
+    summary:
+      "Admin → Status health board for web, API, watchdog, Redis, and every game node.",
+    category: "Operations",
+    keywords: ["status", "statusline", "health", "watchdog", "nodes"],
+    sourcePath: "docs/wiki/statusline.md",
+    relatedSlugs: ["operations", "install-nodes", "scaling"],
+    sections: [
+      {
+        title: "What you see",
+        bullets: [
+          "Architecture strip and version vs license channel",
+          "Web, API, watchdog, and Redis cards",
+          "Per-node reachability, containers, CPU/RAM, MySQL",
+          "System log tails",
+        ],
+        images: [
+          {
+            src: wikiAsset("07-statusline.png"),
+            alt: "Admin Status page",
+            caption: "Live health overview for the panel stack and nodes.",
+          },
+        ],
+      },
+    ],
+  },
+  {
+    slug: "security",
+    title: "Security",
+    summary:
+      "Review the main hardening controls for sessions, proxy trust, daemon auth, SFTP jail, secrets, and host exposure.",
+    category: "Operations",
+    keywords: ["security", "sessions", "csrf", "daemon jwt", "sftp", "rotation", "cloudflare"],
+    sourcePath: "docs/wiki/security.md",
+    relatedSlugs: ["accounts-quotas", "daemon-api", "license-flow"],
+    sections: [
+      {
+        title: "Main controls",
+        bullets: [
+          "Cookie-authenticated writes use CSRF checks.",
+          "Trusted proxy handling is explicit and restricted.",
+          "Sessions are httpOnly and can move to Redis for multi-API setups.",
+          "SFTP and file access are jailed to the server directory.",
+        ],
+      },
+      {
+        title: "Secret rotation",
+        paragraphs: [
+          "Session secrets, daemon tokens, MySQL credentials, API keys, provider tokens, and TLS keys all have different blast radiuses and rotation steps.",
+          "Rotating the session secret also affects sealed node tokens, TOTP secrets, and some stored database passwords.",
+        ],
+      },
+      {
+        title: "Host and supply-chain risk",
+        bullets: [
+          "Remote install convenience scripts remain a residual supply-chain risk if used without pinning.",
+          "Prefer preseed Docker Engine + Node 22 on each node so install-daemon.sh skips curl|sh.",
+          "Docker access on a game node is a high-trust boundary and should be treated accordingly.",
+        ],
+      },
+      {
+        title: "Daemon JWT defaults",
+        paragraphs: [
+          "Panel→daemon auth uses short-lived HS256 JWTs signed with DAEMON_TOKEN. Keep DAEMON_JWT_LEGACY=false after migration.",
+        ],
+        bullets: [
+          "DAEMON_JWT_TTL default 900 (HTTP access JWT seconds).",
+          "DAEMON_JWT_WS_TTL default 3600 (WebSocket JWT seconds).",
+          "DAEMON_JWT_LEGACY default false — raw long-lived bearer is deprecated.",
+          "Rotate node tokens from System → Nodes if a token may have leaked; use TLS on public daemon URLs.",
+          "ACTIVITY_WEBHOOK_URL and BILLING_WEBHOOK_URL use DNS-pinned fetchSafeWebhook (SSRF-safe).",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "licensing",
+    title: "Licensing",
+    summary:
+      "Connect the panel to the public license API, understand free-tier fallback, and see how the daemon enforces signed ticket limits.",
+    category: "Operations",
+    keywords: ["license", "free tier", "validate", "ticket", "limits", "features"],
+    sourcePath: "docs/wiki/licensing.md",
+    relatedSlugs: ["license-flow", "security", "install-panel"],
+    sections: [
+      {
+        title: "What licensing controls",
+        bullets: [
+          "Node count, server count, RAM allowance, and selected feature availability.",
+          "Admin -> License shows status, key, limits, and current usage.",
+        ],
+      },
+      {
+        title: "Free-tier fallback",
+        paragraphs: [
+          "If the key is missing, invalid, revoked, or beyond the grace window, the panel falls back to 1 node, 1 server, and 10 GB disk per server.",
+          "The website remains online even when the license is not valid.",
+        ],
+      },
+      {
+        title: "Daemon enforcement",
+        paragraphs: [
+          "The daemon verifies signed license tickets locally, so enforcement is not only a UI concern.",
+          "Starts and restarts can be blocked even if the panel stays online.",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "panel-settings",
+    title: "Panel settings",
+    summary:
+      "Configure public URLs, registration, SMTP, security flags, Redis visibility, and alert sinks from Admin -> Settings.",
+    category: "Operations",
+    keywords: ["settings", "smtp", "registration", "redis", "alerts", "public host"],
+    sourcePath: "docs/wiki/panel-settings.md",
+    relatedSlugs: ["security", "operations", "notifications-alerts"],
+    sections: [
+      {
+        title: "What it controls",
+        bullets: [
+          "General settings like public host, base URL, registration, and default quotas.",
+          "Mail settings including SMTP and test mail.",
+          "Security settings such as HTTPS flags and 2FA-required roles.",
+          "Alert delivery settings such as activity webhook and alert email.",
+        ],
+      },
+      {
+        title: "Storage and apply behavior",
+        paragraphs: [
+          "Overrides are stored in `data/panel-settings.json` and merged on top of `.env`.",
+          "Public host, base URL, HTTPS, and session-secure changes also patch `.env` and require a restart, while many other values apply immediately to the API.",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "activity-log",
+    title: "Activity log",
+    summary:
+      "Track power actions, settings changes, files, backups, subusers, auth events, and node/system activity across the platform.",
+    category: "Operations",
+    keywords: ["activity", "audit", "events", "filters", "alerts", "retention"],
+    sourcePath: "docs/wiki/activity-log.md",
+    relatedSlugs: ["notifications-alerts", "security", "server-management"],
+    sections: [
+      {
+        title: "What is recorded",
+        paragraphs: [
+          "Guartrix records actor, target, IP, success/failure, and action metadata for many server, account, and admin operations.",
+          "The same underlying activity stream feeds the per-server Activity tab and the global admin Activity page.",
+        ],
+      },
+      {
+        title: "Operational behavior",
+        bullets: [
+          "Retention is controlled by `ACTIVITY_LOG_RETENTION_DAYS`.",
+          "Critical actions can also trigger webhook or email notifications.",
+          "Shared action keys live in the shared package so labels stay consistent between API and UI.",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "scaling",
+    title: "Scaling and Redis",
+    summary:
+      "Understand the supported scale model, when Redis is needed, and how sessions, rate limits, transfers, and event fan-out behave.",
+    category: "Operations",
+    keywords: ["scaling", "redis", "multi-api", "ha", "sessions", "rate limits"],
+    sourcePath: "docs/wiki/scaling.md",
+    relatedSlugs: ["install-panel", "security", "operations"],
+    sections: [
+      {
+        title: "Default scale model",
+        paragraphs: [
+          "The normal supported pattern is one panel and one or more daemon nodes.",
+          "You only need Redis when you move beyond a single panel API process and want multi-API high availability.",
+        ],
+      },
+      {
+        title: "What Redis covers",
+        bullets: [
+          "Shared sessions",
+          "Shared rate limits",
+          "Transfer state",
+          "Scheduler leader lock",
+          "Console and event pub/sub across API replicas",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "operations",
+    title: "Operations",
+    summary:
+      "Operate the production stack with the start script, watchdog, backups, ports, and public install endpoints.",
+    category: "Operations",
+    keywords: ["operations", "start", "watchdog", "backup", "ports", "health", "prod-web"],
+    sourcePath: "docs/wiki/operations.md",
+    relatedSlugs: ["install-panel", "security", "daemon-api"],
+    sections: [
+      {
+        title: "Canonical restart flow",
+        paragraphs: [
+          "Pick one supervision model per host — never mix systemd units with the start.sh watchdog.",
+          "Customer installs: `systemctl restart guartrix-api guartrix-web guartrix-daemon`.",
+          "Operator checkouts: build and use `bash scripts/start.sh` (preflight, processes, watchdog).",
+          "scripts/start.sh refuses to start when guartrix-*.service units are active unless ALLOW_MIXED_SUPERVISION=1.",
+        ],
+      },
+      {
+        title: "Operator health smoke",
+        paragraphs: [
+          "After restart, expect HTTP 200 from these local probes (adjust hosts/ports for your install):",
+        ],
+        code: [
+          {
+            label: "Health smoke",
+            language: "bash",
+            content:
+              "curl -sf http://127.0.0.1:3001/api/health\ncurl -sf http://127.0.0.1:3001/api/ready\ncurl -sf http://127.0.0.1:8081/health\ncurl -sf http://127.0.0.1:8081/ready\ncurl -sfI http://127.0.0.1/",
+          },
+        ],
+      },
+      {
+        title: "Watchdog and health",
+        bullets: [
+          "The watchdog checks API and daemon liveness/readiness.",
+          "It restarts unhealthy panel processes without intentionally killing Minecraft containers.",
+          "Webhook alerts can fire when restart loops or critical backoff events happen.",
+          "Admin → Status (`/statusline`) shows web, API, Redis, and per-node health.",
+        ],
+      },
+      {
+        title: "Data and backups",
+        bullets: [
+          "Panel DB backups can be run manually or via an installed daily timer.",
+          "Local daemon env: `$INSTALL_DIR/data/daemon.env`. Remote: `/var/lib/guartrix/daemon.env`.",
+          "Full Docker MySQL volume can hold panel + game DBs together — wipe carefully.",
+        ],
+      },
+    ],
+  },
+];

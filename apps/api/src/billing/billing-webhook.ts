@@ -1,4 +1,5 @@
 import { config } from "../config.js";
+import { fetchSafeWebhook } from "../safe-url.js";
 
 /** Optional outbound webhook for external billing panels (JSON POST). */
 export async function emitBillingWebhook(
@@ -11,7 +12,7 @@ export async function emitBillingWebhook(
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 10_000);
     try {
-      const res = await fetch(url, {
+      const res = await fetchSafeWebhook(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

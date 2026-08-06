@@ -328,6 +328,12 @@ export function fetchPinned(
   };
 
   return new Promise<Response>((resolve, reject) => {
+    const signal = init.signal;
+    if (signal?.aborted) {
+      reject(new DOMException("Aborted", "AbortError"));
+      return;
+    }
+
     const req = lib.request(
       {
         protocol: url.protocol,
@@ -362,13 +368,7 @@ export function fetchPinned(
       },
     );
 
-    const signal = init.signal;
     if (signal) {
-      if (signal.aborted) {
-        req.destroy();
-        reject(new DOMException("Aborted", "AbortError"));
-        return;
-      }
       const onAbort = () => {
         req.destroy();
         reject(new DOMException("Aborted", "AbortError"));

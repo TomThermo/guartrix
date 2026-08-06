@@ -38,5 +38,15 @@ describe("hashPassword / verifyPassword", () => {
     expect(verifyPassword("x", "nosalt")).toBe(false);
     expect(verifyPassword("x", "salt:zz")).toBe(false);
     expect(verifyPassword("x", "scrypt$v1$16384$8$1$onlysalt")).toBe(false);
+    expect(verifyPassword("x", "scrypt$v1$NaN$8$1$aa$bb")).toBe(false);
+    expect(verifyPassword("x", "scrypt$v1$1$8$1$aa$bb")).toBe(false);
+    expect(verifyPassword("x", "scrypt$v1$16384$0$1$aa$bb")).toBe(false);
+    // Odd-length hex hash → Buffer length mismatch vs scrypt output
+    const salt = "c".repeat(32);
+    const oddHash = "ab";
+    expect(verifyPassword("x", `scrypt$v1$16384$8$1$${salt}$${oddHash}`)).toBe(
+      false,
+    );
+    expect(verifyPassword("x", `${salt}:zz`)).toBe(false);
   });
 });

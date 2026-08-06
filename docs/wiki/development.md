@@ -89,15 +89,16 @@ Details: [Release builds](release-builds.md).
 Unit tests use [Vitest](https://vitest.dev/) at the repo root (`apps/api` + `packages/*`):
 
 ```bash
-npm test              # vitest run (CI gate)
-npm run test:coverage # vitest + coverage floor on critical auth/JWT/safe-url modules (see vitest.config.ts)
+npm test              # vitest run (CI gate; includes locale parity en↔nl)
+npm run test:coverage # vitest + coverage floor on included modules (see vitest.config.ts)
 npm run test:watch    # vitest watch mode
-npm run lint          # Biome check (formatter + lint)
+npm run lint          # Biome check (formatter + lint; not yet a CI gate)
+npm run check:openapi # OpenAPI path coverage vs Fastify routes
 ```
 
-CI runs `npm test` then `npm run test:coverage` (thresholds: lines/statements ≥75%, functions ≥70% on the included security modules in `vitest.config.ts`). Unit tests live under `apps/api`, `apps/web`, and `packages/*/src/**/*.test.ts` (~100+ cases).
+Coverage floors on the included set in `vitest.config.ts` (auth helpers, `safe-url`, server-access, shared permissions/bytes/seed-map/license-ticket, file-manager path helpers): **lines/statements ≥95%**, **functions ≥90%**. Unit tests live under `apps/api`, `apps/web`, and `packages/*/src/**/*.test.ts`. Locale catalogs are compared by `apps/web/src/i18n/locale-parity.test.ts`.
 
-GitHub Actions (`.github/workflows/ci.yml`) on push/PR to `main`: install → Prisma generate → build shared → typecheck API/web → `npm test` → `npm run test:coverage` → `npm audit` (high+, non-blocking) → `npm run build`.
+GitHub Actions (`.github/workflows/ci.yml`) on push/PR to `main`: install → Prisma generate → build shared → typecheck API/web → `npm run check:openapi` → `npm test` → `npm run test:coverage` → `npm audit --omit=dev --audit-level=critical` → `npm run build`.
 
 Playwright under `e2e/` is **optional** and skipped unless `E2E_BASE_URL` is set:
 
@@ -120,6 +121,7 @@ The web UI uses a tiny custom i18n layer (no i18next):
 - React: wrap with `I18nProvider` / `useI18n()` from `apps/web/src/i18n/react.tsx` (wired in `main.tsx`). Changing locale updates `document.documentElement.lang`.
 - Language picker: Account → Security.
 - Production Vite also splits vendor chunks (`react-vendor`, `bootstrap`, `monaco`) via `manualChunks` in `apps/web/vite.config.ts`; Font Awesome glyphs are subset via safelist.
+- **Parity gate:** `apps/web/src/i18n/locale-parity.test.ts` fails CI if either catalog has nested string keys the other lacks.
 
 UI chrome across pages, server tabs/panels, and modals is keyed in both locale files. Call `t("section.key")` where needed; prefer `{name}` placeholders via `t(key, { name })`. Legal page bodies stay English; Minecraft property/permission technical labels often stay English too. When adding strings: update **both** `en.ts` and `nl.ts`, then wire `useI18n()` / `t()`.
 
