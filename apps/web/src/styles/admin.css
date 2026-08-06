@@ -243,3 +243,107 @@
     display: none;
   }
 }
+
+/* Account security */
+.account-page .account-prefs-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--bh-space-md);
+}
+
+@media (max-width: 767.98px) {
+  .account-page .account-prefs-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.account-theme-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.account-theme-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: var(--bh-radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+}
+
+.account-theme-option:has(input:checked) {
+  border-color: rgba(93, 186, 106, 0.4);
+  background: rgba(93, 186, 106, 0.08);
+}
+
+.account-theme-option input {
+  margin-top: 0.15rem;
+  flex-shrink: 0;
+}
+
+.account-theme-option__label {
+  font-weight: 600;
+  font-size: 0.84rem;
+  display: block;
+}
+
+.account-theme-option__hint {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--bh-muted);
+  margin-top: 0.1rem;
+}
+
+.account-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.65rem;
+  margin-bottom: 0.85rem;
+  font-size: 0.82rem;
+  color: var(--bh-muted);
+}
+
+.account-status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.18rem 0.5rem;
+  border-radius: var(--bh-radius-pill);
+  font-size: 0.72rem;
+  font-weight: 650;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.account-status-chip.is-on {
+  border-color: rgba(93, 186, 106, 0.45);
+  background: rgba(93, 186, 106, 0.14);
+  color: #8ee4a8;
+}
+
+.account-status-chip.is-off {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--bh-muted);
+}
+
+.account-totp-secret {
+  padding: 0.75rem;
+  border-radius: var(--bh-radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.28);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  text-align: center;
+  user-select: all;
+  letter-spacing: 0.06em;
+}
+
+.account-danger-card .admin-panel-card__head {
+  border-bottom-color: rgba(220, 53, 69, 0.25);
+}
+
+.account-danger-card .admin-panel-card__head i {
+  color: #ff9aa5;
+}

@@ -14,7 +14,13 @@ import { api } from "../api";
 import { useI18n } from "../i18n/react";
 import { copyText } from "../utils";
 
-export function ApiKeysPanel({ onError }: { onError?: (msg: string | null) => void }) {
+export function ApiKeysPanel({
+  onError,
+  embedded = false,
+}: {
+  onError?: (msg: string | null) => void;
+  embedded?: boolean;
+}) {
   const { t } = useI18n();
   const [keys, setKeys] = useState<ApiKeyRecord[]>([]);
   const [maxKeys, setMaxKeys] = useState(10);
@@ -121,18 +127,22 @@ export function ApiKeysPanel({ onError }: { onError?: (msg: string | null) => vo
   }
 
   if (loading) {
+    const loadingBody = (
+      <div className="text-center py-4">
+        <Spinner animation="border" size="sm" />
+      </div>
+    );
+    if (embedded) return loadingBody;
     return (
       <Card className="border-0 shadow-sm">
-        <Card.Body className="text-center py-4">
-          <Spinner animation="border" size="sm" />
-        </Card.Body>
+        <Card.Body>{loadingBody}</Card.Body>
       </Card>
     );
   }
 
-  return (
-    <Card className="border-0 shadow-sm">
-      <Card.Body>
+  const body = (
+    <>
+      {!embedded && (
         <div className="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
           <div>
             <h2 className="h6 mb-1">{t("apiKeys.title")}</h2>
@@ -155,6 +165,29 @@ export function ApiKeysPanel({ onError }: { onError?: (msg: string | null) => vo
             </Button>
           )}
         </div>
+      )}
+
+      {embedded && (
+        <div className="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+          <p className="text-secondary small mb-0">
+            {t("apiKeys.subtitle", { active: activeCount, max: maxKeys })}
+          </p>
+          {!creating && activeCount < maxKeys && (
+            <Button
+              size="sm"
+              variant="outline-primary"
+              onClick={() => {
+                setCreating(true);
+                setNewToken(null);
+                setNotice(null);
+              }}
+            >
+              <i className="fa-solid fa-plus me-1" />
+              {t("apiKeys.newKey")}
+            </Button>
+          )}
+        </div>
+      )}
 
         {notice && (
           <Alert
@@ -178,7 +211,10 @@ export function ApiKeysPanel({ onError }: { onError?: (msg: string | null) => vo
         )}
 
         {creating && (
-          <Form onSubmit={onCreate} className="border rounded p-3 mb-3">
+          <Form
+            onSubmit={onCreate}
+            className={embedded ? "admin-inset-card p-3 mb-3" : "border rounded p-3 mb-3"}
+          >
             <Form.Group className="mb-3" controlId="key-name">
               <Form.Label>{t("common.name")}</Form.Label>
               <Form.Control
@@ -345,7 +381,14 @@ export function ApiKeysPanel({ onError }: { onError?: (msg: string | null) => vo
             ))}
           </ListGroup>
         )}
-      </Card.Body>
+    </>
+  );
+
+  if (embedded) return body;
+
+  return (
+    <Card className="border-0 shadow-sm">
+      <Card.Body>{body}</Card.Body>
     </Card>
   );
 }

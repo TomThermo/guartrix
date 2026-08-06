@@ -6,6 +6,7 @@ interface Props {
   title: string;
   subtitle?: string;
   icon?: string;
+  className?: string;
   backTo?: string;
   backLabel?: string;
   extraHeader?: ReactNode;
@@ -23,6 +24,7 @@ export function AdminPageShell({
   title,
   subtitle,
   icon = "fa-gears",
+  className = "",
   backTo,
   backLabel = "Back",
   extraHeader,
@@ -36,7 +38,7 @@ export function AdminPageShell({
   children,
 }: Props) {
   return (
-    <div className="admin-page">
+    <div className={`admin-page ${className}`.trim()}>
       <header className="admin-page__head">
         <div className="admin-page__identity">
           <span className="admin-page__icon" aria-hidden>
