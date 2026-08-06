@@ -30,11 +30,12 @@ Open via **Command Palette → Open Canvas** (Cursor 3.1+), or open that file in
 
 ## Fase 3 — Live state uit API-proces (P1)
 
-| # | Item | Wat | Files |
-|---|------|-----|-------|
-| 8 | Stats-history | Uit heap/`data/stats-history` → Redis/DB of alleen daemon | `stats-history.ts` |
-| 9 | Bots / busyServers | Redis of sticky primary API | `bots/*` |
-| 10 | Transfers | Node→node / object storage; geen panel-staging | `transfer.ts`, `transfer-jobs.ts` |
+| # | Item | Status | Wat | Files |
+|---|------|--------|-----|-------|
+| 8 | Stats-history | open | Uit heap/`data/stats-history` → Redis/DB of alleen daemon | `stats-history.ts` |
+| 9 | Mineflayer bots | **cancelled** | Feature removed from product (no bot worker / admin bots tab) | — |
+| 9b | busyServers backup lock | open | In-process `busyServers` Set in backup flows — still needs Redis or sticky primary API under multi-API | `servers/backups.ts` |
+| 10 | Transfers | open | Node→node / object storage; geen panel-staging | `transfer.ts`, `transfer-jobs.ts` |
 
 ## Fase 4 — Daemon bridges @ 100 nodes (P1)
 

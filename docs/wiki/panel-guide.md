@@ -169,7 +169,7 @@ Open a server from the dashboard. Sidebar groups:
 | Group | Tabs |
 |-------|------|
 | Manage service | Console, File Manager, **SFTP**, Databases, **Network**, Backups, Subusers |
-| Game | Server Properties, **World Map**, **Engine** (Paper/Purpur), **Plugin Management**, **Modpacks** (Fabric/Forge…), Whitelist, Online Players, Bans, **Bots** (admin) |
+| Game | Server Properties, **World Map**, **Engine** (Paper/Purpur), **Plugin Management**, **Modpacks** (Fabric/Forge…), Whitelist, Online Players, Bans |
 | Management | Schedules, **Activity Log**, Log Files, Resources |
 
 This page is the visual overview. Use these deeper references for the full behavior:
@@ -372,14 +372,6 @@ Download or read the Minecraft `logs/*.log` files the server itself wrote.
 Live meters plus the disk usage breakdown for the instance (World / mods·plugins / backups / other). The ~1-hour CPU / RAM / network **history charts** live on the **Console** tab.
 
 ![Resources](assets/22-server-resources.png)
-
-### Bots (admin)
-
-Admin-only tab to attach / control in-game bots for this server. Bots run in a
-forked API worker process by default (`BOT_WORKER`); require `online-mode=false`.
-Full guide: [Bots](bots.md).
-
-![Bots](assets/38-server-bots.png)
 
 ---
 

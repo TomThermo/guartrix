@@ -48,7 +48,6 @@ import { registerServerRoutes } from "./routes/servers.js";
 import { registerConsoleWs } from "./ws/console.js";
 import { registerAdminLogsWs } from "./ws/admin-logs.js";
 import { registerPlayersWs } from "./ws/players.js";
-import { botManager } from "./bots/bot-manager-proxy.js";
 import { BACKUP_UPLOAD_MAX_BYTES } from "@msm/shared";
 import { ensureLocalNode } from "./nodes/nodes.js";
 import {
@@ -452,7 +451,7 @@ async function main() {
   const shutdown = async () => {
     clearInterval(schedulerTimer);
     stopDaemonEventBridge();
-    app.log.info("Shutting down — stopping bots (Minecraft stays with daemon)…");
+    app.log.info("Shutting down…");
     try {
       const { flushStatsHistory } = await import("./servers/stats-history.js");
       await flushStatsHistory();
@@ -465,7 +464,6 @@ async function main() {
     } catch {
       // ignore
     }
-    await botManager.stopAll();
     await app.close();
     await prisma.$disconnect();
     process.exit(0);

@@ -88,7 +88,6 @@ Installer: `--mysql-docker` (default) or `--mysql-external` / `--database-url`.
 | `CURSEFORGE_API_KEY` | Optional CurseForge API key for Modpacks tab search/install |
 | `LICENSE_SERVER_URL` | Panel: license API URL. Default `https://license.guartrix.com` (or `https://license.<PUBLIC_HOST>` when `PUBLIC_HOST` is a real domain and the var is unset) |
 | `SKIP_LOCAL_DAEMON` | Panel: `1` = no local daemon / local node (panel-only install; use remote nodes) |
-| `BOT_WORKER` | Panel: Mineflayer bots in a forked child (default). Set `0` to run bots in-process (emergency only) |
 | `LICENSE_KEY` | Panel license key |
 | `LICENSE_INSTALL_ID` | Optional stable install id (else auto-file in `data/`) |
 | `LICENSE_VERIFY_PUBLIC_KEY` | Ed25519 public key (PEM) to verify signed validate responses; else `data/licenses/signing-public.pem` |

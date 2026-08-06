@@ -27,7 +27,6 @@ export const internalsArticles: WikiArticle[] = [
           "Database: DATABASE_URL / MYSQL_*",
           "Redis HA: REDIS_URL, SESSION_STORE, RATE_LIMIT_STORE",
           "License: LICENSE_SERVER_URL, LICENSE_KEY",
-          "Bots: BOT_WORKER",
         ],
       },
     ],
@@ -260,7 +259,7 @@ export const internalsArticles: WikiArticle[] = [
             label: "Examples of route groups",
             language: "text",
             content:
-              "auth, two-factor, invites, api-keys, app-passwords,\nservers, servers-dashboard, servers-power, servers-settings,\nfiles, backups, databases, sftp-auth,\nnodes, allocations, status, activity,\nbilling, application, license, bots",
+              "auth, two-factor, invites, api-keys, app-passwords,\nservers, servers-dashboard, servers-power, servers-settings,\nfiles, backups, databases, sftp-auth,\nnodes, allocations, status, activity,\nbilling, application, license",
           },
         ],
       },

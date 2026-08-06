@@ -37,7 +37,7 @@ When you need to find a feature quickly, start here:
 | `apps/web/src/pages` | route-level UI entrypoints |
 | `apps/web/src/components` | tab panels, modals, reusable UI |
 | `apps/api/src/routes` | HTTP route registration layer |
-| `apps/api/src/auth`, `servers`, `nodes`, `billing`, `license`, `bots` | behavior behind route files |
+| `apps/api/src/auth`, `servers`, `nodes`, `billing`, `license` | behavior behind route files |
 | `apps/daemon/src` | daemon process entrypoint, auth, metrics, route wrappers |
 | `packages/node-agent/src` | host runtime and sensitive node operations |
 | `packages/shared/src` | cross-service payloads, permissions, auth/licensing helpers |

@@ -17,7 +17,6 @@ export type TabId =
   | "activity"
   | "logs"
   | "tasks"
-  | "bots"
   | "databases"
   | "allocations"
   | "subusers";
@@ -184,13 +183,6 @@ export const SERVER_TABS: Array<{
     labelKey: "tabs.resources",
     group: "management",
   },
-  {
-    id: "bots",
-    icon: "fa-robot",
-    labelKey: "tabs.bots",
-    group: "management",
-    adminOnly: true,
-  },
 ];
 
 export const TAB_IDS = new Set<string>([
@@ -210,7 +202,6 @@ export const TAB_IDS = new Set<string>([
   "activity",
   "logs",
   "tasks",
-  "bots",
   "databases",
   "allocations",
   "subusers",

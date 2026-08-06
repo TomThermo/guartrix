@@ -33,7 +33,6 @@ Operator and developer documentation for the Guartrix Minecraft hosting panel.
 | [Auth and session internals](auth-and-session-internals.md) | Sessions, TOTP, API keys, app passwords, daemon auth, invite/reset token surfaces |
 | [Server management](server-management.md) | Create/import/clone/reinstall/transfer, Java + Bedrock server types, world tools, resource packs |
 | [Databases](databases.md) | Per-server MySQL on the node, quotas, shared Docker MySQL notes |
-| [Bots](bots.md) | Admin Mineflayer bots (online-mode=false, Via*, worker) |
 | [Files and backups](files-and-backups.md) | File manager, SFTP, jail rules, backup and restore flows |
 | [Networking and allocations](networking-and-allocations.md) | Ports, native Bedrock (UDP), Geyser, BlueMap 8100, Velocity/Bungee helpers, Docker networks |
 | [Player management](player-management.md) | Online players, whitelist, bans, moderation, history |

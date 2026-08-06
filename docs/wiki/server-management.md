@@ -99,7 +99,6 @@ The server detail page is the main workspace. Tabs are grouped roughly as:
 - Activity Log
 - Log Files
 - Resources
-- Bots (admin-only)
 
 ## World tools and resource packs
 
@@ -177,7 +176,6 @@ This page is the hub; use these focused references for deeper detail:
 - [Files and backups](files-and-backups.md)
 - [Networking and allocations](networking-and-allocations.md)
 - [Databases](databases.md)
-- [Bots](bots.md)
 - [Player management](player-management.md)
 - [Mods, plugins, and modpacks](mods-plugins-and-modpacks.md)
 - [Install nodes](install-nodes.md)

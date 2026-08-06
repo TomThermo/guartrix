@@ -23,9 +23,6 @@ const BackupPanel = lazy(() =>
 const BansPanel = lazy(() =>
   import("../BansPanel").then((m) => ({ default: m.BansPanel })),
 );
-const BotsPanel = lazy(() =>
-  import("../BotsPanel").then((m) => ({ default: m.BotsPanel })),
-);
 const DatabasesPanel = lazy(() =>
   import("../DatabasesPanel").then((m) => ({
     default: m.DatabasesPanel,
@@ -316,15 +313,6 @@ export function ServerDetailTabs({
             canCreate={can("schedule.create")}
             canUpdate={can("schedule.update")}
             canDelete={can("schedule.delete")}
-            onError={onSetError}
-            onNotice={onSetNotice}
-          />
-        )}
-        {tab === "bots" && isAdmin && (
-          <BotsPanel
-            serverId={id}
-            serverRunning={server.status === "RUNNING"}
-            onlineMode={server.properties?.["online-mode"] !== "false"}
             onError={onSetError}
             onNotice={onSetNotice}
           />

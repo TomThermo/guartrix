@@ -1767,56 +1767,6 @@ paths:
       responses:
         "200":
           description: OK
-  /api/servers/{id}/bots:
-    delete:
-      tags: [Client]
-      summary: "DELETE /api/servers/{id}/bots"
-      security:
-        - ClientApiKey: []
-        - SessionCookie: []
-      parameters:
-        - $ref: "#/components/parameters/ServerId"
-      responses:
-        "200":
-          description: OK
-    get:
-      tags: [Client]
-      summary: "GET /api/servers/{id}/bots"
-      security:
-        - ClientApiKey: []
-        - SessionCookie: []
-      parameters:
-        - $ref: "#/components/parameters/ServerId"
-      responses:
-        "200":
-          description: OK
-    post:
-      tags: [Client]
-      summary: "POST /api/servers/{id}/bots"
-      security:
-        - ClientApiKey: []
-        - SessionCookie: []
-      parameters:
-        - $ref: "#/components/parameters/ServerId"
-      responses:
-        "200":
-          description: OK
-  /api/servers/{id}/bots/{name}/command:
-    post:
-      tags: [Client]
-      summary: "POST /api/servers/{id}/bots/{name}/command"
-      security:
-        - ClientApiKey: []
-        - SessionCookie: []
-      parameters:
-        - $ref: "#/components/parameters/ServerId"
-        - name: name
-          in: path
-          required: true
-          schema: { type: string }
-      responses:
-        "200":
-          description: OK
   /api/servers/{id}/change-type:
     post:
       tags: [Client]

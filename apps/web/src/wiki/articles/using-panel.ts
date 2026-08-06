@@ -64,39 +64,6 @@ export const usingPanelArticles: WikiArticle[] = [
     ],
   },
   {
-    slug: "bots",
-    title: "Bots (Mineflayer)",
-    summary:
-      "Admin-only in-game bots — online-mode=false, Via*, BOT_WORKER, and available orders.",
-    category: "Using the panel",
-    keywords: ["bots", "mineflayer", "viaversion", "admin", "offline"],
-    sourcePath: "docs/wiki/bots.md",
-    relatedSlugs: ["server-management", "networking-allocations", "security"],
-    sections: [
-      {
-        title: "Requirements",
-        bullets: [
-          "Admin-only tab",
-          "Server must be RUNNING",
-          "`online-mode=false`",
-          "Via* recommended for non-native protocol versions",
-          "`BOT_WORKER=1` (default) runs bots in a forked API child",
-        ],
-        images: [
-          {
-            src: wikiAsset("38-server-bots.png"),
-            alt: "Bots tab",
-            caption: "Spawn and command Mineflayer bots from the panel.",
-          },
-        ],
-      },
-      {
-        title: "Orders",
-        bullets: ["ai", "follow", "guard", "chop", "wander", "goto", "collect", "dig", "attack", "say", "stop", "quit"],
-      },
-    ],
-  },
-  {
     slug: "panel-guide",
     title: "Panel guide",
     summary:
@@ -303,11 +270,6 @@ export const usingPanelArticles: WikiArticle[] = [
             caption: "Modpack browser for compatible server families.",
           },
           {
-            src: wikiAsset("38-server-bots.png"),
-            alt: "Server bots tab",
-            caption: "Optional bot management surface.",
-          },
-          {
             src: wikiAsset("37-import-server.png"),
             alt: "Import server flow",
             caption: "Import an archive into a new server from the create flow.",
@@ -359,7 +321,7 @@ export const usingPanelArticles: WikiArticle[] = [
     category: "Using the panel",
     keywords: ["servers", "create", "import", "clone", "reinstall", "transfer", "power"],
     sourcePath: "docs/wiki/server-management.md",
-    relatedSlugs: ["files-backups", "networking-allocations", "databases", "bots", "mods-plugins-and-modpacks"],
+    relatedSlugs: ["files-backups", "networking-allocations", "databases", "mods-plugins-and-modpacks"],
     sections: [
       {
         title: "Lifecycle actions",
@@ -396,7 +358,7 @@ export const usingPanelArticles: WikiArticle[] = [
         title: "Main tabs",
         paragraphs: [
           "The server detail page combines service tabs, game tabs, and management tabs in one workspace.",
-          "This includes console, files, SFTP, databases, network, backups, subusers, settings, players, bans, schedules, activity, logs, resources, and optional bots.",
+          "This includes console, files, SFTP, databases, network, backups, subusers, settings, players, bans, schedules, activity, logs, and resources.",
         ],
         images: [
           {

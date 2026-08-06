@@ -13,7 +13,6 @@ import type {
 } from "@msm/shared";
 import { request } from "./client";
 import { serverAllocationsApi } from "./server-allocations";
-import { serverBotsApi } from "./server-bots";
 import { serverManagementApi } from "./server-management";
 import { serverObservabilityApi } from "./server-observability";
 import { serverPlayersApi } from "./server-players";
@@ -130,7 +129,6 @@ export const serversApi = {
   ...serverAllocationsApi,
   ...serverSubusersApi,
   ...serverTasksApi,
-  ...serverBotsApi,
   ...serverObservabilityApi,
   ...serverResourcesApi,
 };

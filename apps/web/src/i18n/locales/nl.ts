@@ -380,7 +380,6 @@ export const nl: Messages = {
     activity: "Activiteitenlog",
     logs: "Logbestanden",
     resources: "Resources",
-    bots: "Bots",
   },
   serverDetail: {
     openMenu: "Sectiemenu openen",
@@ -1045,11 +1044,6 @@ export const nl: Messages = {
     seedLoadFailed: "Kon wereldseed niet laden",
     seedFromConsole: "Wereldseed van console: {seed}",
     installBluemap: "BlueMap installeren",
-  },
-  bots: {
-    title: "Bots",
-    empty: "Geen bots geconfigureerd",
-    loadFailed: "Bots laden mislukt",
   },
   modals: {
     confirm: "Bevestigen",

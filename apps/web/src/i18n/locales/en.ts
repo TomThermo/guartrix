@@ -377,7 +377,6 @@ export const en = {
     activity: "Activity Log",
     logs: "Log Files",
     resources: "Resources",
-    bots: "Bots",
   },
   serverDetail: {
     openMenu: "Open section menu",
@@ -1039,11 +1038,6 @@ export const en = {
     seedLoadFailed: "Could not load world seed",
     seedFromConsole: "World seed from console: {seed}",
     installBluemap: "Install BlueMap",
-  },
-  bots: {
-    title: "Bots",
-    empty: "No bots configured",
-    loadFailed: "Failed to load bots",
   },
   modals: {
     confirm: "Confirm",

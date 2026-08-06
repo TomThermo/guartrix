@@ -42,7 +42,7 @@ Daemon :8081          @msm/node-agent
 | Path | Role |
 |------|------|
 | `apps/web` | React UI (Vite). Production build in `dist/`. |
-| `apps/api` | Fastify API, file sessions, Prisma → panel MySQL (`src/auth/`, `billing/`, `license/`, `servers/`, `nodes/`, `bots/`, `routes/`, …) |
+| `apps/api` | Fastify API, file sessions, Prisma → panel MySQL (`src/auth/`, `billing/`, `license/`, `servers/`, `nodes/`, `routes/`, …) |
 | `apps/daemon` | Thin HTTP wrapper around `packages/node-agent` |
 | `packages/node-agent` | Docker lifecycle, resource monitor, files, SFTP, firewall, MySQL helper |
 | `packages/shared` | Types, permissions, activity, **daemon JWT** + **license verify** helpers, password policy |
@@ -126,7 +126,6 @@ Disk walks use a **30s cache** (stale-while-revalidate) so UI polls never block 
 - **Daemon tokens:** long-lived shared secret per node (vault + daemon env file). **Local full-panel** node: `$INSTALL_DIR/data/daemon.env` (often `/opt/guartrix/data/daemon.env`). **Remote daemon-only** install: `/var/lib/guartrix/daemon.env` (systemd `EnvironmentFile`). On the wire the panel sends **short-lived HS256 JWTs** (`aud=daemon`, `nid`, `exp`) signed with that secret. Raw bearer is rejected unless `DAEMON_JWT_LEGACY=true`. SFTP callbacks use `aud=panel` JWTs.
 - **Server files:** on the node under `data/servers/<serverId>/` (or daemon `DATA_DIR`). File **list/read** does not run a recursive `chown`; ownership is fixed on start and on write/upload/SFTP paths.
 - **Console:** browser connects to the **panel** WebSocket; the panel fans out daemon event streams (output, status, stats).
-- **Mineflayer bots:** run in a **forked API child** (`bot-worker-main`) so physics/event loops stay out of the Fastify process. The panel proxies spawn/list/command over IPC; `BOT_WORKER=0` forces in-process emergency mode.
 
 ## Internal subsystem map
 

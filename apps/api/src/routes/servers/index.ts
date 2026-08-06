@@ -3,7 +3,6 @@ import { isAuthenticated, requireWrite } from "../../auth/auth.js";
 import { registerServerAddonRoutes } from "./addons.js";
 import { registerAllocationRoutes } from "./allocations.js";
 import { registerBackupRoutes } from "./backups.js";
-import { registerBotRoutes } from "./bots.js";
 import { registerServerCrudRoutes } from "./crud.js";
 import { registerServerDashboardRoutes } from "./dashboard.js";
 import { registerDatabaseRoutes } from "./databases.js";
@@ -60,7 +59,6 @@ export function registerServerRoutes(app: FastifyInstance): void {
   registerImportRoutes(app);
   registerPlayerActionRoutes(app);
   registerIconRoutes(app);
-  registerBotRoutes(app);
   registerTaskRoutes(app);
   registerLogRoutes(app);
   registerResourcePackRoutes(app);
@@ -69,7 +67,6 @@ export function registerServerRoutes(app: FastifyInstance): void {
 export {
   registerAllocationRoutes,
   registerBackupRoutes,
-  registerBotRoutes,
   registerDatabaseRoutes,
   registerFileRoutes,
   registerIconRoutes,

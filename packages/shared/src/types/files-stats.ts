@@ -60,44 +60,6 @@ export interface PlayerModerationEvent {
   createdAt: string;
 }
 
-export type BotStatus = "connecting" | "online" | "error" | "disconnected";
-
-export interface BotInfo {
-  username: string;
-  status: BotStatus;
-  error: string | null;
-  joinedAt: string | null;
-  /** What the bot is currently doing (idle, following, wandering, …). */
-  activity: string | null;
-}
-
-export interface SpawnBotsRequest {
-  /** Number of bots to spawn (default 10, max 20). */
-  count?: number;
-  /** Username prefix, e.g. "Bot" → Bot1…BotN (default "Bot"). */
-  prefix?: string;
-}
-
-export type BotCommandRequest =
-  | { type: "say"; text: string }
-  | { type: "look"; yaw: number; pitch: number }
-  | { type: "quit" }
-  | { type: "stop" }
-  | { type: "jump" }
-  | { type: "goto"; x?: number; y?: number; z?: number; player?: string }
-  | { type: "follow"; player: string }
-  | { type: "attack"; player?: string }
-  | { type: "collect"; item?: string; count?: number }
-  | { type: "chop"; block?: string }
-  | { type: "dig"; block?: string }
-  | { type: "wander" }
-  | { type: "guard"; radius?: number }
-  | { type: "ai"; prompt: string };
-
-export interface BotsListResponse {
-  bots: BotInfo[];
-}
-
 export interface PlayerEntry {
   name: string;
   uuid: string;

@@ -11,7 +11,7 @@ Use this page when you need to answer "where is this feature implemented?" befor
 | `LoginPage`, `RegisterPage`, `ForgotPasswordPage`, `ResetPasswordPage`, `VerifyEmailPage`, `InvitePage` | Public account entry, recovery, verification, and invite acceptance |
 | `DashboardPage` | Server list, filters, quick actions, update/whitelist/player chips |
 | `CreateServerPage` | Create new server or import an archive |
-| `ServerDetailPage` | Main server workspace: console, files, SFTP, databases, network, backups, subusers, settings, players, bans, schedules, activity, resources, bots |
+| `ServerDetailPage` | Main server workspace: console, files, SFTP, databases, network, backups, subusers, settings, players, bans, schedules, activity, resources |
 | `AccountSecurityPage` | TOTP, recovery codes, client API keys, app passwords, push, export/delete account, theme/locale |
 | `AccountBillingPage` | End-user payments, subscriptions, plan purchases |
 | `AdminBillingPage` | Plans, Application API keys, recent payments |
@@ -34,7 +34,7 @@ Routes live under `apps/api/src/routes/` — **one folder per API area**, one fi
 | `admin/` | Panel settings, license, status, global activity |
 | `billing/` | User checkout (`user.ts`), admin plans (`admin.ts`), Application plans (`application.ts`), shared schemas (`serialize.ts`) |
 | `nodes/` | Node CRUD + daemon SFTP auth callback |
-| `servers/` | Client `/api/servers/*` (power, files, backups, DBs, addons, bots, tasks, …) |
+| `servers/` | Client `/api/servers/*` (power, files, backups, DBs, addons, tasks, …) |
 | `application/` | Machine `/api/application/*` (users, servers-*, files/addons/backups mirrors, …) |
 
 Thin re-exports at `routes/servers.ts` and `routes/application.ts` keep stable import paths for `index.ts`.
@@ -50,7 +50,6 @@ These code folders hold most of the behavior behind the route layer:
 | `apps/api/src/nodes/` | Daemon client barrel (`daemon-client.ts` → `daemon-client-{core,power,files,mysql,deploy}.ts`), event bridge, remote install, token vault, Cloudflare DNS, firewall helpers |
 | `apps/api/src/billing/` | Barrel `billing.ts` → records / provision / subscriptions / webhook / Mollie sync |
 | `apps/api/src/license/` | Barrel `license.ts` → validate / store / version / watcher; quotas, signed claims, ticket generation |
-| `apps/api/src/bots/` and `apps/api/src/bot-movement/` | Bot worker, command proxying, movement helpers |
 | `apps/api/src/ws/` | Console, admin-log, and players WebSocket fan-out |
 
 ## Daemon route families

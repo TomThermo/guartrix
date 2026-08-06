@@ -50,7 +50,6 @@ export const overviewArticles: WikiArticle[] = [
           "Geyser one-click + Velocity/Bungee backend helpers (proxy not hosted by Guartrix)",
           "BlueMap / World Map, world reset & zip upload, resource packs",
           "Per-server MySQL databases, schedules, node transfer",
-          "Admin Mineflayer bots (online-mode=false)",
           "Client API (`gt_`) and Application API / Mollie (`gta_`)",
           "Free tier without license: 1 node, 1 server, 10 GB disk",
         ],

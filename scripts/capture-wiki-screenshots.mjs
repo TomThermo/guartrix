@@ -511,7 +511,6 @@ async function main() {
 
   await serverTab("engine", "32-server-engine.png", "Engine");
   await serverTab("modpacks", "33-server-modpacks.png", "Modpacks");
-  await serverTab("bots", "38-server-bots.png", "Bots");
 
   // Move modal
   await page.goto(`${serverBase}?tab=console`, { waitUntil: "networkidle2" });
