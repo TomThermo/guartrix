@@ -23,8 +23,9 @@ another tool on the host needs it.
 - [x] HTTPS redirect Host pinned to `PUBLIC_HOST` (no client `Host` open redirect)
 - [x] Cleartext WebSocket on `:80` rejected when HTTPS is enabled
 - [x] Strong passwords enforced on register / reset / admin create
-- [x] Email verification before linking pending subuser invites (requires `emailVerified`)
+- [x] Email verification before linking pending subuser invites **and** before invite accept (`emailVerified`)
 - [x] When `SMTP_HOST` is set: verify-before-login for non-admin accounts
+- [x] Admin → Settings → **Go-live** readiness checks (`GET /api/admin/readiness`)
 - [x] Registration quotas default to **0** until an admin grants capacity
 - [ ] `ACTIVITY_WEBHOOK_URL` / `ALERT_EMAIL` set so crashes and failed sign-ins are noticed — **per customer install** via Admin → Settings or `.env` (optional on the download/build host)
 - [x] Consider `TWO_FACTOR_REQUIRED_ROLES=ADMIN` so panel admins must use TOTP

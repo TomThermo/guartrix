@@ -60,7 +60,7 @@ Upgrade notes: [wiki/upgrade-to-1.1.md](wiki/upgrade-to-1.1.md) · Smoke: `bash 
 - 100 aparte panels  
 - Redis Cluster/Sentinel als eerste stap  
 - Egg-marketplace / Ptero 1:1  
-- Peer MySQL dump on transfer (worlds already peer; SQL still panel temp)
+- ~~Peer MySQL dump on transfer~~ → **done 1.1.2** (`restore-from`; panel SQL staging = fallback)
 
 ---
 

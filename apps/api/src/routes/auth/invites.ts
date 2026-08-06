@@ -3,6 +3,7 @@ import { getSessionUser, isAuthenticated } from "../../auth/auth.js";
 import { prisma } from "../../db.js";
 import { hashInviteToken } from "../../servers/server-access.js";
 import { logActivity } from "../../activity-log.js";
+import { canAcceptInvite } from "./invites-policy.js";
 
 /** Public invite peek: never leak the full invite email without a session. */
 function maskEmail(email: string): string {
@@ -85,11 +86,22 @@ export function registerInviteRoutes(app: FastifyInstance): void {
       }
 
       const dbUser = await prisma.user.findUnique({ where: { id: user.id } });
-      const email = dbUser?.email?.trim().toLowerCase();
-      if (!email || email !== row.email.toLowerCase()) {
+      const gate = canAcceptInvite({
+        sessionEmail: dbUser?.email,
+        emailVerified: dbUser?.emailVerified,
+        inviteEmail: row.email,
+      });
+      if (!gate.ok && gate.reason === "email_mismatch") {
         return reply.status(403).send({
           error: `Sign in with the invited email address to accept this invite`,
           emailHint: maskEmail(row.email),
+        });
+      }
+      if (!gate.ok) {
+        return reply.status(403).send({
+          error:
+            "Verify your email before accepting this invite. Check your inbox or the panel mail outbox.",
+          code: "EMAIL_NOT_VERIFIED",
         });
       }
 

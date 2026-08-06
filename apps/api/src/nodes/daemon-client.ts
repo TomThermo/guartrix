@@ -61,6 +61,7 @@ export {
   daemonMysqlRotatePassword,
   daemonMysqlDumpToFile,
   daemonMysqlRestoreFromFile,
+  daemonMysqlPeerRestoreOnNode,
 } from "./daemon-client-mysql.js";
 
 export {

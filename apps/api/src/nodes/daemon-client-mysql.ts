@@ -138,3 +138,33 @@ export async function daemonMysqlRestoreFromFile(
     throw new DaemonHttpError(text || `Daemon error ${res.status}`, res.status);
   }
 }
+
+/** Dest node pulls mysqldump from source node (no panel SQL staging). */
+export async function daemonMysqlPeerRestoreOnNode(
+  fromNodeId: string,
+  toNodeId: string,
+  name: string,
+): Promise<{ bytes: number | null }> {
+  const { panelToDaemonAuthorization } = await import("@msm/shared/daemon-jwt");
+  const { nodePublicUrl } = await import("./nodes.js");
+  const from = await resolveNode(fromNodeId);
+  const to = await resolveNode(toNodeId);
+  const sourceDumpUrl = `${nodePublicUrl(from)}/mysql/databases/dump`;
+  const sourceAuthorization = `Bearer ${panelToDaemonAuthorization(from.id, from.token, {
+    ttlSec: 30 * 60,
+  })}`;
+  const res = await daemonFetch(to, "/mysql/databases/restore-from", {
+    method: "POST",
+    body: JSON.stringify({ sourceDumpUrl, sourceAuthorization, name }),
+    timeoutMs: DAEMON_LONG_TIMEOUT_MS,
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new DaemonHttpError(
+      text || `Peer MySQL restore failed (${res.status})`,
+      res.status,
+    );
+  }
+  const json = (await res.json().catch(() => ({}))) as { bytes?: number | null };
+  return { bytes: typeof json.bytes === "number" ? json.bytes : null };
+}

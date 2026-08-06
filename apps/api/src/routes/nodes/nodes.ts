@@ -60,7 +60,7 @@ async function serializeNodeWithUsage(nodeId: string) {
 const SERVER_TYPES = [
   ...JAVA_SERVER_TYPES,
   ...BEDROCK_SERVER_TYPES,
-] as const;
+] as [import("@msm/shared").ServerType, ...import("@msm/shared").ServerType[]];
 
 const serverTypeSchema = z.enum(SERVER_TYPES);
 

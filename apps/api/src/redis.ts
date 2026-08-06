@@ -249,8 +249,9 @@ export async function acquireSchedulerLock(): Promise<boolean> {
     return result === "OK";
   } catch (err) {
     lastError = err instanceof Error ? err.message : String(err);
-    // Fail open so a single API keeps ticking if Redis blips.
-    return true;
+    // Fail-closed when Redis is configured (SLA / multi-API safe).
+    // Without Redis, acquireSchedulerLock short-circuits above to true.
+    return false;
   }
 }
 

@@ -269,6 +269,14 @@ async function main() {
           },
   });
 
+  // Stable public API alias: /api/v1/* → /api/* (same handlers).
+  app.addHook("onRequest", async (request) => {
+    const url = request.raw.url ?? "";
+    if (url === "/api/v1" || url.startsWith("/api/v1/") || url.startsWith("/api/v1?")) {
+      request.raw.url = url.replace(/^\/api\/v1/, "/api");
+    }
+  });
+
   app.addContentTypeParser(
     "application/json",
     { parseAs: "string" },
@@ -411,39 +419,97 @@ async function main() {
   });
 
   let lastActivityPrune = 0;
+  const runSchedulerTick = async () => {
+    try {
+      const { acquireSchedulerLock } = await import("./redis.js");
+      const isLeader = await acquireSchedulerLock();
+      if (!isLeader) return;
+
+      await sessionStore.purgeExpired?.();
+      if (Date.now() - lastActivityPrune > 60 * 60_000) {
+        lastActivityPrune = Date.now();
+        const pruned = await pruneActivityLog();
+        if (pruned > 0) {
+          app.log.info({ pruned }, "Pruned expired activity events");
+        }
+      }
+      const backups = await runDueBackupSchedules();
+      for (const item of backups) {
+        app.log.info(
+          { serverId: item.serverId, backupId: item.backupId },
+          "Scheduled backup created",
+        );
+      }
+      const tasks = await runDueScheduledTasks();
+      for (const item of tasks) {
+        app.log.info(
+          { serverId: item.serverId, taskId: item.taskId, kind: item.kind },
+          "Scheduled task ran",
+        );
+      }
+    } catch (err) {
+      app.log.error({ err }, "Scheduler tick failed");
+    }
+  };
+
+  const { initJobQueues, enqueueJob, closeJobQueues, jobsMode } = await import(
+    "./jobs/queue.js"
+  );
+  await initJobQueues({
+    onBackupTick: async () => {
+      const backups = await runDueBackupSchedules();
+      for (const item of backups) {
+        app.log.info(
+          { serverId: item.serverId, backupId: item.backupId },
+          "Scheduled backup created",
+        );
+      }
+    },
+    onScheduleTick: async () => {
+      const tasks = await runDueScheduledTasks();
+      for (const item of tasks) {
+        app.log.info(
+          { serverId: item.serverId, taskId: item.taskId, kind: item.kind },
+          "Scheduled task ran",
+        );
+      }
+    },
+    onMaintenanceTick: async () => {
+      const { acquireSchedulerLock } = await import("./redis.js");
+      if (!(await acquireSchedulerLock())) return;
+      await sessionStore.purgeExpired?.();
+      const pruned = await pruneActivityLog();
+      if (pruned > 0) {
+        app.log.info({ pruned }, "Pruned expired activity events");
+      }
+    },
+    onTransfer: async ({ serverId, meta }) => {
+      const { executeQueuedTransfer } = await import("./servers/transfer.js");
+      await executeQueuedTransfer(serverId, meta);
+    },
+  });
+  app.log.info({ jobsMode: jobsMode() }, "Job queue mode");
+
   const schedulerTimer = setInterval(() => {
     void (async () => {
-      try {
+      if (jobsMode() === "bullmq") {
         const { acquireSchedulerLock } = await import("./redis.js");
-        const isLeader = await acquireSchedulerLock();
-        if (!isLeader) return;
-
-        await sessionStore.purgeExpired?.();
+        if (!(await acquireSchedulerLock())) return;
+        await enqueueJob("backups", "tick", {}, { jobId: "backup-leader-tick" }).catch(
+          () => undefined,
+        );
+        await enqueueJob("schedules", "tick", {}, {
+          jobId: "schedules-leader-tick",
+        }).catch(() => undefined);
         if (Date.now() - lastActivityPrune > 60 * 60_000) {
           lastActivityPrune = Date.now();
-          const pruned = await pruneActivityLog();
-          if (pruned > 0) {
-            app.log.info({ pruned }, "Pruned expired activity events");
-          }
+          await enqueueJob("maintenance", "prune", {}, {
+            jobId: "maintenance-prune",
+          }).catch(() => undefined);
         }
-        // Due queries are indexed — no full server-id scan required.
-        const backups = await runDueBackupSchedules();
-        for (const item of backups) {
-          app.log.info(
-            { serverId: item.serverId, backupId: item.backupId },
-            "Scheduled backup created",
-          );
-        }
-        const tasks = await runDueScheduledTasks();
-        for (const item of tasks) {
-          app.log.info(
-            { serverId: item.serverId, taskId: item.taskId, kind: item.kind },
-            "Scheduled task ran",
-          );
-        }
-      } catch (err) {
-        app.log.error({ err }, "Scheduler tick failed");
+        return;
       }
+      await runSchedulerTick();
     })();
   }, 60_000);
   schedulerTimer.unref?.();
@@ -452,6 +518,11 @@ async function main() {
     clearInterval(schedulerTimer);
     stopDaemonEventBridge();
     app.log.info("Shutting down…");
+    try {
+      await closeJobQueues();
+    } catch {
+      // ignore
+    }
     try {
       const { closeRedis } = await import("./redis.js");
       await closeRedis();

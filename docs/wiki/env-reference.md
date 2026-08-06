@@ -76,8 +76,11 @@ Installer: `--mysql-docker` (default) or `--mysql-external` / `--database-url`.
 | `API_SESSION_READ_RATE_LIMIT` | Separate budget for dashboard poll GETs (`/api/servers`, `/stats`, `/online`, …) per userId (default **max(1800, 3× API_SESSION_RATE_LIMIT)**) so UI polls do not starve creates/power |
 | `RATE_LIMIT_STORE` | `file` (default) under `data/rate-limits/`; `memory` in-process; `redis` shared (needs `REDIS_URL`) |
 | `SESSION_STORE` | `file` (default, `data/sessions`) or `redis` (needs `REDIS_URL` + optional `ioredis`) |
-| `REDIS_URL` | Redis URL for multi-API HA (sessions, rate limits, transfers, scheduler lock, backup busy lock, event bus) |
+| `REDIS_URL` | Redis URL for multi-API HA (sessions, rate limits, transfers, scheduler lock, backup busy lock, event bus, **BullMQ**) |
 | `REDIS_ENABLED` | `0` disables Redis even if `REDIS_URL` is set; default on when URL is present |
+| `JOBS_BULLMQ` | `1` (default) use BullMQ when Redis is configured; `0` force in-process scheduler |
+| `JOBS_EMBEDDED` | `1` (default) run BullMQ workers inside the API process; `0` queues only (external worker later) |
+| `SCHEDULER_LOCK_TTL_MS` | Redis scheduler lock TTL (default 15000). With Redis configured, lock acquisition **fail-closed** on Redis errors |
 | `SCHEDULER_LOCK_TTL_MS` | Redis leader-lock TTL for backup/schedule ticks (default **15000**) |
 | `BACKUP_BUSY_TTL_MS` | Redis TTL for per-server backup/restore busy lock (default **7200000** = 2h; clamp 1m–24h). Without Redis, lock is process-local. |
 | `DAEMON_BRIDGE_RECONNECT_BASE_MS` | Exp backoff base for daemon `/events` reconnect (default **1000**) |

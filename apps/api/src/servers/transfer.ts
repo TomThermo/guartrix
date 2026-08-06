@@ -180,16 +180,39 @@ export async function startServerTransfer(
 
   await setServerProgress(server.id, "TRANSFERRING", "Transfer: starting…");
 
-  void runTransfer(job, {
+  const meta = {
     oldPort: server.port,
     newPort,
     subdomain: server.subdomain,
     name: server.name,
-  }).catch((err) => {
-    logger.error({ err, serverId: server.id }, "transfer unexpected failure");
-  });
+  };
+
+  const { enqueueTransfer } = await import("../jobs/queue.js");
+  const queued = await enqueueTransfer(server.id, meta).catch(() => false);
+  if (queued) {
+    // BullMQ worker calls executeQueuedTransfer
+  } else {
+    void runTransfer(job, meta).catch((err) => {
+      logger.error({ err, serverId: server.id }, "transfer unexpected failure");
+    });
+  }
 
   return getTransferJob(server.id)!;
+}
+
+/** Resume a transfer started via BullMQ. */
+export async function executeQueuedTransfer(
+  serverId: string,
+  meta: {
+    oldPort: number;
+    newPort: number;
+    subdomain: string | null;
+    name: string;
+  },
+): Promise<void> {
+  const job = getTransferJobInMemory(serverId);
+  if (!job || job.done) return;
+  await runTransfer(job, meta);
 }
 
 async function runTransfer(
@@ -357,6 +380,7 @@ async function runTransfer(
         daemonMysqlDelete,
         daemonMysqlDumpToFile,
         daemonMysqlEnsure,
+        daemonMysqlPeerRestoreOnNode,
         daemonMysqlRestoreFromFile,
       } = await import("../nodes/daemon-client.js");
       await daemonMysqlEnsure(toNodeId);
@@ -370,8 +394,6 @@ async function runTransfer(
           payloadBytes,
           payloadBytes,
         );
-        const dumpPath = path.join(staging, `db-${db.name}.sql`);
-        await daemonMysqlDumpToFile(fromNodeId, db.name, dumpPath);
         const plainPassword = unsealDatabasePassword(db.password);
         await daemonMysqlCreate(toNodeId, {
           name: db.name,
@@ -379,7 +401,37 @@ async function runTransfer(
           password: plainPassword,
           remote: db.remote,
         });
-        await daemonMysqlRestoreFromFile(toNodeId, db.name, dumpPath);
+        let peerMysql = false;
+        try {
+          await daemonMysqlPeerRestoreOnNode(fromNodeId, toNodeId, db.name);
+          peerMysql = true;
+        } catch (peerMysqlErr) {
+          logger.warn(
+            {
+              err:
+                peerMysqlErr instanceof Error
+                  ? peerMysqlErr
+                  : new Error(String(peerMysqlErr)),
+              serverId,
+              db: db.name,
+            },
+            "Peer MySQL restore failed — falling back to panel staging",
+          );
+          const dumpPath = path.join(staging, `db-${db.name}.sql`);
+          await daemonMysqlDumpToFile(fromNodeId, db.name, dumpPath);
+          await daemonMysqlRestoreFromFile(toNodeId, db.name, dumpPath);
+          await fs.rm(dumpPath, { force: true }).catch(() => undefined);
+        }
+        if (peerMysql) {
+          setTransferChunkProgress(
+            job,
+            3,
+            0.75 + (0.25 * (di + 1)) / dbRows.length,
+            `MySQL ${db.name} peer-copied`,
+            payloadBytes,
+            payloadBytes,
+          );
+        }
         await daemonMysqlDelete(fromNodeId, {
           name: db.name,
           username: db.username,
@@ -399,7 +451,6 @@ async function runTransfer(
               : {}),
           },
         });
-        await fs.rm(dumpPath, { force: true }).catch(() => undefined);
       }
     }
     setTransferChunkProgress(

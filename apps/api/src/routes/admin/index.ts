@@ -3,18 +3,21 @@ import { registerActivityRoutes } from "./activity.js";
 import { registerLicenseRoutes } from "./license.js";
 import { registerAdminSettingsRoutes } from "./settings.js";
 import { registerStatusRoutes } from "./status.js";
+import { registerAdminReadinessRoutes } from "./readiness.js";
 
 export {
   registerActivityRoutes,
   registerLicenseRoutes,
   registerAdminSettingsRoutes,
   registerStatusRoutes,
+  registerAdminReadinessRoutes,
 };
 
-/** Admin panel: settings, license, status, global activity. */
+/** Admin panel: settings, license, status, global activity, readiness. */
 export function registerAdminRoutes(app: FastifyInstance): void {
   registerLicenseRoutes(app);
   registerAdminSettingsRoutes(app);
   registerActivityRoutes(app);
   registerStatusRoutes(app);
+  registerAdminReadinessRoutes(app);
 }

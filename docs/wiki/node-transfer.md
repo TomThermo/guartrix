@@ -44,14 +44,15 @@ source node; after cutover it stays on the destination with `ERROR` and a messag
 | DNS subdomain | A/SRV updated to destination public IPv4 when Cloudflare is configured |
 | Server id / ownership / subusers | Unchanged |
 | Backups (panel) | Stay on the panel host |
-| MySQL databases | Dump on source → recreate + restore on destination → drop source |
+| MySQL databases | Dest pulls dump via `restore-from` (peer); panel SQL temp only as fallback |
 
 ## Ops notes
 
 Prefer node→node copy: destination calls source `/export` with a short-lived
 panel-issued bearer, then deploys locally. The panel does **not** hold the world
 archive when peer copy works. If nodes cannot reach each other, the panel falls
-back to temp staging (~1× world size). MySQL dumps may still briefly use panel
-temp. Activity log records `server.transfer`.
+back to temp staging (~1× world size). MySQL prefers the same peer path
+(`POST /mysql/databases/restore-from` pulling source `/mysql/databases/dump`);
+panel SQL staging is fallback only. Activity log records `server.transfer`.
 
 See also [Install nodes](install-nodes.md) and [Architecture](architecture.md).

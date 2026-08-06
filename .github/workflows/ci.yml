@@ -39,6 +39,17 @@ jobs:
       - name: Typecheck web
         run: npm run typecheck -w @msm/web
 
+      - name: Biome lint (Sprint 10 paths)
+        run: >
+          npx biome check
+          apps/api/src/admin-readiness.ts
+          apps/api/src/admin-readiness.test.ts
+          apps/api/src/jobs
+          apps/api/src/routes/admin/readiness.ts
+          apps/api/src/routes/auth/invites-policy.ts
+          apps/api/src/routes/auth/invites-accept.test.ts
+          apps/web/src/pages/admin-settings/GoLivePanel.tsx
+
       - name: OpenAPI coverage
         run: npm run check:openapi
 
@@ -53,3 +64,29 @@ jobs:
 
       - name: Build workspaces
         run: npm run build
+
+  # Optional E2E against a staging panel (set repo secrets). Skips when unset.
+  e2e-staging:
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.ref == 'refs/heads/main' && vars.E2E_STAGING_ENABLED == 'true') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Playwright smoke
+        env:
+          E2E_BASE_URL: ${{ secrets.E2E_BASE_URL }}
+          E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+          E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+        run: |
+          if [ -z "$E2E_BASE_URL" ]; then
+            echo "E2E_BASE_URL not set — skip"
+            exit 0
+          fi
+          npx playwright test

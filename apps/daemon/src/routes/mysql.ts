@@ -212,4 +212,60 @@ export function registerMysqlRoutes(app: FastifyInstance): void {
       }
     },
   );
+
+  app.post<{
+    Body: {
+      sourceDumpUrl?: string;
+      sourceAuthorization?: string;
+      name?: string;
+    };
+  }>("/mysql/databases/restore-from", async (request, reply) => {
+    const sourceDumpUrl = request.body?.sourceDumpUrl?.trim();
+    const sourceAuthorization = request.body?.sourceAuthorization?.trim();
+    const name = request.body?.name?.trim();
+    if (!sourceDumpUrl || !sourceAuthorization || !name) {
+      return reply.status(400).send({
+        error: "sourceDumpUrl, sourceAuthorization, and name are required",
+      });
+    }
+    let parsed: URL;
+    try {
+      parsed = new URL(sourceDumpUrl);
+    } catch {
+      return reply.status(400).send({ error: "Invalid sourceDumpUrl" });
+    }
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return reply.status(400).send({ error: "sourceDumpUrl must be http(s)" });
+    }
+    const tmp = path.join(
+      os.tmpdir(),
+      `guartrix-mysql-peer-${name}-${Date.now()}.sql`,
+    );
+    try {
+      const res = await fetch(sourceDumpUrl, {
+        method: "POST",
+        headers: {
+          Authorization: sourceAuthorization,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name }),
+        signal: AbortSignal.timeout(30 * 60 * 1000),
+      });
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        return reply
+          .status(502)
+          .send({ error: text || `Source dump failed (${res.status})` });
+      }
+      const buf = Buffer.from(await res.arrayBuffer());
+      await fs.writeFile(tmp, buf);
+      await restoreMysqlDatabaseFromFile(name, tmp);
+      return { ok: true, bytes: buf.length };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return reply.status(400).send({ error: message });
+    } finally {
+      await fs.rm(tmp, { force: true }).catch(() => undefined);
+    }
+  });
 }

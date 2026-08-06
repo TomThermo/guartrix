@@ -49,7 +49,7 @@ When Redis is connected, the panel uses it for:
 | Sessions | `RedisSessionStore` |
 | Rate limits | Shared sliding-window counters |
 | Transfer jobs | Keys `guartrix:transfer:*` (+ disk mirror) |
-| Schedules / backups | One API holds `guartrix:scheduler:lock` |
+| Schedules / backups | One API holds `guartrix:scheduler:lock` (**fail-closed** if Redis errors); BullMQ queues when `REDIS_URL` + `JOBS_BULLMQ=1` |
 | Backup/restore busy | Per-server `guartrix:backup-busy:{id}` (`SET NX`, `BACKUP_BUSY_TTL_MS`) |
 | Daemon `/events` bridges | One API holds `guartrix:bridge:lock`; others consume Redis `guartrix:events` fan-out |
 | Console / daemon events | Pub/sub `guartrix:events` for cross-replica fan-out |
@@ -89,7 +89,7 @@ Redis is for **multiple panel API replicas** behind a load balancer.
 | More Minecraft capacity | Add nodes via System → Add node |
 | More admins / light panel traffic | Bigger single panel VPS is enough |
 | Shared logins + rate limits across API replicas | `SESSION_STORE=redis` + `RATE_LIMIT_STORE=redis` + `REDIS_URL` |
-| Full panel HA | Redis as above (sessions, rate limits, transfers, scheduler + bridge locks, backup busy, event bus) |
+| Full panel HA | Redis as above (sessions, rate limits, transfers, scheduler + bridge locks, backup busy, event bus, BullMQ job queues) |
 
 ## Related
 

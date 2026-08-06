@@ -15,16 +15,19 @@ import { AdminPageShell, AdminPanelCard } from "../components/admin/AdminPageShe
 import { useI18n } from "../i18n/react";
 import { AlertsPanel } from "./admin-settings/AlertsPanel";
 import { GeneralPanel } from "./admin-settings/GeneralPanel";
+import { GoLivePanel } from "./admin-settings/GoLivePanel";
 import { MailPanel } from "./admin-settings/MailPanel";
 import { SecurityPanel } from "./admin-settings/SecurityPanel";
+import type { ReadinessReport } from "../api/admin-settings";
 
-type SettingsTab = "general" | "mail" | "security" | "alerts";
+type SettingsTab = "general" | "mail" | "security" | "alerts" | "golive";
 
 const SETTINGS_TABS: Array<{ id: SettingsTab; icon: string; labelKey: string }> = [
   { id: "general", icon: "fa-sliders", labelKey: "adminSettings.tabGeneral" },
   { id: "mail", icon: "fa-paper-plane", labelKey: "adminSettings.tabMail" },
   { id: "security", icon: "fa-shield-halved", labelKey: "adminSettings.tabSecurity" },
   { id: "alerts", icon: "fa-bell", labelKey: "adminSettings.tabAlerts" },
+  { id: "golive", icon: "fa-rocket", labelKey: "adminSettings.tabGoLive" },
 ];
 
 export function AdminSettingsPage() {
@@ -69,6 +72,12 @@ export function AdminSettingsPage() {
   const [redisInfo, setRedisInfo] = useState<PanelSettings["redis"] | null>(
     null,
   );
+  const [readiness, setReadiness] = useState<ReadinessReport | null>(null);
+  const [readinessLoading, setReadinessLoading] = useState(false);
+  const [slaRestoreDrillAt, setSlaRestoreDrillAt] = useState("");
+  const [slaCapacityReviewAt, setSlaCapacityReviewAt] = useState("");
+  const [slaIncidentRunbookAck, setSlaIncidentRunbookAck] = useState(false);
+  const [slaPentestAck, setSlaPentestAck] = useState(false);
 
   const applyView = useCallback((s: PanelSettings) => {
     setPublicHost(s.publicHost);
@@ -98,7 +107,29 @@ export function AdminSettingsPage() {
     setActivityAlertMute((s.activityAlertMute ?? []).join(", "));
     setBackupOffsiteCmd(s.backupOffsiteCmd ?? "");
     setRedisInfo(s.redis ?? null);
+    setSlaRestoreDrillAt(
+      s.slaRestoreDrillAt ? s.slaRestoreDrillAt.slice(0, 10) : "",
+    );
+    setSlaCapacityReviewAt(
+      s.slaCapacityReviewAt ? s.slaCapacityReviewAt.slice(0, 10) : "",
+    );
+    setSlaIncidentRunbookAck(Boolean(s.slaIncidentRunbookAck));
+    setSlaPentestAck(Boolean(s.slaPentestAck));
   }, []);
+
+  const refreshReadiness = useCallback(async () => {
+    setReadinessLoading(true);
+    try {
+      const r = await api.getAdminReadiness();
+      setReadiness(r);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : t("adminSettings.loadFailed"),
+      );
+    } finally {
+      setReadinessLoading(false);
+    }
+  }, [t]);
 
   const refresh = useCallback(async () => {
     const s = await api.getPanelSettings();
@@ -115,6 +146,12 @@ export function AdminSettingsPage() {
       )
       .finally(() => setLoading(false));
   }, [refresh, t]);
+
+  useEffect(() => {
+    if (tab === "golive") {
+      void refreshReadiness();
+    }
+  }, [tab, refreshReadiness]);
 
   if (!authenticated) return <Navigate to="/login" replace />;
   if (user?.role !== "ADMIN") return <Navigate to="/" replace />;
@@ -147,6 +184,10 @@ export function AdminSettingsPage() {
         alertEmail,
         activityAlertMute,
         backupOffsiteCmd,
+        slaRestoreDrillAt: slaRestoreDrillAt || null,
+        slaCapacityReviewAt: slaCapacityReviewAt || null,
+        slaIncidentRunbookAck,
+        slaPentestAck,
       };
       if (cloudflareApiToken.trim()) {
         body.cloudflareApiToken = cloudflareApiToken.trim();
@@ -156,6 +197,7 @@ export function AdminSettingsPage() {
       }
       const res = await api.updatePanelSettings(body);
       applyView(res);
+      if (tab === "golive") void refreshReadiness();
       if (res.restartRequired) {
         setRestartRequired(true);
         setNotice(t("adminSettings.savedRestart"));
@@ -338,6 +380,24 @@ export function AdminSettingsPage() {
                   onActivityAlertMuteChange={setActivityAlertMute}
                   backupOffsiteCmd={backupOffsiteCmd}
                   onBackupOffsiteCmdChange={setBackupOffsiteCmd}
+                />
+              )}
+
+              {tab === "golive" && (
+                <GoLivePanel
+                  readiness={readiness}
+                  loading={readinessLoading}
+                  busy={busy}
+                  onRefresh={() => void refreshReadiness()}
+                  slaRestoreDrillAt={slaRestoreDrillAt}
+                  onSlaRestoreDrillAtChange={setSlaRestoreDrillAt}
+                  slaCapacityReviewAt={slaCapacityReviewAt}
+                  onSlaCapacityReviewAtChange={setSlaCapacityReviewAt}
+                  slaIncidentRunbookAck={slaIncidentRunbookAck}
+                  onSlaIncidentRunbookAckChange={setSlaIncidentRunbookAck}
+                  slaPentestAck={slaPentestAck}
+                  onSlaPentestAckChange={setSlaPentestAck}
+                  onGoToTab={(t) => setTab(t)}
                 />
               )}
 

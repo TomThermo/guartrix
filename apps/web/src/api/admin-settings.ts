@@ -40,6 +40,10 @@ export type PanelSettings = {
   restartRequiredKeys: string[];
   restartRequired?: boolean;
   envChanged?: string[];
+  slaRestoreDrillAt: string | null;
+  slaIncidentRunbookAck: boolean;
+  slaPentestAck: boolean;
+  slaCapacityReviewAt: string | null;
 };
 
 export type PanelSettingsPatch = {
@@ -66,6 +70,40 @@ export type PanelSettingsPatch = {
   alertEmail?: string;
   activityAlertMute?: string[] | string;
   backupOffsiteCmd?: string;
+  slaRestoreDrillAt?: string | null;
+  slaIncidentRunbookAck?: boolean;
+  slaPentestAck?: boolean;
+  slaCapacityReviewAt?: string | null;
+};
+
+export type ReadinessCheck = {
+  id: string;
+  tone: "pass" | "warn" | "fail" | "info";
+  tab?: "general" | "mail" | "security" | "alerts" | "golive";
+  detail?: string;
+};
+
+export type ReadinessReport = {
+  generatedAt: string;
+  summary: { pass: number; warn: number; fail: number; info: number };
+  checks: ReadinessCheck[];
+  sla: {
+    restoreDrillAt?: string | null;
+    incidentRunbookAck?: boolean;
+    pentestScheduledOrDone?: boolean;
+    capacityReviewAt?: string | null;
+  };
+  jobs?: {
+    mode: "bullmq" | "in_process";
+    redisRequired: boolean;
+    queues?: Array<{
+      name: string;
+      waiting: number;
+      active: number;
+      failed: number;
+      delayed: number;
+    }>;
+  };
 };
 
 export const adminSettingsApi = {
@@ -75,6 +113,9 @@ export const adminSettingsApi = {
       method: "PUT",
       body: JSON.stringify(body),
     }),
+  getAdminReadiness: () => request<ReadinessReport>("/api/admin/readiness"),
+  getAdminJobs: () =>
+    request<NonNullable<ReadinessReport["jobs"]>>("/api/admin/jobs"),
   testPanelMail: () =>
     request<{
       ok: boolean;

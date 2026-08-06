@@ -9,7 +9,7 @@ import { backupsApi } from "./backups";
 import { billingApi } from "./billing";
 import { adminSettingsApi } from "./admin-settings";
 
-export type { PanelSettings, PanelSettingsPatch } from "./admin-settings";
+export type { PanelSettings, PanelSettingsPatch, ReadinessReport } from "./admin-settings";
 
 export const api = {
   ...authApi,

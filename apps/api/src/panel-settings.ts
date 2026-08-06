@@ -35,6 +35,11 @@ export type PanelSettingsStored = {
   alertEmail?: string;
   activityAlertMute?: string[];
   backupOffsiteCmd?: string;
+  /** Operator SLA attestations (Admin → Go-live). ISO dates / booleans. */
+  slaRestoreDrillAt?: string | null;
+  slaIncidentRunbookAck?: boolean;
+  slaPentestAck?: boolean;
+  slaCapacityReviewAt?: string | null;
 };
 
 /** Public GET shape — secrets masked. */
@@ -78,6 +83,10 @@ export type PanelSettingsView = {
   };
   /** Keys that need `bash build/start.sh` after change. */
   restartRequiredKeys: string[];
+  slaRestoreDrillAt: string | null;
+  slaIncidentRunbookAck: boolean;
+  slaPentestAck: boolean;
+  slaCapacityReviewAt: string | null;
 };
 
 const ENV_SYNC_KEYS = [
@@ -244,6 +253,7 @@ function currentHttpsEnabled(): boolean {
 export async function getPanelSettingsView(): Promise<PanelSettingsView> {
   const { getRedisStatus } = await import("./redis.js");
   const redis = await getRedisStatus();
+  const stored = await readStoredSettings();
   return {
     publicHost: config.publicHost,
     publicBaseUrl: config.publicBaseUrl,
@@ -282,6 +292,10 @@ export async function getPanelSettingsView(): Promise<PanelSettingsView> {
       rateLimitStore: redis.rateLimitStore,
     },
     restartRequiredKeys: [...ENV_SYNC_KEYS],
+    slaRestoreDrillAt: stored.slaRestoreDrillAt ?? null,
+    slaIncidentRunbookAck: Boolean(stored.slaIncidentRunbookAck),
+    slaPentestAck: Boolean(stored.slaPentestAck),
+    slaCapacityReviewAt: stored.slaCapacityReviewAt ?? null,
   };
 }
 
@@ -310,6 +324,10 @@ export type PanelSettingsPatch = {
   alertEmail?: string;
   activityAlertMute?: string[] | string;
   backupOffsiteCmd?: string;
+  slaRestoreDrillAt?: string | null;
+  slaIncidentRunbookAck?: boolean;
+  slaPentestAck?: boolean;
+  slaCapacityReviewAt?: string | null;
 };
 
 function asNonNegInt(value: unknown, label: string): number {
@@ -436,6 +454,22 @@ export function mergePanelSettingsPatch(
   }
   if (patch.backupOffsiteCmd !== undefined) {
     next.backupOffsiteCmd = String(patch.backupOffsiteCmd).trim();
+  }
+  if (patch.slaRestoreDrillAt !== undefined) {
+    const v = patch.slaRestoreDrillAt;
+    next.slaRestoreDrillAt =
+      v === null || v === "" ? null : String(v).trim();
+  }
+  if (patch.slaIncidentRunbookAck !== undefined) {
+    next.slaIncidentRunbookAck = Boolean(patch.slaIncidentRunbookAck);
+  }
+  if (patch.slaPentestAck !== undefined) {
+    next.slaPentestAck = Boolean(patch.slaPentestAck);
+  }
+  if (patch.slaCapacityReviewAt !== undefined) {
+    const v = patch.slaCapacityReviewAt;
+    next.slaCapacityReviewAt =
+      v === null || v === "" ? null : String(v).trim();
   }
 
   return next;

@@ -3,9 +3,12 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased]
+## [1.1.2] — 2026-08-06
 
--
+- Sprint 10 SaaS/SLA: invite accept requires `emailVerified`; Admin → Settings → Go-live readiness + SLA attestations
+- BullMQ job queues when Redis is configured; scheduler lock fail-closed on Redis errors
+- Stable `/api/v1` dual-mount; peer MySQL restore-from on node transfer
+- CI Biome on Sprint 10 paths + optional Playwright staging workflow; SLA ops wiki
 
 ## [1.1.1] — 2026-08-06
 

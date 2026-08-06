@@ -1,9 +1,9 @@
 openapi: 3.0.3
 info:
   title: Guartrix API
-  version: 1.1.1
+  version: 1.1.2
   description: |
-    Machine-readable surface for the Guartrix panel.
+    Machine-readable surface for the Guartrix panel. Paths under /api also answer at /api/v1 (dual-mount).
 
     - **Client API** — personal keys (`Authorization: Bearer gt_…`)
     - **Application API** — admin/billing keys (`Authorization: Bearer gta_…`)
@@ -2458,3 +2458,493 @@ paths:
         "200":
           description: OK
 
+  /api/account/api-reference:
+    get:
+      tags: [Account]
+      summary: "GET /api/account/api-reference"
+      security:
+        - SessionCookie: []
+      responses:
+        "200":
+          description: OK
+  /api/account/session:
+    get:
+      tags: [Account]
+      summary: "GET /api/account/session"
+      security:
+        - SessionCookie: []
+      responses:
+        "200":
+          description: OK
+  /api/admin/jobs:
+    get:
+      tags: [Admin]
+      summary: "GET /api/admin/jobs"
+      security:
+        - SessionCookie: []
+      responses:
+        "200":
+          description: OK
+  /api/admin/readiness:
+    get:
+      tags: [Admin]
+      summary: "GET /api/admin/readiness"
+      security:
+        - SessionCookie: []
+      responses:
+        "200":
+          description: OK
+  /api/application/activity:
+    get:
+      tags: [Client]
+      summary: "GET /api/application/activity"
+      security:
+        - ClientApiKey: []
+        - SessionCookie: []
+      responses:
+        "200":
+          description: OK
+  /api/application/nodes:
+    get:
+      tags: [Client]
+      summary: "GET /api/application/nodes"
+      security:
+        - ClientApiKey: []
+        - SessionCookie: []
+      responses:
+        "200":
+          description: OK
+  /api/application/servers/{id}:
+    delete:
+      tags: [Client]
+      summary: "DELETE /api/application/servers/{id}"
+      security:
+        - ClientApiKey: []
+        - SessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+    get:
+      tags: [Client]
+      summary: "GET /api/application/servers/{id}"
+      security:
+        - ClientApiKey: []
+        - SessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+    patch:
+      tags: [Client]
+      summary: "PATCH /api/application/servers/{id}"
+      security:
+        - ClientApiKey: []
+        - SessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+  /api/application/servers/{id}/addons:
+    get:
+      tags: [Client]
+      summary: "GET /api/application/servers/{id}/addons"
+      security:
+        - ClientApiKey: []
+        - SessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+  /api/application/servers/{id}/addons/install:
+    post:
+      tags: [Client]
+      summary: "POST /api/application/servers/{id}/addons/install"
+      security:
+        - ClientApiKey: []
+        - SessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+  /api/application/servers/{id}/addons/{projectId}:
+    delete:
+      tags: [Client]
+      summary: "DELETE /api/application/servers/{id}/addons/{projectId}"
+      security:
+        - ClientApiKey: []
+        - SessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: projectId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+  /api/application/servers/{id}/allocations:
+    get:
+      tags: [Client]
+      summary: "GET /api/application/servers/{id}/allocations"
+      security:
+        - ClientApiKey: []
+        - SessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+  /api/application/servers/{id}/backups:
+    get:
+      tags: [Client]
+      summary: "GET /api/application/servers/{id}/backups"
+      security:
+        - ClientApiKey: []
+        - SessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+    post:
+      tags: [Client]
+      summary: "POST /api/application/servers/{id}/backups"
+      security:
+        - ClientApiKey: []
+        - SessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+  /api/application/servers/{id}/backups/{backupId}:
+    delete:
+      tags: [Client]
+      summary: "DELETE /api/application/servers/{id}/backups/{backupId}"
+      security:
+        - ClientApiKey: []
+        - SessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: backupId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+  /api/application/servers/{id}/backups/{backupId}/restore:
+    post:
+      tags: [Client]
+      summary: "POST /api/application/servers/{id}/backups/{backupId}/restore"
+      security:
+        - ClientApiKey: []
+        - SessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: backupId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+  /api/application/servers/{id}/connect:
+    get:
+      tags: [Client]
+      summary: "GET /api/application/servers/{id}/connect"
+      security:
+        - ClientApiKey: []
+        - SessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+  /api/application/servers/{id}/databases:
+    get:
+      tags: [Client]
+      summary: "GET /api/application/servers/{id}/databases"
+      security:
+        - ClientApiKey: []
+        - SessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+  /api/application/servers/{id}/databases/{dbId}/rotate-password:
+    post:
+      tags: [Client]
+      summary: "POST /api/application/servers/{id}/databases/{dbId}/rotate-password"
+      security:
+        - ClientApiKey: []
+        - SessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: dbId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+  /api/application/servers/{id}/files:
+    get:
+      tags: [Client]
+      summary: "GET /api/application/servers/{id}/files"
+      security:
+        - ClientApiKey: []
+        - SessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+  /api/application/servers/{id}/files/compress:
+    post:
+      tags: [Client]
+      summary: "POST /api/application/servers/{id}/files/compress"
+      security:
+        - ClientApiKey: []
+        - SessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+  /api/application/servers/{id}/files/content:
+    get:
+      tags: [Client]
+      summary: "GET /api/application/servers/{id}/files/content"
+      security:
+        - ClientApiKey: []
+        - SessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+    post:
+      tags: [Client]
+      summary: "POST /api/application/servers/{id}/files/content"
+      security:
+        - ClientApiKey: []
+        - SessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+  /api/application/servers/{id}/files/delete:
+    post:
+      tags: [Client]
+      summary: "POST /api/application/servers/{id}/files/delete"
+      security:
+        - ClientApiKey: []
+        - SessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+  /api/application/servers/{id}/files/mkdir:
+    post:
+      tags: [Client]
+      summary: "POST /api/application/servers/{id}/files/mkdir"
+      security:
+        - ClientApiKey: []
+        - SessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+  /api/application/servers/{id}/files/rename:
+    post:
+      tags: [Client]
+      summary: "POST /api/application/servers/{id}/files/rename"
+      security:
+        - ClientApiKey: []
+        - SessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+  /api/application/servers/{id}/power:
+    post:
+      tags: [Client]
+      summary: "POST /api/application/servers/{id}/power"
+      security:
+        - ClientApiKey: []
+        - SessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+  /api/application/settings:
+    get:
+      tags: [Client]
+      summary: "GET /api/application/settings"
+      security:
+        - ClientApiKey: []
+        - SessionCookie: []
+      responses:
+        "200":
+          description: OK
+  /api/nodes/{id}/port-check:
+    get:
+      tags: [Client]
+      summary: "GET /api/nodes/{id}/port-check"
+      security:
+        - ClientApiKey: []
+        - SessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+  /api/nodes/{id}/suggested-port:
+    get:
+      tags: [Client]
+      summary: "GET /api/nodes/{id}/suggested-port"
+      security:
+        - ClientApiKey: []
+        - SessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+  /api/servers/{id}/command:
+    post:
+      tags: [Client]
+      summary: "POST /api/servers/{id}/command"
+      security:
+        - ClientApiKey: []
+        - SessionCookie: []
+      parameters:
+        - $ref: "#/components/parameters/ServerId"
+      responses:
+        "200":
+          description: OK
+  /api/servers/{id}/databases/{dbId}/rotate-password:
+    post:
+      tags: [Client]
+      summary: "POST /api/servers/{id}/databases/{dbId}/rotate-password"
+      security:
+        - ClientApiKey: []
+        - SessionCookie: []
+      parameters:
+        - $ref: "#/components/parameters/ServerId"
+        - name: dbId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+  /api/servers/{id}/power:
+    post:
+      tags: [Client]
+      summary: "POST /api/servers/{id}/power"
+      security:
+        - ClientApiKey: []
+        - SessionCookie: []
+      parameters:
+        - $ref: "#/components/parameters/ServerId"
+      responses:
+        "200":
+          description: OK
+  /api/servers/{id}/websocket:
+    get:
+      tags: [Client]
+      summary: "GET /api/servers/{id}/websocket"
+      security:
+        - ClientApiKey: []
+        - SessionCookie: []
+      parameters:
+        - $ref: "#/components/parameters/ServerId"
+      responses:
+        "200":
+          description: OK

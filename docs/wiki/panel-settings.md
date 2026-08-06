@@ -1,6 +1,6 @@
 # Panel settings (Admin UI)
 
-Admins configure panel-wide options under **Admin → Settings** (General, Mail, Security, Alerts), similar to Pterodactyl’s admin settings.
+Admins configure panel-wide options under **Admin → Settings** (General, Mail, Security, Alerts, **Go-live**), similar to Pterodactyl’s admin settings.
 
 ## What it stores
 
@@ -12,8 +12,15 @@ Overrides live in **`data/panel-settings.json`** (mode `0600`). Values merge on 
 | Mail | `MAIL_FROM`, SMTP host/port/TLS/user/password, **Send test mail** |
 | Security | `HTTPS_ENABLED`, `SESSION_SECURE`, roles that must use 2FA; **Redis** status (read-only) + test connection |
 | Alerts | Activity webhook, alert email, muted action keys |
+| Go-live | Live readiness checks (`GET /api/admin/readiness`), job queue status, SLA operator attestations |
 
 Secrets (SMTP password, Cloudflare token) are never returned in full — leave the field blank to keep the current value.
+
+### Go-live tab
+
+Shows pass/warn/fail for SMTP, registration, HTTPS, TRUST_PROXY, admin 2FA, Redis, alerts, daemon JWT legacy, scheduler locks, and BullMQ vs in-process jobs. Deep-links jump to the matching settings tab.
+
+SLA checkboxes/dates (restore drill, capacity review, incident runbook ack, pentest ack) are **operator attestations** stored in `panel-settings.json` — see [SLA ops](sla-ops.md).
 
 ## Restart required
 
@@ -23,7 +30,7 @@ Changing **public host**, **public base URL**, **HTTPS**, or **session secure** 
 bash build/start.sh
 ```
 
-Other keys (registration, mail, quotas, 2FA roles, alerts, Cloudflare) apply to the API **immediately** without restart.
+Other keys (registration, mail, quotas, 2FA roles, alerts, Cloudflare, SLA attestations) apply to the API **immediately** without restart.
 
 ## Relation to `.env`
 
@@ -31,7 +38,7 @@ Other keys (registration, mail, quotas, 2FA roles, alerts, Cloudflare) apply to 
 - The Settings UI is the preferred way to change the knobs above on a running panel.
 - Do not commit `data/panel-settings.json` (under `data/`, gitignored with other operator state).
 
-Go-live checklist (webhook, SMTP, Mollie, backups): for **customer installs** after download — [Improvement map — customer install](../roadmap.md#customer-install-their-vps--documented-not-this-host).
+Go-live checklist (webhook, SMTP, Mollie, backups): for **customer installs** after download — use **Admin → Settings → Go-live** and [Improvement map — Sprint 10](../roadmap.md).
 
 ## Nodes
 
