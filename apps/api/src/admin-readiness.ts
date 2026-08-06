@@ -42,9 +42,7 @@ export type ReadinessReport = {
 };
 
 function trustProxyEnabled(): boolean {
-  return (
-    process.env.TRUST_PROXY === "true" || process.env.TRUST_PROXY === "1"
-  );
+  return process.env.TRUST_PROXY === "true" || process.env.TRUST_PROXY === "1";
 }
 
 function daemonJwtLegacy(): boolean {
@@ -89,8 +87,7 @@ export async function buildReadinessReport(opts?: {
       id: "smtp",
       tone: "fail",
       tab: "mail",
-      detail:
-        "Registration is open but SMTP is not configured — verify-before-login is inactive",
+      detail: "Registration is open but SMTP is not configured — verify-before-login is inactive",
     });
   } else {
     checks.push({
@@ -105,9 +102,7 @@ export async function buildReadinessReport(opts?: {
     id: "registration",
     tone: registrationOpen ? (smtpOk ? "warn" : "fail") : "pass",
     tab: "general",
-    detail: registrationOpen
-      ? "Self-serve registration is enabled"
-      : "Registration closed",
+    detail: registrationOpen ? "Self-serve registration is enabled" : "Registration closed",
   });
 
   checks.push({
@@ -163,10 +158,7 @@ export async function buildReadinessReport(opts?: {
       id: "alerts",
       tone: "pass",
       tab: "alerts",
-      detail: [
-        webhook ? "webhook set" : null,
-        alertEmail ? "alert email set" : null,
-      ]
+      detail: [webhook ? "webhook set" : null, alertEmail ? "alert email set" : null]
         .filter(Boolean)
         .join(", "),
     });
@@ -189,11 +181,7 @@ export async function buildReadinessReport(opts?: {
 
   checks.push({
     id: "scheduler_locks",
-    tone: isRedisConfigured()
-      ? redis.connected
-        ? "pass"
-        : "fail"
-      : "info",
+    tone: isRedisConfigured() ? (redis.connected ? "pass" : "fail") : "info",
     tab: "security",
     detail: isRedisConfigured()
       ? "Scheduler/bridge locks use Redis (fail-closed when Redis enabled)"

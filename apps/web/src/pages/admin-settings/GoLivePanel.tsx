@@ -38,9 +38,7 @@ export type GoLivePanelProps = {
   onGoToTab: (tab: "general" | "mail" | "security" | "alerts") => void;
 };
 
-function toneVariant(
-  tone: string,
-): "success" | "warning" | "danger" | "secondary" | "info" {
+function toneVariant(tone: string): "success" | "warning" | "danger" | "secondary" | "info" {
   if (tone === "pass") return "success";
   if (tone === "warn") return "warning";
   if (tone === "fail") return "danger";
@@ -95,9 +93,7 @@ export function GoLivePanel({
           </span>
         )}
       </div>
-      <p className="small text-secondary mb-3">
-        {t("adminSettings.goLiveHelp")}
-      </p>
+      <p className="small text-secondary mb-3">{t("adminSettings.goLiveHelp")}</p>
 
       {loading && !readiness ? (
         <div className="text-secondary small">{t("common.loading")}</div>
@@ -148,9 +144,7 @@ export function GoLivePanel({
 
       {readiness?.jobs && (
         <AdminInsetCard className="mb-4">
-          <div className="fw-semibold mb-1">
-            {t("adminSettings.goLiveJobs")}
-          </div>
+          <div className="fw-semibold mb-1">{t("adminSettings.goLiveJobs")}</div>
           <p className="small text-secondary mb-2">
             {readiness.jobs.mode === "bullmq"
               ? t("adminSettings.goLiveJobsBullmq")
@@ -184,12 +178,8 @@ export function GoLivePanel({
       )}
 
       <AdminInsetCard>
-        <div className="fw-semibold mb-2">
-          {t("adminSettings.slaAttestHeading")}
-        </div>
-        <p className="small text-secondary mb-3">
-          {t("adminSettings.slaAttestHelp")}
-        </p>
+        <div className="fw-semibold mb-2">{t("adminSettings.slaAttestHeading")}</div>
+        <p className="small text-secondary mb-3">{t("adminSettings.slaAttestHelp")}</p>
         <Form.Group className="mb-3">
           <Form.Label>{t("adminSettings.slaRestoreDrill")}</Form.Label>
           <Form.Control

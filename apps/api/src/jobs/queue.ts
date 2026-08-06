@@ -7,13 +7,7 @@ import { isRedisConfigured, redisUrl } from "../redis.js";
 
 export type JobsStatus = NonNullable<ReadinessReport["jobs"]>;
 
-const QUEUE_NAMES = [
-  "backups",
-  "schedules",
-  "transfers",
-  "disk-watch",
-  "maintenance",
-] as const;
+const QUEUE_NAMES = ["backups", "schedules", "transfers", "disk-watch", "maintenance"] as const;
 
 export type QueueName = (typeof QUEUE_NAMES)[number];
 
@@ -21,11 +15,15 @@ type BullMqQueue = {
   add: (
     name: string,
     data: unknown,
-    opts?: { jobId?: string; attempts?: number; backoff?: unknown; removeOnComplete?: number; removeOnFail?: number },
+    opts?: {
+      jobId?: string;
+      attempts?: number;
+      backoff?: unknown;
+      removeOnComplete?: number;
+      removeOnFail?: number;
+    },
   ) => Promise<{ id?: string }>;
-  getJobCounts: (
-    ...types: string[]
-  ) => Promise<Record<string, number>>;
+  getJobCounts: (...types: string[]) => Promise<Record<string, number>>;
   close: () => Promise<void>;
 };
 
@@ -37,8 +35,7 @@ type BullMqWorker = {
 let mode: "bullmq" | "in_process" = "in_process";
 const queues = new Map<QueueName, BullMqQueue>();
 const workers: BullMqWorker[] = [];
-let connection: { quit?: () => Promise<unknown>; disconnect?: () => void } | null =
-  null;
+let connection: { quit?: () => Promise<unknown>; disconnect?: () => void } | null = null;
 
 function workersEnabled(): boolean {
   const v = (process.env.JOBS_BULLMQ ?? "1").trim().toLowerCase();
@@ -105,8 +102,7 @@ export async function initJobQueues(handlers: {
       const processor = async (queueName: QueueName, job: { data: unknown }) => {
         if (queueName === "backups") await handlers.onBackupTick?.();
         else if (queueName === "schedules") await handlers.onScheduleTick?.();
-        else if (queueName === "maintenance")
-          await handlers.onMaintenanceTick?.();
+        else if (queueName === "maintenance") await handlers.onMaintenanceTick?.();
         else if (queueName === "disk-watch") await handlers.onDiskWatchTick?.();
         else if (queueName === "transfers") {
           const data = job.data as {
@@ -128,14 +124,10 @@ export async function initJobQueues(handlers: {
       };
 
       for (const name of QUEUE_NAMES) {
-        const w = new bullmq.Worker(
-          name,
-          async (job) => processor(name, job),
-          {
-            connection: connection as never,
-            concurrency: name === "transfers" ? 2 : 1,
-          },
-        ) as unknown as BullMqWorker;
+        const w = new bullmq.Worker(name, async (job) => processor(name, job), {
+          connection: connection as never,
+          concurrency: name === "transfers" ? 2 : 1,
+        }) as unknown as BullMqWorker;
         w.on("failed", (...args: unknown[]) => {
           console.error(`[jobs] ${name} job failed`, args[0], args[1]);
         });
@@ -183,12 +175,7 @@ export async function enqueueTransfer(
     name: string;
   },
 ): Promise<boolean> {
-  return enqueueJob(
-    "transfers",
-    "transfer",
-    { serverId, meta },
-    { jobId: `transfer-${serverId}` },
-  );
+  return enqueueJob("transfers", "transfer", { serverId, meta }, { jobId: `transfer-${serverId}` });
 }
 
 export async function getJobsStatus(): Promise<JobsStatus> {
@@ -207,12 +194,7 @@ export async function getJobsStatus(): Promise<JobsStatus> {
     const q = queues.get(name);
     if (!q) continue;
     try {
-      const counts = await q.getJobCounts(
-        "waiting",
-        "active",
-        "failed",
-        "delayed",
-      );
+      const counts = await q.getJobCounts("waiting", "active", "failed", "delayed");
       out.queues!.push({
         name,
         waiting: counts.waiting ?? 0,

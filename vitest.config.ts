@@ -9,6 +9,13 @@ export default defineConfig({
     ],
     exclude: ["**/node_modules/**", "**/dist/**", "e2e/**"],
     environment: "node",
+    // config.ts refuses weak ADMIN_PASSWORD / SESSION_SECRET without this.
+    env: {
+      ALLOW_INSECURE_DEFAULTS: "1",
+      SESSION_SECRET:
+        process.env.SESSION_SECRET || "vitest-session-secret-xxxxxxxx",
+      ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || "changeme",
+    },
     coverage: {
       provider: "v8",
       include: [

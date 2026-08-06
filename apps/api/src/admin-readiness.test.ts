@@ -48,9 +48,7 @@ describe("buildReadinessReport", () => {
     const report = await buildReadinessReport({
       jobs: { mode: "in_process", redisRequired: false },
     });
-    expect(report.checks.find((c) => c.id === "invite_email_verified")?.tone).toBe(
-      "pass",
-    );
+    expect(report.checks.find((c) => c.id === "invite_email_verified")?.tone).toBe("pass");
     expect(report.checks.some((c) => c.id === "sla_pentest")).toBe(true);
     expect(report.generatedAt).toBeTruthy();
   });
@@ -60,9 +58,7 @@ describe("buildReadinessReport", () => {
       jobs: {
         mode: "bullmq",
         redisRequired: true,
-        queues: [
-          { name: "backups", waiting: 0, active: 0, failed: 0, delayed: 0 },
-        ],
+        queues: [{ name: "backups", waiting: 0, active: 0, failed: 0, delayed: 0 }],
       },
     });
     expect(report.checks.find((c) => c.id === "jobs")?.tone).toBe("pass");
