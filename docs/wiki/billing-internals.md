@@ -6,9 +6,14 @@ Billing in Guartrix combines end-user checkout, admin-managed plan templates, qu
 
 Main implementation areas:
 
-- `apps/api/src/routes/billing.ts`
-- `apps/api/src/routes/application.ts`
-- `apps/api/src/billing/`
+- `apps/api/src/routes/billing/` (user / admin / application route modules)
+- `apps/api/src/routes/application.ts` (where applicable)
+- `apps/api/src/billing/` — domain modules behind barrel `billing.ts`:
+  - `billing-records.ts` — plan/payment/subscription serializers
+  - `billing-provision.ts` — apply plan, auto-create server, provision paid payment
+  - `billing-subscriptions.ts` — Mollie subscription ensure/cancel/revoke
+  - `billing-webhook.ts` — outbound `BILLING_WEBHOOK_URL`
+  - `billing-mollie-sync.ts` — Mollie status sync helpers
 - `apps/api/src/auth/application-keys.ts`
 - `apps/api/prisma/schema.prisma` models `PlanTemplate`, `Payment`, `BillingSubscription`
 

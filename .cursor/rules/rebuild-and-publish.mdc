@@ -15,23 +15,28 @@ Do this if you changed any of:
 - Download packaging, env examples, install READMEs
 - Panel/daemon/license behaviour users or customers get via `/download` or `build/`
 
-**Skip** for: docs-only / wiki-only, Cursor rules only, pure comments, or when the user says not to publish/restart.
+**Skip the build/restart steps** for: docs-only / wiki-markdown-only, Cursor rules only, pure comments, or when the user says not to publish/restart.
+
+**Never skip GitHub:** every finished task with tracked changes still **commits and pushes** — see [always-commit-push](always-commit-push.mdc). Do not leave “ready locally, not on GitHub”.
+
+If the in-app wiki mirror (`apps/web/src/wiki/wiki-content.ts`) or other shippable files changed, this is **not** docs-only — run the full release pass.
 
 ## Steps (in order)
 
 1. **Bump version (patch)** unless the user asked for minor/major:
-   - Root [`package.json`](package.json) `"version"`
-   - `apps/api`, `apps/web`, `apps/daemon`, `apps/license-server` `package.json` (keep in sync)
-   - [`VERSION`](VERSION) file (same string, no `v` prefix)
+ - Root [`package.json`](package.json) `"version"`
+ - `apps/api`, `apps/web`, `apps/daemon`, `apps/license-server` `package.json` (keep in sync)
+ - [`VERSION`](VERSION) file (same string, no `v` prefix)
+ - Keep `docs/openapi.yaml` `info.version` and `docs/roadmap.md` product version in sync
 2. **Rebuild live tree:** `bash scripts/build-out.sh`
 3. **Restore operator-only scripts** wiped by staging (not in customer zips):
-   - `cp -a scripts/prod-web-download.mjs build/scripts/`
-   - Also copy if present: `install-license-le-cert.sh`, `install-daemon-le-cert.sh`, `package-download-bundle.sh`
+ - `cp -a scripts/prod-web-download.mjs build/scripts/`
+ - Also copy if present: `install-license-le-cert.sh`, `install-daemon-le-cert.sh`, `package-download-bundle.sh`
 4. **Publish downloads:** `bash scripts/package-download-bundle.sh --skip-build`  
-   (or without `--skip-build` if dists were not just built)
+ (or without `--skip-build` if dists were not just built)
 5. **Restart:** `bash build/start.sh`
 6. **Smoke:** `curl` API `/api/health`, daemon `/health`, web `:80` (and public hosts if this task touched them)
-7. **Commit + push to GitHub** (this operator host tracks `origin` on `main`):
+7. **Commit + push to GitHub** (mandatory — same as [always-commit-push](always-commit-push.mdc)):
  - Stage shippable changes only (no `.env`, `data/daemon.env`, secrets, `build/`, `dist-download/`)
  - Commit with a short message (version + why)
  - `git push origin HEAD` — auth is a GitHub PAT stored in `~/.git-credentials` (git `credential.helper store`, user TomThermo). If the token expired, ask the user for a new one and update that file; **never** paste the token into repo files or rules (GitHub auto-revokes leaked PATs)
@@ -42,6 +47,7 @@ Do this if you changed any of:
 - Keep `DAEMON_PORT=8081` in `data/daemon.env` if a public node URL uses port 443 behind prod-web.
 - Live publish/restart/push may need user approval (Auto-review); still attempt the full pass and ask if blocked.
 - Do **not** force-push unless the user explicitly requests it.
+- “Only commit when the user asks” does **not** apply here — finishing the task includes push.
 
 ## Example
 

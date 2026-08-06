@@ -397,6 +397,18 @@ export const wikiArticles: WikiArticle[] = [
           "Docker access on the node is still a high-trust surface, so passwordless sudo or Docker group membership should be treated carefully.",
         ],
       },
+      {
+        title: "Preseed checklist (skip curl|sh)",
+        paragraphs: [
+          "On production nodes, install Docker Engine and Node.js 22 from vendor packages before running install-daemon.sh or the Add-node wizard.",
+          "When docker and node (≥22) are already on PATH, the installer prints a tip and skips unpinned curl|sh convenience scripts.",
+        ],
+        bullets: [
+          "Prefer a tagged Guartrix release for --repo / --branch.",
+          "Keep the daemon firewall panel-IP only via PANEL_URL + ufw.",
+          "If you must use convenience scripts once, pin versions and verify checksums — do not re-run curl|sh on every deploy.",
+        ],
+      },
     ],
   },
   {
@@ -973,7 +985,20 @@ export const wikiArticles: WikiArticle[] = [
         title: "Host and supply-chain risk",
         bullets: [
           "Remote install convenience scripts remain a residual supply-chain risk if used without pinning.",
+          "Prefer preseed Docker Engine + Node 22 on each node so install-daemon.sh skips curl|sh.",
           "Docker access on a game node is a high-trust boundary and should be treated accordingly.",
+        ],
+      },
+      {
+        title: "Daemon JWT defaults",
+        paragraphs: [
+          "Panel→daemon auth uses short-lived HS256 JWTs signed with DAEMON_TOKEN. Keep DAEMON_JWT_LEGACY=false after migration.",
+        ],
+        bullets: [
+          "DAEMON_JWT_TTL default 900 (HTTP access JWT seconds).",
+          "DAEMON_JWT_WS_TTL default 3600 (WebSocket JWT seconds).",
+          "DAEMON_JWT_LEGACY default false — raw long-lived bearer is deprecated.",
+          "Rotate node tokens from System → Nodes if a token may have leaked; use TLS on public daemon URLs.",
         ],
       },
     ],
@@ -1479,6 +1504,20 @@ export const wikiArticles: WikiArticle[] = [
           "On systemd installs: `systemctl restart guartrix-api guartrix-web guartrix-daemon`.",
           "On operator checkouts: build and use `bash scripts/start.sh` (preflight, processes, watchdog).",
           "Do not mix systemd restarts with the start.sh watchdog on the same host.",
+        ],
+      },
+      {
+        title: "Operator health smoke",
+        paragraphs: [
+          "After restart, expect HTTP 200 from these local probes (adjust hosts/ports for your install):",
+        ],
+        code: [
+          {
+            label: "Health smoke",
+            language: "bash",
+            content:
+              "curl -sf http://127.0.0.1:3001/api/health\ncurl -sf http://127.0.0.1:3001/api/ready\ncurl -sf http://127.0.0.1:8081/health\ncurl -sf http://127.0.0.1:8081/ready\ncurl -sfI http://127.0.0.1/",
+          },
         ],
       },
       {

@@ -98,10 +98,16 @@ Main capabilities:
 - Encrypted backup mode can be enabled by environment configuration.
 - Transfer and restore flows stream data rather than fully unpacking everything on the panel host.
 
-Internal helpers:
+Internal helpers (domain peels behind `backups.ts`):
 
 - `apps/api/src/servers/backup-transfer.ts`
 - `apps/api/src/servers/backup-crypto.ts`
+- `apps/api/src/servers/backup-mysql.ts` — embed/restore linked game MySQL dumps
+- `apps/api/src/servers/backup-offsite.ts` — post-backup `BACKUP_OFFSITE_CMD` hook
+- `apps/api/src/servers/backup-paths.ts` — archive path helpers
+- `apps/api/src/servers/backup-schedule.ts` — recurring backup schedule helpers
+
+Web file manager UI peels: `FileManager.tsx` + `file-manager/` panes (toolbar, browser table, editor, tree).
 
 ## Restore expectations
 

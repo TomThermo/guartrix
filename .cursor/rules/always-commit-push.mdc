@@ -1,0 +1,38 @@
+---
+description: Always commit and push finished work to GitHub — do not wait for the user to ask
+alwaysApply: true
+---
+
+# Always commit & push when done
+
+When a task leaves **any** durable repo change (code, docs, wiki, Cursor rules, scripts, packaging), **commit and push before you stop**. Do **not** wait for the user to say “commit” or “push to git”.
+
+This **overrides** generic agent habits like “only commit when asked” / “don’t push unless asked” for this repository.
+
+## Required finish sequence
+
+1. Stage shippable files only (never `.env`, secrets, `data/daemon.env`, `build/`, `dist-download/`, credentials).
+2. `git commit` with a short message (include version when you bumped it).
+3. `git push -u origin HEAD` (or `git push origin HEAD` if upstream exists).
+4. On the **operator host** tracking `main`, push to `main` as usual. In cloud/PR workflows, push the feature branch and open/update the PR — still push; do not leave commits local-only.
+
+## When
+
+Do this for:
+
+- Product / release work (together with [rebuild-and-publish](rebuild-and-publish.mdc))
+- Docs / wiki / README / OpenAPI / roadmap-only edits
+- Cursor rule (`.cursor/rules`) updates
+- Any other tracked-file change you made in the task
+
+## Skip only when
+
+- The user **explicitly** says not to commit or not to push
+- There were **no** tracked-file changes
+- Push is blocked (auth/network) — then report the blocker and keep the commit ready; ask for a refreshed PAT if needed (never paste tokens into the repo)
+
+## Notes
+
+- Do **not** force-push unless the user explicitly requests it.
+- Prefer one clear commit (or a short logical series) over leaving a dirty tree at end of turn.
+- If you already built/published in the same task, still commit+push the sources that produced that release.
