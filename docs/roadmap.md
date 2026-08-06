@@ -3,7 +3,7 @@
 Living overview of **what is shipped**, **what is in progress**, and **what remains optional**.
 Formerly called “roadmap”; same file, clearer name.
 
-**Live:** [guartrix.com](https://guartrix.com) · **Wiki:** [docs/wiki/README.md](wiki/README.md) · **History:** [CHANGELOG.md](../CHANGELOG.md)
+**Scale (100n/1000c):** [docs/scale-100n-1000c-roadmap.md](scale-100n-1000c-roadmap.md) · **Live:** [guartrix.com](https://guartrix.com) · **Wiki:** [docs/wiki/README.md](wiki/README.md) · **History:** [CHANGELOG.md](../CHANGELOG.md)
 
 Last updated: **2026-08-06** · product **v1.0.164**
 

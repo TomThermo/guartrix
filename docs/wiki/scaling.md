@@ -81,3 +81,7 @@ Redis is for **multiple panel API replicas** behind a load balancer.
 - [Install panel](install-panel.md)
 - [Install nodes](install-nodes.md)
 - [Env reference](env-reference.md)
+
+## Large installs (100 nodes / 1000 customers)
+
+Work items: [Scale roadmap](../scale-100n-1000c-roadmap.md) (and IDE canvas `.cursor/canvases/scale-100n-1000c-roadmap.canvas.tsx`).
