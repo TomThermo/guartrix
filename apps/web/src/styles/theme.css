@@ -157,16 +157,19 @@ body {
   flex-direction: column;
 }
 
-/* Wider than Bootstrap’s default 1320px (xxl) so main + navbar align. */
-@media (min-width: 1400px) {
-  .container,
-  .container-lg,
-  .container-md,
-  .container-sm,
-  .container-xl,
-  .container-xxl {
-    max-width: 100%;
-  }
+/*
+ * Use the full viewport width. Bootstrap caps .container at 540–1320px by
+ * breakpoint; foldables (e.g. Z Fold Ultra ~2504×2256 physical) often report
+ * ~600–700 CSS px — nearly square — so the old 540px sm cap left large side
+ * gutters. Panel UI benefits from width; reading pages set their own max.
+ */
+.container,
+.container-lg,
+.container-md,
+.container-sm,
+.container-xl,
+.container-xxl {
+  max-width: 100%;
 }
 
 .app-main {
