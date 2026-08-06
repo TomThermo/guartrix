@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { ConnectInfo, McServer } from "@msm/shared";
-import { Badge, Button, Stack } from "react-bootstrap";
+import { Button, Stack } from "react-bootstrap";
 import { useI18n } from "../i18n/react";
 import { TotpQr } from "./TotpQr";
 import { copyText } from "../utils";
@@ -11,6 +11,46 @@ interface Props {
   /** Compact header strip vs full sidebar card. */
   compact?: boolean;
   onNotice?: (message: string | null) => void;
+}
+
+function JoinRow({
+  icon,
+  label,
+  value,
+  mono,
+  tone,
+  onCopy,
+  copyTitle,
+}: {
+  icon: string;
+  label: string;
+  value: string;
+  mono?: boolean;
+  tone?: "neutral" | "success" | "warning";
+  onCopy?: () => void;
+  copyTitle?: string;
+}) {
+  return (
+    <div className="join-card__row">
+      <span className={`join-card__icon join-card__icon--${tone ?? "neutral"}`} aria-hidden>
+        <i className={`fa-solid ${icon}`} />
+      </span>
+      <div className="join-card__copy min-w-0">
+        <span className="join-card__label">{label}</span>
+        <span className={`join-card__value ${mono ? "font-monospace" : ""}`}>{value}</span>
+      </div>
+      {onCopy && (
+        <button
+          type="button"
+          className="join-card__copy-btn"
+          title={copyTitle}
+          onClick={() => void onCopy()}
+        >
+          <i className="fa-solid fa-copy" aria-hidden />
+        </button>
+      )}
+    </div>
+  );
 }
 
 export function JoinCard({ server, connect, compact, onNotice }: Props) {
@@ -39,20 +79,25 @@ export function JoinCard({ server, connect, compact, onNotice }: Props) {
 
   if (compact) {
     return (
-      <Stack direction="horizontal" gap={2} className="flex-wrap align-items-center">
-        <Badge bg={whitelist ? "warning" : "secondary"} text={whitelist ? "dark" : undefined}>
+      <Stack direction="horizontal" gap={2} className="join-card-compact flex-wrap align-items-center">
+        <span className={`join-card-compact__chip ${whitelist ? "is-on" : ""}`}>
+          <i className={`fa-solid ${whitelist ? "fa-shield-halved" : "fa-shield"}`} aria-hidden />
           {whitelist ? t("serverDetail.wlOn") : t("serverDetail.wlOff")}
-        </Badge>
-        <Badge bg="dark">
+        </span>
+        <span className="join-card-compact__chip">
+          <i className="fa-solid fa-users" aria-hidden />
           {server.status === "RUNNING" ? `${playersOnline}/${playersMax}` : `—/${playersMax}`}
-        </Badge>
-        <Badge bg="dark">{version}</Badge>
+        </span>
+        <span className="join-card-compact__chip">
+          <i className="fa-solid fa-cube" aria-hidden />
+          {version}
+        </span>
         <Button
           size="sm"
           variant="outline-secondary"
           onClick={() => void copy(t("joinCard.address"), address)}
         >
-          <i className="fa-solid fa-copy me-1" />
+          <i className="fa-solid fa-copy" aria-hidden />
           {t("joinCard.join")}
         </Button>
       </Stack>
@@ -60,60 +105,59 @@ export function JoinCard({ server, connect, compact, onNotice }: Props) {
   }
 
   return (
-    <div className="join-card border rounded p-3 mb-3">
-      <div className="fw-semibold mb-2">
-        <i className="fa-solid fa-gamepad me-2" />
-        {t("joinCard.title")}
+    <section className="join-card">
+      <div className="join-card__head">
+        <span className="join-card__head-icon" aria-hidden>
+          <i className="fa-solid fa-gamepad" />
+        </span>
+        <div className="min-w-0">
+          <h4 className="join-card__title">{t("joinCard.title")}</h4>
+          <p className="join-card__subtitle">{t("joinCard.subtitle")}</p>
+        </div>
       </div>
-      <div className="small text-secondary mb-2">
-        {t("joinCard.subtitle")}
+
+      <div className="join-card__rows">
+        <JoinRow
+          icon="fa-link"
+          label={t("joinCard.address")}
+          value={address}
+          mono
+          onCopy={() => void copy(t("joinCard.address"), address)}
+          copyTitle={t("common.copy")}
+        />
+        <JoinRow
+          icon="fa-earth-americas"
+          label={t("joinCard.directIp")}
+          value={directIp}
+          mono
+          onCopy={() => void copy(t("joinCard.directIp"), directIp)}
+          copyTitle={t("common.copy")}
+        />
+        <JoinRow
+          icon={whitelist ? "fa-shield-halved" : "fa-shield"}
+          label={t("joinCard.whitelist")}
+          value={whitelist ? t("common.on") : t("common.off")}
+          tone={whitelist ? "success" : "warning"}
+        />
       </div>
-      <dl className="row small mb-2 join-card-dl">
-        <dt className="col-4 text-secondary">{t("joinCard.address")}</dt>
-        <dd className="col-8 font-monospace text-break mb-1">
-          {address}{" "}
-          <button
-            type="button"
-            className="btn btn-link btn-sm p-0 align-baseline"
-            onClick={() => void copy(t("joinCard.address"), address)}
-          >
-            {t("common.copy")}
-          </button>
-        </dd>
-        <dt className="col-4 text-secondary">{t("joinCard.directIp")}</dt>
-        <dd className="col-8 font-monospace text-break mb-1">
-          {directIp}{" "}
-          <button
-            type="button"
-            className="btn btn-link btn-sm p-0 align-baseline"
-            onClick={() => void copy(t("joinCard.directIp"), directIp)}
-          >
-            {t("common.copy")}
-          </button>
-        </dd>
-        <dt className="col-4 text-secondary">{t("joinCard.whitelist")}</dt>
-        <dd className="col-8 mb-1">{whitelist ? t("common.on") : t("common.off")}</dd>
-      </dl>
-      <Stack direction="horizontal" gap={2} className="flex-wrap">
+
+      <div className="join-card__actions">
         <Button size="sm" variant="primary" onClick={() => void copy(t("joinCard.address"), address)}>
-          <i className="fa-solid fa-copy me-1" />
+          <i className="fa-solid fa-copy" aria-hidden />
           {t("joinCard.copyAddress")}
         </Button>
-        <Button
-          size="sm"
-          variant="outline-secondary"
-          onClick={() => setShowQr((v) => !v)}
-        >
-          <i className="fa-solid fa-qrcode me-1" />
+        <Button size="sm" variant="outline-secondary" onClick={() => setShowQr((v) => !v)}>
+          <i className="fa-solid fa-qrcode" aria-hidden />
           {showQr ? t("joinCard.hideQr") : t("joinCard.showQr")}
         </Button>
-      </Stack>
+      </div>
+
       {showQr && (
-        <div className="mt-3 d-flex flex-column align-items-center gap-2">
+        <div className="join-card__qr">
           <TotpQr value={joinUri} size={160} />
-          <span className="small text-secondary text-break text-center">{joinUri}</span>
+          <span className="join-card__qr-uri font-monospace">{joinUri}</span>
         </div>
       )}
-    </div>
+    </section>
   );
 }

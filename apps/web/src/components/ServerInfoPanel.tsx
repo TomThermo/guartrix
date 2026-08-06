@@ -21,35 +21,44 @@ interface Props {
   liveStats?: ServerStats | null;
 }
 
-function InfoRow({
+function InfoTile({
+  icon,
   label,
   value,
   mono,
+  wide,
+  tone = "neutral",
   onCopy,
   copyTitle,
 }: {
+  icon: string;
   label: string;
   value: string;
   mono?: boolean;
+  wide?: boolean;
+  tone?: "neutral" | "success" | "warning" | "info";
   onCopy?: () => void;
-  copyTitle: string;
+  copyTitle?: string;
 }) {
   return (
-    <div className="server-info-row">
-      <div className="server-info-label">{label}</div>
-      <div className={`server-info-value ${mono ? "font-monospace" : ""}`}>
-        <span className="text-break">{value}</span>
-        {onCopy && (
-          <button
-            type="button"
-            className="server-info-copy"
-            title={copyTitle}
-            onClick={() => void onCopy()}
-          >
-            <i className="fa-solid fa-copy" />
-          </button>
-        )}
+    <div className={`server-info-tile${wide ? " server-info-tile--wide" : ""}`}>
+      <span className={`server-info-tile__icon server-info-tile__icon--${tone}`} aria-hidden>
+        <i className={`fa-solid ${icon}`} />
+      </span>
+      <div className="server-info-tile__body min-w-0">
+        <span className="server-info-tile__label">{label}</span>
+        <span className={`server-info-tile__value ${mono ? "font-monospace" : ""}`}>{value}</span>
       </div>
+      {onCopy && (
+        <button
+          type="button"
+          className="server-info-tile__copy"
+          title={copyTitle}
+          onClick={() => void onCopy()}
+        >
+          <i className="fa-solid fa-copy" aria-hidden />
+        </button>
+      )}
     </div>
   );
 }
@@ -137,11 +146,14 @@ export function ServerInfoPanel({
 
   return (
     <aside className="server-info-panel">
-      <div className="server-info-title">
-        <i className="fa-solid fa-circle-info me-2" />
-        {t("serverInfo.title")}
-        {copied && <span className="server-info-copied">{t("serverInfo.copied")}</span>}
+      <div className="server-info-panel__head">
+        <span className="server-info-panel__head-icon" aria-hidden>
+          <i className="fa-solid fa-circle-info" />
+        </span>
+        <h3 className="server-info-panel__title">{t("serverInfo.title")}</h3>
+        {copied && <span className="server-info-panel__copied">{t("serverInfo.copied")}</span>}
       </div>
+
       <JoinCard
         server={server}
         connect={connect}
@@ -152,30 +164,68 @@ export function ServerInfoPanel({
           }
         }}
       />
-      <InfoRow
-        label={t("serverInfo.timeLeft")}
-        value={t("common.unlimited")}
-        copyTitle={t("common.copy")}
-      />
-      <InfoRow
-        label={t("serverInfo.serverId")}
-        value={server.id}
-        mono
-        copyTitle={t("common.copy")}
-        onCopy={() => void copy(t("serverInfo.serverId"), server.id)}
-      />
-      <InfoRow label={t("resources.ram")} value={ramLabel} copyTitle={t("common.copy")} />
-      <InfoRow label={t("resources.cpu")} value={`${cpuPercent.toFixed(1)}%`} copyTitle={t("common.copy")} />
-      <InfoRow label={t("serverInfo.storage")} value={diskUsed} copyTitle={t("common.copy")} />
-      <InfoRow label={t("serverInfo.players")} value={playersLabel} copyTitle={t("common.copy")} />
-      <InfoRow
-        label={t("common.version")}
-        value={versionParts.filter(Boolean).join(" · ") || "—"}
-        copyTitle={t("common.copy")}
-      />
-      <InfoRow label={t("common.node")} value={server.nodeName ?? "—"} copyTitle={t("common.copy")} />
+
+      <div className="server-info-grid">
+        <InfoTile
+          icon="fa-infinity"
+          label={t("serverInfo.timeLeft")}
+          value={t("common.unlimited")}
+          tone="info"
+          copyTitle={t("common.copy")}
+        />
+        <InfoTile
+          icon="fa-fingerprint"
+          label={t("serverInfo.serverId")}
+          value={server.id}
+          mono
+          wide
+          copyTitle={t("common.copy")}
+          onCopy={() => void copy(t("serverInfo.serverId"), server.id)}
+        />
+        <InfoTile
+          icon="fa-memory"
+          label={t("resources.ram")}
+          value={ramLabel}
+          tone="success"
+          copyTitle={t("common.copy")}
+        />
+        <InfoTile
+          icon="fa-microchip"
+          label={t("resources.cpu")}
+          value={`${cpuPercent.toFixed(1)}%`}
+          tone="success"
+          copyTitle={t("common.copy")}
+        />
+        <InfoTile
+          icon="fa-hard-drive"
+          label={t("serverInfo.storage")}
+          value={diskUsed}
+          copyTitle={t("common.copy")}
+        />
+        <InfoTile
+          icon="fa-users"
+          label={t("serverInfo.players")}
+          value={playersLabel}
+          tone="info"
+          copyTitle={t("common.copy")}
+        />
+        <InfoTile
+          icon="fa-cube"
+          label={t("common.version")}
+          value={versionParts.filter(Boolean).join(" · ") || "—"}
+          wide
+          copyTitle={t("common.copy")}
+        />
+        <InfoTile
+          icon="fa-server"
+          label={t("common.node")}
+          value={server.nodeName ?? "—"}
+          copyTitle={t("common.copy")}
+        />
+      </div>
+
       {!stats && !disk && (
-        <div className="text-center py-2">
+        <div className="server-info-panel__loading">
           <Spinner size="sm" animation="border" className="text-secondary" />
         </div>
       )}
