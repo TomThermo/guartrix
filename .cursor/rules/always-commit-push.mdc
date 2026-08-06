@@ -1,20 +1,32 @@
 ---
-description: Always commit and push finished work to GitHub — do not wait for the user to ask
+description: Always finish on origin/main — commit + push to main, never leave work local-only
 alwaysApply: true
 ---
 
-# Always commit & push when done
+# Always commit & push to **main**
 
-When a task leaves **any** durable repo change (code, docs, wiki, Cursor rules, scripts, packaging), **commit and push before you stop**. Do **not** wait for the user to say “commit” or “push to git”.
+When a task leaves **any** durable repo change (code, docs, wiki, Cursor rules, scripts, packaging), **commit and land it on `origin/main` before you stop**.
 
-This **overrides** generic agent habits like “only commit when asked” / “don’t push unless asked” for this repository.
+Do **not** wait for the user to say “commit”, “push”, or “naar git”.
+
+This **overrides** generic agent habits like “only commit when asked” / “don’t push unless asked” / “leave a PR open and stop”.
 
 ## Required finish sequence
 
 1. Stage shippable files only (never `.env`, secrets, `data/daemon.env`, `build/`, `dist-download/`, credentials).
 2. `git commit` with a short message (include version when you bumped it).
-3. `git push -u origin HEAD` (or `git push origin HEAD` if upstream exists).
-4. On the **operator host** tracking `main`, push to `main` as usual. In cloud/PR workflows, push the feature branch and open/update the PR — still push; do not leave commits local-only.
+3. **Get the commit onto `main` and push:**
+   - Prefer working on / merging into `main`, then:
+     ```bash
+     git checkout main
+     git pull origin main
+     git merge <feature-branch>   # if you used a branch
+     git push origin main
+     ```
+   - Feature branches (`cursor/…`) are OK for mid-task work, but **do not stop** until `origin/main` contains the commit.
+4. Confirm: `git rev-parse HEAD` equals `git rev-parse origin/main` (or your merge tip is on `origin/main`).
+
+Draft PRs are optional extras — **not** a substitute for updating `main`.
 
 ## When
 
@@ -35,4 +47,4 @@ Do this for:
 
 - Do **not** force-push unless the user explicitly requests it.
 - Prefer one clear commit (or a short logical series) over leaving a dirty tree at end of turn.
-- If you already built/published in the same task, still commit+push the sources that produced that release.
+- If you already built/published in the same task, still commit+push the sources that produced that release onto **main**.

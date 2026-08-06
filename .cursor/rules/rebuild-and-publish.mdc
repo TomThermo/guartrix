@@ -1,62 +1,70 @@
 ---
-description: After product changes, bump version, rebuild build/, republish /download, restart
+description: Always bump, build-out, publish downloads, restart operator stack, smoke, then push main
 alwaysApply: true
 ---
 
-# Rebuild, version bump & download publish
+# Rebuild, publish, restart (operator) + push main
 
-On this **operator host**, after finishing a task that changes shippable product code or release packaging, **do a release pass in the same task** before stopping.
+After finishing a task that changes shippable product code, packaging, or in-app wiki/UI, **run the full operator release pass in the same task**, then **land it on `origin/main`**.
 
-## When
+Do **not** stop with “run build-out yourself” / “migrate on the operator host” — **you** run it when this environment is the operator checkout (or the live panel host). Do **not** wait for the user to ask.
 
-Do this if you changed any of:
+Also see [always-commit-push](always-commit-push.mdc) — GitHub **main** is mandatory.
+
+## When (full release pass)
+
+Do the build/publish/restart steps if you changed any of:
 
 - `apps/` / `packages/` / `scripts/` that affect runtime or installs
+- Prisma schema / migrations
 - Download packaging, env examples, install READMEs
-- Panel/daemon/license behaviour users or customers get via `/download` or `build/`
+- Panel/daemon behaviour, in-app wiki (`wiki-content` / `wiki/articles`), web UI
 
-**Skip the build/restart steps** for: docs-only / wiki-markdown-only, Cursor rules only, pure comments, or when the user says not to publish/restart.
+**Docs-only / Cursor-rules-only:** still **commit + push `main`**. You may skip build-out/restart **only** when no shippable runtime/UI artifact changed.
 
-**Never skip GitHub:** every finished task with tracked changes still **commits and pushes** — see [always-commit-push](always-commit-push.mdc). Do not leave “ready locally, not on GitHub”.
+If wiki mirror or any `apps/web` shippable file changed → **full release pass** (not docs-only).
 
-If the in-app wiki mirror (`apps/web/src/wiki/wiki-content.ts`) or other shippable files changed, this is **not** docs-only — run the full release pass.
-
-## Steps (in order)
+## Steps (in order) — always attempt
 
 1. **Bump version (patch)** unless the user asked for minor/major:
- - Root [`package.json`](package.json) `"version"`
- - `apps/api`, `apps/web`, `apps/daemon`, `apps/license-server` `package.json` (keep in sync)
- - [`VERSION`](VERSION) file (same string, no `v` prefix)
- - Keep `docs/openapi.yaml` `info.version` and `docs/roadmap.md` product version in sync
-2. **Rebuild live tree:** `bash scripts/build-out.sh`
-3. **Restore operator-only scripts** wiped by staging (not in customer zips):
- - `cp -a scripts/prod-web-download.mjs build/scripts/`
- - Also copy if present: `install-license-le-cert.sh`, `install-daemon-le-cert.sh`, `package-download-bundle.sh`
-4. **Publish downloads:** `bash scripts/package-download-bundle.sh --skip-build`  
- (or without `--skip-build` if dists were not just built)
-5. **Restart:** `bash build/start.sh`
-6. **Smoke:** `curl` API `/api/health`, daemon `/health`, web `:80` (and public hosts if this task touched them)
-7. **Commit + push to GitHub** (mandatory — same as [always-commit-push](always-commit-push.mdc)):
- - Stage shippable changes only (no `.env`, `data/daemon.env`, secrets, `build/`, `dist-download/`)
- - Commit with a short message (version + why)
- - `git push origin HEAD` — auth is a GitHub PAT stored in `~/.git-credentials` (git `credential.helper store`, user TomThermo). If the token expired, ask the user for a new one and update that file; **never** paste the token into repo files or rules (GitHub auto-revokes leaked PATs)
+   - Root [`package.json`](package.json) `"version"`
+   - `apps/api`, `apps/web`, `apps/daemon` `package.json` (keep in sync; do **not** invent `apps/license-server` in this repo)
+   - [`VERSION`](VERSION) file (same string, no `v` prefix)
+   - Keep `docs/openapi.yaml` `info.version` and `docs/roadmap.md` product version in sync
+2. **DB migrate** when Prisma schema/migrations changed:
+   - `npm run db:generate`
+   - `npx prisma migrate deploy` (from `apps/api` / as your usual migrate path) on the operator DB
+3. **Rebuild live tree:** `bash scripts/build-out.sh`
+4. **Restore operator-only scripts** wiped by staging (not in customer zips):
+   - `cp -a scripts/prod-web-download.mjs build/scripts/`
+   - Also copy if present: `install-license-le-cert.sh`, `install-daemon-le-cert.sh`, `package-download-bundle.sh`
+5. **Publish downloads:** `bash scripts/package-download-bundle.sh --skip-build`  
+   (or without `--skip-build` if dists were not just built)
+6. **Restart:** `bash build/start.sh`
+7. **Smoke:** `curl` API `/api/health`, `/api/ready`, daemon `/health`, web `:80` (and public hosts if this task touched them)
+8. **Commit + push `origin/main`** (mandatory):
+   - Stage shippable changes only (no `.env`, `data/daemon.env`, secrets, `build/`, `dist-download/`)
+   - Commit with a short message (version + why)
+   - Merge/push so **`origin/main`** has the tip — auth via `~/.git-credentials` (user TomThermo). If the token expired, ask for a new one and update that file; **never** paste the token into repo files or rules
 
-## Notes
+## Environment notes
 
-- Download zips pick the version from root `package.json` → filenames like `guartrix-panel-1.0.1.zip`.
+- **Operator host** (live panel): run steps 2–7 for real. This is the default expectation.
+- **Cloud agent without Docker / license PEM / live DB:** still bump + commit + **push `main`**; attempt `build-out` if possible; if publish/restart cannot run, say so **after** `main` is updated — do not skip the git finish.
 - Keep `DAEMON_PORT=8081` in `data/daemon.env` if a public node URL uses port 443 behind prod-web.
-- Live publish/restart/push may need user approval (Auto-review); still attempt the full pass and ask if blocked.
 - Do **not** force-push unless the user explicitly requests it.
-- “Only commit when the user asks” does **not** apply here — finishing the task includes push.
+- “Only commit when asked” / “open a PR and stop” do **not** apply — finishing includes **main** + operator update when available.
 
 ## Example
 
 ```text
-Changed: node1 HTTPS proxy + download INSTALL.txt
-→ version 1.0.0 → 1.0.1 (package.json × apps + VERSION)
+Changed: scale scheduler + BackupSchedule migration
+→ version bump
+→ prisma migrate deploy
 → bash scripts/build-out.sh
 → restore prod-web-download.mjs (+ LE/download scripts)
 → bash scripts/package-download-bundle.sh --skip-build
 → bash build/start.sh
-→ commit + `git push origin HEAD`
+→ smoke curls
+→ commit + git push origin main
 ```

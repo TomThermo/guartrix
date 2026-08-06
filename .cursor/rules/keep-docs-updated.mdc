@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Keep README & wiki up to date
 
-After any change that affects how operators or developers use Guartrix, **check and update docs in the same task** before finishing. Then **commit and push** those doc updates with the rest of the work ([always-commit-push](always-commit-push.mdc)) — docs left only on the machine are unfinished.
+After any change that affects how operators or developers use Guartrix, **check and update docs in the same task** before finishing. Then **commit and push to `origin/main`** with the rest of the work ([always-commit-push](always-commit-push.mdc)). If shippable UI/wiki/runtime changed, also run the operator release pass ([rebuild-and-publish](rebuild-and-publish.mdc)) — docs left only on the machine are unfinished.
 
 ## When to update
 
