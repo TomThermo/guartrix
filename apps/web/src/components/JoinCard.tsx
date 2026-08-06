@@ -118,7 +118,7 @@ export function JoinCard({ server, connect, compact, onNotice }: Props) {
 
       <div className="join-card__rows">
         <JoinRow
-          icon="fa-link"
+          icon="fa-globe"
           label={t("joinCard.address")}
           value={address}
           mono

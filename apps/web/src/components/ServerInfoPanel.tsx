@@ -174,7 +174,7 @@ export function ServerInfoPanel({
           copyTitle={t("common.copy")}
         />
         <InfoTile
-          icon="fa-fingerprint"
+          icon="fa-id-card"
           label={t("serverInfo.serverId")}
           value={server.id}
           mono
@@ -183,7 +183,7 @@ export function ServerInfoPanel({
           onCopy={() => void copy(t("serverInfo.serverId"), server.id)}
         />
         <InfoTile
-          icon="fa-memory"
+          icon="fa-gauge-high"
           label={t("resources.ram")}
           value={ramLabel}
           tone="success"

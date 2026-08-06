@@ -251,7 +251,7 @@ export function ServerConsoleLayout({
               title={t("console.openPopoutTitle")}
               onClick={() => openConsolePopout(server.id)}
             >
-              <i className="fa-solid fa-up-right-from-square" aria-hidden />
+              <i className="fa-solid fa-arrow-up-right-from-square" aria-hidden />
               <span className="btn-label">{t("console.openPopout")}</span>
             </Button>
           </div>
