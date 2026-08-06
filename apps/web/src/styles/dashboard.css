@@ -205,9 +205,9 @@
 }
 
 .surface {
-  background: var(--bh-bg-raised);
+  background: var(--bh-surface-gradient), var(--bh-bg-raised);
   border: 1px solid var(--bh-border);
-  border-radius: 0.5rem;
+  border-radius: var(--bh-radius-md);
 }
 
 /* Dashboard server list */

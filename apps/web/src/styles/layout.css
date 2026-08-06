@@ -281,14 +281,12 @@ button.server-side-nav-link {
 .server-detail-header {
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
-  padding: 0.85rem 1rem;
+  gap: var(--bh-space-sm);
+  padding: var(--bh-space-md) var(--bh-space-lg);
   border: 1px solid var(--bh-border);
-  border-radius: 0.75rem;
-  background:
-    linear-gradient(135deg, rgba(93, 186, 106, 0.06), transparent 55%),
-    var(--bh-bg-raised);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+  border-radius: var(--bh-radius-lg);
+  background: var(--bh-surface-gradient), var(--bh-bg-raised);
+  box-shadow: var(--bh-surface-shadow);
 }
 
 .server-detail-header__main {

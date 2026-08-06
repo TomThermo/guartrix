@@ -664,7 +664,7 @@ function ServerDetailPageInner({
         onNotice={setNotice}
       />
 
-      <Card className="server-detail-card border-0 shadow-sm">
+      <Card className="server-detail-card">
         <div className="server-detail-layout">
           <aside className="server-side-nav">
             {sideNav()}

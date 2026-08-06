@@ -28,6 +28,24 @@
   --bh-card-shadow: rgba(0, 0, 0, 0.18);
   --bh-on-accent: #0d1210;
 
+  /* Layout & shape tokens */
+  --bh-radius-sm: 0.4rem;
+  --bh-radius-md: 0.65rem;
+  --bh-radius-lg: 0.85rem;
+  --bh-radius-xl: 1rem;
+  --bh-radius-pill: 999px;
+  --bh-space-xs: 0.25rem;
+  --bh-space-sm: 0.5rem;
+  --bh-space-md: 0.85rem;
+  --bh-space-lg: 1.25rem;
+  --bh-surface-gradient: linear-gradient(
+    135deg,
+    rgba(93, 186, 106, 0.07),
+    transparent 58%
+  );
+  --bh-surface-border: rgba(255, 255, 255, 0.06);
+  --bh-surface-shadow: 0 8px 28px rgba(0, 0, 0, 0.16);
+
   --bs-primary: #5dba6a;
   --bs-primary-rgb: 93, 186, 106;
   --bs-success: #5dba6a;
@@ -95,6 +113,23 @@
   --bh-body-gradient-end: #dfe6e2;
   --bh-card-shadow: rgba(26, 34, 30, 0.08);
   --bh-on-accent: #ffffff;
+
+  --bh-radius-sm: 0.4rem;
+  --bh-radius-md: 0.65rem;
+  --bh-radius-lg: 0.85rem;
+  --bh-radius-xl: 1rem;
+  --bh-radius-pill: 999px;
+  --bh-space-xs: 0.25rem;
+  --bh-space-sm: 0.5rem;
+  --bh-space-md: 0.85rem;
+  --bh-space-lg: 1.25rem;
+  --bh-surface-gradient: linear-gradient(
+    135deg,
+    rgba(61, 143, 74, 0.06),
+    transparent 58%
+  );
+  --bh-surface-border: rgba(26, 34, 30, 0.08);
+  --bh-surface-shadow: 0 6px 20px rgba(26, 34, 30, 0.06);
 
   --bs-primary: #3d8f4a;
   --bs-primary-rgb: 61, 143, 74;

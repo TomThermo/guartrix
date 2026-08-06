@@ -1,0 +1,350 @@
+/* Guartrix UI — shared surfaces, chips, forms, tables (2026 refresh) */
+
+/* —— Surfaces —— */
+.surface,
+.card,
+.file-toolbar,
+.databases-section,
+.whitelist-card,
+.backup-panel-section {
+  border-radius: var(--bh-radius-lg) !important;
+  border-color: var(--bh-border) !important;
+}
+
+.card {
+  background: var(--bh-surface-gradient), var(--bh-bg-raised) !important;
+  box-shadow: var(--bh-surface-shadow) !important;
+}
+
+.surface {
+  background: var(--bh-surface-gradient), var(--bh-bg-raised);
+  box-shadow: var(--bh-surface-shadow);
+}
+
+.server-detail-card {
+  border-radius: var(--bh-radius-lg) !important;
+  background: var(--bh-bg-raised) !important;
+  box-shadow: var(--bh-surface-shadow) !important;
+}
+
+.server-detail-card .card-body {
+  padding: var(--bh-space-md) var(--bh-space-lg);
+}
+
+/* —— Typography / page titles —— */
+h1.h3,
+.databases-panel-title,
+.page-title {
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+h2.h5 {
+  font-weight: 650;
+  font-size: 1.05rem;
+}
+
+.text-secondary,
+.form-text {
+  color: var(--bh-muted) !important;
+}
+
+/* —— Buttons —— */
+.btn {
+  border-radius: var(--bh-radius-sm);
+  font-weight: 600;
+}
+
+.btn-sm {
+  border-radius: var(--bh-radius-sm);
+}
+
+.btn-group-sm > .btn {
+  border-radius: var(--bh-radius-sm);
+}
+
+.btn-primary {
+  box-shadow: 0 2px 8px rgba(93, 186, 106, 0.2);
+}
+
+.btn-outline-secondary {
+  border-color: var(--bh-border);
+  color: var(--bh-text);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.btn-outline-secondary:hover,
+.btn-outline-secondary:focus {
+  background: var(--bh-bg-hover);
+  border-color: rgba(93, 186, 106, 0.35);
+  color: var(--bh-text);
+}
+
+/* —— Forms —— */
+.form-control,
+.form-select,
+.input-group-text {
+  border-radius: var(--bh-radius-sm) !important;
+  border-color: var(--bh-border) !important;
+  background: var(--bh-bg) !important;
+  color: var(--bh-text) !important;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--bh-accent) !important;
+  box-shadow: 0 0 0 0.2rem var(--bh-accent-glow) !important;
+}
+
+/* —— Tables —— */
+.table {
+  --bs-table-bg: transparent;
+  --bs-table-color: var(--bh-text);
+  --bs-table-border-color: var(--bh-border);
+  margin-bottom: 0;
+}
+
+.table > :not(caption) > * > * {
+  padding: 0.55rem 0.65rem;
+  vertical-align: middle;
+}
+
+.table-hover > tbody > tr:hover > * {
+  background: rgba(93, 186, 106, 0.06);
+}
+
+/* —— Tabs —— */
+.nav-tabs {
+  border-bottom-color: var(--bh-border);
+  gap: 0.15rem;
+}
+
+.nav-tabs .nav-link {
+  border: 0;
+  border-radius: var(--bh-radius-sm) var(--bh-radius-sm) 0 0;
+  color: var(--bh-muted);
+  font-weight: 600;
+  font-size: 0.88rem;
+  padding: 0.45rem 0.75rem;
+}
+
+.nav-tabs .nav-link:hover {
+  color: var(--bh-text);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.nav-tabs .nav-link.active {
+  color: var(--bh-text);
+  background: var(--bh-bg-raised);
+  border-bottom: 2px solid var(--bh-accent);
+}
+
+.nav-pills .nav-link {
+  border-radius: var(--bh-radius-sm);
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+
+/* —— List groups —— */
+.list-group-item {
+  background: var(--bh-bg-raised);
+  border-color: var(--bh-border);
+  color: var(--bh-text);
+}
+
+.list-group-item-action:hover,
+.list-group-item-action:focus {
+  background: var(--bh-bg-hover);
+  color: var(--bh-text);
+}
+
+/* —— Badges (Bootstrap) —— */
+.badge {
+  border-radius: var(--bh-radius-pill);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+/* —— Dashboard server rows —— */
+.server-row {
+  border-radius: var(--bh-radius-lg);
+  padding: var(--bh-space-md) var(--bh-space-lg);
+  background: var(--bh-surface-gradient), var(--bh-bg-raised);
+  box-shadow: var(--bh-surface-shadow);
+  gap: 0.75rem 1rem;
+}
+
+.server-row-icon {
+  width: 3rem;
+  height: 3rem;
+  border-radius: var(--bh-radius-md);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.server-row-name {
+  font-size: 1.08rem;
+}
+
+.server-row-meta > span:not(.server-meta-sep),
+.server-row-meta > .server-row-chip {
+  border-radius: var(--bh-radius-pill);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.22rem 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.server-action-btn {
+  border-radius: var(--bh-radius-sm) !important;
+  border-color: var(--bh-border) !important;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.server-action-btn:hover:not(:disabled) {
+  border-color: rgba(93, 186, 106, 0.4) !important;
+  background: var(--bh-accent-glow);
+}
+
+/* —— Side nav —— */
+.server-side-nav-link {
+  border-radius: var(--bh-radius-sm) !important;
+}
+
+.server-side-nav-link.active {
+  background: var(--bh-accent-glow) !important;
+  border-color: rgba(93, 186, 106, 0.35) !important;
+  color: var(--bh-text) !important;
+  font-weight: 600;
+}
+
+.settings-nav .nav-link {
+  border-radius: var(--bh-radius-sm);
+  border: 1px solid transparent;
+}
+
+.settings-nav .nav-link.active {
+  border-color: rgba(93, 186, 106, 0.35);
+}
+
+/* —— File manager —— */
+.file-toolbar {
+  background: var(--bh-surface-gradient), var(--bh-bg) !important;
+  padding: var(--bh-space-sm) var(--bh-space-md) !important;
+}
+
+.file-workbench {
+  border-radius: var(--bh-radius-lg) !important;
+  box-shadow: var(--bh-surface-shadow);
+}
+
+.file-tree-row {
+  border-radius: var(--bh-radius-sm);
+  margin: 0 0.25rem;
+  width: calc(100% - 0.5rem);
+}
+
+.file-tree-row.is-active,
+.file-tree-row.is-cwd {
+  background: var(--bh-accent-glow);
+}
+
+.file-browser-header {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--bh-muted);
+}
+
+.file-browser-row:hover {
+  background: rgba(93, 186, 106, 0.05);
+}
+
+.file-editor-tabs {
+  border-bottom-color: var(--bh-border);
+}
+
+.file-editor-tab {
+  border-radius: var(--bh-radius-sm) var(--bh-radius-sm) 0 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+/* —— Console —— */
+.console-panel {
+  border-radius: var(--bh-radius-lg);
+  border: 1px solid var(--bh-border);
+  overflow: hidden;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.console-online-bar {
+  border-radius: var(--bh-radius-md);
+}
+
+/* —— Modals & dropdowns —— */
+.dropdown-menu {
+  border-radius: var(--bh-radius-md);
+  border-color: var(--bh-border);
+  background: var(--bh-bg-raised);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  padding: 0.35rem;
+}
+
+.dropdown-item {
+  border-radius: var(--bh-radius-sm);
+}
+
+.modal-content {
+  border-radius: var(--bh-radius-lg);
+}
+
+/* —— Empty states & loading —— */
+.empty-state,
+.tab-loading {
+  border-radius: var(--bh-radius-lg);
+  border: 1px dashed var(--bh-border);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* —— Wiki / admin sections —— */
+.databases-section,
+.whitelist-settings-card {
+  background: var(--bh-surface-gradient), var(--bh-bg-raised);
+  box-shadow: var(--bh-surface-shadow);
+}
+
+/* —— Navbar polish —— */
+.app-navbar {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+}
+
+.app-main {
+  padding-top: var(--bh-space-lg);
+}
+
+/* —— Compact / Fold: tighter but horizontal —— */
+@media (max-width: 767.98px) {
+  .app-main {
+    padding-top: var(--bh-space-md);
+  }
+
+  .server-detail-card .card-body {
+    padding: var(--bh-space-md);
+  }
+
+  .card-body {
+    padding: var(--bh-space-md);
+  }
+}
+
+@media (min-aspect-ratio: 3/4) {
+  .server-list {
+    gap: 0.65rem;
+  }
+
+  .server-row {
+    padding: 0.75rem 0.85rem;
+  }
+}
