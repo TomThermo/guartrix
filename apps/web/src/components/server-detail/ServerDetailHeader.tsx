@@ -61,7 +61,7 @@ export function ServerDetailHeader({
       <div className="server-detail-title-row">
         <Button
           variant="outline-secondary"
-          className="server-burger-btn d-lg-none"
+          className="server-burger-btn d-flex d-sm-none"
           onClick={onOpenMobileNav}
           aria-label={t("serverDetail.openMenu")}
         >
@@ -211,7 +211,7 @@ export function ServerDetailHeader({
         {(canClone || isAdmin || can("settings.update")) && (
           <>
             <div
-              className="server-toolbar d-none d-md-inline-flex btn-group btn-group-sm"
+              className="server-toolbar d-none d-sm-inline-flex btn-group btn-group-sm"
               role="group"
             >
               {can("settings.update") && (
@@ -284,7 +284,7 @@ export function ServerDetailHeader({
 
             <Dropdown
               align="end"
-              className="server-manage-dropdown d-md-none"
+              className="server-manage-dropdown d-sm-none"
             >
               <Dropdown.Toggle
                 variant="outline-secondary"

@@ -332,9 +332,9 @@ export function ServerSettings({
 
   return (
     <Row className="g-4">
-      <Col xs={12} lg={3}>
+      <Col xs={12} sm={4} lg={3}>
         <div className="settings-nav-wrap">
-          <div className="d-lg-none mb-1">
+          <div className="d-sm-none mb-1">
             <Dropdown className="card-section-menu">
               <Dropdown.Toggle
                 variant="outline-secondary"
@@ -366,7 +366,7 @@ export function ServerSettings({
               </Dropdown.Menu>
             </Dropdown>
           </div>
-          <Nav variant="pills" className="settings-nav gap-1 d-none d-lg-flex flex-column">
+          <Nav variant="pills" className="settings-nav gap-1 d-none d-sm-flex flex-column">
             {CATEGORIES.map((c) => (
               <Nav.Link
                 key={c.id}
@@ -385,12 +385,12 @@ export function ServerSettings({
         </div>
       </Col>
 
-      <Col xs={12} lg={9}>
-        <div className="mb-3 d-none d-lg-block">
+      <Col xs={12} sm={8} lg={9}>
+        <div className="mb-3 d-none d-sm-block">
           <h2 className="h5 mb-1">{settingsLabel(activeCategory.id)}</h2>
           <p className="text-secondary small mb-0">{activeCategory.hint}</p>
         </div>
-        <div className="mb-3 d-lg-none">
+        <div className="mb-3 d-sm-none">
           <p className="text-secondary small mb-0">{activeCategory.hint}</p>
         </div>
 

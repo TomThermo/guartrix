@@ -272,22 +272,17 @@ body {
   text-align: center;
 }
 
+/* —— Responsive: phone ≤575 stacks; Fold/compact ≥576 stays horizontal —— */
+
 @media (max-width: 767.98px) {
   .app-main {
     padding-top: 1rem;
-  }
-
-  .page-action-btn {
-    width: 100%;
-    text-align: center;
   }
 
   .server-detail-header {
     gap: 0.45rem;
   }
 
-  /* Keep one compact row: burger | icon | title+meta | manage.
-     Phone-only stacking lives in the ≤575.98px block (Folds are ~650 CSS px). */
   .server-detail-title-row {
     flex-wrap: nowrap;
     gap: 0.45rem 0.5rem;
@@ -360,18 +355,6 @@ body {
     flex: 0 0 auto;
   }
 
-  .server-row {
-    flex-direction: column;
-    align-items: stretch;
-    padding: 0.8rem 0.85rem;
-    gap: 0.7rem;
-  }
-
-  .server-row-main {
-    width: 100%;
-    gap: 0.75rem;
-  }
-
   .server-row-icon {
     width: 44px;
     height: 44px;
@@ -414,6 +397,220 @@ body {
     padding: 0.22rem 0.45rem;
   }
 
+  .server-row:hover,
+  .server-row:focus-visible {
+    transform: none;
+  }
+
+  .settings-nav-wrap {
+    position: static;
+  }
+
+  .console-output {
+    max-height: none;
+    padding: 0.65rem 0.75rem;
+    font-size: 0.78rem;
+  }
+
+  .console-input-bar {
+    padding: 0.45rem 0.5rem;
+  }
+
+  .file-workbench {
+    height: min(78vh, calc(100dvh - 12rem));
+    min-height: 22rem;
+  }
+
+  .addon-gallery-slide {
+    min-height: 180px;
+    max-height: 260px;
+  }
+
+  .addon-gallery-slide img {
+    max-height: 260px;
+  }
+
+  h1.h3 {
+    font-size: 1.25rem;
+  }
+
+  .list-group-item {
+    padding: 0.85rem 0.9rem;
+  }
+}
+
+/* Fold Ultra / compact tablets: keep layouts horizontal (CSS ~620–900px). */
+@media (min-width: 576px) {
+  .app-nav-actions {
+    flex-direction: row;
+    align-items: center;
+    width: auto;
+  }
+
+  .app-nav-actions .btn,
+  .app-nav-actions .dropdown {
+    width: auto;
+  }
+
+  .app-nav-actions .app-nav-dropdown-toggle {
+    width: auto;
+    justify-content: center;
+  }
+
+  .app-nav-actions .app-nav-dropdown-toggle::after {
+    margin-left: 0.45rem;
+  }
+
+  .app-nav-actions .btn {
+    justify-content: center;
+  }
+
+  .page-action-btn {
+    width: auto;
+  }
+
+  .server-row {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 0.85rem 1rem;
+    gap: 0.75rem 1rem;
+  }
+
+  .server-row-main {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: auto;
+  }
+
+  .server-row-actions {
+    width: auto;
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    justify-content: flex-end;
+    padding-top: 0;
+    border-top: 0;
+    margin-left: auto;
+  }
+
+  .server-action-btn {
+    width: auto;
+    min-width: 2.45rem;
+    height: 2.45rem;
+    border-radius: 0.5rem !important;
+  }
+
+  .server-metrics {
+    grid-template-columns: repeat(2, minmax(7rem, 11rem));
+    margin-top: 0.35rem;
+  }
+
+  .file-toolbar .file-path {
+    width: auto;
+    flex: 1 1 10rem;
+    order: 0;
+    min-width: 0;
+  }
+
+  .file-toolbar .file-mkdir {
+    width: auto;
+    flex: 0 1 auto;
+  }
+
+  .file-workbench-tree {
+    display: flex;
+    position: relative;
+    left: auto;
+    top: auto;
+    bottom: auto;
+    z-index: auto;
+    width: 11.25rem !important;
+    flex: 0 0 11.25rem;
+    box-shadow: none;
+  }
+
+  .file-workbench-tree.is-collapsed,
+  .file-workbench-tree.is-collapsed.is-mobile-open {
+    display: none;
+  }
+
+  .file-workbench-tree.is-mobile-open:not(.is-collapsed) {
+    display: flex;
+  }
+
+  .file-workbench-resizer {
+    display: none;
+  }
+
+  .file-tree-backdrop {
+    display: none !important;
+  }
+
+  .file-browser-header,
+  .file-browser-row {
+    grid-template-columns: 2rem minmax(0, 1fr) 4.5rem 5.5rem;
+  }
+
+  .file-browser-col-modified {
+    display: block;
+  }
+
+  .console-panel {
+    min-height: 0;
+    height: min(62vh, 560px);
+  }
+}
+
+/* True phone / Fold cover: vertical stacking OK. */
+@media (max-width: 575.98px) {
+  .btn-label {
+    display: none;
+  }
+
+  .server-toolbar .btn i {
+    margin: 0 !important;
+  }
+
+  .type-picker-btn {
+    flex: 1 1 calc(50% - 0.5rem);
+    font-size: 0.85rem;
+  }
+
+  .page-action-btn {
+    width: 100%;
+    text-align: center;
+  }
+
+  .server-manage-toggle > span {
+    display: none;
+  }
+
+  .server-manage-toggle {
+    min-width: 2.2rem;
+    padding-inline: 0.5rem;
+  }
+
+  .server-manage-toggle::after {
+    display: none;
+  }
+
+  .server-detail-address {
+    max-width: min(100%, 14rem);
+  }
+
+  .server-row {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0.8rem 0.85rem;
+    gap: 0.7rem;
+  }
+
+  .server-row-main {
+    width: 100%;
+    gap: 0.75rem;
+  }
+
   .server-row-actions {
     width: 100%;
     display: grid;
@@ -422,6 +619,7 @@ body {
     justify-content: stretch;
     padding-top: 0.65rem;
     border-top: 1px solid rgba(47, 61, 53, 0.65);
+    margin-left: 0;
   }
 
   .server-action-btn {
@@ -435,28 +633,9 @@ body {
     margin-top: 0.55rem;
   }
 
-  .server-row:hover,
-  .server-row:focus-visible {
-    transform: none;
-  }
-
-  .settings-nav-wrap {
-    position: static;
-  }
-
   .console-panel {
     min-height: 0;
     height: min(58vh, 480px);
-  }
-
-  .console-output {
-    max-height: none;
-    padding: 0.65rem 0.75rem;
-    font-size: 0.78rem;
-  }
-
-  .console-input-bar {
-    padding: 0.45rem 0.5rem;
   }
 
   .file-toolbar .file-path {
@@ -468,12 +647,6 @@ body {
     width: 100%;
   }
 
-  .file-workbench {
-    height: min(78vh, calc(100dvh - 12rem));
-    min-height: 22rem;
-  }
-
-  /* Phone portrait: tree as overlay drawer. Fold/tablet override below. */
   .file-workbench-tree {
     display: none;
     position: absolute;
@@ -516,130 +689,20 @@ body {
   .file-browser-col-actions {
     display: none;
   }
-
-  .addon-gallery-slide {
-    min-height: 180px;
-    max-height: 260px;
-  }
-
-  .addon-gallery-slide img {
-    max-height: 260px;
-  }
-
-  h1.h3 {
-    font-size: 1.25rem;
-  }
-
-  .list-group-item {
-    padding: 0.85rem 0.9rem;
-  }
-}
-
-/* Unfolded foldables / compact tablets (~576–768 CSS px, often near-square). */
-@media (min-width: 576px) and (max-width: 767.98px) {
-  .file-workbench-tree {
-    display: flex;
-    position: relative;
-    left: auto;
-    top: auto;
-    bottom: auto;
-    z-index: auto;
-    width: 11.25rem !important;
-    flex: 0 0 11.25rem;
-    box-shadow: none;
-  }
-
-  .file-workbench-tree.is-collapsed,
-  .file-workbench-tree.is-collapsed.is-mobile-open {
-    display: none;
-  }
-
-  .file-workbench-tree.is-mobile-open:not(.is-collapsed) {
-    display: flex;
-  }
-
-  .file-workbench-resizer {
-    display: none;
-  }
-
-  .file-tree-backdrop {
-    display: none !important;
-  }
-
-  .file-browser-header,
-  .file-browser-row {
-    grid-template-columns: 2rem minmax(0, 1fr) 4.5rem 5.5rem;
-  }
-
-  .file-browser-col-modified {
-    display: block;
-  }
-
-  .console-panel {
-    height: min(62vh, 560px);
-  }
-}
-
-@media (max-width: 575.98px) {
-  .btn-label {
-    display: none;
-  }
-
-  .server-toolbar .btn i {
-    margin: 0 !important;
-  }
-
-  .type-picker-btn {
-    flex: 1 1 calc(50% - 0.5rem);
-    font-size: 0.85rem;
-  }
-
-  /* Keep header horizontal in both orientations (Fold rotate included). */
-  .server-manage-toggle > span {
-    display: none;
-  }
-
-  .server-manage-toggle {
-    min-width: 2.2rem;
-    padding-inline: 0.5rem;
-  }
-
-  .server-manage-toggle::after {
-    display: none;
-  }
-
-  .server-detail-address {
-    max-width: min(100%, 14rem);
-  }
 }
 
 @media (min-width: 768px) {
-  .app-nav-actions {
-    flex-direction: row;
-    align-items: center;
-    width: auto;
-  }
-
-  .app-nav-actions .btn,
-  .app-nav-actions .dropdown {
-    width: auto;
-  }
-
-  .app-nav-actions .app-nav-dropdown-toggle {
-    width: auto;
-    justify-content: center;
-  }
-
-  .app-nav-actions .app-nav-dropdown-toggle::after {
-    margin-left: 0.45rem;
-  }
-
-  .app-nav-actions .btn {
-    justify-content: center;
-  }
-
   .settings-nav {
     flex-direction: column;
+  }
+
+  .file-workbench-resizer {
+    display: block;
+  }
+
+  .file-workbench-tree {
+    width: auto !important;
+    flex: 0 0 auto;
   }
 }
 
