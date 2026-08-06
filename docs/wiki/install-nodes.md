@@ -11,7 +11,7 @@ A **node** is a VPS running the Guartrix daemon. Minecraft servers are scheduled
    - **Host / FQDN** — IP or hostname the **panel** uses to reach this VPS
    - Optional **Location / region** label (shown in the create-server node picker)
    - Scheme (`http` on LAN/VPS is typical) and daemon port (`8081`)
-4. On the install step, enter SSH user + password **or** private key (default SSH user often `ubuntu`; optional non-22 SSH port).
+4. On the install step, enter SSH user + password **or** private key (default SSH user often `ubuntu`; optional non-22 SSH port), plus your **Guartrix panel password** (step-up so a stolen admin session alone cannot remote-install).
 5. First SSH attempt prints the **host-key fingerprint** and stops until you confirm **Trust this host key** (stored on the node). Later installs must match; after a VPS rebuild use **Replace host key**.
 6. Watch the **live log** from the remote server. On success the wizard **auto-tests** the daemon.
 7. If needed, click **Test connection** until status is **ONLINE**.
@@ -109,7 +109,7 @@ game traffic is segmented on the per-server bridge.
 
 Restart the daemon (and recreate running game containers) after changing the mode.
 
-Shared plugin/world dirs for **extra host mounts** should live under `/var/lib/guartrix/shared` or `/opt/guartrix/shared` on the node (or set panel `EXTRA_MOUNTS_ALLOW_PREFIX`).
+Shared plugin/world dirs for **extra host mounts** should live under `/var/lib/guartrix/shared` or `/opt/guartrix/shared` on the node (or set panel `EXTRA_MOUNTS_ALLOW_PREFIX`). Changing mounts is **admin-only**.
 
 ## Checklist
 

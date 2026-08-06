@@ -227,7 +227,7 @@ export function ServerSettings({
               })(),
             }
           : {}),
-        ...(settingsEditable
+        ...(isAdmin && settingsEditable
           ? {
               extraMounts: extraMounts.map((m) => ({
                 host: m.host.trim(),
@@ -498,6 +498,7 @@ export function ServerSettings({
                 settingsEditable={settingsEditable}
                 extraMounts={extraMounts}
                 setExtraMounts={setExtraMounts}
+                isAdmin={isAdmin}
                 isForgeType={isForgeType}
                 jarOk={jarOk}
                 startupPresets={startupPresets}

@@ -3,7 +3,6 @@ import { activityDetail } from "@msm/shared";
 import { config } from "./config.js";
 import { prisma } from "./db.js";
 import { sendMail } from "./mail.js";
-import { assertSafeWebhookUrl } from "./safe-url.js";
 import { sendWebPushToUsers } from "./web-push.js";
 
 /**
@@ -42,8 +41,8 @@ function eventLines(event: ActivityEventRecord): string[] {
 }
 
 async function postWebhook(url: string, event: ActivityEventRecord): Promise<void> {
-  const safeUrl = await assertSafeWebhookUrl(url);
-  const body = isDiscord(safeUrl)
+  const { fetchSafeWebhook } = await import("./safe-url.js");
+  const body = isDiscord(url)
     ? {
         username: "Guartrix",
         embeds: [
@@ -64,12 +63,12 @@ async function postWebhook(url: string, event: ActivityEventRecord): Promise<voi
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 10_000);
   try {
-    const res = await fetch(safeUrl, {
+    // Validate Discord path + pin DNS inside fetchSafeWebhook
+    const res = await fetchSafeWebhook(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
       signal: controller.signal,
-      redirect: "error",
     });
     if (!res.ok) {
       throw new Error(`webhook responded ${res.status}`);

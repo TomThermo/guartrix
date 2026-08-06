@@ -41,7 +41,7 @@ another tool on the host needs it.
 |------|---------|
 | Proxy | `X-Forwarded-*` overwritten from the socket by prod-web; API trusts XFF only from `TRUSTED_PROXIES` |
 | CSP | prod-web sends `script-src` with a **per-request nonce** (stamped on `index.html` scripts). Cloudflare Bot JS detections can reuse that nonce; Web Analytics needs `static.cloudflareinsights.com`. Prefer turning off **Email Address Obfuscation** (Scrape Shield) rather than `'unsafe-inline'` |
-| CSRF | Origin/Referer + **`x-csrf-token`** double-submit on authenticated cookie mutating `/api` (missing Origin **and** Referer rejected unless `CSRF_ALLOW_MISSING_ORIGIN=1`; Bearer-only `gt_`/`gta_` skip CSRF; **cookie session always enforces CSRF** even if a Bearer also resolved; `/api/public/*` exempt) |
+| CSRF | Origin/Referer + **`x-csrf-token`** double-submit on authenticated cookie mutating `/api` (missing Origin **and** Referer rejected unless `CSRF_ALLOW_MISSING_ORIGIN=1`; Bearer-only `gt_`/`gta_` skip CSRF; **cookie session always enforces CSRF** even if a Bearer also resolved; `/api/public/*` exempt; token compare uses **`timingSafeEqual`**) |
 | Sessions | `httpOnly` + `SameSite=Lax`; regenerate on login; purge on password reset |
 | Rate limits | Login / API-key / SFTP counters via `RATE_LIMIT_STORE` (`file` default under `data/rate-limits/`, or `memory`); authenticated session `/api` capped by `API_SESSION_RATE_LIMIT` (default 600/min per user); panel-password step-up (`verifyAccountPassword`) capped 10/15min per user (delete server, app passwords, 2FA disable/recovery, account delete) |
 | Auth timing | Login and SFTP always run one scrypt verify (precomputed dummy hash for unknown users) |
@@ -53,10 +53,10 @@ another tool on the host needs it.
 | Admin lockout | Last `ADMIN` cannot be deleted or demoted (panel + Application API) |
 | Files / SFTP | Symlink jail, `O_NOFOLLOW` uploads, member-safe archive extract, sensitive `guartrix-*.json` blocked |
 | Archives | Symlinks/hardlinks rejected; zip member-by-member; File Manager + modpack/clone/import use `safeExtractArchive` |
-| Daemon | Short-lived HS256 JWTs on the wire (HMAC with node secret); raw bearer only if `DAEMON_JWT_LEGACY=true`; `serverId` sanitized; MySQL game users default `remote: 172.%`; containers `--cap-drop=ALL`; optional **`DOCKER_SECCOMP_PROFILE`**; per-IP HTTP rate limit (`DAEMON_RATE_LIMIT_MAX`, default 600/min); **`DOCKER_NETWORK_MODE=per_server`** (default) isolates game bridges (`guartrix-s-<id>`) with a second attach to shared `guartrix` for game MySQL; **`shared`** requires `ALLOW_SHARED_DOCKER_NETWORK=1`; daemon port ufw restricted to panel IP when `MANAGE_FIREWALL` + `PANEL_URL` |
-| Outbound | Webhook/download SSRF guards (`safe-url.ts`); CDN host allowlist for jars/modpacks |
+| Daemon | Short-lived HS256 JWTs on the wire (HMAC with node secret); raw bearer only if `DAEMON_JWT_LEGACY=true`; `serverId` sanitized; MySQL game users **reject `remote: %`** (private patterns only, default `172.%`; delete may still drop legacy `%` grants); MySQL client uses **`--defaults-extra-file`** (root password not on argv); containers `--cap-drop=ALL`; optional **`DOCKER_SECCOMP_PROFILE`**; per-IP HTTP rate limit (`DAEMON_RATE_LIMIT_MAX`, default 600/min); **`DOCKER_NETWORK_MODE=per_server`** (default) isolates game bridges (`guartrix-s-<id>`) with a second attach to shared `guartrix` for game MySQL; **`shared`** requires `ALLOW_SHARED_DOCKER_NETWORK=1`; daemon port ufw restricted to panel IP when `MANAGE_FIREWALL` + `PANEL_URL` |
+| Outbound | Webhook/download SSRF guards (`safe-url.ts`); CDN host allowlist for jars/modpacks; fetches **DNS-pin** to pre-validated public IPs (anti rebinding) |
 | Capacity | Shared `assertNodeCapacity` (incl. reserve) on create/PATCH |
-| Nodes | Only admins pick `nodeId` on create / clone / import; remote-install verifies SSH host keys (explicit trust + stored fingerprint; replace requires confirm); install script prefers ufw allow daemon port **from panel IP only** |
+| Nodes | Only admins pick `nodeId` on create / clone / import; **extraMounts** admin-only (same bar as memory/disk); remote-install verifies SSH host keys (explicit trust + stored fingerprint; replace requires confirm) **and requires panel password step-up**; install script prefers ufw allow daemon port **from panel IP only** |
 | Invites | No temporary password in JSON — setup link emailed; accept links are hashed tokens with a 7-day TTL; public peek hides email/server until signed in |
 | Audit | Activity log records actor + IP per action; secret-looking metadata keys dropped — see [Activity log](activity-log.md) |
 | Watchdog | Restarts unhealthy panel processes; Discord/webhook alert when `ACTIVITY_WEBHOOK_URL` is set |
@@ -115,6 +115,7 @@ The Add-node wizard verifies the VPS SSH host key:
 1. First connection presents the fingerprint and **rejects** until the admin confirms **Trust host key**.
 2. The fingerprint is stored on `Node.sshHostKeyFingerprint`.
 3. Later installs must match; after a VPS rebuild, use **Replace host key**.
+4. Remote install also requires the admin’s **panel password** (step-up) so a stolen cookie session alone cannot root a VPS.
 
 `install-daemon.sh` prefers opening the daemon port **only from the panel IP** (resolved from `PANEL_URL`) when ufw is available.
 

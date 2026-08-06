@@ -999,7 +999,7 @@ export const nl: Messages = {
       "-Xmx / -Xms mogen het toegewezen RAM ({memoryMb} MB) niet overschrijden. Gebruik liever {{MEMORY}}.",
     extraMountsTitle: "Extra host-mounts",
     extraMountsHelp:
-      "Koppel gedeelde hostmappen in de container (bijv. gedeelde plugins). Hostpaden moeten onder de paneel-allowlist vallen (standaard /var/lib/guartrix/shared of /opt/guartrix/shared). Mounts gelden bij de volgende start/herstart. Containerpad /data is gereserveerd.",
+      "Alleen admins. Koppel gedeelde hostmappen in de container (bijv. gedeelde plugins). Hostpaden moeten onder de paneel-allowlist vallen (standaard /var/lib/guartrix/shared of /opt/guartrix/shared). Mounts gelden bij de volgende start/herstart. Containerpad /data is gereserveerd.",
     noExtraMounts: "Geen extra mounts geconfigureerd.",
     hostPath: "Hostpad",
     hostPathHint: "Absoluut pad op de node",

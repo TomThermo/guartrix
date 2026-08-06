@@ -110,7 +110,8 @@ The node-agent manages the node-local `guartrix-mysql` lifecycle and related dat
 Documented concerns:
 
 - root bootstrap
-- per-server database/user creation
+- per-server database/user creation (**`remote: %` rejected** — private patterns only, default `172.%`)
+- client auth via temporary `--defaults-extra-file` (root password not passed on argv)
 - dump/restore paths
 - connectivity model for game containers
 

@@ -993,7 +993,7 @@ export const en = {
       "-Xmx / -Xms cannot exceed allocated RAM ({memoryMb} MB). Prefer {{MEMORY}}.",
     extraMountsTitle: "Extra host mounts",
     extraMountsHelp:
-      "Bind shared host directories into the container (e.g. shared plugins). Host paths must be under the panel allowlist (default /var/lib/guartrix/shared or /opt/guartrix/shared). Mounts apply on the next start/restart. Container path /data is reserved.",
+      "Admin only. Bind shared host directories into the container (e.g. shared plugins). Host paths must be under the panel allowlist (default /var/lib/guartrix/shared or /opt/guartrix/shared). Mounts apply on the next start/restart. Container path /data is reserved.",
     noExtraMounts: "No extra mounts configured.",
     hostPath: "Host path",
     hostPathHint: "Absolute path on the node",

@@ -112,7 +112,7 @@ The license **server** is hosted separately by Guartrix (default `https://licens
 | `DAEMON_JWT_LEGACY` | `false` (default) = JWT only; `true` temporarily for old daemons (deprecated — logs a warning when used; remove after all nodes use JWT) |
 | `DAEMON_RATE_LIMIT_MAX` | Max daemon HTTP requests per IP per window (default **600**; daemon env file) |
 | `DAEMON_RATE_LIMIT_WINDOW_MS` | Daemon rate-limit window in ms (default **60000**) |
-| `EXTRA_MOUNTS_ALLOW_PREFIX` | Comma-separated host path prefixes allowed for server extra mounts (default `/var/lib/guartrix/shared,/opt/guartrix/shared`) |
+| `EXTRA_MOUNTS_ALLOW_PREFIX` | Comma-separated host path prefixes allowed for server extra mounts (default `/var/lib/guartrix/shared,/opt/guartrix/shared`). Changing mounts requires **ADMIN** |
 | `SFTP_PORT` / `SFTP_ENABLED` | Embedded SFTP per node |
 | `PANEL_URL` | URL the daemon uses for SFTP password checks |
 | `GUARTRIX_REPO_URL` | Git URL for remote install scripts |

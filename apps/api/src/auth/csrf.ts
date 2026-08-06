@@ -1,6 +1,17 @@
-import { randomBytes } from "node:crypto";
+import { randomBytes, timingSafeEqual } from "node:crypto";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { config } from "../config.js";
+
+/** Constant-time string compare (rejects unequal lengths without leaking via early return alone). */
+function safeEqualToken(a: string, b: string): boolean {
+  const ba = Buffer.from(a);
+  const bb = Buffer.from(b);
+  if (ba.length !== bb.length) {
+    timingSafeEqual(ba, ba);
+    return false;
+  }
+  return timingSafeEqual(ba, bb);
+}
 
 export const CSRF_HEADER = "x-csrf-token";
 
@@ -75,7 +86,7 @@ export function assertCsrfToken(request: FastifyRequest): string | null {
   }
   const raw = request.headers[CSRF_HEADER];
   const token = typeof raw === "string" ? raw.trim() : "";
-  if (!token || token !== session.csrfToken) {
+  if (!token || !safeEqualToken(token, session.csrfToken)) {
     return "Invalid CSRF token";
   }
   return null;

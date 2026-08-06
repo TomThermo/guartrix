@@ -23,12 +23,19 @@ const mysqlCreateSchema = z.object({
   name: z.string().min(2).max(64),
   username: z.string().min(2).max(64),
   password: z.string().min(8).max(128),
-  remote: z.string().min(1).max(255).optional(),
+  /** Private Docker/LAN only — '%' (world) rejected by node-agent. */
+  remote: z
+    .string()
+    .min(1)
+    .max(255)
+    .refine((v) => v !== "%", { message: "MySQL remote '%' is not allowed" })
+    .optional(),
 });
 
 const mysqlDeleteSchema = z.object({
   name: z.string().min(2).max(64),
   username: z.string().min(2).max(64),
+  /** May be '%' only to drop legacy world grants. */
   remote: z.string().min(1).max(255).optional(),
 });
 

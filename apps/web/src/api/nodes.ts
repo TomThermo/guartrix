@@ -62,6 +62,7 @@ export const nodesApi = {
       sshUser: string;
       sshPassword?: string;
       sshPrivateKey?: string;
+      panelPassword: string;
       trustHostKey?: boolean;
       replaceHostKey?: boolean;
       expectedHostKeyFingerprint?: string;

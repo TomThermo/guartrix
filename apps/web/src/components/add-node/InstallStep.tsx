@@ -33,6 +33,8 @@ export type InstallStepProps = {
   onSshPasswordChange: (value: string) => void;
   sshKey: string;
   onSshKeyChange: (value: string) => void;
+  panelPassword: string;
+  onPanelPasswordChange: (value: string) => void;
   trustHostKey: boolean;
   onTrustHostKeyChange: (value: boolean) => void;
   replaceHostKey: boolean;
@@ -59,6 +61,8 @@ export function InstallStep({
   onSshPasswordChange,
   sshKey,
   onSshKeyChange,
+  panelPassword,
+  onPanelPasswordChange,
   trustHostKey,
   onTrustHostKeyChange,
   replaceHostKey,
@@ -146,6 +150,23 @@ export function InstallStep({
                   />
                 </Form.Group>
               </Col>
+              <Col md={12}>
+                <Form.Group>
+                  <Form.Label>Panel password</Form.Label>
+                  <Form.Control
+                    type="password"
+                    value={panelPassword}
+                    onChange={(e) => onPanelPasswordChange(e.target.value)}
+                    autoComplete="current-password"
+                    placeholder="Your Guartrix admin password"
+                    required
+                    disabled={busy}
+                  />
+                  <Form.Text className="text-secondary">
+                    Confirms this install — a stolen session alone cannot remote-install.
+                  </Form.Text>
+                </Form.Group>
+              </Col>
             </Row>
             <Form.Text className="text-secondary d-block mb-2">
               Password or key is enough. For key + passphrase, fill in both.
@@ -186,6 +207,7 @@ export function InstallStep({
               variant="success"
               disabled={
                 busy ||
+                !panelPassword.trim() ||
                 (!sshPassword && !sshKey.trim()) ||
                 (hostKeyNeedsTrust && !trustHostKey) ||
                 (hostKeyMismatch && !replaceHostKey)

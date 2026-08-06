@@ -37,6 +37,7 @@ export function AddNodeModal({ existingNode, onClose, onChanged }: Props) {
   const [sshUser, setSshUser] = useState("ubuntu");
   const [sshPassword, setSshPassword] = useState("");
   const [sshKey, setSshKey] = useState("");
+  const [panelPassword, setPanelPassword] = useState("");
   const [trustHostKey, setTrustHostKey] = useState(false);
   const [replaceHostKey, setReplaceHostKey] = useState(false);
   const [hostKeyFingerprint, setHostKeyFingerprint] = useState<string | null>(
@@ -164,6 +165,7 @@ export function AddNodeModal({ existingNode, onClose, onChanged }: Props) {
           sshUser: sshUser.trim(),
           sshPassword: sshPassword || undefined,
           sshPrivateKey: sshKey.trim() || undefined,
+          panelPassword,
           trustHostKey: trustHostKey || undefined,
           replaceHostKey: replaceHostKey || undefined,
         },
@@ -301,6 +303,8 @@ export function AddNodeModal({ existingNode, onClose, onChanged }: Props) {
             onSshPasswordChange={setSshPassword}
             sshKey={sshKey}
             onSshKeyChange={setSshKey}
+            panelPassword={panelPassword}
+            onPanelPasswordChange={setPanelPassword}
             trustHostKey={trustHostKey}
             onTrustHostKeyChange={setTrustHostKey}
             replaceHostKey={replaceHostKey}

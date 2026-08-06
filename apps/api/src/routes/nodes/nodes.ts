@@ -7,7 +7,7 @@ import {
   primaryAllocationProtocol,
 } from "@msm/shared";
 import { logActivity } from "../../activity-log.js";
-import { requireAdmin, requireAuth } from "../../auth/auth.js";
+import { requireAdmin, requireAuth, verifyAccountPassword } from "../../auth/auth.js";
 import { prisma } from "../../db.js";
 import {
   daemonTestNode,
@@ -406,6 +406,8 @@ export function registerNodeRoutes(app: FastifyInstance): void {
         sshUser: z.string().min(1).max(64),
         sshPassword: z.string().min(1).max(512).optional(),
         sshPrivateKey: z.string().min(1).max(16_000).optional(),
+        /** Panel account password step-up (stolen session alone is not enough). */
+        panelPassword: z.string().min(1).max(512),
         /** First contact: admin confirms the presented host-key fingerprint. */
         trustHostKey: z.boolean().optional().default(false),
         /** Stored fingerprint no longer matches (VPS rebuild) — replace after verify. */
@@ -416,6 +418,9 @@ export function registerNodeRoutes(app: FastifyInstance): void {
       const parsed = schema.safeParse(request.body);
       if (!parsed.success) {
         return reply.status(400).send({ error: parsed.error.flatten() });
+      }
+      if (!(await verifyAccountPassword(request, parsed.data.panelPassword))) {
+        return reply.status(403).send({ error: "Incorrect panel password" });
       }
       if (!parsed.data.sshPassword && !parsed.data.sshPrivateKey) {
         return reply

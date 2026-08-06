@@ -1,3 +1,8 @@
+import crypto from "node:crypto";
+import fs from "node:fs";
+import fsp from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import { docker } from "./docker.js";
 
 export const MYSQL_CONTAINER = "guartrix-mysql";
@@ -11,25 +16,61 @@ export function mysqlRootPassword(): string {
   );
 }
 
+/** Escape a value for a MySQL option file (double-quoted). */
+function escapeMycnfValue(value: string): string {
+  return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
+/**
+ * Run a MySQL client command without putting the root password on argv.
+ * Writes a 0600 defaults file on the host, docker-cp into the container,
+ * invokes `fn(containerCnfPath)`, then deletes both copies.
+ */
+export async function withMysqlDefaultsFile<T>(
+  fn: (defaultsExtraFile: string) => Promise<T>,
+): Promise<T> {
+  const pass = mysqlRootPassword();
+  const id = crypto.randomBytes(12).toString("hex");
+  const hostPath = path.join(os.tmpdir(), `guartrix-mysql-${id}.cnf`);
+  const containerPath = `/tmp/guartrix-mysql-${id}.cnf`;
+  const body = `[client]\nuser=root\npassword="${escapeMycnfValue(pass)}"\n`;
+  await fsp.writeFile(hostPath, body, { mode: 0o600 });
+  try {
+    await docker(["cp", hostPath, `${MYSQL_CONTAINER}:${containerPath}`], {
+      timeout: 15_000,
+    });
+    try {
+      return await fn(containerPath);
+    } finally {
+      await docker(["exec", MYSQL_CONTAINER, "rm", "-f", containerPath], {
+        timeout: 10_000,
+      }).catch(() => undefined);
+    }
+  } finally {
+    await fsp.unlink(hostPath).catch(() => undefined);
+  }
+}
+
 export async function waitForMysqlReady(timeoutMs = 90_000): Promise<void> {
   const started = Date.now();
   let lastError = "timeout";
   while (Date.now() - started < timeoutMs) {
     try {
-      await docker(
-        [
-          "exec",
-          MYSQL_CONTAINER,
-          "mysqladmin",
-          "ping",
-          "-h",
-          "127.0.0.1",
-          "-uroot",
-          `-p${mysqlRootPassword()}`,
-          "--silent",
-        ],
-        { timeout: 10_000 },
-      );
+      await withMysqlDefaultsFile(async (defaultsFile) => {
+        await docker(
+          [
+            "exec",
+            MYSQL_CONTAINER,
+            "mysqladmin",
+            `--defaults-extra-file=${defaultsFile}`,
+            "ping",
+            "-h",
+            "127.0.0.1",
+            "--silent",
+          ],
+          { timeout: 10_000 },
+        );
+      });
       return;
     } catch (err) {
       lastError = err instanceof Error ? err.message : String(err);

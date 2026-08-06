@@ -5,7 +5,7 @@ import crypto from "node:crypto";
 import { docker } from "./docker.js";
 import {
   MYSQL_CONTAINER,
-  mysqlRootPassword,
+  withMysqlDefaultsFile,
 } from "./mysql-network.js";
 import {
   ensureMysql,
@@ -43,26 +43,67 @@ function assertIdent(value: string, label: string): string {
   return value;
 }
 
+/**
+ * Game DB users may only grant from private Docker/LAN patterns.
+ * World (`%`) is rejected on create/rotate. Delete may pass `%` to clean legacy grants.
+ */
+export function assertSafeMysqlRemote(
+  remote: string | undefined,
+  opts?: { allowWorld?: boolean; fallback?: string },
+): string {
+  const fallback = opts?.fallback ?? "172.%";
+  const value = (remote ?? fallback).trim() || fallback;
+  if (!/^[a-zA-Z0-9._%-]+$/.test(value)) {
+    throw new Error("Invalid MySQL remote host pattern");
+  }
+  if (value === "%") {
+    if (opts?.allowWorld) return value;
+    throw new Error(
+      "MySQL remote '%' (world) is not allowed — use 172.% or another private pattern",
+    );
+  }
+  const privateOk =
+    value === "localhost" ||
+    value === "127.0.0.1" ||
+    value === "172.%" ||
+    value === "10.%" ||
+    value === "192.168.%" ||
+    /^172\.\d{1,3}\.%$/.test(value) ||
+    /^10\.\d{1,3}\.%$/.test(value) ||
+    /^192\.168\.\d{1,3}\.%$/.test(value) ||
+    /^172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}$/.test(value) ||
+    /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(value) ||
+    /^192\.168\.\d{1,3}\.\d{1,3}$/.test(value);
+  if (!privateOk) {
+    throw new Error(
+      "MySQL remote must be a private Docker/LAN pattern (e.g. 172.%)",
+    );
+  }
+  return value;
+}
+
 async function mysqlExecSql(sql: string): Promise<string> {
-  const { stdout, stderr } = await docker(
-    [
-      "exec",
-      MYSQL_CONTAINER,
-      "mysql",
-      "-uroot",
-      `-p${mysqlRootPassword()}`,
-      "-N",
-      "-e",
-      sql,
-    ],
-    { timeout: 30_000 },
-  );
-  const out = `${stdout || ""}${stderr || ""}`
-    .split(/\r?\n/)
-    .filter((line) => line && !line.includes("Using a password on the command line"))
-    .join("\n")
-    .trim();
-  return out;
+  return withMysqlDefaultsFile(async (defaultsFile) => {
+    const { stdout, stderr } = await docker(
+      [
+        "exec",
+        MYSQL_CONTAINER,
+        "mysql",
+        `--defaults-extra-file=${defaultsFile}`,
+        "-N",
+        "-e",
+        sql,
+      ],
+      { timeout: 30_000 },
+    );
+    return `${stdout || ""}${stderr || ""}`
+      .split(/\r?\n/)
+      .filter(
+        (line) => line && !line.includes("Using a password on the command line"),
+      )
+      .join("\n")
+      .trim();
+  });
 }
 
 export async function createMysqlDatabase(
@@ -75,18 +116,12 @@ export async function createMysqlDatabase(
   if (!password || password.length < 8) {
     throw new Error("MySQL password must be at least 8 characters");
   }
-  // Default to Docker bridge hosts only — not '%' (world). Operators can still
-  // pass remote="%" explicitly if they need it.
-  const remote = (input.remote ?? "172.%").trim() || "172.%";
-  if (remote !== "%" && !/^[a-zA-Z0-9._%-]+$/.test(remote)) {
-    throw new Error("Invalid MySQL remote host pattern");
-  }
+  const remote = assertSafeMysqlRemote(input.remote);
 
   const user = escapeSqlLiteral(username);
   const pass = escapeSqlLiteral(password);
   const host = escapeSqlLiteral(remote);
 
-  // Drop leftover grants for this user@host if recreating
   await mysqlExecSql(
     [
       `CREATE DATABASE IF NOT EXISTS \`${name}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;`,
@@ -117,7 +152,11 @@ export async function deleteMysqlDatabase(input: {
 
   const name = assertIdent(input.name, "database name");
   const username = assertIdent(input.username, "username");
-  const remote = (input.remote ?? "%").trim() || "%";
+  // Allow legacy '%' only for DROP cleanup; default stays private.
+  const remote = assertSafeMysqlRemote(input.remote, {
+    allowWorld: true,
+    fallback: "172.%",
+  });
   const user = escapeSqlLiteral(username);
   const host = escapeSqlLiteral(remote);
 
@@ -144,10 +183,7 @@ export async function rotateMysqlPassword(input: {
   if (!password || password.length < 8) {
     throw new Error("MySQL password must be at least 8 characters");
   }
-  const remote = (input.remote ?? "172.%").trim() || "172.%";
-  if (remote !== "%" && !/^[a-zA-Z0-9._%-]+$/.test(remote)) {
-    throw new Error("Invalid MySQL remote host pattern");
-  }
+  const remote = assertSafeMysqlRemote(input.remote);
 
   const user = escapeSqlLiteral(username);
   const pass = escapeSqlLiteral(password);
@@ -178,36 +214,37 @@ export async function dumpMysqlDatabaseToFile(
   await ensureMysql();
   const db = assertIdent(name, "database name");
   await fsp.mkdir(path.dirname(destPath), { recursive: true });
-  const { spawn } = await import("node:child_process");
-  await new Promise<void>((resolve, reject) => {
-    const child = spawn(
-      "docker",
-      [
-        "exec",
-        MYSQL_CONTAINER,
-        "mysqldump",
-        "-uroot",
-        `-p${mysqlRootPassword()}`,
-        "--single-transaction",
-        "--routines",
-        "--databases",
-        db,
-      ],
-      { stdio: ["ignore", "pipe", "pipe"] },
-    );
-    const out = fs.createWriteStream(destPath);
-    child.stdout.pipe(out);
-    let err = "";
-    child.stderr.on("data", (chunk: Buffer) => {
-      const line = chunk.toString();
-      if (!line.includes("Using a password on the command line")) err += line;
-    });
-    child.on("error", reject);
-    out.on("error", reject);
-    child.on("close", (code) => {
-      out.end();
-      if (code === 0) resolve();
-      else reject(new Error(err.trim() || `mysqldump exited ${code}`));
+  await withMysqlDefaultsFile(async (defaultsFile) => {
+    const { spawn } = await import("node:child_process");
+    await new Promise<void>((resolve, reject) => {
+      const child = spawn(
+        "docker",
+        [
+          "exec",
+          MYSQL_CONTAINER,
+          "mysqldump",
+          `--defaults-extra-file=${defaultsFile}`,
+          "--single-transaction",
+          "--routines",
+          "--databases",
+          db,
+        ],
+        { stdio: ["ignore", "pipe", "pipe"] },
+      );
+      const out = fs.createWriteStream(destPath);
+      child.stdout.pipe(out);
+      let err = "";
+      child.stderr.on("data", (chunk: Buffer) => {
+        const line = chunk.toString();
+        if (!line.includes("Using a password on the command line")) err += line;
+      });
+      child.on("error", reject);
+      out.on("error", reject);
+      child.on("close", (code) => {
+        out.end();
+        if (code === 0) resolve();
+        else reject(new Error(err.trim() || `mysqldump exited ${code}`));
+      });
     });
   });
 }
@@ -220,33 +257,34 @@ export async function restoreMysqlDatabaseFromFile(
   await ensureMysql();
   const db = assertIdent(name, "database name");
   await fsp.access(sqlPath);
-  const { spawn } = await import("node:child_process");
-  await new Promise<void>((resolve, reject) => {
-    const child = spawn(
-      "docker",
-      [
-        "exec",
-        "-i",
-        MYSQL_CONTAINER,
-        "mysql",
-        "-uroot",
-        `-p${mysqlRootPassword()}`,
-        db,
-      ],
-      { stdio: ["pipe", "ignore", "pipe"] },
-    );
-    const input = fs.createReadStream(sqlPath);
-    input.pipe(child.stdin!);
-    let err = "";
-    child.stderr.on("data", (chunk: Buffer) => {
-      const line = chunk.toString();
-      if (!line.includes("Using a password on the command line")) err += line;
-    });
-    child.on("error", reject);
-    input.on("error", reject);
-    child.on("close", (code) => {
-      if (code === 0) resolve();
-      else reject(new Error(err.trim() || `mysql restore exited ${code}`));
+  await withMysqlDefaultsFile(async (defaultsFile) => {
+    const { spawn } = await import("node:child_process");
+    await new Promise<void>((resolve, reject) => {
+      const child = spawn(
+        "docker",
+        [
+          "exec",
+          "-i",
+          MYSQL_CONTAINER,
+          "mysql",
+          `--defaults-extra-file=${defaultsFile}`,
+          db,
+        ],
+        { stdio: ["pipe", "ignore", "pipe"] },
+      );
+      const input = fs.createReadStream(sqlPath);
+      input.pipe(child.stdin!);
+      let err = "";
+      child.stderr.on("data", (chunk: Buffer) => {
+        const line = chunk.toString();
+        if (!line.includes("Using a password on the command line")) err += line;
+      });
+      child.on("error", reject);
+      input.on("error", reject);
+      child.on("close", (code) => {
+        if (code === 0) resolve();
+        else reject(new Error(err.trim() || `mysql restore exited ${code}`));
+      });
     });
   });
 }

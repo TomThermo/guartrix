@@ -28,6 +28,7 @@ export function SettingsStartupPanel({
   settingsEditable,
   extraMounts,
   setExtraMounts,
+  isAdmin,
   isForgeType,
   jarOk,
   startupPresets,
@@ -46,6 +47,7 @@ export function SettingsStartupPanel({
   settingsEditable: boolean;
   extraMounts: ServerExtraMount[];
   setExtraMounts: (v: ServerExtraMount[]) => void;
+  isAdmin: boolean;
   isForgeType: boolean;
   jarOk: boolean;
   startupPresets: StartupPreset[];
@@ -192,6 +194,7 @@ export function SettingsStartupPanel({
         </Form.Text>
       </fieldset>
 
+      {isAdmin && (
       <div className="mt-4 pt-3 border-top">
         <fieldset
           disabled={!settingsEditable}
@@ -282,6 +285,7 @@ export function SettingsStartupPanel({
           </Button>
         </fieldset>
       </div>
+      )}
     </>
   );
 }

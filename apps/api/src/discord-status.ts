@@ -3,7 +3,7 @@ import { processManager } from "./servers/process-manager.js";
 import { config } from "./config.js";
 import { readServerProperties } from "./servers/properties.js";
 import {
-  assertSafeOutboundUrl,
+  fetchSafeOutbound,
   DISCORD_WEBHOOK_HOST_SUFFIXES,
 } from "./safe-url.js";
 
@@ -18,31 +18,37 @@ async function postOrEditStatus(opts: {
   messageId: string | null;
   content: object;
 }): Promise<string | null> {
-  const safeUrl = await assertSafeOutboundUrl(opts.webhookUrl, {
-    httpsOnly: true,
-    allowedHostSuffixes: DISCORD_WEBHOOK_HOST_SUFFIXES,
-  });
-  if (!isDiscordWebhook(safeUrl)) {
+  if (!isDiscordWebhook(opts.webhookUrl)) {
     throw new Error("Discord status requires a Discord webhook URL");
   }
-  const base = safeUrl.replace(/\?.*$/, "").replace(/\/$/, "");
+  const base = opts.webhookUrl.replace(/\?.*$/, "").replace(/\/$/, "");
+  const fetchOpts = {
+    httpsOnly: true as const,
+    allowedHostSuffixes: DISCORD_WEBHOOK_HOST_SUFFIXES,
+  };
 
   if (opts.messageId) {
-    const res = await fetch(`${base}/messages/${opts.messageId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(opts.content),
-      redirect: "error",
-    });
+    const res = await fetchSafeOutbound(
+      `${base}/messages/${opts.messageId}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(opts.content),
+      },
+      fetchOpts,
+    );
     if (res.ok) return opts.messageId;
   }
 
-  const res = await fetch(`${base}?wait=true`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(opts.content),
-    redirect: "error",
-  });
+  const res = await fetchSafeOutbound(
+    `${base}?wait=true`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(opts.content),
+    },
+    fetchOpts,
+  );
   if (!res.ok) {
     throw new Error(`Discord status webhook ${res.status}`);
   }

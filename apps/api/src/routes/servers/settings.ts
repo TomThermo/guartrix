@@ -89,8 +89,7 @@ export function registerServerSettingsRoutes(app: FastifyInstance): void {
       data.ownerAlertEmail !== undefined ||
       data.discordStatusWebhookUrl !== undefined ||
       data.discordStatusEnabled !== undefined ||
-      data.bluemapUrl !== undefined ||
-      data.extraMounts !== undefined;
+      data.bluemapUrl !== undefined;
     const needsStartup =
       data.memoryMb !== undefined ||
       data.javaVersion !== undefined ||
@@ -104,6 +103,15 @@ export function registerServerSettingsRoutes(app: FastifyInstance): void {
     }
     if (needsStartup && !hasPermission(access.permissions, "startup.update")) {
       return reply.status(403).send({ error: "Missing permission" });
+    }
+
+    if (data.extraMounts !== undefined) {
+      if (access.user.role !== "ADMIN") {
+        return reply
+          .status(403)
+          .send({ error: "Only admins can change extra host mounts" });
+      }
+      if (!assertAdminFullApiKey(request, reply)) return;
     }
 
     if (data.ownerId !== undefined) {
