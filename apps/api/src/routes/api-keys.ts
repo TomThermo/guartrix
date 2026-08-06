@@ -3,6 +3,7 @@ import { nanoid } from "nanoid";
 import { z } from "zod";
 import {
   API_KEY_MAX_PER_USER,
+  normalizeAdminPanelScopes,
   normalizeApiKeyPermissions,
 } from "@msm/shared";
 import { logActivity } from "../activity-log.js";
@@ -18,6 +19,7 @@ const createSchema = z.object({
   name: z.string().trim().min(1).max(64),
   permissions: z.array(z.string()).min(1).max(64),
   serverIds: z.array(z.string().min(1).max(64)).max(100).nullable().optional(),
+  adminScopes: z.array(z.string()).max(32).nullable().optional(),
 });
 
 export function registerApiKeyRoutes(app: FastifyInstance): void {
@@ -60,6 +62,22 @@ export function registerApiKeyRoutes(app: FastifyInstance): void {
       });
     }
 
+    let adminScopes: string[] | null = null;
+    if (parsed.data.adminScopes != null) {
+      if (user.role !== "ADMIN") {
+        return reply.status(403).send({
+          error: "Only ADMIN accounts can grant panel admin scopes on API keys",
+        });
+      }
+      const normalized = normalizeAdminPanelScopes(parsed.data.adminScopes);
+      if (!normalized) {
+        return reply.status(400).send({
+          error: "adminScopes must be known panel admin scopes, or [\"*\"]",
+        });
+      }
+      adminScopes = normalized;
+    }
+
     let serverIds: string[] | null = null;
     if (parsed.data.serverIds != null) {
       if (parsed.data.serverIds.length === 0) {
@@ -95,6 +113,7 @@ export function registerApiKeyRoutes(app: FastifyInstance): void {
         tokenHash,
         permissions: JSON.stringify(permissions),
         serverIds: serverIds ? JSON.stringify(serverIds) : null,
+        adminScopes: adminScopes ? JSON.stringify(adminScopes) : null,
       },
     });
 

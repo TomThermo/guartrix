@@ -15,6 +15,8 @@ export interface ApiKeyAuthContext {
   permissions: string[];
   /** null = every server the user can access. */
   serverIds: string[] | null;
+  /** Panel admin scopes for ADMIN accounts. null = server routes only. */
+  adminScopes: string[] | null;
 }
 
 declare module "fastify" {
@@ -66,6 +68,7 @@ export function toApiKeyRecord(row: {
   prefix: string;
   permissions: string;
   serverIds: string | null;
+  adminScopes?: string | null;
   lastUsedAt: Date | null;
   createdAt: Date;
   revokedAt: Date | null;
@@ -76,6 +79,7 @@ export function toApiKeyRecord(row: {
     prefix: row.prefix,
     permissions: parsePermissionsJson(row.permissions),
     serverIds: parseServerIdsJson(row.serverIds),
+    adminScopes: parseServerIdsJson(row.adminScopes ?? null),
     lastUsedAt: row.lastUsedAt?.toISOString() ?? null,
     createdAt: row.createdAt.toISOString(),
     revokedAt: row.revokedAt?.toISOString() ?? null,
@@ -172,6 +176,7 @@ export async function resolveApiKeyAuth(
     prefix: row.prefix,
     permissions: parsePermissionsJson(row.permissions),
     serverIds: parseServerIdsJson(row.serverIds),
+    adminScopes: parseServerIdsJson(row.adminScopes ?? null),
   };
   request.apiKeyAuth = ctx;
   return { userId: row.userId, ctx };

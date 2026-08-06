@@ -10,6 +10,7 @@ export * from "./java.js";
 export * from "./runtime.js";
 export * from "./activity.js";
 export * from "./api-keys.js";
+export * from "./admin-panel-scopes.js";
 export * from "./application-api.js";
 export * from "./bytes.js";
 export * from "./version.js";

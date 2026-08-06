@@ -418,4 +418,207 @@ export function registerApplicationRoutes(app: FastifyInstance): void {
       return reply.status(status).send({ error: message });
     }
   });
+
+  app.delete<{ Params: { id: string } }>(
+    "/api/application/users/:id",
+    async (request, reply) => {
+      const ctx = await requireApplication(request, reply, "users.delete");
+      if (!ctx) return;
+      const existing = await prisma.user.findUnique({
+        where: { id: request.params.id },
+      });
+      if (!existing) return reply.status(404).send({ error: "User not found" });
+      if (existing.role === "ADMIN") {
+        const admins = await prisma.user.count({ where: { role: "ADMIN" } });
+        if (admins <= 1) {
+          return reply.status(400).send({ error: "Cannot delete the last admin" });
+        }
+      }
+      await prisma.user.delete({ where: { id: existing.id } });
+      logActivity({
+        action: "user.delete",
+        actor: `app:${ctx.prefix}`,
+        metadata: {
+          targetUser: existing.username,
+          via: "application-api",
+          keyId: ctx.keyId,
+        },
+      });
+      return reply.status(204).send();
+    },
+  );
+
+  app.get<{ Params: { id: string } }>(
+    "/api/application/servers/:id",
+    async (request, reply) => {
+      if (!(await requireApplication(request, reply, "servers.read"))) return;
+      const row = await prisma.server.findUnique({
+        where: { id: request.params.id },
+        include: serverListInclude,
+      });
+      if (!row) return reply.status(404).send({ error: "Server not found" });
+      return { server: toMcServer(row) };
+    },
+  );
+
+  app.patch<{ Params: { id: string } }>(
+    "/api/application/servers/:id",
+    async (request, reply) => {
+      const ctx = await requireApplication(request, reply, "servers.update");
+      if (!ctx) return;
+      const parsed = z
+        .object({
+          name: z.string().trim().min(1).max(64).optional(),
+          memoryMb: z.number().int().min(512).max(65536).optional(),
+          diskMb: z.number().int().min(1024).max(10_485_760).optional(),
+          cpuLimit: z.number().int().min(0).max(6400).optional(),
+          ownerId: z.string().min(1).optional(),
+        })
+        .safeParse(request.body);
+      if (!parsed.success) {
+        return reply.status(400).send({ error: parsed.error.flatten() });
+      }
+      const existing = await prisma.server.findUnique({
+        where: { id: request.params.id },
+      });
+      if (!existing) return reply.status(404).send({ error: "Server not found" });
+
+      if (parsed.data.ownerId) {
+        const owner = await prisma.user.findUnique({
+          where: { id: parsed.data.ownerId },
+        });
+        if (!owner) return reply.status(404).send({ error: "Owner not found" });
+      }
+
+      const updated = await prisma.server.update({
+        where: { id: existing.id },
+        data: {
+          ...(parsed.data.name != null ? { name: parsed.data.name } : {}),
+          ...(parsed.data.memoryMb != null ? { memoryMb: parsed.data.memoryMb } : {}),
+          ...(parsed.data.diskMb != null ? { diskMb: parsed.data.diskMb } : {}),
+          ...(parsed.data.cpuLimit != null ? { cpuLimit: parsed.data.cpuLimit } : {}),
+          ...(parsed.data.ownerId != null ? { ownerId: parsed.data.ownerId } : {}),
+        },
+        include: serverListInclude,
+      });
+
+      logActivity({
+        action: "server.update",
+        actor: `app:${ctx.prefix}`,
+        serverId: updated.id,
+        serverName: updated.name,
+        metadata: { fields: Object.keys(parsed.data), via: "application-api", keyId: ctx.keyId },
+      });
+
+      return { server: toMcServer(updated) };
+    },
+  );
+
+  app.delete<{ Params: { id: string } }>(
+    "/api/application/servers/:id",
+    async (request, reply) => {
+      const ctx = await requireApplication(request, reply, "servers.delete");
+      if (!ctx) return;
+      const server = await prisma.server.findUnique({
+        where: { id: request.params.id },
+      });
+      if (!server) return reply.status(404).send({ error: "Server not found" });
+
+      const { processManager } = await import("../servers/process-manager.js");
+      const { destroyServerDatabases } = await import("./databases.js");
+      const { wipeServerEverywhere } = await import("../servers/server-files.js");
+
+      if (server.status === "TRANSFERRING" || server.status === "CREATING") {
+        return reply
+          .status(409)
+          .send({ error: "Server is busy — wait for the current operation to finish" });
+      }
+      if (processManager.isRunning(server.id)) {
+        await processManager.stop(server.id);
+      }
+      const {
+        closeServerAllocationFirewalls,
+        releaseServerAllocations,
+      } = await import("../servers/allocations.js");
+      await closeServerAllocationFirewalls(server.id, server.nodeId).catch(() => undefined);
+      await destroyServerDatabases(server.id).catch(() => undefined);
+      await wipeServerEverywhere(server.id).catch(() => undefined);
+      await releaseServerAllocations(server.id).catch(() => undefined);
+      await prisma.server.delete({ where: { id: server.id } });
+
+      logActivity({
+        action: "server.delete",
+        actor: `app:${ctx.prefix}`,
+        serverId: null,
+        serverName: server.name,
+        metadata: { serverId: server.id, via: "application-api", keyId: ctx.keyId },
+      });
+
+      return reply.status(204).send();
+    },
+  );
+
+  app.get("/api/application/nodes", async (request, reply) => {
+    if (!(await requireApplication(request, reply, "nodes.read"))) return;
+    const { listNodesWithUsage } = await import("../nodes/nodes.js");
+    return { nodes: await listNodesWithUsage() };
+  });
+
+  app.get("/api/application/activity", async (request, reply) => {
+    if (!(await requireApplication(request, reply, "activity.read"))) return;
+    const parsed = z
+      .object({
+        offset: z.coerce.number().int().min(0).max(100_000).optional().default(0),
+        limit: z.coerce.number().int().min(1).max(200).optional().default(50),
+        q: z.string().max(120).optional(),
+        serverId: z.string().max(64).optional(),
+        userId: z.string().max(64).optional(),
+      })
+      .safeParse(request.query);
+    if (!parsed.success) {
+      return reply.status(400).send({ error: parsed.error.flatten() });
+    }
+    const { offset, limit, q, serverId, userId } = parsed.data;
+    const where: {
+      serverId?: string;
+      userId?: string;
+      OR?: Array<{ action?: { contains: string }; actorName?: { contains: string } }>;
+    } = {};
+    if (serverId) where.serverId = serverId;
+    if (userId) where.userId = userId;
+    if (q?.trim()) {
+      const term = q.trim();
+      where.OR = [{ action: { contains: term } }, { actorName: { contains: term } }];
+    }
+    const [total, rows] = await Promise.all([
+      prisma.activityEvent.count({ where }),
+      prisma.activityEvent.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip: offset,
+        take: limit,
+      }),
+    ]);
+    const { toActivityRecord } = await import("../activity-log.js");
+    return {
+      total,
+      offset,
+      limit,
+      events: rows.map(toActivityRecord),
+    };
+  });
+
+  app.get("/api/application/settings", async (request, reply) => {
+    if (!(await requireApplication(request, reply, "settings.read"))) return;
+    const { getPanelSettingsView } = await import("../panel-settings.js");
+    const view = await getPanelSettingsView();
+    return {
+      publicHost: view.publicHost,
+      publicBaseUrl: view.publicBaseUrl,
+      registrationEnabled: view.registrationEnabled,
+      defaultMaxServers: view.defaultMaxServers,
+      defaultMaxMemoryMb: view.defaultMaxMemoryMb,
+      defaultMaxDatabases: view.defaultMaxDatabases,
+    };
+  });
 }

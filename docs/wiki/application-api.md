@@ -1,23 +1,155 @@
 # Application API & Mollie billing
 
-Guartrix separates **Client API** (`gt_…` personal keys) from the **Application
-API** (`gta_…` machine keys) used by external billing panels / automation.
-First-party checkout uses **Mollie**.
+Guartrix separates three HTTP auth modes:
+
+| Key | Prefix | Audience |
+|-----|--------|------------|
+| Client API | `gt_` | End users — own servers (+ optional admin scopes) |
+| **Application API** | `gta_` | **Machine** — billing panels, provisioning, admin automation |
+| Session | cookie | Browser UI |
+
+Client API guide: [client-api.md](client-api.md) · Map: [api-overview.md](api-overview.md)
 
 ## Concepts
 
 | Piece | Role |
 |-------|------|
-| **Plan template** | Quota preset + EUR price (cents): servers / RAM / databases; optional auto-create + Mollie interval |
-| **Mollie checkout** | Logged-in user pays → webhook → quotas applied (and optional server / subscription) |
-| **Mollie subscription** | Plans with `recurringInterval` use customer + `sequenceType: first`, then a Mollie subscription |
-| **Application API** | Create users, raise quotas, create servers after an *external* payment |
-| **Outbound webhook** | Optional `BILLING_WEBHOOK_URL` on paid / provisioned / subscription created / canceled / revoked |
+| **Plan template** | Quota preset + EUR price; optional auto-create + Mollie interval |
+| **Mollie checkout** | Logged-in user pays → webhook → quotas applied |
+| **Application API** | Create users, raise quotas, create/delete servers after external payment |
+| **Outbound webhook** | Optional `BILLING_WEBHOOK_URL` on paid / provisioned events |
 
-New accounts still start at `DEFAULT_MAX_*=0`. Paying (or an admin / Application
-API) raises quotas so they can create servers.
+## Application API keys
 
-## Mollie setup
+**Admin → Billing → Application API keys**. Token prefix `gta_`, shown once.
+
+```http
+Authorization: Bearer gta_…
+```
+
+Rate limit: `APPLICATION_API_RATE_LIMIT` (default **120/min**).
+
+### Scopes
+
+| Scope | Access |
+|-------|--------|
+| `users.read` | List / get users |
+| `users.write` | Create / update users |
+| `users.delete` | Delete users |
+| `servers.read` | List / get servers |
+| `servers.write` | Create servers |
+| `servers.update` | Patch server name, limits, owner |
+| `servers.delete` | Delete servers (no password) |
+| `plans.read` | List plan templates |
+| `plans.write` | Create / update plans |
+| `payments.read` | List payments |
+| `nodes.read` | List nodes + capacity |
+| `activity.read` | Panel activity log |
+| `settings.read` | Public panel settings summary |
+| `*` | All scopes above |
+
+Presets (billing, read-only, provisioning, full): `GET /api/account/api-reference` → `applicationApi.presets`.
+
+## Endpoints
+
+### Users
+
+```http
+GET    /api/application/users
+GET    /api/application/users/:id
+POST   /api/application/users
+PATCH  /api/application/users/:id
+DELETE /api/application/users/:id
+Authorization: Bearer gta_…
+```
+
+Create body:
+
+```json
+{
+  "username": "alice",
+  "password": "……",
+  "role": "OPERATOR",
+  "maxServers": 1,
+  "maxMemoryMb": 4096,
+  "maxDatabases": 3
+}
+```
+
+### Servers
+
+```http
+GET    /api/application/servers
+GET    /api/application/servers/:id
+POST   /api/application/servers
+PATCH  /api/application/servers/:id
+DELETE /api/application/servers/:id
+```
+
+Create body:
+
+```json
+{
+  "ownerId": "USER_ID",
+  "name": "Survival",
+  "type": "PAPER",
+  "mcVersion": "1.21.1",
+  "port": 25565,
+  "memoryMb": 4096,
+  "diskMb": 10240,
+  "nodeId": "optional-node-id"
+}
+```
+
+Patch body (any field optional):
+
+```json
+{ "name": "Renamed", "memoryMb": 6144, "ownerId": "OTHER_USER" }
+```
+
+### Nodes
+
+```http
+GET /api/application/nodes
+```
+
+Requires `nodes.read`. Returns the same node list as the create-server picker (memory usage, online status).
+
+### Activity
+
+```http
+GET /api/application/activity?limit=50&offset=0&q=server.delete
+```
+
+Requires `activity.read`.
+
+### Settings (read-only summary)
+
+```http
+GET /api/application/settings
+```
+
+Requires `settings.read`. Returns `publicHost`, registration flag, default quotas — not SMTP secrets.
+
+### Plans & payments
+
+```http
+GET  /api/application/plans
+POST /api/application/plans
+GET  /api/application/payments
+```
+
+## Mollie (first-party checkout)
+
+1. Set `MOLLIE_API_KEY=test_…` in `.env` and restart.
+2. **Admin → Billing**: create plan templates.
+3. Users pay via **Billing** in the nav.
+
+Webhook: `https://<PUBLIC_HOST>/api/public/billing/mollie`
+
+Details: existing sections below unchanged.
+
+### Mollie setup
 
 1. Create a Mollie account and API key (`test_…` or `live_…`).
 2. Set in `.env`:
@@ -32,67 +164,10 @@ MOLLIE_API_KEY=test_…
 4. **Admin → Billing**: create plan templates (slug, price in cents, quotas).
 5. Users open **Billing** in the nav → **Pay with Mollie**.
 
-Webhook URL (must be reachable by Mollie; HTTPS in live mode):
-
-`https://<PUBLIC_HOST>/api/public/billing/mollie`
-
 Flow: create payment → customer pays on Mollie → webhook `id=tr_…` → panel
 fetches payment → status `paid` → apply plan quotas once (idempotent).
 
-If the plan has **auto-create server** enabled, the panel also creates a server
-using `defaultMemoryMb` / `defaultDiskMb` / `defaultServerType` /
-`defaultMcVersion` (free port on the selected node). Failures are recorded on
-payment metadata and do not undo quotas.
-
-If the plan has a **recurringInterval** (e.g. `1 month`), checkout creates a
-Mollie customer (`User.mollieCustomerId`), a first payment with `sequenceType:
-first`, then after paid a Mollie subscription starting one interval later.
-Renewal webhooks create Payment rows and re-apply quotas. A **failed / expired /
-canceled renewal** revokes quotas back to `DEFAULT_MAX_*`, suspends the local
-subscription, and stops the user’s running servers. Users can **Cancel** an active
-subscription from **Billing** (stops future Mollie renewals; does not immediately
-revoke quotas).
-
-After redirect back to `/account/billing?payment=…` the UI also **syncs** the
-payment in case the webhook is delayed.
-
-## Application API keys
-
-**Admin → Billing → Application API keys**. Token prefix `gta_`, shown once.
-Scopes: `users.read|write`, `servers.read|write`, `plans.read|write`,
-`payments.read`, or `*`.
-
-Rate limit: `APPLICATION_API_RATE_LIMIT` (default 120/min).
-
-### Users
-
-```http
-GET  /api/application/users
-POST /api/application/users
-     Body: { "username", "password", "role"?, "maxServers"?, "maxMemoryMb"?, "maxDatabases"? }
-PATCH /api/application/users/:id
-Authorization: Bearer gta_…
-```
-
-### Servers
-
-```http
-GET  /api/application/servers
-POST /api/application/servers
-     Body: { "ownerId", "name", "type", "mcVersion", "port", "memoryMb", "nodeId"? }
-```
-
-Owner must already have quota (raise via PATCH user or Mollie provision).
-
-### Plans & payments
-
-```http
-GET  /api/application/plans
-POST /api/application/plans
-GET  /api/application/payments
-```
-
-## Session / panel endpoints
+## Session / panel endpoints (not Application API)
 
 | Method | Path | Who |
 |--------|------|-----|
@@ -102,7 +177,7 @@ GET  /api/application/payments
 | POST | `/api/billing/payments/:id/sync` | Sync from Mollie after redirect |
 | GET/POST/PATCH/DELETE | `/api/admin/plans` | Admin |
 | GET | `/api/admin/payments` | Admin |
-| GET/POST/DELETE | `/api/admin/application-keys` | Admin |
+| GET/POST/DELETE | `/api/admin/application-keys` | Admin session |
 
 ## Example: external panel after payment
 
@@ -110,20 +185,29 @@ GET  /api/application/payments
 export GTA='gta_…'
 export PANEL='https://guartrix.com'
 
-# Raise quotas for an existing user
+# Raise quotas
 curl -sS -X PATCH -H "Authorization: Bearer $GTA" -H "Content-Type: application/json" \
   -d '{"maxServers":1,"maxMemoryMb":4096,"maxDatabases":3}' \
   "$PANEL/api/application/users/USER_ID"
 
-# Or create user + server
+# Create server for customer
 curl -sS -X POST -H "Authorization: Bearer $GTA" -H "Content-Type: application/json" \
-  -d '{"username":"alice","password":"……","maxServers":1,"maxMemoryMb":4096,"maxDatabases":1}' \
-  "$PANEL/api/application/users"
+  -d '{"ownerId":"USER_ID","name":"Paid server","type":"PAPER","mcVersion":"1.21.1","port":25565,"memoryMb":4096}' \
+  "$PANEL/api/application/servers"
 ```
+
+## Client vs Application API — when to use which
+
+| Need | Use |
+|------|-----|
+| Customer restarts **their** server from a script | `gt_` Client key |
+| WHMCS creates account + server after payment | `gta_` Application key |
+| Admin read-only monitoring script | `gt_` with `adminScopes` **or** `gta_` with `nodes.read` + `activity.read` |
+| Panel UI | Browser session |
 
 ## Security
 
 - Never embed `gta_` keys in browser apps; server-side only.
 - Prefer Mollie **test** keys until go-live.
-- Recurring plans store `BillingSubscription` + `User.mollieCustomerId`.
-- See also [Client API](client-api.md) and [Accounts & quotas](accounts-and-quotas.md).
+- Scope keys narrowly (`users.read` + `payments.read` for reporting only).
+- See [Security](security.md) · [Client API](client-api.md).

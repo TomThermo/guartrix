@@ -318,6 +318,8 @@ model ApiKey {
   permissions String    @db.Text
   /** JSON array of server ids, or null = every server the user can access. */
   serverIds   String?   @db.Text
+  /** JSON array of panel admin scopes (ADMIN users only), or null = server routes only. */
+  adminScopes String?   @db.Text
   lastUsedAt  DateTime?
   createdAt   DateTime  @default(now())
   /** Soft-revoke; row kept for audit. */

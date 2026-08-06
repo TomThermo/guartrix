@@ -4,7 +4,7 @@ import type { Server } from "@prisma/client";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import type { AuthUser, ServerPermission, UserRole } from "@msm/shared";
-import { hasPermission } from "@msm/shared";
+import { adminPanelHasScope, hasPermission, type AdminPanelScope } from "@msm/shared";
 import {
   apiKeyAllowsServer,
   apiKeyRateLimitedMessage,
@@ -372,12 +372,28 @@ export async function requireWrite(
 export async function requireAdmin(
   request: FastifyRequest,
   reply: FastifyReply,
+  scope?: AdminPanelScope,
 ): Promise<AuthUser | null> {
   const user = await requireAuth(request, reply);
   if (!user) return null;
   if (user.role !== "ADMIN") {
     await reply.status(403).send({ error: "Admin only" });
     return null;
+  }
+  if (request.apiKeyAuth) {
+    const scopes = request.apiKeyAuth.adminScopes ?? [];
+    if (scopes.length === 0) {
+      await reply.status(403).send({
+        error:
+          "This API key has no panel admin scopes. Add adminScopes when creating the key, or use server routes only.",
+      });
+      return null;
+    }
+    const needed = scope ?? "admin.full";
+    if (!adminPanelHasScope(scopes, needed)) {
+      await reply.status(403).send({ error: `Missing admin scope: ${needed}` });
+      return null;
+    }
   }
   return user;
 }

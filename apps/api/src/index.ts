@@ -12,6 +12,7 @@ import session from "@fastify/session";
 import websocket from "@fastify/websocket";
 import multipart from "@fastify/multipart";
 import { ensureBootstrapAdmin, registerOwnershipGuard } from "./auth/auth.js";
+import { registerBearerAuthResolver } from "./auth/bearer-resolver.js";
 import { registerAuthRoutes } from "./routes/auth.js";
 import { registerCsrfGuard, allowedOrigins } from "./auth/csrf.js";
 import { registerApiSessionRateLimit } from "./auth/api-rate-limit.js";
@@ -35,6 +36,7 @@ import { startActivityWatch } from "./activity-watch.js";
 import { startDiscordStatusWorker } from "./discord-status.js";
 import { startDiskWatch } from "./servers/disk-watch.js";
 import { registerActivityRoutes } from "./routes/activity.js";
+import { registerAccountApiRoutes } from "./routes/account-api.js";
 import { registerAccountGdprRoutes } from "./routes/account-gdpr.js";
 import { registerAccountPushRoutes } from "./routes/account-push.js";
 import { registerTwoFactorRoutes, registerTwoFactorGuard } from "./routes/two-factor.js";
@@ -343,12 +345,14 @@ async function main() {
     },
   });
 
+  registerBearerAuthResolver(app);
   registerCsrfGuard(app);
   registerApiSessionRateLimit(app);
   registerMetrics(app);
   registerAuthRoutes(app);
   registerTwoFactorRoutes(app);
   registerTwoFactorGuard(app);
+  registerAccountApiRoutes(app);
   registerAccountGdprRoutes(app);
   registerAccountPushRoutes(app);
   registerApiKeyRoutes(app);

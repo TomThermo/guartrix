@@ -608,7 +608,7 @@ export function registerAuthRoutes(app: FastifyInstance): void {
   });
 
   app.get("/api/users", async (request, reply) => {
-    if (!(await requireAdmin(request, reply))) return;
+    if (!(await requireAdmin(request, reply, "users.read"))) return;
     const users = await prisma.user.findMany({
       orderBy: { createdAt: "asc" },
       include: {
@@ -651,7 +651,7 @@ export function registerAuthRoutes(app: FastifyInstance): void {
   });
 
   app.post("/api/users", async (request, reply) => {
-    const admin = await requireAdmin(request, reply);
+    const admin = await requireAdmin(request, reply, "users.write");
     if (!admin) return;
     const parsed = createUserSchema.safeParse(request.body);
     if (!parsed.success) {
@@ -707,7 +707,7 @@ export function registerAuthRoutes(app: FastifyInstance): void {
   });
 
   app.patch<{ Params: { id: string } }>("/api/users/:id", async (request, reply) => {
-    const admin = await requireAdmin(request, reply);
+    const admin = await requireAdmin(request, reply, "users.write");
     if (!admin) return;
     const parsed = updateUserSchema.safeParse(request.body);
     if (!parsed.success) {
@@ -821,7 +821,7 @@ export function registerAuthRoutes(app: FastifyInstance): void {
   });
 
   app.delete<{ Params: { id: string } }>("/api/users/:id", async (request, reply) => {
-    const me = await requireAdmin(request, reply);
+    const me = await requireAdmin(request, reply, "users.delete");
     if (!me) return;
     if (me.id === request.params.id) {
       return reply.status(400).send({ error: "Cannot delete your own account" });

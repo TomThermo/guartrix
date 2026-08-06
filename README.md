@@ -179,6 +179,26 @@ Commercial packages: [Release builds](docs/wiki/release-builds.md) · day-to-day
 
 Details: [Accounts & quotas](docs/wiki/accounts-and-quotas.md)
 
+### HTTP API
+
+Automate the panel without a browser:
+
+| Audience | Key | Docs |
+|----------|-----|------|
+| Server owners / subusers | `gt_` Client API | [Client API](docs/wiki/client-api.md) |
+| Billing / provisioning integrations | `gta_` Application API | [Application API](docs/wiki/application-api.md) |
+| All types + quick start | — | [API overview](docs/wiki/api-overview.md) |
+
+```bash
+# Permission catalog (no auth)
+curl -sS https://guartrix.com/api/account/api-reference | jq '.clientApi.presets'
+
+# Your servers
+curl -sS -H "Authorization: Bearer gt_YOUR_KEY" https://guartrix.com/api/servers
+```
+
+OpenAPI: [docs/openapi.yaml](docs/openapi.yaml) · Create keys under **Account → Security**.
+
 ### SFTP
 
 | Field | Value |
@@ -215,7 +235,7 @@ Guide: [Development](docs/wiki/development.md)
 | Feature references | [server-management.md](docs/wiki/server-management.md) · [databases.md](docs/wiki/databases.md) · [bots.md](docs/wiki/bots.md) · [files-and-backups.md](docs/wiki/files-and-backups.md) · [networking-and-allocations.md](docs/wiki/networking-and-allocations.md) · [mods-plugins-and-modpacks.md](docs/wiki/mods-plugins-and-modpacks.md) · [statusline.md](docs/wiki/statusline.md) |
 | Internal references | [api-surface-map.md](docs/wiki/api-surface-map.md) · [daemon-api.md](docs/wiki/daemon-api.md) · [node-agent-internals.md](docs/wiki/node-agent-internals.md) · [shared-contracts.md](docs/wiki/shared-contracts.md) |
 | Environment | [env-reference.md](docs/wiki/env-reference.md) |
-| APIs | [client-api.md](docs/wiki/client-api.md) · [application-api.md](docs/wiki/application-api.md) · [OpenAPI](docs/openapi.yaml) |
+| **APIs** | **[api-overview.md](docs/wiki/api-overview.md)** · [client-api.md](docs/wiki/client-api.md) · [application-api.md](docs/wiki/application-api.md) · [OpenAPI](docs/openapi.yaml) |
 | Licensing & releases | [licensing.md](docs/wiki/licensing.md) · [release-builds.md](docs/wiki/release-builds.md) |
 | Security & ops | [security.md](docs/wiki/security.md) · [operations.md](docs/wiki/operations.md) |
 | Contributing | [CONTRIBUTING.md](CONTRIBUTING.md) |

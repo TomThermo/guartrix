@@ -13,6 +13,14 @@ export const APPLICATION_SCOPES = [
   "plans.read",
   "plans.write",
   "payments.read",
+  "nodes.read",
+  "nodes.write",
+  "activity.read",
+  "settings.read",
+  "settings.write",
+  "users.delete",
+  "servers.delete",
+  "servers.update",
 ] as const;
 
 export type ApplicationScope = (typeof APPLICATION_SCOPES)[number];
@@ -55,6 +63,47 @@ export interface ApplicationApiKeyCreateResponse {
   /** Plaintext token — shown once. */
   token: string;
 }
+
+/** Presets for Application API key scopes (admin UI / docs). */
+export const APPLICATION_API_PRESETS: {
+  id: string;
+  label: string;
+  description: string;
+  scopes: ApplicationScope[] | ["*"];
+}[] = [
+  {
+    id: "billing",
+    label: "Billing automation",
+    description: "Manage users, servers, plans, and read payments after external checkout.",
+    scopes: ["users.read", "users.write", "servers.read", "servers.write", "plans.read", "payments.read"],
+  },
+  {
+    id: "readonly",
+    label: "Read-only",
+    description: "List users, servers, nodes, plans, payments, and activity.",
+    scopes: [
+      "users.read",
+      "servers.read",
+      "nodes.read",
+      "plans.read",
+      "payments.read",
+      "activity.read",
+      "settings.read",
+    ],
+  },
+  {
+    id: "provisioning",
+    label: "Provisioning",
+    description: "Create users and servers, update quotas.",
+    scopes: ["users.read", "users.write", "servers.read", "servers.write", "plans.read"],
+  },
+  {
+    id: "full",
+    label: "Full Application API",
+    description: "All Application API scopes.",
+    scopes: ["*"],
+  },
+];
 
 export interface PlanTemplateRecord {
   id: string;

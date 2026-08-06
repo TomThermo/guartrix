@@ -21,6 +21,8 @@ export interface ApiKeyRecord {
   permissions: string[];
   /** null = all servers the account can access. */
   serverIds: string[] | null;
+  /** Panel admin scopes (ADMIN accounts only). null = server routes only. */
+  adminScopes: string[] | null;
   lastUsedAt: string | null;
   createdAt: string;
   revokedAt: string | null;
@@ -32,6 +34,8 @@ export interface ApiKeyCreateRequest {
   permissions: string[];
   /** Optional allow-list of server ids. Omit / null = all accessible. */
   serverIds?: string[] | null;
+  /** Optional panel admin scopes (ADMIN role only). Omit / null = no /api/admin access. */
+  adminScopes?: string[] | null;
 }
 
 export interface ApiKeyCreateResponse {
@@ -110,6 +114,46 @@ export const API_KEY_PRESETS: {
       "file.upload",
       "file.download",
       "file.archive",
+    ],
+  },
+  {
+    id: "monitoring",
+    label: "Monitoring",
+    description: "Read server stats, logs, players, and activity — no writes.",
+    permissions: [
+      "control.console.read",
+      "file.read",
+      "settings.read",
+      "startup.read",
+      "player.read",
+      "activity.read",
+      "audit.read",
+      "backup.read",
+      "schedule.read",
+      "addon.read",
+    ],
+  },
+  {
+    id: "backups",
+    label: "Backups",
+    description: "List, create, restore, and delete backups.",
+    permissions: [
+      "backup.read",
+      "backup.create",
+      "backup.delete",
+      "backup.restore",
+      "schedule.read",
+    ],
+  },
+  {
+    id: "databases",
+    label: "Databases",
+    description: "Manage per-server MySQL databases.",
+    permissions: [
+      "database.read",
+      "database.create",
+      "database.update",
+      "database.delete",
     ],
   },
   {

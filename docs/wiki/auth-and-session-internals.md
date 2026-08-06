@@ -66,8 +66,10 @@ Personal API keys:
 - are created from the account security page
 - carry permission scopes similar to subuser permissions
 - can optionally be limited to specific servers
+- **ADMIN** accounts may add optional `adminScopes` for panel admin routes (`/api/users`, `/api/admin/*`)
+- Bearer tokens are resolved on every `/api/*` request before route guards run
 
-See [Client API](client-api.md).
+See [Client API](client-api.md) and `GET /api/account/api-reference`.
 
 ## App passwords
 

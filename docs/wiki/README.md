@@ -41,9 +41,10 @@ Operator and developer documentation for the Guartrix Minecraft hosting panel.
 | [Notifications and alerts](notifications-and-alerts.md) | Email, activity webhook, per-server Discord status, push |
 | [Operations](operations.md) | Start/stop, systemd vs start.sh, watchdog, backups, logs, ports |
 | [Activity log](activity-log.md) | Audit trail, filters, retention, Discord/email alerts |
-| [Client API](client-api.md) | Personal API keys, Bearer auth, servers / power / files |
+| **[API overview](api-overview.md)** | **Auth types, quick start, route map** |
+| [Client API](client-api.md) | Personal `gt_` keys — servers, files, power, admin scopes |
 | [OpenAPI](../openapi.yaml) | Machine-readable Client + Application paths |
-| [Application API & Mollie](application-api.md) | Admin machine keys, plan templates, Mollie checkout |
+| [Application API & Mollie](application-api.md) | Admin `gta_` keys, provisioning, billing automation |
 | [Billing internals](billing-internals.md) | Plan templates, payment lifecycle, quota application, subscriptions, machine API |
 | [Licensing](licensing.md) | License key, Admin → License, remote validate API |
 | [License flow internals](license-flow-internals.md) | Signed claims, daemon ticketing, grace/fallback behavior, repo boundary |

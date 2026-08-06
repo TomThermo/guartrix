@@ -104,7 +104,7 @@ export function registerActivityRoutes(app: FastifyInstance): void {
   );
 
   app.get("/api/admin/activity", async (request, reply) => {
-    if (!(await requireAdmin(request, reply))) return;
+    if (!(await requireAdmin(request, reply, "activity.read"))) return;
 
     const parsed = querySchema.safeParse(request.query);
     if (!parsed.success) {
