@@ -233,10 +233,11 @@ export function FileManager({
   }
 
   function toggleTree() {
-    const mobile =
+    /* Overlay drawer only on narrow phones; Fold/tablet (~576+) uses inline tree. */
+    const phonePortrait =
       typeof window !== "undefined" &&
-      window.matchMedia("(max-width: 767.98px)").matches;
-    if (mobile) {
+      window.matchMedia("(max-width: 575.98px)").matches;
+    if (phonePortrait) {
       setMobileTreeOpen((open) => !open);
       return;
     }
