@@ -7,9 +7,9 @@ import type {
   ServerUpdateInfo,
 } from "@msm/shared";
 import { addonKindFor, hasPermission } from "@msm/shared";
-import { Badge, Button, Form } from "react-bootstrap";
+import { Button, Form } from "react-bootstrap";
 import { useI18n } from "../i18n/react";
-import { typeIcon, typeLabel } from "../utils";
+import { typeLabel } from "../utils";
 
 function formatDiskLimit(diskMb: number): string {
   if (diskMb <= 0) return "∞";
@@ -19,6 +19,55 @@ function formatDiskLimit(diskMb: number): string {
 
 function stopRowNav(e: MouseEvent | KeyboardEvent) {
   e.stopPropagation();
+}
+
+function RowStat({
+  icon,
+  label,
+  title,
+  tone = "neutral",
+  disabled,
+  onClick,
+  onKeyDown,
+}: {
+  icon: string;
+  label: string;
+  title?: string;
+  tone?: "neutral" | "success" | "warning" | "danger" | "info";
+  disabled?: boolean;
+  onClick?: () => void;
+  onKeyDown?: (e: KeyboardEvent) => void;
+}) {
+  const interactive = Boolean(onClick) && !disabled;
+  return (
+    <span
+      className={`server-row-stat server-row-stat--${tone}${
+        interactive ? " is-clickable" : ""
+      }${disabled ? " is-disabled" : ""}`}
+      title={title}
+      role={interactive ? "button" : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      onClick={
+        interactive
+          ? (e) => {
+              stopRowNav(e);
+              onClick?.();
+            }
+          : undefined
+      }
+      onKeyDown={
+        interactive
+          ? (e) => {
+              stopRowNav(e);
+              onKeyDown?.(e);
+            }
+          : undefined
+      }
+    >
+      <i className={`fa-solid ${icon}`} aria-hidden />
+      <span>{label}</span>
+    </span>
+  );
 }
 
 interface Props {
@@ -87,6 +136,12 @@ export const DashboardServerRow = memo(function DashboardServerRow({
               ? "is-busy"
               : "is-offline";
 
+  const subLine = [
+    `${typeLabel(s.type)} ${s.mcVersion}`,
+    `:${s.port}`,
+    `${Math.round(s.memoryMb / 1024)} GB RAM`,
+  ].join(" · ");
+
   return (
     <article
       className={`server-row ${statusTone}`}
@@ -100,13 +155,13 @@ export const DashboardServerRow = memo(function DashboardServerRow({
         }
       }}
     >
-      <div className="server-row-main">
+      <div className="server-row__head">
         {canWrite && onToggleSelected && (
           <Form.Check
             type="checkbox"
             checked={selected}
             aria-label={`Select ${s.name}`}
-            className="server-row-select me-2"
+            className="server-row__select"
             onClick={stopRowNav}
             onChange={(e) => {
               e.stopPropagation();
@@ -114,259 +169,202 @@ export const DashboardServerRow = memo(function DashboardServerRow({
             }}
           />
         )}
+
         <img
-          className="server-row-icon"
+          className="server-row__icon"
           src={`/api/servers/${s.id}/icon?t=${s.hasIcon ? s.updatedAt : "default"}`}
           alt=""
-          width={56}
-          height={56}
+          width={48}
+          height={48}
         />
 
-        <div className="server-row-copy min-w-0">
-          <div className="server-row-title">
-            <h2 className="server-row-name">{s.name}</h2>
-            <span className={`server-status ${statusTone}`}>
-              <span className="server-status-dot" aria-hidden />
+        <div className="server-row__identity min-w-0">
+          <div className="server-row__title-row">
+            <h2 className="server-row__name text-truncate">{s.name}</h2>
+            <span className={`server-row__status ${statusTone}`}>
+              <span className="server-row__status-dot" aria-hidden />
               {statusLabel(s.status)}
             </span>
             {s.autoRestart && (
-              <span className="server-update-pill" title={t("dashboard.autoRestartTitle")}>
-                <i className="fa-solid fa-rotate" />
+              <span className="server-row__flag" title={t("dashboard.autoRestartTitle")}>
+                <i className="fa-solid fa-rotate" aria-hidden />
                 {t("dashboard.autoRestart")}
               </span>
             )}
             {update?.available && (
-              <span className="server-update-pill">
-                <i className="fa-solid fa-arrow-up" />
+              <span className="server-row__flag server-row__flag--warn">
+                <i className="fa-solid fa-arrow-up" aria-hidden />
                 {t("dashboard.update")}
               </span>
             )}
           </div>
+          <div className="server-row__sub text-truncate">{subLine}</div>
+        </div>
 
-          <div className="server-row-meta">
-            <span>
-              <i className={`fa-solid ${typeIcon(s.type)}`} />
-              {typeLabel(s.type)} {s.mcVersion}
-            </span>
-            <span className="server-meta-sep" aria-hidden>
-              ·
-            </span>
-            <span>:{s.port}</span>
-            <span className="server-meta-sep" aria-hidden>
-              ·
-            </span>
-            <span>{Math.round(s.memoryMb / 1024)} GB RAM</span>
-            {isAdmin && (
-              <>
-                <span className="server-meta-sep" aria-hidden>
-                  ·
-                </span>
-                <Badge
-                  bg={s.ownerUsername ? "dark" : "secondary"}
-                  className="server-owner-badge"
-                  title={t("dashboard.transferOwnerHint")}
-                >
-                  <i className="fa-solid fa-user me-1" />
-                  {s.ownerUsername ?? t("dashboard.unassigned")}
-                </Badge>
-              </>
-            )}
-            <span className="server-meta-sep" aria-hidden>
-              ·
-            </span>
-            <button
-              type="button"
-              className="server-row-chip"
-              title={t("dashboard.openResources")}
-              onClick={(e) => {
-                stopRowNav(e);
-                navigate(`/servers/${s.id}?tab=resources`);
-              }}
+        <div
+          className="server-row__actions"
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
+        >
+          {canWrite && (
+            <>
+              <Button
+                size="sm"
+                variant="success"
+                className="server-action-btn"
+                disabled={
+                  busyId === s.id || s.status === "RUNNING" || s.status === "STARTING"
+                }
+                title={t("dashboard.start")}
+                onClick={() => onRequestStart(s)}
+              >
+                <i className="fa-solid fa-play" />
+              </Button>
+              <Button
+                size="sm"
+                variant="outline-secondary"
+                className="server-action-btn"
+                disabled={busyId === s.id || bulkBusy || s.status === "STOPPED"}
+                title={t("dashboard.stop")}
+                onClick={() => onStop(s.id)}
+              >
+                <i className="fa-solid fa-stop" />
+              </Button>
+              <Button
+                size="sm"
+                variant="outline-secondary"
+                className="server-action-btn"
+                disabled={busyId === s.id || bulkBusy}
+                title={t("dashboard.restart")}
+                onClick={() => onRestart(s.id)}
+              >
+                <i className="fa-solid fa-rotate-right" />
+              </Button>
+            </>
+          )}
+          {isAdmin && (
+            <Button
+              size="sm"
+              variant="outline-secondary"
+              className="server-action-btn"
+              title={t("dashboard.transferOwner")}
+              onClick={() => onTransfer(s)}
             >
-              <i className="fa-solid fa-hard-drive" aria-hidden />
-              {diskUsed ? `${diskUsed} / ${diskLimit}` : diskLimit}
-            </button>
-            {hasPermission(s.permissions, "player.read") && (
-              <>
-                <span className="server-meta-sep" aria-hidden>
-                  ·
-                </span>
-                <button
-                  type="button"
-                  className="server-row-chip"
-                  title={t("dashboard.onlinePlayers")}
-                  onClick={(e) => {
-                    stopRowNav(e);
-                    navigate(`/servers/${s.id}?tab=players`);
-                  }}
-                >
-                  <i className="fa-solid fa-users" aria-hidden />
-                  {playersLabel}
-                </button>
-              </>
-            )}
-            {(hasPermission(s.permissions, "settings.read") ||
-              hasPermission(s.permissions, "player.read")) && (
-              <>
-                <span className="server-meta-sep" aria-hidden>
-                  ·
-                </span>
-                <button
-                  type="button"
-                  className={`server-row-chip ${s.whitelistEnabled ? "is-on" : "is-warn"}`}
-                  title={t("dashboard.changeWhitelist")}
-                  disabled={
-                    whitelistModalBusy ||
-                    !hasPermission(s.permissions, "settings.update")
-                  }
-                  onClick={(e) => {
-                    stopRowNav(e);
-                    if (!hasPermission(s.permissions, "settings.update")) return;
-                    onOpenWhitelistModal(s.id);
-                  }}
-                >
-                  <i
-                    className={`fa-solid ${s.whitelistEnabled ? "fa-shield-halved" : "fa-shield"}`}
-                    aria-hidden
-                  />
-                  {s.whitelistEnabled
-                    ? t("dashboard.whitelistOn")
-                    : t("dashboard.whitelistOff")}
-                </button>
-              </>
-            )}
-            {supportsAddons &&
-              hasPermission(s.permissions, "addon.read") && (
-              <>
-                <span className="server-meta-sep" aria-hidden>
-                  ·
-                </span>
-                <button
-                  type="button"
-                  className={`server-row-chip ${
-                    (addonUpdates?.available ?? 0) > 0 ? "is-danger" : ""
-                  }`}
-                  title={t("dashboard.openAddons")}
-                  onClick={(e) => {
-                    stopRowNav(e);
-                    navigate(`/servers/${s.id}?tab=addons`);
-                  }}
-                >
-                  <i className="fa-solid fa-puzzle-piece" aria-hidden />
-                  {(addonUpdates?.available ?? 0) > 0
-                    ? (addonUpdates!.available === 1
-                        ? t("common.updateOne", { count: addonUpdates!.available })
-                        : t("common.updateMany", { count: addonUpdates!.available }))
-                    : addonUpdates
-                      ? t("common.upToDate")
-                      : t("common.updatesEllipsis")}
-                </button>
-              </>
-            )}
-          </div>
-
-          {update?.available && (
-            <div className="server-row-note text-warning">{update.message}</div>
+              <i className="fa-solid fa-user-tag" />
+            </Button>
           )}
-          {s.errorMessage && (
-            <div className="server-row-note text-danger">{s.errorMessage}</div>
-          )}
-
-          {live && stats && (
-            <div className="server-metrics">
-              <div className="server-metric">
-                <div className="server-metric-top">
-                  <span>{t("resources.cpu")}</span>
-                  <strong>{Math.min(100, stats.cpuPercent).toFixed(1)}%</strong>
-                </div>
-                <div className="server-meter">
-                  <span style={{ width: `${Math.min(100, stats.cpuPercent)}%` }} />
-                </div>
-              </div>
-              <div className="server-metric">
-                <div className="server-metric-top">
-                  <span>{t("resources.ram")}</span>
-                  <strong>
-                    {stats.memoryUsedLabel}
-                    <span className="text-secondary"> / {stats.memoryLimitLabel}</span>
-                  </strong>
-                </div>
-                <div className="server-meter">
-                  <span style={{ width: `${Math.min(100, stats.memoryPercent)}%` }} />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {live && online && online.players.length > 0 && (
-            <div className="server-players">
-              {online.players.map((p) => p.name).join(", ")}
-            </div>
-          )}
+          <Link
+            to={`/servers/${s.id}`}
+            className="btn btn-sm btn-outline-secondary server-action-btn"
+            title={t("dashboard.open")}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <i className="fa-solid fa-arrow-right" />
+          </Link>
         </div>
       </div>
 
-      <div
-        className="server-row-actions"
-        onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => e.stopPropagation()}
-      >
-        {canWrite && (
-          <>
-            <Button
-              size="sm"
-              variant="success"
-              className="server-action-btn"
-              disabled={
-                busyId === s.id || s.status === "RUNNING" || s.status === "STARTING"
-              }
-              title={t("dashboard.start")}
-              onClick={() => onRequestStart(s)}
-            >
-              <i className="fa-solid fa-play" />
-            </Button>
-            <Button
-              size="sm"
-              variant="outline-secondary"
-              className="server-action-btn"
-              disabled={busyId === s.id || bulkBusy || s.status === "STOPPED"}
-              title={t("dashboard.stop")}
-              onClick={() => onStop(s.id)}
-            >
-              <i className="fa-solid fa-stop" />
-            </Button>
-            <Button
-              size="sm"
-              variant="outline-secondary"
-              className="server-action-btn"
-              disabled={busyId === s.id || bulkBusy}
-              title={t("dashboard.restart")}
-              onClick={() => onRestart(s.id)}
-            >
-              <i className="fa-solid fa-rotate-right" />
-            </Button>
-          </>
-        )}
+      <div className="server-row__stats">
         {isAdmin && (
-          <Button
-            size="sm"
-            variant="outline-secondary"
-            className="server-action-btn"
-            title={t("dashboard.transferOwner")}
+          <RowStat
+            icon="fa-user"
+            label={s.ownerUsername ?? t("dashboard.unassigned")}
+            title={t("dashboard.transferOwnerHint")}
             onClick={() => onTransfer(s)}
-          >
-            <i className="fa-solid fa-user-tag" />
-          </Button>
+          />
         )}
-        <Link
-          to={`/servers/${s.id}`}
-          className="btn btn-sm btn-outline-secondary server-action-btn"
-          title={t("dashboard.open")}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <i className="fa-solid fa-arrow-right" />
-        </Link>
+        <RowStat
+          icon="fa-hard-drive"
+          label={diskUsed ? `${diskUsed} / ${diskLimit}` : diskLimit}
+          title={t("dashboard.openResources")}
+          onClick={() => navigate(`/servers/${s.id}?tab=resources`)}
+        />
+        {hasPermission(s.permissions, "player.read") && (
+          <RowStat
+            icon="fa-users"
+            label={playersLabel}
+            title={t("dashboard.onlinePlayers")}
+            onClick={() => navigate(`/servers/${s.id}?tab=players`)}
+          />
+        )}
+        {(hasPermission(s.permissions, "settings.read") ||
+          hasPermission(s.permissions, "player.read")) && (
+          <RowStat
+            icon={s.whitelistEnabled ? "fa-shield-halved" : "fa-shield"}
+            label={
+              s.whitelistEnabled
+                ? t("dashboard.whitelistOn")
+                : t("dashboard.whitelistOff")
+            }
+            title={t("dashboard.changeWhitelist")}
+            tone={s.whitelistEnabled ? "success" : "warning"}
+            disabled={
+              whitelistModalBusy || !hasPermission(s.permissions, "settings.update")
+            }
+            onClick={
+              hasPermission(s.permissions, "settings.update")
+                ? () => onOpenWhitelistModal(s.id)
+                : undefined
+            }
+          />
+        )}
+        {supportsAddons && hasPermission(s.permissions, "addon.read") && (
+          <RowStat
+            icon="fa-puzzle-piece"
+            label={
+              (addonUpdates?.available ?? 0) > 0
+                ? addonUpdates!.available === 1
+                  ? t("common.updateOne", { count: addonUpdates!.available })
+                  : t("common.updateMany", { count: addonUpdates!.available })
+                : addonUpdates
+                  ? t("common.upToDate")
+                  : t("common.updatesEllipsis")
+            }
+            title={t("dashboard.openAddons")}
+            tone={(addonUpdates?.available ?? 0) > 0 ? "danger" : "neutral"}
+            onClick={() => navigate(`/servers/${s.id}?tab=addons`)}
+          />
+        )}
       </div>
+
+      {update?.available && (
+        <div className="server-row__note text-warning">{update.message}</div>
+      )}
+      {s.errorMessage && (
+        <div className="server-row__note text-danger">{s.errorMessage}</div>
+      )}
+
+      {live && stats && (
+        <div className="server-row__metrics">
+          <div className="server-row__metric">
+            <div className="server-row__metric-top">
+              <span>{t("resources.cpu")}</span>
+              <strong>{Math.min(100, stats.cpuPercent).toFixed(1)}%</strong>
+            </div>
+            <div className="server-meter">
+              <span style={{ width: `${Math.min(100, stats.cpuPercent)}%` }} />
+            </div>
+          </div>
+          <div className="server-row__metric">
+            <div className="server-row__metric-top">
+              <span>{t("resources.ram")}</span>
+              <strong>
+                {stats.memoryUsedLabel}
+                <span className="text-secondary"> / {stats.memoryLimitLabel}</span>
+              </strong>
+            </div>
+            <div className="server-meter">
+              <span style={{ width: `${Math.min(100, stats.memoryPercent)}%` }} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {live && online && online.players.length > 0 && (
+        <div className="server-row__players">
+          {online.players.map((p) => p.name).join(", ")}
+        </div>
+      )}
     </article>
   );
 });

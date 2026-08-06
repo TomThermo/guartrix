@@ -166,33 +166,8 @@ h2.h5 {
 }
 
 /* —— Dashboard server rows —— */
-.server-row {
-  border-radius: var(--bh-radius-lg);
-  padding: var(--bh-space-md) var(--bh-space-lg);
-  background: var(--bh-surface-gradient), var(--bh-bg-raised);
-  box-shadow: var(--bh-surface-shadow);
-  gap: 0.75rem 1rem;
-}
-
-.server-row-icon {
-  width: 3rem;
-  height: 3rem;
-  border-radius: var(--bh-radius-md);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-}
-
-.server-row-name {
-  font-size: 1.08rem;
-}
-
-.server-row-meta > span:not(.server-meta-sep),
-.server-row-meta > .server-row-chip {
+.server-row-stat {
   border-radius: var(--bh-radius-pill);
-  font-size: 0.72rem;
-  font-weight: 600;
-  padding: 0.22rem 0.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
 }
 
 .server-action-btn {
