@@ -10,6 +10,8 @@ Guartrix separates three HTTP auth modes:
 
 Client API guide: [client-api.md](client-api.md) · Map: [api-overview.md](api-overview.md)
 
+**Full request/response examples:** [api-examples.md](api-examples.md)
+
 ## Concepts
 
 | Piece | Role |
@@ -36,10 +38,16 @@ Rate limit: `APPLICATION_API_RATE_LIMIT` (default **120/min**).
 | `users.read` | List / get users |
 | `users.write` | Create / update users |
 | `users.delete` | Delete users |
-| `servers.read` | List / get servers |
+| `servers.read` | List / get servers + connect/SFTP meta |
 | `servers.write` | Create servers |
-| `servers.update` | Patch server name, limits, owner |
+| `servers.update` | Patch server name, limits, owner, **suspend** |
 | `servers.delete` | Delete servers (no password) |
+| `servers.power` | Start / stop / restart / kill any server |
+| `servers.files` | List / read / write / delete server files |
+| `servers.addons` | List / install / remove mods & plugins |
+| `servers.backups` | List / create / restore / delete backups |
+| `servers.allocations` | List network ports for a server |
+| `servers.databases` | List databases + rotate password |
 | `plans.read` | List plan templates |
 | `plans.write` | Create / update plans |
 | `payments.read` | List payments |
@@ -48,7 +56,7 @@ Rate limit: `APPLICATION_API_RATE_LIMIT` (default **120/min**).
 | `settings.read` | Public panel settings summary |
 | `*` | All scopes above |
 
-Presets (billing, read-only, provisioning, full): `GET /api/account/api-reference` → `applicationApi.presets`.
+Presets (billing, read-only, provisioning, **server-ops**, full): `GET /api/account/api-reference` → `applicationApi.presets`.
 
 ## Endpoints
 
@@ -83,6 +91,7 @@ GET    /api/application/servers
 GET    /api/application/servers/:id
 POST   /api/application/servers
 PATCH  /api/application/servers/:id
+POST   /api/application/servers/:id/power
 DELETE /api/application/servers/:id
 ```
 
@@ -104,8 +113,44 @@ Create body:
 Patch body (any field optional):
 
 ```json
-{ "name": "Renamed", "memoryMb": 6144, "ownerId": "OTHER_USER" }
+{ "name": "Renamed", "memoryMb": 6144, "ownerId": "OTHER_USER", "suspended": true }
 ```
+
+`suspended: true` stops a running server and blocks start/restart until cleared (billing / abuse).
+
+### Power (Application API)
+
+Requires `servers.power` scope:
+
+```bash
+curl -sS -X POST -H "Authorization: Bearer $GTA_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"signal":"stop"}' \
+  "$PANEL/api/application/servers/SERVER_ID/power"
+```
+
+Signals: `start`, `stop`, `restart`, `kill`. Returns updated server object.
+
+**403 when suspended:**
+
+```json
+{ "error": "Server is suspended — contact support or renew your plan", "code": "SERVER_SUSPENDED" }
+```
+
+### Day-to-day server ops (Application mirrors)
+
+Same shapes as the Client API, under `/api/application/servers/:id/…`:
+
+| Scope | Paths |
+|-------|-------|
+| `servers.read` | `GET …/connect` (join address + SFTP meta) |
+| `servers.files` | `GET/POST …/files`, `…/files/content`, `mkdir`, `rename`, `delete`, `compress` |
+| `servers.addons` | `GET …/addons`, `POST …/addons/install`, `DELETE …/addons/:projectId` |
+| `servers.backups` | `GET/POST …/backups`, `POST …/backups/:id/restore`, `DELETE …/backups/:id` |
+| `servers.allocations` | `GET …/allocations` |
+| `servers.databases` | `GET …/databases`, `POST …/databases/:dbId/rotate-password` |
+
+Use preset **server-ops** or **billing** when minting a `gta_` key for WHMCS-style panels that manage live servers without per-user `gt_` keys.
 
 ### Nodes
 

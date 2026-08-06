@@ -645,7 +645,9 @@ function ServerDetailPageInner({
           {notice}
         </Alert>
       )}
-      {server.errorMessage && server.status === "ERROR" && (
+      {server.errorMessage &&
+        server.status === "ERROR" &&
+        !/already running/i.test(server.errorMessage) && (
         <Alert variant="danger" className="mb-3">
           <div className="fw-semibold mb-1">Start failed</div>
           <div className="mb-0">{server.errorMessage}</div>

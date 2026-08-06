@@ -7,6 +7,8 @@ The plaintext token (`gt_…`) is shown **once** at create time.
 
 Overview of all auth types: [API overview](api-overview.md).
 
+**Worked examples with JSON outputs:** [API examples](api-examples.md) · [Conventions](api-conventions.md)
+
 ## Auth
 
 ```http
@@ -60,6 +62,9 @@ GET /api/account/api-reference
 | GET | `/api/account/api-keys` | session | List keys |
 | POST | `/api/account/api-keys` | session | Create key |
 | DELETE | `/api/account/api-keys/:id` | session | Revoke key |
+| GET | `/api/account/app-passwords` | `gt_` or session | List SFTP app passwords (`gtap_`) |
+| POST | `/api/account/app-passwords` | `gt_` or session | Create app password (API key requires panel `password` in body) |
+| DELETE | `/api/account/app-passwords/:id` | `gt_` or session | Revoke (API key requires panel `password` in body) |
 
 ### Create key (session)
 
@@ -83,6 +88,30 @@ curl -sS -H "Authorization: Bearer $GT_KEY" \
   "$PANEL/api/account" | jq '.user | {username, role, serverCount, maxServers, memoryUsedMb, maxMemoryMb}'
 ```
 
+**Sample `200` response:**
+
+```json
+{
+  "user": {
+    "id": "k9m2pQx7nR4v",
+    "username": "steve",
+    "role": "OPERATOR",
+    "maxServers": 3,
+    "maxMemoryMb": 12288,
+    "serverCount": 2,
+    "memoryUsedMb": 6144
+  },
+  "apiKey": {
+    "prefix": "gt_a1b2c3d4",
+    "permissions": ["control.restart"],
+    "serverIds": ["V1StGXR8_Z5j"],
+    "adminScopes": null
+  }
+}
+```
+
+More examples: [API examples — Account](api-examples.md#account).
+
 ## Servers — collection
 
 | Method | Path | Permission (typical) |
@@ -98,20 +127,83 @@ curl -sS -H "Authorization: Bearer $GT_KEY" \
 curl -sS -H "Authorization: Bearer $GT_KEY" "$PANEL/api/servers" | jq
 ```
 
+Returns a **JSON array** of server objects. Each includes `permissions` for your key.
+
+**Sample element:**
+
+```json
+{
+  "id": "V1StGXR8_Z5j",
+  "name": "Survival SMP",
+  "type": "PAPER",
+  "mcVersion": "1.21.1",
+  "port": 25565,
+  "memoryMb": 4096,
+  "status": "RUNNING",
+  "ownerUsername": "steve",
+  "nodeName": "Node 1",
+  "permissions": ["control.start", "control.restart", "file.read"]
+}
+```
+
+Full list + create/import examples: [API examples — Servers](api-examples.md#servers).
+
 ## Servers — single server
 
 | Method | Path | Notes |
 |--------|------|-------|
 | GET | `/api/servers/:id` | Details |
-| PATCH | `/api/servers/:id` | Name, limits (owner) |
-| DELETE | `/api/servers/:id` | Owner + panel password |
+| PATCH | `/api/servers/:id` | Name, properties, alerts (memory/disk/CPU: **admin only**) |
+| DELETE | `/api/servers/:id` | Owner + panel password (works with `gt_` — body `{ "password": "…" }`) |
 | GET | `/api/servers/:id/stats` | Live CPU/RAM/disk |
 | GET | `/api/servers/:id/stats/history` | Charts data |
-| GET | `/api/servers/:id/connect` | Join address |
+| GET | `/api/servers/:id/connect` | Join address + SFTP host/port/username (`file.sftp`) |
 | POST | `/api/servers/:id/start` | `control.start` |
 | POST | `/api/servers/:id/stop` | `control.stop` |
 | POST | `/api/servers/:id/restart` | `control.restart` |
 | POST | `/api/servers/:id/kill` | `control.kill` |
+| POST | `/api/servers/:id/power` | Unified signal: `{ "signal": "start" \| "stop" \| "restart" \| "kill" }` |
+| POST | `/api/servers/:id/command` | `{ "command": "say Hello" }` — returns `lines` / `output` — `control.console` |
+| GET | `/api/servers/:id/websocket` | WebSocket URLs + auth hint — `control.console.read` |
+| GET | `/api/servers/:id/logs` | Log file list — `audit.read` |
+| GET | `/api/servers/:id/logs/content?path=…` | Log file contents — `audit.read` |
+
+### Power (unified)
+
+Pterodactyl-style single endpoint:
+
+```bash
+curl -sS -X POST -H "Authorization: Bearer $GT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"signal":"restart"}' \
+  "$PANEL/api/servers/$SERVER_ID/power" | jq
+```
+
+### Console command (HTTP)
+
+For streaming output use the WebSocket (see below). One-shot commands:
+
+```bash
+curl -sS -X POST -H "Authorization: Bearer $GT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"command":"list"}' \
+  "$PANEL/api/servers/$SERVER_ID/command"
+```
+
+**200:** `{ "ok": true, "command", "lines": [...], "output": "…" }`
+
+Optional: `timeoutMs`, `idleMs` to wait longer for slow commands.
+
+### Console WebSocket
+
+```bash
+curl -sS -H "Authorization: Bearer $GT_KEY" \
+  "$PANEL/api/servers/$SERVER_ID/websocket" | jq
+```
+
+Connect to `socket` with the same `Authorization: Bearer gt_…` header. Send JSON: `{"type":"command","command":"say Hello"}`.
+
+Events: `history`, `output`, `status`, `stats`, `error`.
 
 ## Files
 
@@ -144,7 +236,17 @@ curl -sS -H "Authorization: Bearer $GT_KEY" "$PANEL/api/servers" | jq
 |--------|------|------------|
 | GET | `/api/servers/:id/databases` | `database.read` |
 | POST | `/api/servers/:id/databases` | `database.create` |
+| POST | `/api/servers/:id/databases/:dbId/rotate-password` | `database.update` |
 | DELETE | `/api/servers/:id/databases/:dbId` | `database.delete` |
+
+`rotate-password` returns the database object with a **new plaintext password** (same shape as create).
+
+### SFTP credentials
+
+1. `GET /api/servers/:id/connect` → `sftpHost`, `sftpPort`, `sftpUsername` (needs `file.sftp`)
+2. `POST /api/account/app-passwords` with `{ "name": "FileZilla", "password": "YOUR_PANEL_PASSWORD" }` → one-time `token` (`gtap_…`)
+
+App passwords are for SFTP only — not HTTP Bearer.
 
 ## Schedules (tasks)
 
@@ -211,14 +313,14 @@ Or full panel admin:
 
 | Scope | Allows |
 |-------|--------|
-| `admin.full` or `*` | All `/api/admin/*` routes |
+| `admin.full` or `*` | All `/api/admin/*` routes (required for Application API key minting and a few privileged helpers) |
 | `users.read` | `GET /api/users` |
-| `users.write` | `POST` / `PATCH /api/users` |
+| `users.write` | `POST` / `PATCH /api/users` (cannot demote/delete the last admin) |
 | `users.delete` | `DELETE /api/users/:id` |
-| `nodes.read` / `nodes.write` | Node list & admin node CRUD |
-| `settings.read` / `settings.write` | Admin → Settings |
+| `nodes.read` / `nodes.write` | Node list & admin node CRUD / install / token rotate |
+| `settings.read` / `settings.write` | Admin → Settings (+ test mail/redis) |
 | `activity.read` | `GET /api/admin/activity` |
-| `status.read` | Admin → Status |
+| `status.read` | Admin → Status / version |
 | `billing.read` / `billing.write` | Plans & payments admin |
 | `license.read` / `license.write` | License admin |
 

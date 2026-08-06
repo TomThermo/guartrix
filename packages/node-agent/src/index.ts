@@ -119,6 +119,7 @@ export {
   getMysqlStatus,
   createMysqlDatabase,
   deleteMysqlDatabase,
+  rotateMysqlPassword,
   dumpMysqlDatabaseToFile,
   restoreMysqlDatabaseFromFile,
   generateMysqlPassword,

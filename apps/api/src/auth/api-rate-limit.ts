@@ -12,8 +12,8 @@ function isExempt(request: FastifyRequest): boolean {
   }
   if (path.startsWith("/api/public/")) return true;
   if (path.startsWith("/api/internal/")) return true;
-  const auth = request.headers.authorization;
-  if (typeof auth === "string" && /^Bearer\s+/i.test(auth)) return true;
+  // Real gt_/gta_ keys use their own counters; junk Bearer must not exempt cookie sessions.
+  if (request.apiKeyAuth || request.applicationAuth) return true;
   return false;
 }
 

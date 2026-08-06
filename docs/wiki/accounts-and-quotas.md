@@ -69,4 +69,4 @@ Details: [Client API](client-api.md)
 
 ## Admin demotion
 
-Changing a user away from `ADMIN` applies finite default quotas so they do not keep unlimited (`null`) limits.
+Changing a user away from `ADMIN` applies finite default quotas so they do not keep unlimited (`null`) limits. Demoting (or deleting) the **last** admin is rejected so the panel cannot lock itself out of administration.

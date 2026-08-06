@@ -14,7 +14,7 @@ export function WikiHomePage() {
   return (
     <WikiLayout
       title="Guartrix wiki"
-      subtitle="Setup guides, server workflows, security notes, and API references."
+      subtitle="Setup guides, server workflows, security notes, and operations."
     >
       <div className="wiki-search-panel mb-4">
         <WikiSearchBox value={query} onChange={setQuery} />

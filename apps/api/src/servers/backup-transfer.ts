@@ -33,8 +33,21 @@ function uploadsRoot(serverId: string): string {
   return path.join(serverBackupsDir(serverId), ".uploads");
 }
 
+/** Chunked-upload session ids are nanoid — never path segments. */
+export function assertSafeUploadId(uploadId: string): void {
+  if (!uploadId || !/^[A-Za-z0-9_-]{8,64}$/.test(uploadId) || uploadId.includes("..")) {
+    throw new Error("Invalid upload id");
+  }
+}
+
 function sessionDir(serverId: string, uploadId: string): string {
-  return path.join(uploadsRoot(serverId), uploadId);
+  assertSafeUploadId(uploadId);
+  const root = path.resolve(uploadsRoot(serverId));
+  const dir = path.resolve(path.join(root, uploadId));
+  if (dir !== root && !dir.startsWith(root + path.sep)) {
+    throw new Error("Invalid upload id");
+  }
+  return dir;
 }
 
 function metaPath(serverId: string, uploadId: string): string {

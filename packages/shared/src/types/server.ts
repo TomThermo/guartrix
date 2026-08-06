@@ -91,6 +91,8 @@ export interface McServer {
   startOnBoot: boolean;
   /** True after the user stopped/killed the server; cleared on start/restart. */
   stoppedByUser: boolean;
+  /** Billing/admin suspend — blocks start/restart until cleared. */
+  suspended: boolean;
   ownerAlertWebhookUrl?: string | null;
   ownerAlertEmail?: string | null;
   discordStatusWebhookUrl?: string | null;

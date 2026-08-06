@@ -18,7 +18,7 @@ export const wikiArticles: WikiArticle[] = [
     category: "Overview",
     keywords: ["overview", "readme", "panel", "daemon", "architecture", "requirements", "stack", "node", "vite", "mysql", "docker", "react", "fastify"],
     sourcePath: "README.md",
-    relatedSlugs: ["install-panel", "architecture", "panel-guide", "api-surface-map"],
+    relatedSlugs: ["install-panel", "architecture", "panel-guide", "api-documentation", "api-surface-map"],
     sections: [
       {
         title: "What Guartrix is",
@@ -627,7 +627,7 @@ export const wikiArticles: WikiArticle[] = [
     category: "Using the panel",
     keywords: ["accounts", "roles", "quotas", "2fa", "subusers", "api keys"],
     sourcePath: "docs/wiki/accounts-and-quotas.md",
-    relatedSlugs: ["security", "client-api", "application-billing"],
+    relatedSlugs: ["security", "api-documentation"],
     sections: [
       {
         title: "Roles",
@@ -1012,123 +1012,30 @@ export const wikiArticles: WikiArticle[] = [
     ],
   },
   {
-    slug: "client-api",
-    title: "Client API",
+    slug: "api-documentation",
+    title: "API documentation",
     summary:
-      "Use personal `gt_` API keys for scripts, CI, and limited server automation without a browser session.",
-    category: "Integrations",
-    keywords: ["api", "client api", "gt_", "bearer", "automation", "permissions"],
-    sourcePath: "docs/wiki/client-api.md",
-    relatedSlugs: ["accounts-quotas", "application-billing", "security"],
+      "HTTP API docs live in a dedicated API Reference at /api-docs — explorer, examples, Client and Application APIs.",
+    category: "Overview",
+    keywords: ["api", "rest", "gt_", "gta_", "openapi", "explorer", "client", "application", "billing"],
+    sourcePath: "docs/wiki/api-docs-ui.md",
+    relatedSlugs: ["overview", "security", "accounts-quotas"],
     sections: [
       {
-        title: "How it works",
+        title: "Open the API Reference",
         paragraphs: [
-          "Client API keys are personal bearer tokens created from Account -> Security.",
-          "Each key can carry specific permission scopes and optional server restrictions.",
+          "API documentation is no longer part of this wiki sidebar. Use the dedicated API docs product for overview, conventions, Client API, Application API, examples, and the interactive explorer.",
         ],
-      },
-      {
-        title: "Typical use",
         bullets: [
-          "List servers visible to the account.",
-          "Run power actions such as restart or stop.",
-          "Read or write files if the key includes the matching permissions.",
-          "Inspect or run scheduled tasks.",
+          "Panel path: /api-docs",
+          "Interactive Try it: /api-docs/explorer",
+          "Old /wiki/api-* URLs redirect automatically.",
         ],
         code: [
           {
-            label: "Auth header",
-            language: "http",
-            content: "Authorization: Bearer gt_…",
-          },
-          {
-            label: "Core endpoints",
-            language: "http",
-            content:
-              "GET  /api/servers\nGET  /api/servers/:id\nPOST /api/servers/:id/start\nPOST /api/servers/:id/stop\nPOST /api/servers/:id/restart\nPOST /api/servers/:id/kill",
-          },
-          {
-            label: "File endpoints",
-            language: "http",
-            content:
-              "GET    /api/servers/:id/files?path=.\nGET    /api/servers/:id/files/content?path=server.properties\nGET    /api/servers/:id/files/download?path=server.properties\nPUT    /api/servers/:id/files/content\nPOST   /api/servers/:id/files/mkdir\nPOST   /api/servers/:id/files/compress\nPOST   /api/servers/:id/files/decompress\nDELETE /api/servers/:id/files?path=…",
-          },
-          {
-            label: "Schedule endpoints",
-            language: "http",
-            content:
-              "GET  /api/servers/:id/tasks\nPOST /api/servers/:id/tasks\nPOST /api/servers/:id/tasks/:taskId/run",
-          },
-        ],
-      },
-      {
-        title: "Security model",
-        bullets: [
-          "Treat `gt_` keys like passwords.",
-          "Use least privilege and revoke unused keys quickly.",
-          "Keys do not replace browser-only account management actions.",
-        ],
-        code: [
-          {
-            label: "Curl example",
-            language: "bash",
-            content:
-              "export GT_KEY='gt_…'\nexport PANEL='https://guartrix.com'\n\ncurl -sS -H \"Authorization: Bearer $GT_KEY\" \"$PANEL/api/servers\" | jq '.[].name'\n\ncurl -sS -X POST -H \"Authorization: Bearer $GT_KEY\" \\\n  \"$PANEL/api/servers/SERVER_ID/restart\"",
-          },
-        ],
-      },
-    ],
-  },
-  {
-    slug: "application-billing",
-    title: "Application API and billing",
-    summary:
-      "Combine first-party Mollie billing with admin machine keys for users, servers, plans, and payment automation.",
-    category: "Integrations",
-    keywords: ["application api", "billing", "mollie", "gta_", "plans", "payments"],
-    sourcePath: "docs/wiki/application-api.md",
-    relatedSlugs: ["client-api", "accounts-quotas", "licensing"],
-    sections: [
-      {
-        title: "Two automation models",
-        paragraphs: [
-          "The built-in billing flow uses Mollie for checkout and subscriptions.",
-          "The Application API lets an external system raise quotas, create users, and provision servers with `gta_` machine keys.",
-        ],
-      },
-      {
-        title: "Plan templates",
-        bullets: [
-          "Plans define pricing, quotas, recurring behavior, and optional auto-create-server defaults.",
-          "Payments ultimately change the same quota model used by admins.",
-        ],
-        code: [
-          {
-            label: "Mollie webhook URL",
+            label: "Links",
             language: "text",
-            content: "https://<PUBLIC_HOST>/api/public/billing/mollie",
-          },
-          {
-            label: "Application API user and server endpoints",
-            language: "http",
-            content:
-              "GET   /api/application/users\nPOST  /api/application/users\nPATCH /api/application/users/:id\n\nGET   /api/application/servers\nPOST  /api/application/servers\n\nGET   /api/application/plans\nPOST  /api/application/plans\nGET   /api/application/payments",
-          },
-        ],
-      },
-      {
-        title: "Operational expectations",
-        bullets: [
-          "Mollie webhooks must be reachable from the public internet.",
-          "Recurring plans can create local subscription state and later revoke entitlements on failed renewal flows.",
-        ],
-        code: [
-          {
-            label: "External automation example",
-            language: "bash",
-            content:
-              "export GTA='gta_…'\nexport PANEL='https://guartrix.com'\n\ncurl -sS -X PATCH -H \"Authorization: Bearer $GTA\" -H \"Content-Type: application/json\" \\\n  -d '{\"maxServers\":1,\"maxMemoryMb\":4096,\"maxDatabases\":3}' \\\n  \"$PANEL/api/application/users/USER_ID\"",
+            content: "/api-docs\n/api-docs/explorer\n/api-docs/client\n/api-docs/application",
           },
         ],
       },
@@ -1197,7 +1104,7 @@ export const wikiArticles: WikiArticle[] = [
     category: "Using the panel",
     keywords: ["schedules", "tasks", "backup", "restart", "automation"],
     sourcePath: "docs/wiki/schedules.md",
-    relatedSlugs: ["files-backups", "client-api", "operations"],
+    relatedSlugs: ["files-backups", "api-documentation", "operations"],
     sections: [
       {
         title: "What schedules do",
@@ -1385,7 +1292,7 @@ export const wikiArticles: WikiArticle[] = [
     category: "Reference",
     keywords: ["auth", "sessions", "2fa", "invites", "app passwords", "daemon jwt"],
     sourcePath: "docs/wiki/auth-and-session-internals.md",
-    relatedSlugs: ["accounts-quotas", "client-api", "application-billing"],
+    relatedSlugs: ["accounts-quotas", "api-documentation"],
     sections: [
       {
         title: "Auth surfaces",
@@ -1407,7 +1314,7 @@ export const wikiArticles: WikiArticle[] = [
     category: "Reference",
     keywords: ["billing", "plans", "mollie", "subscriptions", "payments", "quotas"],
     sourcePath: "docs/wiki/billing-internals.md",
-    relatedSlugs: ["application-billing", "accounts-quotas", "licensing"],
+    relatedSlugs: ["api-documentation", "accounts-quotas", "licensing"],
     sections: [
       {
         title: "Core domains",
@@ -1616,6 +1523,7 @@ function articleSearchText(article: WikiArticle): string {
     article.category,
     article.keywords.join(" "),
     sectionText,
+    article.markdown ?? "",
   ]
     .join(" ")
     .toLowerCase();

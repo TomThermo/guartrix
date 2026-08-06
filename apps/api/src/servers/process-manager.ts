@@ -287,6 +287,75 @@ class ProcessManagerProxy extends EventEmitter {
   }
 
   /**
+   * Send a console command and collect subsequent output lines for a short window.
+   * Used by HTTP `POST /api/servers/:id/command` so API clients can read the reply.
+   */
+  runCommandAndCollect(
+    serverId: string,
+    command: string,
+    opts?: { timeoutMs?: number; idleMs?: number; maxLines?: number },
+  ): Promise<{ lines: string[]; timedOut: boolean }> {
+    const timeoutMs = Math.min(Math.max(opts?.timeoutMs ?? 2_500, 200), 15_000);
+    const idleMs = Math.min(Math.max(opts?.idleMs ?? 450, 50), 5_000);
+    const maxLines = Math.min(Math.max(opts?.maxLines ?? 200, 1), 500);
+
+    return new Promise((resolve, reject) => {
+      if (!this.running.has(serverId)) {
+        reject(new Error("Server is not running"));
+        return;
+      }
+
+      const lines: string[] = [];
+      let idleTimer: ReturnType<typeof setTimeout> | null = null;
+      let settled = false;
+
+      const finish = (timedOut: boolean) => {
+        if (settled) return;
+        settled = true;
+        if (idleTimer) clearTimeout(idleTimer);
+        clearTimeout(hardTimer);
+        this.off("output", onOutput);
+        resolve({ lines, timedOut });
+      };
+
+      const bumpIdle = () => {
+        if (idleTimer) clearTimeout(idleTimer);
+        // After first line, stop when console goes quiet (command finished printing).
+        if (lines.length > 0) {
+          idleTimer = setTimeout(() => finish(false), idleMs);
+        }
+      };
+
+      const onOutput = (
+        id: string,
+        line: string,
+        _stream?: "stdout" | "stderr",
+      ) => {
+        if (id !== serverId) return;
+        lines.push(line);
+        if (lines.length >= maxLines) {
+          finish(false);
+          return;
+        }
+        bumpIdle();
+      };
+
+      const hardTimer = setTimeout(() => finish(true), timeoutMs);
+      this.on("output", onOutput);
+
+      try {
+        this.sendCommand(serverId, command);
+        // If nothing arrives, still wait the full timeout (some cmds are silent).
+      } catch (err) {
+        if (idleTimer) clearTimeout(idleTimer);
+        clearTimeout(hardTimer);
+        this.off("output", onOutput);
+        reject(err instanceof Error ? err : new Error(String(err)));
+      }
+    });
+  }
+
+  /**
    * Wait for a console line matching `match` after optionally sending a command.
    * Listener is attached before the command is sent to avoid races.
    */

@@ -1,6 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
 
+/** True for `/api` and `/api/…`, but not `/api-docs` (SPA docs product). */
+export function isPanelApiPath(pathname) {
+  return pathname === "/api" || pathname.startsWith("/api/");
+}
+
 /** Route HTTP requests: proxy, install scripts, /download, static SPA. */
 export function createRequestRouter(config, proxy, staticFiles, loadDownloadApi) {
   const {
@@ -33,7 +38,7 @@ export function createRequestRouter(config, proxy, staticFiles, loadDownloadApi)
     }
 
     const url = (req.url || "/").split("?")[0];
-    if (url.startsWith("/api") || url.startsWith("/ws")) {
+    if (isPanelApiPath(url) || url.startsWith("/ws")) {
       proxyHttp(req, res);
       return;
     }
@@ -138,7 +143,8 @@ export function createRequestRouter(config, proxy, staticFiles, loadDownloadApi)
         return;
       }
       const url = req.url || "/";
-      if (url.startsWith("/ws") || url.startsWith("/api")) {
+      const pathOnly = url.split("?")[0] || "/";
+      if (url.startsWith("/ws") || isPanelApiPath(pathOnly)) {
         proxyWs(req, socket, head);
         return;
       }

@@ -1,53 +1,53 @@
 # Guartrix HTTP API overview
 
-Guartrix exposes a **Fastify JSON API** on the same origin as the panel (`https://your-panel/api/…`).
-The web UI proxies `/api` and `/ws` to the API process (default `127.0.0.1:3001`).
-
-Use this page as the map; detail lives in the linked guides and in [OpenAPI](../openapi.yaml).
-
-## Authentication types
-
-| Type | Prefix | Who | Create keys | Typical use |
-|------|--------|-----|-------------|-------------|
-| **Browser session** | Cookie `sid` | Logged-in user | — | Panel UI |
-| **Client API** | `gt_` | Any user | Account → Security → API keys | Scripts, CI, your own servers |
-| **Application API** | `gta_` | Machine (admin) | Admin → Billing → Application API keys | WHMCS, custom billing, provisioning |
-| **App password** | `gtap_` | SFTP only | Account → Security | FileZilla / SFTP — **not** HTTP |
-
-```http
-Authorization: Bearer gt_…
-# or
-Authorization: Bearer gta_…
-```
-
-- Bearer requests skip CSRF; cookie sessions need `Origin` + `x-csrf-token` on mutating calls.
-- Client keys cannot create other keys (use a panel session for key management).
-- Default rate limit: **120 requests / minute / key** (`API_KEY_RATE_LIMIT`).
-
 ## Quick start (Client API)
+
+See **[API examples](api-examples.md)** for full request/response JSON.
 
 ```bash
 export PANEL='https://guartrix.com'
 export GT_KEY='gt_…'
 
-# Who am I + quotas
-curl -sS -H "Authorization: Bearer $GT_KEY" "$PANEL/api/account" | jq
+# Permission catalog (no auth)
+curl -sS "$PANEL/api/account/api-reference" | jq '.clientApi.presets[].id'
 
-# My servers
+# Who am I + quotas
+curl -sS -H "Authorization: Bearer $GT_KEY" "$PANEL/api/account" | jq '.user'
+
+# My servers (array of McServer objects)
 curl -sS -H "Authorization: Bearer $GT_KEY" "$PANEL/api/servers" | jq '.[].name'
 
-# Restart one server
+# Live stats for one server
+curl -sS -H "Authorization: Bearer $GT_KEY" \
+  "$PANEL/api/servers/SERVER_ID/stats" | jq '{cpu: .cpuPercent, ram: .memoryPercent}'
+
+# Restart
 curl -sS -X POST -H "Authorization: Bearer $GT_KEY" \
   "$PANEL/api/servers/SERVER_ID/restart"
 ```
 
-Permission catalog (presets, scopes, all permission strings):
+Bearer requests skip CSRF; cookie sessions need `Origin` + `x-csrf-token` on mutating calls.
+Client keys cannot create other keys (use a panel session for key management).
+Default rate limit: **120 requests / minute / key** (`API_KEY_RATE_LIMIT`).
 
-```http
-GET /api/account/api-reference
-```
+## What hosting panels need (Guartrix coverage)
 
-No authentication required — use it when building key-creation UIs or docs.
+Compared to panels like Pterodactyl, Guartrix exposes:
+
+| Need | Client API (`gt_`) | Application API (`gta_`) |
+|------|-------------------|--------------------------|
+| Create server (user) | `POST /api/servers` | — |
+| Create server (admin/billing) | — | `POST /api/application/servers` |
+| Start / stop / restart / kill | `POST …/power` or `/start` etc. | `POST /api/application/servers/:id/power` |
+| Console (live) | WebSocket `/ws/servers/:id/console` | — (use Client key on that server) |
+| Console (one command) | `POST …/command` | — |
+| Read logs (files) | `GET …/logs` | — |
+| Files / backups / DB / schedules | Full REST under `/api/servers/:id/…` | Same under `/api/application/servers/:id/…` (scoped) |
+| Suspend unpaid server | — | `PATCH …/servers/:id` `{ "suspended": true }` |
+| User provisioning | — | `POST /api/application/users` |
+| Subusers | `POST …/subusers` | — |
+
+Client keys use the **same routes as the panel UI** (not a separate `/api/client` prefix).
 
 ## API surface by audience
 
@@ -94,7 +94,7 @@ See [Client API — admin scopes](client-api.md#admin-scopes-on-client-keys) and
 
 | Path | Auth | Purpose |
 |------|------|---------|
-| `/ws/servers/:id/console` | Session (Bearer `gt_` planned) | Live console |
+| `/ws/servers/:id/console` | Session or Bearer `gt_` | Live console |
 | `/ws/servers/:id/players` | Session | Player list stream |
 | `/ws/admin/logs/:source` | Admin session | API / daemon log tail |
 
@@ -102,8 +102,10 @@ Prefer REST for automation; use WS for interactive console.
 
 ## OpenAPI & route map
 
-- [openapi.yaml](../openapi.yaml) — machine-readable paths (Client + Application tags).
-- [api-surface-map.md](api-surface-map.md) — source file index for developers.
+- [api-examples.md](api-examples.md) — **worked examples with outputs**
+- [api-conventions.md](api-conventions.md) — shared rules
+- [openapi.yaml](../openapi.yaml) — machine-readable paths
+- [api-surface-map.md](api-surface-map.md) — source file index for developers
 
 ## Related docs
 

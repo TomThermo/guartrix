@@ -235,7 +235,7 @@ Guide: [Development](docs/wiki/development.md)
 | Feature references | [server-management.md](docs/wiki/server-management.md) · [databases.md](docs/wiki/databases.md) · [bots.md](docs/wiki/bots.md) · [files-and-backups.md](docs/wiki/files-and-backups.md) · [networking-and-allocations.md](docs/wiki/networking-and-allocations.md) · [mods-plugins-and-modpacks.md](docs/wiki/mods-plugins-and-modpacks.md) · [statusline.md](docs/wiki/statusline.md) |
 | Internal references | [api-surface-map.md](docs/wiki/api-surface-map.md) · [daemon-api.md](docs/wiki/daemon-api.md) · [node-agent-internals.md](docs/wiki/node-agent-internals.md) · [shared-contracts.md](docs/wiki/shared-contracts.md) |
 | Environment | [env-reference.md](docs/wiki/env-reference.md) |
-| **APIs** | **[api-overview.md](docs/wiki/api-overview.md)** · [client-api.md](docs/wiki/client-api.md) · [application-api.md](docs/wiki/application-api.md) · [OpenAPI](docs/openapi.yaml) |
+| **APIs** | Panel **`/api-docs`** · **[api-overview.md](docs/wiki/api-overview.md)** · **[api-explorer](docs/wiki/api-explorer.md)** (Try it) · **[api-examples.md](docs/wiki/api-examples.md)** · [client-api.md](docs/wiki/client-api.md) · [application-api.md](docs/wiki/application-api.md) · [OpenAPI](docs/openapi.yaml) |
 | Licensing & releases | [licensing.md](docs/wiki/licensing.md) · [release-builds.md](docs/wiki/release-builds.md) |
 | Security & ops | [security.md](docs/wiki/security.md) · [operations.md](docs/wiki/operations.md) |
 | Contributing | [CONTRIBUTING.md](CONTRIBUTING.md) |

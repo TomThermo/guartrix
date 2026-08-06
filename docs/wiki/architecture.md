@@ -65,8 +65,8 @@ panel enforces a free tier (1 node, 1 server, 10 GB disk). See [Licensing](licen
 | Limit | Behaviour |
 |-------|-----------|
 | **RAM** (`memoryMb`) | Docker `--memory` (+ overhead); Java `-Xmx` |
-| **CPU** (`cpuLimit`) | Percent of one core (100 = 1.0). Docker `--cpus`. `0` = unlimited |
-| **Disk** (`diskMb`) | Enforced on panel uploads, file writes, and SFTP. Start refused if already over. Running servers are **stopped** when over quota (Wings-style) |
+| **CPU** (`cpuLimit`) | Percent of one core (100 = 1.0). Docker `--cpus`. `0` = unlimited. Client API: **admin-only** to change |
+| **Disk** (`diskMb`) | Enforced on panel uploads, file writes, and SFTP. Start refused if already over. Running servers are **stopped** when over quota (Wings-style). Client API: **admin-only** to change |
 
 Defaults for new servers: **10 GB** disk, CPU unlimited (create UI defaults to 2 cores). Admins change limits under Server Properties → Performance.
 

@@ -30,6 +30,10 @@ export function WikiLayout({
               <p className="wiki-subtitle">{subtitle}</p>
             </div>
             <div className="wiki-hero-actions">
+              <Link to="/api-docs" className="btn btn-outline-secondary">
+                <i className="fa-solid fa-code me-1" />
+                API docs
+              </Link>
               <Link to="/login" className="btn btn-outline-secondary">
                 <i className="fa-solid fa-right-to-bracket me-1" />
                 Panel login

@@ -8,8 +8,17 @@ export const APPLICATION_API_RATE_WINDOW_MS = 60_000;
 export const APPLICATION_SCOPES = [
   "users.read",
   "users.write",
+  "users.delete",
   "servers.read",
   "servers.write",
+  "servers.update",
+  "servers.power",
+  "servers.delete",
+  "servers.files",
+  "servers.addons",
+  "servers.backups",
+  "servers.allocations",
+  "servers.databases",
   "plans.read",
   "plans.write",
   "payments.read",
@@ -18,9 +27,6 @@ export const APPLICATION_SCOPES = [
   "activity.read",
   "settings.read",
   "settings.write",
-  "users.delete",
-  "servers.delete",
-  "servers.update",
 ] as const;
 
 export type ApplicationScope = (typeof APPLICATION_SCOPES)[number];
@@ -74,8 +80,23 @@ export const APPLICATION_API_PRESETS: {
   {
     id: "billing",
     label: "Billing automation",
-    description: "Manage users, servers, plans, and read payments after external checkout.",
-    scopes: ["users.read", "users.write", "servers.read", "servers.write", "plans.read", "payments.read"],
+    description:
+      "Manage users, servers, plans, payments, and day-to-day server ops (files, addons, backups).",
+    scopes: [
+      "users.read",
+      "users.write",
+      "servers.read",
+      "servers.write",
+      "servers.update",
+      "servers.power",
+      "servers.files",
+      "servers.addons",
+      "servers.backups",
+      "servers.allocations",
+      "servers.databases",
+      "plans.read",
+      "payments.read",
+    ],
   },
   {
     id: "readonly",
@@ -96,6 +117,20 @@ export const APPLICATION_API_PRESETS: {
     label: "Provisioning",
     description: "Create users and servers, update quotas.",
     scopes: ["users.read", "users.write", "servers.read", "servers.write", "plans.read"],
+  },
+  {
+    id: "server-ops",
+    label: "Server operations",
+    description: "Power, files, addons, backups, network, and databases for any server.",
+    scopes: [
+      "servers.read",
+      "servers.power",
+      "servers.files",
+      "servers.addons",
+      "servers.backups",
+      "servers.allocations",
+      "servers.databases",
+    ],
   },
   {
     id: "full",

@@ -641,8 +641,13 @@ class ProcessManager extends EventEmitter {
       throw new Error(message);
     };
 
+    // Idempotent start: never flip a live process to ERROR just because Start
+    // was clicked twice, raced with auto-start, or the UI had a stale status.
     if (this.processes.has(serverId)) {
-      failStart("Server is already running");
+      this.lastConfigs.set(serverId, { ...server });
+      this.daemonSay(serverId, "Already running — ignoring duplicate start.");
+      this.setStatus(serverId, "RUNNING", null);
+      return;
     }
 
     // Container survived a panel/daemon restart — just reclaim the console.

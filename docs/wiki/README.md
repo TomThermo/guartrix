@@ -8,6 +8,7 @@ Operator and developer documentation for the Guartrix Minecraft hosting panel.
 
 **Live panel:** [https://guartrix.com](https://guartrix.com)  
 **Public wiki:** `/wiki` on the panel web app (left topic menu + search)  
+**API Reference:** `/api-docs` (overview, explorer, Client & Application APIs)  
 **Source:** [github.com/TomThermo/guartrix](https://github.com/TomThermo/guartrix)  
 **Short overview:** [../../README.md](../../README.md) · [Contributing](../../CONTRIBUTING.md)
 
@@ -41,8 +42,12 @@ Operator and developer documentation for the Guartrix Minecraft hosting panel.
 | [Notifications and alerts](notifications-and-alerts.md) | Email, activity webhook, per-server Discord status, push |
 | [Operations](operations.md) | Start/stop, systemd vs start.sh, watchdog, backups, logs, ports |
 | [Activity log](activity-log.md) | Audit trail, filters, retention, Discord/email alerts |
-| **[API overview](api-overview.md)** | **Auth types, quick start, route map** |
-| [Client API](client-api.md) | Personal `gt_` keys — servers, files, power, admin scopes |
+| **[API overview](api-overview.md)** | Auth types, quick start, route map |
+| **[API docs UI](api-docs-ui.md)** | Panel `/api-docs` product (separate from wiki) |
+| **[API explorer](api-explorer.md)** | Interactive Try it + cURL/PHP/Python/… |
+| **[API examples](api-examples.md)** | curl + sample JSON request/response |
+| [API conventions](api-conventions.md) | Errors, rate limits, pagination, headers |
+| [Client API](client-api.md) | Personal `gt_` keys — permissions & endpoint index |
 | [OpenAPI](../openapi.yaml) | Machine-readable Client + Application paths |
 | [Application API & Mollie](application-api.md) | Admin `gta_` keys, provisioning, billing automation |
 | [Billing internals](billing-internals.md) | Plan templates, payment lifecycle, quota application, subscriptions, machine API |

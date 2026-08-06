@@ -648,6 +648,32 @@ export async function daemonMysqlDelete(
   });
 }
 
+export async function daemonMysqlRotatePassword(
+  nodeId: string,
+  input: {
+    name: string;
+    username: string;
+    password: string;
+    remote?: string;
+  },
+) {
+  const node = await resolveNode(nodeId);
+  return daemonJson<{
+    ok: boolean;
+    database: {
+      name: string;
+      username: string;
+      password: string;
+      host: string;
+      port: number;
+      remote: string;
+    };
+  }>(node, "/mysql/databases/password", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
 export async function daemonMysqlDumpToFile(
   nodeId: string,
   name: string,

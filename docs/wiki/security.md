@@ -41,13 +41,16 @@ another tool on the host needs it.
 |------|---------|
 | Proxy | `X-Forwarded-*` overwritten from the socket by prod-web; API trusts XFF only from `TRUSTED_PROXIES` |
 | CSP | prod-web sends `script-src` with a **per-request nonce** (stamped on `index.html` scripts). Cloudflare Bot JS detections can reuse that nonce; Web Analytics needs `static.cloudflareinsights.com`. Prefer turning off **Email Address Obfuscation** (Scrape Shield) rather than `'unsafe-inline'` |
-| CSRF | Origin/Referer + **`x-csrf-token`** double-submit on authenticated cookie mutating `/api` (missing Origin **and** Referer rejected unless `CSRF_ALLOW_MISSING_ORIGIN=1`; Bearer + `/api/public/*` exempt) |
+| CSRF | Origin/Referer + **`x-csrf-token`** double-submit on authenticated cookie mutating `/api` (missing Origin **and** Referer rejected unless `CSRF_ALLOW_MISSING_ORIGIN=1`; exempt only when a real Client/Application Bearer resolved — junk Bearer does not skip CSRF; `/api/public/*` exempt) |
 | Sessions | `httpOnly` + `SameSite=Lax`; regenerate on login; purge on password reset |
-| Rate limits | Login / API-key / SFTP counters via `RATE_LIMIT_STORE` (`file` default under `data/rate-limits/`, or `memory`); authenticated session `/api` capped by `API_SESSION_RATE_LIMIT` (default 600/min per user) |
+| Rate limits | Login / API-key / SFTP counters via `RATE_LIMIT_STORE` (`file` default under `data/rate-limits/`, or `memory`); authenticated session `/api` capped by `API_SESSION_RATE_LIMIT` (default 600/min per user); panel-password step-up (`verifyAccountPassword`) capped 10/15min per user (delete server, app passwords, 2FA disable/recovery, account delete) |
+| Auth timing | Login and SFTP always run one scrypt verify (precomputed dummy hash for unknown users) |
+| Billing redirects | Mollie `redirectUrl` must stay on this panel’s `/account/billing` origin — other hosts ignored |
 | Passwords | Versioned scrypt hashes (`scrypt$v1$…`); legacy `salt:hash` still verifies and upgrades on login |
 | Secrets at rest | TOTP secrets, game MySQL `Database.password`, and optional backups (`BACKUP_ENCRYPTION=1` → `.tar.gz.enc` AES-256-GCM) sealed with purpose salts from `SESSION_SECRET` / `BACKUP_ENCRYPTION_KEY`; legacy plaintext passwords accepted and re-sealed on read/write |
-| 2FA | Optional TOTP + recovery codes; role-required via `TWO_FACTOR_REQUIRED_ROLES` — see [Accounts & quotas](accounts-and-quotas.md) |
-| Client API | Personal Bearer keys (`gt_…`), scoped permissions, per-key rate limit — see [Client API](client-api.md) |
+| 2FA | Optional TOTP + recovery codes; role-required via `TWO_FACTOR_REQUIRED_ROLES` — enrollment gate for cookie sessions ignores junk `Authorization: Bearer` (same as CSRF); `gt_` keys still require enrolled TOTP for those roles — see [Accounts & quotas](accounts-and-quotas.md) |
+| Client API | Personal Bearer keys (`gt_…`), scoped permissions + **adminScopes** enforced per route (`settings.*`, `nodes.*`, `license.*`, `billing.*`, `status.read`, …); Application key minting stays `admin.full` — see [Client API](client-api.md) |
+| Admin lockout | Last `ADMIN` cannot be deleted or demoted (panel + Application API) |
 | Files / SFTP | Symlink jail, `O_NOFOLLOW` uploads, member-safe archive extract, sensitive `guartrix-*.json` blocked |
 | Archives | Symlinks/hardlinks rejected; zip member-by-member; File Manager + modpack/clone/import use `safeExtractArchive` |
 | Daemon | Short-lived HS256 JWTs on the wire (HMAC with node secret); raw bearer only if `DAEMON_JWT_LEGACY=true`; `serverId` sanitized; MySQL game users default `remote: 172.%`; containers `--cap-drop=ALL`; optional **`DOCKER_SECCOMP_PROFILE`**; per-IP HTTP rate limit (`DAEMON_RATE_LIMIT_MAX`, default 600/min); **`DOCKER_NETWORK_MODE=per_server`** (default) isolates game bridges (`guartrix-s-<id>`) with a second attach to shared `guartrix` for game MySQL; **`shared`** requires `ALLOW_SHARED_DOCKER_NETWORK=1`; daemon port ufw restricted to panel IP when `MANAGE_FIREWALL` + `PANEL_URL` |

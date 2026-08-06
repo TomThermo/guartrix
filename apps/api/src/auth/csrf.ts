@@ -112,9 +112,9 @@ export function registerCsrfGuard(app: FastifyInstance): void {
     const pathOnly = request.url.split("?")[0] ?? "";
     if (!pathOnly.startsWith("/api/")) return;
     if (csrfExemptPath(pathOnly)) return;
-    // Daemon/node machine clients use Bearer — not browser cookie CSRF.
-    const auth = request.headers.authorization;
-    if (typeof auth === "string" && /^Bearer\s+/i.test(auth)) return;
+    // Only skip CSRF when a real API/Application key resolved — not a junk Bearer
+    // that would leave cookie session in charge without Origin/CSRF checks.
+    if (request.apiKeyAuth || request.applicationAuth) return;
 
     const originErr = assertSameOrigin(request);
     if (originErr) {

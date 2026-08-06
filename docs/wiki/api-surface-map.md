@@ -25,66 +25,19 @@ Use this page when you need to answer "where is this feature implemented?" befor
 
 ## API route families
 
-Routes below live under `apps/api/src/routes/`.
+Routes live under `apps/api/src/routes/` — **one folder per API area**, one file per domain:
 
-### Auth and account
+| Folder | Contents |
+|--------|----------|
+| `auth/` | Session login/register (`session.ts`), 2FA, invites |
+| `account/` | Profile API, GDPR, push, Client `gt_` keys, SFTP `gtap_` passwords |
+| `admin/` | Panel settings, license, status, global activity |
+| `billing/` | User checkout, plans, payments, Mollie |
+| `nodes/` | Node CRUD + daemon SFTP auth callback |
+| `servers/` | Client `/api/servers/*` (power, files, backups, DBs, addons, bots, tasks, …) |
+| `application/` | Machine `/api/application/*` (users, servers-*, files/addons/backups mirrors, …) |
 
-| Route file | Main responsibility |
-|------------|---------------------|
-| `auth.ts` | Login, logout, registration, profile, admin user create/update/delete, quotas, role changes |
-| `two-factor.ts` | TOTP enrolment, verification, recovery codes, disable/reset |
-| `invites.ts` | Invite acceptance and invite-token lifecycle |
-| `api-keys.ts` | Personal `gt_` client keys |
-| `app-passwords.ts` | App/SFTP passwords (`gtap_…`) |
-| `account-push.ts` | Web Push subscriptions and delivery preferences |
-| `account-gdpr.ts` | Account export and self-delete |
-
-### Server lifecycle and day-to-day control
-
-| Route file | Main responsibility |
-|------------|---------------------|
-| `servers.ts` | Server read/detail payloads and general server access |
-| `servers-dashboard.ts` | Dashboard summaries, filters, online counters |
-| `servers-crud.ts` | Create, import, clone, reinstall, delete, ownership changes |
-| `servers-power.ts` | Start, stop, restart, kill |
-| `servers-settings.ts` | Runtime settings, properties, quotas, startup, Java, ownership-guarded mutations |
-| `servers-world.ts` | World preset/seed settings and world-adjacent helpers |
-| `servers-transfer.ts` | Cross-node move flow |
-| `servers-addons.ts` | Addon browse/install/update/remove |
-| `resource-pack.ts` | Resource-pack configuration |
-| `servers-players.ts` | Player list and live presence |
-| `player-actions.ts` | Whitelist, kick, ban, pardon, moderation actions |
-| `tasks.ts` | Scheduled tasks and manual task runs |
-| `logs.ts` | Server log file listing/download helpers |
-
-### Data, files, and recovery
-
-| Route file | Main responsibility |
-|------------|---------------------|
-| `files.ts` | In-panel file manager operations |
-| `backups.ts` | Create, upload, download, restore, delete backups |
-| `databases.ts` | Per-server MySQL database CRUD |
-| `sftp-auth.ts` | Panel side of SFTP login verification |
-
-### Node, networking, and infrastructure
-
-| Route file | Main responsibility |
-|------------|---------------------|
-| `nodes.ts` | Node CRUD, connection tests, remote install, token rotation, daemon metadata |
-| `allocations.ts` | Node port inventory and per-server allocation assignment |
-| `status.ts` | Panel, daemon, and node status surfaces |
-| `activity.ts` | Audit log queries |
-| `admin-settings.ts` | Panel settings read/write and side effects |
-
-### Billing, licensing, integrations
-
-| Route file | Main responsibility |
-|------------|---------------------|
-| `billing.ts` | User billing, admin plans/payments, Mollie webhook and sync flows |
-| `application.ts` | Machine API for external automation (`gta_…`) |
-| `license.ts` | License status, key update, revalidation, free-tier state |
-| `bots.ts` | Admin-only bot spawning and commands |
-| `icon.ts` | Server icon upload/read helpers |
+Thin re-exports at `routes/servers.ts` and `routes/application.ts` keep stable import paths for `index.ts`.
 
 ## API internals by domain
 

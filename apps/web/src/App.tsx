@@ -46,6 +46,12 @@ const WikiHomePage = lazy(() =>
 const WikiArticlePage = lazy(() =>
   import("./pages/WikiArticlePage").then((m) => ({ default: m.WikiArticlePage })),
 );
+const ApiDocsHomePage = lazy(() =>
+  import("./pages/ApiDocsHomePage").then((m) => ({ default: m.ApiDocsHomePage })),
+);
+const ApiDocsPage = lazy(() =>
+  import("./pages/ApiDocsPage").then((m) => ({ default: m.ApiDocsPage })),
+);
 const InvitePage = lazy(() =>
   import("./pages/InvitePage").then((m) => ({ default: m.InvitePage })),
 );
@@ -252,6 +258,15 @@ function Shell({ children }: { children: ReactNode }) {
                 Wiki
               </Link>
 
+              <Link
+                to="/api-docs"
+                className="btn btn-sm btn-outline-secondary"
+                onClick={closeNav}
+              >
+                <i className="fa-solid fa-code me-1" />
+                API
+              </Link>
+
               {isAdmin && (
                 <Dropdown align="end" className="app-nav-dropdown">
                   <Dropdown.Toggle
@@ -442,6 +457,11 @@ function Shell({ children }: { children: ReactNode }) {
               Wiki
             </Link>
             {" · "}
+            <Link to="/api-docs">
+              <i className="fa-solid fa-code me-1" />
+              API
+            </Link>
+            {" · "}
             <Link to="/terms">{t("nav.terms")}</Link>
             {" · "}
             <Link to="/privacy">{t("nav.privacy")}</Link>
@@ -466,6 +486,8 @@ function PublicRoutes() {
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/wiki" element={<WikiHomePage />} />
           <Route path="/wiki/:slug" element={<WikiArticlePage />} />
+          <Route path="/api-docs" element={<ApiDocsHomePage />} />
+          <Route path="/api-docs/:slug" element={<ApiDocsPage />} />
           <Route path="/invite/:token" element={<InvitePage />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
@@ -485,6 +507,8 @@ function isPublicPath(pathname: string): boolean {
     pathname === "/privacy" ||
     pathname === "/wiki" ||
     pathname.startsWith("/wiki/") ||
+    pathname === "/api-docs" ||
+    pathname.startsWith("/api-docs/") ||
     pathname.startsWith("/invite/")
   );
 }
@@ -525,6 +549,8 @@ export function App() {
             <Route path="/privacy" element={<PrivacyPage />} />
             <Route path="/wiki" element={<WikiHomePage />} />
             <Route path="/wiki/:slug" element={<WikiArticlePage />} />
+            <Route path="/api-docs" element={<ApiDocsHomePage />} />
+            <Route path="/api-docs/:slug" element={<ApiDocsPage />} />
             <Route path="/invite/:token" element={<InvitePage />} />
             <Route
               path="/servers/new"

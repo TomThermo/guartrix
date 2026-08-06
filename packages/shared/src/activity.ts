@@ -164,6 +164,10 @@ export const ACTIVITY_ACTIONS: Record<string, ActivityActionMeta> = {
   // Databases
   "database.create": { category: "database", label: "Created a database" },
   "database.delete": { category: "database", label: "Deleted a database" },
+  "database.rotate-password": {
+    category: "database",
+    label: "Rotated a database password",
+  },
 
   // Allocations
   "allocation.assign": { category: "allocation", label: "Assigned a port" },

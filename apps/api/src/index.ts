@@ -13,7 +13,6 @@ import websocket from "@fastify/websocket";
 import multipart from "@fastify/multipart";
 import { ensureBootstrapAdmin, registerOwnershipGuard } from "./auth/auth.js";
 import { registerBearerAuthResolver } from "./auth/bearer-resolver.js";
-import { registerAuthRoutes } from "./routes/auth.js";
 import { registerCsrfGuard, allowedOrigins } from "./auth/csrf.js";
 import { registerApiSessionRateLimit } from "./auth/api-rate-limit.js";
 import { config } from "./config.js";
@@ -35,37 +34,16 @@ import { pruneActivityLog } from "./activity-log.js";
 import { startActivityWatch } from "./activity-watch.js";
 import { startDiscordStatusWorker } from "./discord-status.js";
 import { startDiskWatch } from "./servers/disk-watch.js";
-import { registerActivityRoutes } from "./routes/activity.js";
-import { registerAccountApiRoutes } from "./routes/account-api.js";
-import { registerAccountGdprRoutes } from "./routes/account-gdpr.js";
-import { registerAccountPushRoutes } from "./routes/account-push.js";
-import { registerTwoFactorRoutes, registerTwoFactorGuard } from "./routes/two-factor.js";
-import { registerApiKeyRoutes } from "./routes/api-keys.js";
-import { registerAppPasswordRoutes } from "./routes/app-passwords.js";
+import { registerAccountRoutes } from "./routes/account/index.js";
+import { registerAdminRoutes } from "./routes/admin/index.js";
 import {
   registerApplicationKeyAdminRoutes,
   registerApplicationRoutes,
 } from "./routes/application.js";
-import { registerBillingRoutes } from "./routes/billing.js";
-import { registerAllocationRoutes } from "./routes/allocations.js";
-import { registerBackupRoutes } from "./routes/backups.js";
-import { registerBotRoutes } from "./routes/bots.js";
-import { registerDatabaseRoutes } from "./routes/databases.js";
-import { registerFileRoutes } from "./routes/files.js";
-import { registerIconRoutes } from "./routes/icon.js";
-import { registerImportRoutes } from "./routes/import.js";
-import { registerLogRoutes } from "./routes/logs.js";
-import { registerNodeRoutes } from "./routes/nodes.js";
-import { registerPlayerActionRoutes } from "./routes/player-actions.js";
-import { registerResourcePackRoutes } from "./routes/resource-pack.js";
-import { registerSftpAuthRoutes } from "./routes/sftp-auth.js";
+import { registerAuthHttpRoutes } from "./routes/auth/index.js";
+import { registerBillingRoutes } from "./routes/billing/index.js";
+import { registerNodeHttpRoutes } from "./routes/nodes/index.js";
 import { registerServerRoutes } from "./routes/servers.js";
-import { registerLicenseRoutes } from "./routes/license.js";
-import { registerAdminSettingsRoutes } from "./routes/admin-settings.js";
-import { registerStatusRoutes } from "./routes/status.js";
-import { registerSubUserRoutes } from "./routes/subusers.js";
-import { registerInviteRoutes } from "./routes/invites.js";
-import { registerTaskRoutes } from "./routes/tasks.js";
 import { registerConsoleWs } from "./ws/console.js";
 import { registerAdminLogsWs } from "./ws/admin-logs.js";
 import { registerPlayersWs } from "./ws/players.js";
@@ -349,38 +327,15 @@ async function main() {
   registerCsrfGuard(app);
   registerApiSessionRateLimit(app);
   registerMetrics(app);
-  registerAuthRoutes(app);
-  registerTwoFactorRoutes(app);
-  registerTwoFactorGuard(app);
-  registerAccountApiRoutes(app);
-  registerAccountGdprRoutes(app);
-  registerAccountPushRoutes(app);
-  registerApiKeyRoutes(app);
-  registerAppPasswordRoutes(app);
+  registerAuthHttpRoutes(app);
+  registerAccountRoutes(app);
   registerApplicationKeyAdminRoutes(app);
   registerApplicationRoutes(app);
   registerBillingRoutes(app);
   registerOwnershipGuard(app);
-  registerSftpAuthRoutes(app);
-  registerNodeRoutes(app);
-  registerStatusRoutes(app);
+  registerNodeHttpRoutes(app);
+  registerAdminRoutes(app);
   registerServerRoutes(app);
-  registerLicenseRoutes(app);
-  registerAdminSettingsRoutes(app);
-  registerActivityRoutes(app);
-  registerAllocationRoutes(app);
-  registerDatabaseRoutes(app);
-  registerSubUserRoutes(app);
-  registerInviteRoutes(app);
-  registerImportRoutes(app);
-  registerPlayerActionRoutes(app);
-  registerIconRoutes(app);
-  registerFileRoutes(app);
-  registerBackupRoutes(app);
-  registerBotRoutes(app);
-  registerTaskRoutes(app);
-  registerLogRoutes(app);
-  registerResourcePackRoutes(app);
   registerConsoleWs(app);
   registerAdminLogsWs(app);
   registerPlayersWs(app);
@@ -527,7 +482,7 @@ async function main() {
     );
   }
   const bootServers = await prisma.server.findMany({
-    where: { startOnBoot: true, stoppedByUser: false },
+    where: { startOnBoot: true, stoppedByUser: false, suspended: false },
     orderBy: { createdAt: "asc" },
   });
   const bootStaggerMs = Number(process.env.BOOT_START_STAGGER_MS ?? 20_000);

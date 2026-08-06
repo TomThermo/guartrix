@@ -111,6 +111,8 @@ model Server {
    * Cleared on start/restart. startOnBoot skips servers with this flag.
    */
   stoppedByUser       Boolean      @default(false)
+  /** Billing/admin suspend — blocks start/restart until cleared. */
+  suspended           Boolean      @default(false)
   /** Owner Discord webhook for critical alerts (crash/disk/backup). */
   ownerAlertWebhookUrl String?
   /** Owner email for critical alerts (optional override). */

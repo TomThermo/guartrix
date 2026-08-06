@@ -22,5 +22,6 @@ export type WikiArticle = {
   keywords: string[];
   sourcePath?: string;
   relatedSlugs?: string[];
+  markdown?: string;
   sections: WikiSection[];
 };

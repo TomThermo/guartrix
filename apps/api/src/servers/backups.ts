@@ -101,6 +101,13 @@ const TAR_EXCLUDES = [
 
 const busyServers = new Set<string>();
 
+/** Backup ids are ISO-like timestamps (e.g. 2026-08-06T13-45-00-000Z) — never path segments. */
+export function assertSafeBackupId(backupId: string): void {
+  if (!backupId || !/^[A-Za-z0-9._-]{1,128}$/.test(backupId) || backupId.includes("..")) {
+    throw new Error("Invalid backup id");
+  }
+}
+
 export function formatBackupSize(bytes: number): string {
   return formatBytes(bytes);
 }
@@ -110,14 +117,17 @@ function schedulePath(serverId: string): string {
 }
 
 function metaPath(serverId: string, backupId: string): string {
+  assertSafeBackupId(backupId);
   return path.join(serverBackupsDir(serverId), `${backupId}.json`);
 }
 
 function archivePath(serverId: string, backupId: string): string {
+  assertSafeBackupId(backupId);
   return path.join(serverBackupsDir(serverId), `${backupId}.tar.gz`);
 }
 
 function encryptedPath(serverId: string, backupId: string): string {
+  assertSafeBackupId(backupId);
   return path.join(serverBackupsDir(serverId), `${backupId}.tar.gz.enc`);
 }
 
@@ -126,8 +136,13 @@ export async function resolveBackupArchivePath(
   serverId: string,
   backupId: string,
 ): Promise<{ path: string; encrypted: boolean }> {
-  const enc = encryptedPath(serverId, backupId);
-  const plain = archivePath(serverId, backupId);
+  assertSafeBackupId(backupId);
+  const root = path.resolve(serverBackupsDir(serverId));
+  const enc = path.resolve(encryptedPath(serverId, backupId));
+  const plain = path.resolve(archivePath(serverId, backupId));
+  if (!enc.startsWith(root + path.sep) || !plain.startsWith(root + path.sep)) {
+    throw new Error("Invalid backup id");
+  }
   try {
     await fs.access(enc);
     return { path: enc, encrypted: true };

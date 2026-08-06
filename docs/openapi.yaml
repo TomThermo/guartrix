@@ -444,7 +444,12 @@ paths:
               required: [planSlug]
               properties:
                 planSlug: { type: string }
-                redirectUrl: { type: string, format: uri }
+                redirectUrl:
+                  {
+                    type: string,
+                    format: uri,
+                    description: "Optional; must be same-origin /account/billing… or ignored",
+                  }
       responses:
         "201":
           description: "{ payment, checkoutUrl }"

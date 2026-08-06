@@ -169,9 +169,16 @@ export async function startServerIfLicensed(serverId: string): Promise<void> {
   await assertLicenseAllowsPower();
   const server = await prisma.server.findUnique({
     where: { id: serverId },
-    select: { id: true, memoryMb: true, diskMb: true },
+    select: { id: true, memoryMb: true, diskMb: true, suspended: true },
   });
   if (!server) throw new Error("Server not found");
+  if (server.suspended) {
+    const err = new Error(
+      "Server is suspended — contact support or renew your plan",
+    ) as Error & { code?: string };
+    err.code = "SERVER_SUSPENDED";
+    throw err;
+  }
   await assertLicensePanelQuota(server.memoryMb, {
     excludeServerId: server.id,
   });

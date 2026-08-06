@@ -26,8 +26,14 @@ import {
   permissionDeniedMessage,
   userCanAccessServer,
 } from "../servers/server-access.js";
+import { getRateLimitStore } from "../rate-limit-store.js";
 
-export { hashPassword, needsRehash, verifyPassword } from "./password-hash.js";
+export {
+  hashPassword,
+  needsRehash,
+  TIMING_DUMMY_HASH,
+  verifyPassword,
+} from "./password-hash.js";
 
 declare module "fastify" {
   interface Session {
@@ -50,10 +56,33 @@ export async function verifySessionPassword(
   request: FastifyRequest,
   password: string,
 ): Promise<boolean> {
-  if (!password || !request.session.userId) return false;
-  const user = await prisma.user.findUnique({ where: { id: request.session.userId } });
+  return verifyAccountPassword(request, password);
+}
+
+/**
+ * Verify the panel password for the authenticated account (cookie session or
+ * Client API key). Used for destructive actions like server delete.
+ * Failed attempts are rate-limited per user to slow offline guessing with a stolen gt_ key.
+ */
+export async function verifyAccountPassword(
+  request: FastifyRequest,
+  password: string,
+): Promise<boolean> {
+  if (!password) return false;
+  const userId = request.session.userId ?? request.apiKeyAuth?.userId;
+  if (!userId) return false;
+
+  const store = getRateLimitStore();
+  const limitKey = `account-password:${userId}`;
+  // 10 attempts / 15 minutes — independent of the global API-key rate limit.
+  const hit = await store.hit(limitKey, 15 * 60_000, 10);
+  if (hit.limited) return false;
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) return false;
-  return verifyPassword(password, user.passwordHash);
+  const ok = await verifyPassword(password, user.passwordHash);
+  if (ok) await store.clear(limitKey);
+  return ok;
 }
 
 /** Match usernames case-insensitively. */

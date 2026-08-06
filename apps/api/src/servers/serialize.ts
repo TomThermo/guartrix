@@ -55,6 +55,7 @@ export function toMcServer(server: ServerWithRelations): McServer {
     autoRestart: server.autoRestart,
     startOnBoot: server.startOnBoot,
     stoppedByUser: server.stoppedByUser,
+    suspended: server.suspended ?? false,
     ownerAlertWebhookUrl: server.ownerAlertWebhookUrl ?? null,
     ownerAlertEmail: server.ownerAlertEmail ?? null,
     discordStatusWebhookUrl: server.discordStatusWebhookUrl ?? null,

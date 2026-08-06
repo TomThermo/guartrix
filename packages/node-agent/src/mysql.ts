@@ -377,6 +377,46 @@ export async function deleteMysqlDatabase(input: {
   );
 }
 
+/** Rotate MySQL user password without recreating the database. */
+export async function rotateMysqlPassword(input: {
+  name: string;
+  username: string;
+  password: string;
+  remote?: string;
+}): Promise<CreateMysqlDatabaseResult> {
+  await ensureMysql();
+  const name = assertIdent(input.name, "database name");
+  const username = assertIdent(input.username, "username");
+  const password = input.password;
+  if (!password || password.length < 8) {
+    throw new Error("MySQL password must be at least 8 characters");
+  }
+  const remote = (input.remote ?? "172.%").trim() || "172.%";
+  if (remote !== "%" && !/^[a-zA-Z0-9._%-]+$/.test(remote)) {
+    throw new Error("Invalid MySQL remote host pattern");
+  }
+
+  const user = escapeSqlLiteral(username);
+  const pass = escapeSqlLiteral(password);
+  const host = escapeSqlLiteral(remote);
+
+  await mysqlExecSql(
+    [
+      `ALTER USER '${user}'@'${host}' IDENTIFIED BY '${pass}';`,
+      `FLUSH PRIVILEGES;`,
+    ].join(" "),
+  );
+
+  return {
+    name,
+    username,
+    password,
+    host: mysqlPublicHost(),
+    port: mysqlPort(),
+    remote,
+  };
+}
+
 /** Dump a database to a host file via mysqldump inside the MySQL container. */
 export async function dumpMysqlDatabaseToFile(
   name: string,

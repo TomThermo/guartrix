@@ -171,6 +171,11 @@ export default defineConfig(({ mode }) => {
           timeout: 0,
           proxyTimeout: 0,
           agent: new http.Agent({ keepAlive: true, maxSockets: 32 }),
+          bypass(req) {
+            const url = req.url?.split("?")[0] ?? "";
+            // Vite matches prefix `/api`, which would steal `/api-docs`.
+            if (url === "/api-docs" || url.startsWith("/api-docs/")) return url;
+          },
         },
         "/ws": {
           target: `ws://${API_HOST}:${API_PORT}`,

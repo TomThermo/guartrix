@@ -8,6 +8,7 @@ import type { ConsoleMessage } from "@msm/shared";
 import {
   createMysqlDatabase,
   deleteMysqlDatabase,
+  rotateMysqlPassword,
   dumpMysqlDatabaseToFile,
   restoreMysqlDatabaseFromFile,
   ensureMysql,
@@ -128,6 +129,20 @@ export function registerMysqlRoutes(app: FastifyInstance): void {
     try {
       await deleteMysqlDatabase(parsed.data);
       return { ok: true };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return reply.status(400).send({ error: message });
+    }
+  });
+
+  app.post("/mysql/databases/password", async (request, reply) => {
+    const parsed = mysqlCreateSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.status(400).send({ error: parsed.error.flatten() });
+    }
+    try {
+      const rotated = await rotateMysqlPassword(parsed.data);
+      return { ok: true, database: rotated };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       return reply.status(400).send({ error: message });

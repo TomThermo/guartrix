@@ -35,6 +35,15 @@ export function hashPassword(password: string, salt?: string): string {
 }
 
 /**
+ * Precomputed scrypt hash for login/SFTP timing equalization.
+ * Fixed salt so unknown-user paths cost one verify, not hash+verify.
+ */
+export const TIMING_DUMMY_HASH = hashPassword(
+  "timing-dummy",
+  "00000000000000000000000000000000",
+);
+
+/**
  * Accepts versioned `scrypt$v1$…` and legacy `salt:hash` (colon-separated hex).
  */
 export function verifyPassword(password: string, stored: string): boolean {
