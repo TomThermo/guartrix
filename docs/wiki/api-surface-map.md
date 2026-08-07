@@ -32,7 +32,7 @@ Routes live under `apps/api/src/routes/` — **one folder per API area**, one fi
 |--------|----------|
 | `auth/` | Session login/register (`session.ts`), panel users (`users.ts`), 2FA, invites |
 | `account/` | Profile API, GDPR, push, Client `gt_` keys, SFTP `gtap_` passwords |
-| `admin/` | Panel settings, license, status, global activity |
+| `admin/` | Panel settings, license, status, global activity, server-backups fleet retention |
 | `billing/` | User checkout (`user.ts`), admin plans (`admin.ts`), Application plans (`application.ts`), shared schemas (`serialize.ts`) |
 | `nodes/` | Node CRUD + daemon SFTP auth callback |
 | `servers/` | Client `/api/servers/*` (power, files, backups, DBs, addons, tasks, …) |
