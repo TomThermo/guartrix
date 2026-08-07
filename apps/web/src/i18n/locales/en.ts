@@ -1195,7 +1195,28 @@ export const en = {
     nodeTabOverview: "Overview",
     nodeTabSettings: "Settings",
     nodeTabBasic: "Basic Settings",
+    nodeTabConfig: "Configuration File",
     nodeTabAllocations: "Allocations",
+    nodeConfigLoading: "Loading configuration…",
+    nodeConfigFileTitle: "daemon.env",
+    nodeConfigInstructions:
+      "Save this file on the node as {path}, then start the daemon (or use Auto Deploy / Install via SSH).",
+    nodeConfigLocalHint:
+      "This is the local panel node. Config usually lives at {path} on the panel host.",
+    nodeConfigNeedsToken:
+      "Daemon token is not in the vault. Reset the authorization token to generate a new config file.",
+    nodeCopyConfig: "Copy config",
+    nodeCopyCommand: "Copy command",
+    nodeAutoDeploy: "Auto Deploy Command",
+    nodeAutoDeployHint:
+      "Run on a fresh Ubuntu VPS as root. Downloads install-daemon.sh from this panel and configures the node.",
+    nodeConfigConnectUrl: "Panel → daemon URL",
+    nodeConfigListenPort: "Daemon listen port",
+    nodeResetToken: "Reset Authorization Token",
+    nodeResetTokenConfirm:
+      "Generate a new token? Update daemon.env on the node (or reinstall) afterwards.",
+    nodeResetTokenNotice:
+      "New token created — copy the updated daemon.env below onto the node.",
     nodeDisplayName: "Display Name",
     nodeDomainName: "Domain Name",
     nodeConnectPort: "Port",

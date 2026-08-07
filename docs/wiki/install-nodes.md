@@ -27,7 +27,7 @@ Remote config lives at **`/var/lib/guartrix/daemon.env`** (not `$INSTALL_DIR/dat
 
 ![Add node wizard](assets/06-add-node-modal.png)
 
-For an existing remote node, open the node (table row / edit). **Basic Settings** covers display name, domain, connect port, and SSL mode (HTTP / HTTPS / HTTPS with reverse proxy), with live DNS validation. **Overview** shows live host CPU, memory, and storage. Use **Install daemon** on Overview to reopen the wizard.
+For an existing remote node, open the node (table row / edit). **Basic Settings** covers display name, domain, connect port, and SSL mode. **Configuration File** shows `daemon.env` to copy onto the node (`/var/lib/guartrix/daemon.env`), an auto-deploy command, and token reset — like Pelican/Pterodactyl’s config.yml flow. **Overview** has live host stats and **Install daemon** (SSH wizard).
 
 See also the [Panel guide](panel-guide.md) for the rest of the admin UI.
 

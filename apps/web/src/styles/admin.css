@@ -395,6 +395,21 @@
   background: rgba(255, 255, 255, 0.08);
 }
 
+.node-config-pre {
+  max-height: 22rem;
+  overflow: auto;
+  margin: 0;
+  padding: 0.85rem 1rem;
+  border-radius: var(--bh-radius-sm, 0.4rem);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--bh-text, #e8ecef);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 /* Account security */
 .account-page .account-prefs-grid {
   display: grid;

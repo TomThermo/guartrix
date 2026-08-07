@@ -1202,7 +1202,28 @@ export const nl: Messages = {
     nodeTabOverview: "Overzicht",
     nodeTabSettings: "Instellingen",
     nodeTabBasic: "Basisinstellingen",
+    nodeTabConfig: "Configuratiebestand",
     nodeTabAllocations: "Allocaties",
+    nodeConfigLoading: "Configuratie laden…",
+    nodeConfigFileTitle: "daemon.env",
+    nodeConfigInstructions:
+      "Sla dit bestand op de node op als {path} en start daarna de daemon (of gebruik Auto Deploy / Install via SSH).",
+    nodeConfigLocalHint:
+      "Dit is de lokale panel-node. Config staat meestal op {path} op de panel-host.",
+    nodeConfigNeedsToken:
+      "Daemon-token zit niet in de vault. Reset de autorisatie-token om een nieuw configbestand te maken.",
+    nodeCopyConfig: "Config kopiëren",
+    nodeCopyCommand: "Commando kopiëren",
+    nodeAutoDeploy: "Auto-deploy-commando",
+    nodeAutoDeployHint:
+      "Voer uit op een verse Ubuntu-VPS als root. Downloadt install-daemon.sh van dit paneel en configureert de node.",
+    nodeConfigConnectUrl: "Paneel → daemon-URL",
+    nodeConfigListenPort: "Daemon-luisterpoort",
+    nodeResetToken: "Autorisatie-token resetten",
+    nodeResetTokenConfirm:
+      "Nieuwe token genereren? Werk daarna daemon.env op de node bij (of herinstalleer).",
+    nodeResetTokenNotice:
+      "Nieuwe token aangemaakt — kopieer de bijgewerkte daemon.env hieronder naar de node.",
     nodeDisplayName: "Weergavenaam",
     nodeDomainName: "Domeinnaam",
     nodeConnectPort: "Poort",

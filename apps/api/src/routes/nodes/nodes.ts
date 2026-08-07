@@ -463,11 +463,21 @@ export function registerNodeRoutes(app: FastifyInstance): void {
       const panelUrl = panelPublicBase();
       const repoUrl = defaultRepoUrl();
       const sftpPort = node.sftpPort || 2022;
+      /** Connect port may be public HTTPS (443); behind a proxy the daemon still listens on 8081. */
+      const listenPort = node.behindProxy ? 8081 : node.daemonPort;
+      const configPath = node.isLocal
+        ? "data/daemon.env"
+        : "/var/lib/guartrix/daemon.env";
       const envBody = [
         `# Guartrix remote daemon — node ${node.name} (${node.id})`,
+        `# Save as ${configPath}`,
+        `# Panel connect URL: ${nodePublicUrl(node)}`,
+        node.behindProxy
+          ? `# behindProxy: panel uses HTTPS to the public host; daemon listens on ${listenPort}`
+          : `# scheme=${node.scheme}`,
         `DAEMON_TOKEN=${token}`,
         `DAEMON_NODE_ID=${node.id}`,
-        `DAEMON_PORT=${node.daemonPort}`,
+        `DAEMON_PORT=${listenPort}`,
         `DAEMON_HOST=0.0.0.0`,
         `DATA_DIR=/var/lib/guartrix`,
         `PUBLIC_HOST=${node.fqdn}`,
@@ -487,7 +497,7 @@ export function registerNodeRoutes(app: FastifyInstance): void {
         token,
         nodeId: node.id,
         fqdn: node.fqdn,
-        daemonPort: node.daemonPort,
+        daemonPort: listenPort,
         panelUrl,
         sftpPort,
         repoUrl,
@@ -498,7 +508,10 @@ export function registerNodeRoutes(app: FastifyInstance): void {
         token,
         publicUrl: nodePublicUrl(node),
         envFile: envBody,
+        configPath,
+        listenPort,
         installCommand,
+        autoDeployCommand: installCommand,
         curlInstall,
         repoUrl,
         sshHostKeyFingerprint: node.sshHostKeyFingerprint ?? null,
@@ -506,7 +519,8 @@ export function registerNodeRoutes(app: FastifyInstance): void {
           "Easiest: fill in SSH details below and click “Install via SSH” (panel connects and installs).",
           "First SSH: confirm the host-key fingerprint, then trust it (stored on the node).",
           "Or SSH to the VPS yourself and run the install command (curl | bash).",
-          `Firewall: daemon ${node.daemonPort}/tcp is restricted to the panel host when possible; keep ${sftpPort}/tcp + game ports open.`,
+          `Manual: copy daemon.env to ${configPath} on the node, then start the daemon.`,
+          `Firewall: daemon ${listenPort}/tcp is restricted to the panel host when possible; keep ${sftpPort}/tcp + game ports open.`,
           "Click “Test connection” in the panel.",
         ],
       };

@@ -60,7 +60,10 @@ export const nodesApi = {
       token: string;
       publicUrl: string;
       envFile: string;
+      configPath?: string;
+      listenPort?: number;
       installCommand: string;
+      autoDeployCommand?: string;
       curlInstall?: string;
       repoUrl?: string;
       steps: string[];

@@ -15,6 +15,7 @@ import { api } from "../../api";
 import { useI18n } from "../../i18n/react";
 import { copyText, formatGb } from "../../utils";
 import { NodePortPoolPanel } from "../NodePortPoolPanel";
+import { NodeConfigPanel } from "./NodeConfigPanel";
 import { NodeLiveStats } from "./NodeLiveStats";
 
 function statusVariant(
@@ -63,7 +64,7 @@ export function parseDaemonPublicUrl(raw: string): {
   };
 }
 
-type TabId = "overview" | "settings" | "allocations";
+type TabId = "overview" | "settings" | "config" | "allocations";
 type SslMode = "http" | "https" | "https-proxy";
 
 function sslModeFromNode(node: DaemonNode): SslMode {
@@ -331,6 +332,12 @@ export function NodeEditModal({
               </Nav.Link>
             </Nav.Item>
             <Nav.Item>
+              <Nav.Link eventKey="config">
+                <i className="fa-solid fa-file-code me-1" aria-hidden />
+                {t("admin.nodeTabConfig")}
+              </Nav.Link>
+            </Nav.Item>
+            <Nav.Item>
               <Nav.Link eventKey="allocations">
                 <i className="fa-solid fa-ethernet me-1" aria-hidden />
                 {t("admin.nodeTabAllocations")}
@@ -581,6 +588,32 @@ export function NodeEditModal({
                     )}
                   </Button>
                 </Form>
+              </section>
+            </Tab.Pane>
+
+            <Tab.Pane eventKey="config">
+              <section className="admin-inset-card">
+                <h2 className="admin-section-title mb-3">
+                  <i className="fa-solid fa-file-code" aria-hidden />
+                  {t("admin.nodeTabConfig")}
+                </h2>
+                <NodeConfigPanel
+                  node={node}
+                  active={tab === "config"}
+                  busy={busy}
+                  onBusy={onBusy}
+                  onError={(msg) => {
+                    setLocalError(msg);
+                    onError(msg);
+                  }}
+                  onNotice={(msg) => {
+                    setLocalNotice(msg);
+                    onNotice(msg);
+                  }}
+                  onNewToken={onNewToken}
+                  onChanged={onChanged}
+                  onInstallViaSsh={onInstall}
+                />
               </section>
             </Tab.Pane>
 

@@ -3,6 +3,11 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.3.4] — 2026-08-07
+
+### Added
+- Admin → Nodes **Configuration File** tab: copy `daemon.env`, auto-deploy command, reset authorization token, and Install via SSH (Pterodactyl/Pelican-style manual install)
+
 ## [1.3.3] — 2026-08-07
 
 ### Added
