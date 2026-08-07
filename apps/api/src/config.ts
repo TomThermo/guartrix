@@ -86,6 +86,34 @@ export const config = {
   },
   /** Optional shell hook after backup (placeholders: {path} {serverId} {backupId} {fileName}). */
   backupOffsiteCmd: process.env.BACKUP_OFFSITE_CMD?.trim() || "",
+  /** Panel product name shown in the UI (Admin → Settings). */
+  appName: (process.env.APP_NAME?.trim() || "Guartrix").slice(0, 64),
+  /** Path or URL for navbar logo (empty = icon mark). */
+  appLogo: process.env.APP_LOGO?.trim() || "",
+  /** Path or URL for favicon (empty = /favicon.ico). */
+  appFavicon: process.env.APP_FAVICON?.trim() || "/favicon.ico",
+  /** Extra verbose errors for operators (not a full Laravel-style debug dump). */
+  debugMode:
+    process.env.PANEL_DEBUG === "1" ||
+    process.env.PANEL_DEBUG === "true" ||
+    process.env.APP_DEBUG === "1" ||
+    process.env.APP_DEBUG === "true",
+  unitPrefix: (process.env.UNIT_PREFIX?.trim().toLowerCase() === "decimal"
+    ? "decimal"
+    : "binary") as "binary" | "decimal",
+  navigationType: (() => {
+    const v = (process.env.NAVIGATION_TYPE?.trim().toLowerCase() || "mixed");
+    return v === "sidebar" || v === "topbar" || v === "mixed" ? v : "mixed";
+  })() as "sidebar" | "topbar" | "mixed",
+  displayWidth: (() => {
+    const v = (process.env.DISPLAY_WIDTH?.trim().toLowerCase() || "xl");
+    return v === "2xl" || v === "full" || v === "xl" ? v : "xl";
+  })() as "xl" | "2xl" | "full",
+  trustProxy:
+    process.env.TRUST_PROXY === "true" || process.env.TRUST_PROXY === "1",
+  trustedProxies: (
+    process.env.TRUSTED_PROXIES || "127.0.0.1,::1,::ffff:127.0.0.1"
+  ).trim(),
   rootDir,
 };
 

@@ -3,6 +3,17 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.3.0] — 2026-08-07
+
+### Added
+
+- **Admin → Settings** Pelican-style expansion: branding (app name / logo / favicon), Backup tab, Misc (debug, unit prefix, nav preference, display width), trusted proxies (+ Cloudflare IP preset) on Security.
+- Public `GET /api/public/branding` drives navbar title, favicon, and layout width.
+
+### Changed
+
+- Settings tabs: General · Mail · Backup · Security · Misc · Alerts · Go-live.
+
 ## [1.2.9] — 2026-08-07
 
 ### Changed

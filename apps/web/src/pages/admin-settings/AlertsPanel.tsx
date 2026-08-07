@@ -8,8 +8,6 @@ export type AlertsPanelProps = {
   onAlertEmailChange: (value: string) => void;
   activityAlertMute: string;
   onActivityAlertMuteChange: (value: string) => void;
-  backupOffsiteCmd: string;
-  onBackupOffsiteCmdChange: (value: string) => void;
 };
 
 export function AlertsPanel({
@@ -19,8 +17,6 @@ export function AlertsPanel({
   onAlertEmailChange,
   activityAlertMute,
   onActivityAlertMuteChange,
-  backupOffsiteCmd,
-  onBackupOffsiteCmdChange,
 }: AlertsPanelProps) {
   const { t } = useI18n();
 
@@ -57,18 +53,6 @@ export function AlertsPanel({
           <Form.Text muted>
             {t("adminSettings.activityAlertMuteHelp")}
           </Form.Text>
-        </Form.Group>
-      </Col>
-      <Col xs={12}>
-        <Form.Group>
-          <Form.Label>{t("adminSettings.backupOffsiteCmd")}</Form.Label>
-          <Form.Control
-            value={backupOffsiteCmd}
-            onChange={(e) => onBackupOffsiteCmdChange(e.target.value)}
-            placeholder='rclone copy "{path}" b2:bucket/{serverId}/'
-            className="font-monospace"
-          />
-          <Form.Text muted>{t("adminSettings.backupOffsiteCmdHelp")}</Form.Text>
         </Form.Group>
       </Col>
     </Row>

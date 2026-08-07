@@ -14,18 +14,29 @@ import { useAuth } from "../auth";
 import { AdminPageShell, AdminPanelCard } from "../components/admin/AdminPageShell";
 import { useI18n } from "../i18n/react";
 import { AlertsPanel } from "./admin-settings/AlertsPanel";
+import { BackupSettingsPanel } from "./admin-settings/BackupSettingsPanel";
 import { GeneralPanel } from "./admin-settings/GeneralPanel";
 import { GoLivePanel } from "./admin-settings/GoLivePanel";
 import { MailPanel } from "./admin-settings/MailPanel";
+import { MiscPanel } from "./admin-settings/MiscPanel";
 import { SecurityPanel } from "./admin-settings/SecurityPanel";
 import type { ReadinessReport } from "../api/admin-settings";
 
-type SettingsTab = "general" | "mail" | "security" | "alerts" | "golive";
+type SettingsTab =
+  | "general"
+  | "mail"
+  | "backup"
+  | "security"
+  | "misc"
+  | "alerts"
+  | "golive";
 
 const SETTINGS_TABS: Array<{ id: SettingsTab; icon: string; labelKey: string }> = [
   { id: "general", icon: "fa-sliders", labelKey: "adminSettings.tabGeneral" },
   { id: "mail", icon: "fa-paper-plane", labelKey: "adminSettings.tabMail" },
+  { id: "backup", icon: "fa-box-archive", labelKey: "adminSettings.tabBackup" },
   { id: "security", icon: "fa-shield-halved", labelKey: "adminSettings.tabSecurity" },
+  { id: "misc", icon: "fa-ellipsis", labelKey: "adminSettings.tabMisc" },
   { id: "alerts", icon: "fa-bell", labelKey: "adminSettings.tabAlerts" },
   { id: "golive", icon: "fa-rocket", labelKey: "adminSettings.tabGoLive" },
 ];
@@ -40,6 +51,9 @@ export function AdminSettingsPage() {
   const [notice, setNotice] = useState<string | null>(null);
   const [restartRequired, setRestartRequired] = useState(false);
 
+  const [appName, setAppName] = useState("Guartrix");
+  const [appLogo, setAppLogo] = useState("");
+  const [appFavicon, setAppFavicon] = useState("/favicon.ico");
   const [publicHost, setPublicHost] = useState("");
   const [publicBaseUrl, setPublicBaseUrl] = useState("");
   const [registrationEnabled, setRegistrationEnabled] = useState(true);
@@ -64,7 +78,16 @@ export function AdminSettingsPage() {
 
   const [httpsEnabled, setHttpsEnabled] = useState(true);
   const [sessionSecure, setSessionSecure] = useState(true);
+  const [trustProxy, setTrustProxy] = useState(true);
+  const [trustedProxies, setTrustedProxies] = useState("");
   const [twoFactorRoles, setTwoFactorRoles] = useState<string[]>([]);
+
+  const [debugMode, setDebugMode] = useState(false);
+  const [unitPrefix, setUnitPrefix] = useState<"binary" | "decimal">("binary");
+  const [navigationType, setNavigationType] = useState<
+    "sidebar" | "topbar" | "mixed"
+  >("mixed");
+  const [displayWidth, setDisplayWidth] = useState<"xl" | "2xl" | "full">("xl");
 
   const [activityWebhookUrl, setActivityWebhookUrl] = useState("");
   const [alertEmail, setAlertEmail] = useState("");
@@ -82,6 +105,9 @@ export function AdminSettingsPage() {
   const [slaPentestAck, setSlaPentestAck] = useState(false);
 
   const applyView = useCallback((s: PanelSettings) => {
+    setAppName(s.appName || "Guartrix");
+    setAppLogo(s.appLogo || "");
+    setAppFavicon(s.appFavicon || "/favicon.ico");
     setPublicHost(s.publicHost);
     setPublicBaseUrl(s.publicBaseUrl);
     setRegistrationEnabled(s.registrationEnabled);
@@ -104,7 +130,23 @@ export function AdminSettingsPage() {
     setSmtpConfigured(s.smtpConfigured);
     setHttpsEnabled(s.httpsEnabled);
     setSessionSecure(s.sessionSecure);
+    setTrustProxy(Boolean(s.trustProxy));
+    setTrustedProxies(s.trustedProxies || "");
     setTwoFactorRoles(s.twoFactorRequiredRoles ?? []);
+    setDebugMode(Boolean(s.debugMode));
+    setUnitPrefix(s.unitPrefix === "decimal" ? "decimal" : "binary");
+    setNavigationType(
+      s.navigationType === "sidebar" ||
+        s.navigationType === "topbar" ||
+        s.navigationType === "mixed"
+        ? s.navigationType
+        : "mixed",
+    );
+    setDisplayWidth(
+      s.displayWidth === "2xl" || s.displayWidth === "full" || s.displayWidth === "xl"
+        ? s.displayWidth
+        : "xl",
+    );
     setActivityWebhookUrl(s.activityWebhookUrl);
     setAlertEmail(s.alertEmail);
     setActivityAlertMute((s.activityAlertMute ?? []).join(", "));
@@ -169,6 +211,9 @@ export function AdminSettingsPage() {
     setNotice(null);
     try {
       const body: Parameters<typeof api.updatePanelSettings>[0] = {
+        appName,
+        appLogo,
+        appFavicon,
         publicHost,
         publicBaseUrl,
         registrationEnabled,
@@ -186,6 +231,12 @@ export function AdminSettingsPage() {
         smtpUser,
         httpsEnabled,
         sessionSecure,
+        trustProxy,
+        trustedProxies,
+        debugMode,
+        unitPrefix,
+        navigationType,
+        displayWidth,
         twoFactorRequiredRoles: twoFactorRoles,
         activityWebhookUrl,
         alertEmail,
@@ -205,6 +256,7 @@ export function AdminSettingsPage() {
       }
       const res = await api.updatePanelSettings(body);
       applyView(res);
+      window.dispatchEvent(new Event("guartrix:branding-changed"));
       if (tab === "golive") void refreshReadiness();
       if (res.restartRequired) {
         setRestartRequired(true);
@@ -317,6 +369,12 @@ export function AdminSettingsPage() {
             <AdminPanelCard>
               {tab === "general" && (
                 <GeneralPanel
+                  appName={appName}
+                  onAppNameChange={setAppName}
+                  appLogo={appLogo}
+                  onAppLogoChange={setAppLogo}
+                  appFavicon={appFavicon}
+                  onAppFaviconChange={setAppFavicon}
                   publicHost={publicHost}
                   onPublicHostChange={setPublicHost}
                   publicBaseUrl={publicBaseUrl}
@@ -329,8 +387,6 @@ export function AdminSettingsPage() {
                   onDefaultMaxMemoryMbChange={setDefaultMaxMemoryMb}
                   defaultMaxDatabases={defaultMaxDatabases}
                   onDefaultMaxDatabasesChange={setDefaultMaxDatabases}
-                  defaultBackupKeepCount={defaultBackupKeepCount}
-                  onDefaultBackupKeepCountChange={setDefaultBackupKeepCount}
                   cloudflareDomain={cloudflareDomain}
                   onCloudflareDomainChange={setCloudflareDomain}
                   cloudflareZoneId={cloudflareZoneId}
@@ -338,8 +394,6 @@ export function AdminSettingsPage() {
                   cloudflareApiToken={cloudflareApiToken}
                   onCloudflareApiTokenChange={setCloudflareApiToken}
                   cloudflareApiTokenSet={cloudflareApiTokenSet}
-                  backupOffsiteCmd={backupOffsiteCmd}
-                  onBackupOffsiteCmdChange={setBackupOffsiteCmd}
                 />
               )}
 
@@ -366,17 +420,43 @@ export function AdminSettingsPage() {
                 />
               )}
 
+              {tab === "backup" && (
+                <BackupSettingsPanel
+                  defaultBackupKeepCount={defaultBackupKeepCount}
+                  onDefaultBackupKeepCountChange={setDefaultBackupKeepCount}
+                  backupOffsiteCmd={backupOffsiteCmd}
+                  onBackupOffsiteCmdChange={setBackupOffsiteCmd}
+                />
+              )}
+
               {tab === "security" && (
                 <SecurityPanel
                   httpsEnabled={httpsEnabled}
                   onHttpsEnabledChange={setHttpsEnabled}
                   sessionSecure={sessionSecure}
                   onSessionSecureChange={setSessionSecure}
+                  trustProxy={trustProxy}
+                  onTrustProxyChange={setTrustProxy}
+                  trustedProxies={trustedProxies}
+                  onTrustedProxiesChange={setTrustedProxies}
                   redisInfo={redisInfo}
                   busy={busy}
                   onTestRedis={() => void onTestRedis()}
                   twoFactorRoles={twoFactorRoles}
                   onToggleRole={toggleRole}
+                />
+              )}
+
+              {tab === "misc" && (
+                <MiscPanel
+                  debugMode={debugMode}
+                  onDebugModeChange={setDebugMode}
+                  unitPrefix={unitPrefix}
+                  onUnitPrefixChange={setUnitPrefix}
+                  navigationType={navigationType}
+                  onNavigationTypeChange={setNavigationType}
+                  displayWidth={displayWidth}
+                  onDisplayWidthChange={setDisplayWidth}
                 />
               )}
 
@@ -388,8 +468,6 @@ export function AdminSettingsPage() {
                   onAlertEmailChange={setAlertEmail}
                   activityAlertMute={activityAlertMute}
                   onActivityAlertMuteChange={setActivityAlertMute}
-                  backupOffsiteCmd={backupOffsiteCmd}
-                  onBackupOffsiteCmdChange={setBackupOffsiteCmd}
                 />
               )}
 
@@ -409,7 +487,19 @@ export function AdminSettingsPage() {
                   onSlaIncidentRunbookAckChange={setSlaIncidentRunbookAck}
                   slaPentestAck={slaPentestAck}
                   onSlaPentestAckChange={setSlaPentestAck}
-                  onGoToTab={(t) => setTab(t)}
+                  onGoToTab={(next) => {
+                    if (
+                      next === "general" ||
+                      next === "mail" ||
+                      next === "backup" ||
+                      next === "security" ||
+                      next === "misc" ||
+                      next === "alerts" ||
+                      next === "golive"
+                    ) {
+                      setTab(next);
+                    }
+                  }}
                 />
               )}
 

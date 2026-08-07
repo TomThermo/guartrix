@@ -40,7 +40,7 @@ export type GoLivePanelProps = {
   onSlaIncidentRunbookAckChange: (v: boolean) => void;
   slaPentestAck: boolean;
   onSlaPentestAckChange: (v: boolean) => void;
-  onGoToTab: (tab: "general" | "mail" | "security" | "alerts") => void;
+  onGoToTab: (tab: "general" | "mail" | "backup" | "security" | "misc" | "alerts") => void;
 };
 
 function toneVariant(tone: string): "success" | "warning" | "danger" | "secondary" | "info" {

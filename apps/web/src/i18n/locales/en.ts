@@ -1323,16 +1323,55 @@ export const en = {
       "Configure domain, mail, security, and alerts — like Pterodactyl Admin → Settings.",
     tabGeneral: "General",
     tabMail: "Mail",
+    tabBackup: "Backup",
     tabSecurity: "Security",
+    tabMisc: "Misc",
     tabAlerts: "Alerts",
     tabGoLive: "Go-live",
+    brandingHeading: "Branding",
+    publicHeading: "Public URL",
+    appName: "App name",
+    appNameHelp: "Shown in the navbar and browser title.",
+    appLogo: "App logo",
+    appLogoHelp:
+      "Path under the web public folder or absolute URL. Leave blank to use the icon mark.",
+    appFavicon: "App favicon",
+    appFaviconHelp: "Path under the web public folder or absolute URL.",
+    trustProxy: "Trust proxy (TRUST_PROXY)",
+    trustProxyHelp:
+      "Enable behind prod-web / Cloudflare / nginx. Restart required after change.",
+    trustedProxies: "Trusted proxies",
+    trustedProxiesHelp:
+      "Comma- or newline-separated IPs / CIDRs allowed to set X-Forwarded-For. Restart required.",
+    trustedProxiesClear: "Clear",
+    trustedProxiesCloudflare: "Set to Cloudflare IPs",
+    testRedis: "Test Redis",
+    debugMode: "Debug mode",
+    debugModeHelp:
+      "Shows an operator banner and marks the panel as debug. Not a full stack-trace dump.",
+    debugModeBanner: "Debug mode is on — turn it off in Admin → Settings → Misc for production.",
+    unitPrefix: "Unit prefix",
+    unitPrefixDecimal: "Decimal prefix (MB/GB)",
+    unitPrefixBinary: "Binary prefix (MiB/GiB)",
+    navigationType: "Default navigation type",
+    navigationTypeHelp:
+      "Stored preference. Admin already uses a sidebar; full topbar/mixed layouts may expand later.",
+    navSidebar: "Sidebar",
+    navTopbar: "Topbar",
+    navMixed: "Mixed",
+    displayWidth: "Display width",
+    displayWidthFull: "Full width",
+    miscDeferredNote:
+      "Captcha, OAuth login, and user avatar uploads are not available yet — they need separate integrations.",
+    backupEncryptionNote:
+      "At-rest backup encryption is configured via BACKUP_ENCRYPTION / BACKUP_ENCRYPTION_KEY in .env (not edited here).",
     loadFailed: "Failed to load settings",
     saveFailed: "Failed to save settings",
     saved: "Settings saved.",
     savedRestart:
-      "Settings saved. Restart the panel (`bash build/start.sh`) for HTTPS / public URL changes.",
+      "Settings saved. Restart the panel (`bash build/start.sh`) for HTTPS / proxy / public URL changes.",
     restartBanner:
-      "A panel restart is required for HTTPS and public URL changes to fully apply.",
+      "A panel restart is required for HTTPS, trusted proxy, and public URL changes to fully apply.",
     goLiveHeading: "SaaS / production readiness",
     goLiveHelp:
       "Live checks for SMTP, HTTPS, 2FA, Redis, alerts, and job queues. Fix fails before opening registration on the public internet. SLA boxes are operator attestations — not auto-verified.",
@@ -1382,7 +1421,7 @@ export const en = {
     defaultMaxDatabases: "Default max databases",
     defaultBackupKeepCount: "Default backup retention (new servers)",
     defaultBackupKeepCountHelp:
-      "Used when creating a server unless a different limit is chosen. Manage all servers under Admin → Server backups.",
+      "Used when creating a server unless a different limit is chosen. Manage all servers under Admin → Servers.",
     cloudflareHeading: "Cloudflare DNS (Minecraft subdomains)",
     cfDomain: "Apex domain",
     cfZoneId: "Zone ID",

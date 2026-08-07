@@ -5,11 +5,41 @@ import { useI18n } from "../../i18n/react";
 
 const ROLE_OPTIONS = ["ADMIN", "OPERATOR", "VIEWER"] as const;
 
+/** Cloudflare published edge ranges (v4+v6) — paste into TRUSTED_PROXIES behind orange-cloud. */
+export const CLOUDFLARE_TRUSTED_PROXIES = [
+  "173.245.48.0/20",
+  "103.21.244.0/22",
+  "103.22.200.0/22",
+  "103.31.4.0/22",
+  "141.101.64.0/18",
+  "108.162.192.0/18",
+  "190.93.240.0/20",
+  "188.114.96.0/20",
+  "197.234.240.0/22",
+  "198.41.128.0/17",
+  "162.158.0.0/15",
+  "104.16.0.0/13",
+  "104.24.0.0/14",
+  "172.64.0.0/13",
+  "131.0.72.0/22",
+  "2400:cb00::/32",
+  "2606:4700::/32",
+  "2803:f800::/32",
+  "2405:b500::/32",
+  "2405:8100::/32",
+  "2a06:98c0::/29",
+  "2c0f:f248::/32",
+].join(",");
+
 export type SecurityPanelProps = {
   httpsEnabled: boolean;
   onHttpsEnabledChange: (value: boolean) => void;
   sessionSecure: boolean;
   onSessionSecureChange: (value: boolean) => void;
+  trustProxy: boolean;
+  onTrustProxyChange: (value: boolean) => void;
+  trustedProxies: string;
+  onTrustedProxiesChange: (value: string) => void;
   redisInfo: PanelSettings["redis"] | null;
   busy: boolean;
   onTestRedis: () => void;
@@ -22,6 +52,10 @@ export function SecurityPanel({
   onHttpsEnabledChange,
   sessionSecure,
   onSessionSecureChange,
+  trustProxy,
+  onTrustProxyChange,
+  trustedProxies,
+  onTrustedProxiesChange,
   redisInfo,
   busy,
   onTestRedis,
@@ -54,6 +88,50 @@ export function SecurityPanel({
         />
       </Col>
       <Col xs={12}>
+        <Form.Check
+          type="switch"
+          id="trust-proxy"
+          label={t("adminSettings.trustProxy")}
+          checked={trustProxy}
+          onChange={(e) => onTrustProxyChange(e.target.checked)}
+        />
+        <Form.Text muted className="d-block">
+          {t("adminSettings.trustProxyHelp")}
+        </Form.Text>
+      </Col>
+      <Col xs={12}>
+        <Form.Group>
+          <Form.Label>{t("adminSettings.trustedProxies")}</Form.Label>
+          <Form.Control
+            as="textarea"
+            rows={4}
+            value={trustedProxies}
+            onChange={(e) => onTrustedProxiesChange(e.target.value)}
+            className="font-monospace"
+            placeholder="127.0.0.1,::1"
+          />
+          <Form.Text muted>{t("adminSettings.trustedProxiesHelp")}</Form.Text>
+          <div className="d-flex flex-wrap gap-2 mt-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline-secondary"
+              onClick={() => onTrustedProxiesChange("")}
+            >
+              {t("adminSettings.trustedProxiesClear")}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline-primary"
+              onClick={() => onTrustedProxiesChange(CLOUDFLARE_TRUSTED_PROXIES)}
+            >
+              {t("adminSettings.trustedProxiesCloudflare")}
+            </Button>
+          </div>
+        </Form.Group>
+      </Col>
+      <Col xs={12}>
         <AdminInsetCard>
           <div className="fw-semibold mb-1">
             <i className="fa-solid fa-database me-2 text-secondary" aria-hidden />
@@ -78,34 +156,31 @@ export function SecurityPanel({
               <dt>URL</dt>
               <dd className="font-monospace">{redisInfo.urlMasked ?? "—"}</dd>
               <dt>Sessions</dt>
-              <dd>{redisInfo.sessionStore}</dd>
-              <dt>Rate limits</dt>
-              <dd>{redisInfo.rateLimitStore}</dd>
-              <dt>Latency</dt>
               <dd>
-                {redisInfo.latencyMs != null
-                  ? `${redisInfo.latencyMs} ms`
-                  : "—"}
+                <code>{redisInfo.sessionStore}</code>
+              </dd>
+              <dt>Rate limits</dt>
+              <dd>
+                <code>{redisInfo.rateLimitStore}</code>
               </dd>
             </dl>
           ) : (
-            <p className="small text-secondary">Loading…</p>
+            <p className="small text-secondary">—</p>
           )}
           <Button
             type="button"
-            variant="outline-secondary"
             size="sm"
+            variant="outline-secondary"
             disabled={busy}
             onClick={onTestRedis}
           >
-            Test Redis connection
+            {t("adminSettings.testRedis")}
           </Button>
         </AdminInsetCard>
       </Col>
       <Col xs={12}>
-        <Form.Label className="fw-semibold">
-          {t("adminSettings.twoFactorRoles")}
-        </Form.Label>
+        <div className="fw-semibold mb-2">{t("adminSettings.twoFactorRoles")}</div>
+        <p className="small text-secondary">{t("adminSettings.twoFactorRolesHelp")}</p>
         <div className="d-flex flex-wrap gap-3">
           {ROLE_OPTIONS.map((role) => (
             <Form.Check
@@ -118,7 +193,6 @@ export function SecurityPanel({
             />
           ))}
         </div>
-        <Form.Text muted>{t("adminSettings.twoFactorRolesHelp")}</Form.Text>
       </Col>
     </Row>
   );

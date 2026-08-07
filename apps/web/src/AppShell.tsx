@@ -12,6 +12,7 @@ import {
 import { api } from "./api";
 import { getAppVersionLabel } from "./app-version";
 import { useAuth } from "./auth";
+import { useBranding } from "./branding";
 import { useI18n } from "./i18n/react";
 
 export function PageFallback() {
@@ -33,6 +34,7 @@ export function ConsolePopoutShell({ children }: { children: ReactNode }) {
 export function AppShell({ children }: { children: ReactNode }) {
   const { logout, user } = useAuth();
   const { t } = useI18n();
+  const branding = useBranding();
   const location = useLocation();
   const isAdmin = user?.role === "ADMIN";
   const showCreate = canCreateServer(user);
@@ -52,6 +54,13 @@ export function AppShell({ children }: { children: ReactNode }) {
       return false;
     }
   });
+
+  const widthClass =
+    branding.displayWidth === "full"
+      ? "app-main--full"
+      : branding.displayWidth === "2xl"
+        ? "app-main--2xl"
+        : "";
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -125,10 +134,14 @@ export function AppShell({ children }: { children: ReactNode }) {
             onClick={closeNav}
           >
             <span className="brand-mark">
-              <i className="fa-solid fa-server" />
+              {branding.appLogo ? (
+                <img src={branding.appLogo} alt="" className="brand-mark-img" />
+              ) : (
+                <i className="fa-solid fa-server" />
+              )}
             </span>
             <span className="min-w-0">
-              <strong>Guartrix</strong>
+              <strong>{branding.appName}</strong>
               <small className="d-none d-sm-block text-secondary brand-tagline">
                 {t("nav.brandTagline")}
               </small>
@@ -249,7 +262,12 @@ export function AppShell({ children }: { children: ReactNode }) {
           </Navbar.Collapse>
         </Container>
       </Navbar>
-      <Container className="app-main">
+      <Container className={`app-main ${widthClass}`.trim()}>
+        {isAdmin && branding.debugMode && (
+          <Alert variant="warning" className="mt-3 mb-0">
+            {t("adminSettings.debugModeBanner")}
+          </Alert>
+        )}
         {isAdmin && !licenseOk && !licenseBannerDismissed && (
           <Alert
             variant="danger"
@@ -284,7 +302,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <footer className="main-footer">
         <Container className="main-footer-inner">
           <div className="main-footer-copy">
-            Copyright © 2026 · Powered by <strong>Guartrix</strong>{" "}
+            Copyright © 2026 · Powered by <strong>{branding.appName}</strong>{" "}
             <span className="main-footer-version" title={t("nav.version")}>
               {getAppVersionLabel()}
             </span>

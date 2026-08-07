@@ -117,7 +117,17 @@ export function formatWhen(iso: string | null | undefined): string {
 }
 
 export function formatBytes(bytes: number): string {
-  return sharedFormatBytes(bytes);
+  const decimal =
+    typeof document !== "undefined" &&
+    document.documentElement.dataset.unitPrefix === "decimal";
+  if (!decimal) return sharedFormatBytes(bytes);
+  if (!Number.isFinite(bytes) || bytes < 0) return "0 B";
+  if (bytes < 1000) return `${bytes} B`;
+  if (bytes < 1000 * 1000) return `${(bytes / 1000).toFixed(1)} KB`;
+  if (bytes < 1000 * 1000 * 1000) {
+    return `${(bytes / (1000 * 1000)).toFixed(1)} MB`;
+  }
+  return `${(bytes / (1000 * 1000 * 1000)).toFixed(2)} GB`;
 }
 
 export function formatGb(mb: number): string {

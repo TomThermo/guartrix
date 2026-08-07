@@ -67,6 +67,12 @@ Installer: `--mysql-docker` (default) or `--mysql-external` / `--database-url`.
 | `DEFAULT_MAX_MEMORY_MB` | New-user RAM quota (default **0**) |
 | `DEFAULT_MAX_DATABASES` | New-user DB quota (default **0**) |
 | `DEFAULT_BACKUP_KEEP_COUNT` | Default max backups kept for new servers (1–50, default **7**); overridable in Admin → Settings |
+| `APP_NAME` | Panel product name in navbar / title (default Guartrix); also Admin → Settings → General |
+| `APP_LOGO` / `APP_FAVICON` | Optional logo/favicon path or URL |
+| `PANEL_DEBUG` | Operator debug banner (`1`/`true`) |
+| `UNIT_PREFIX` | `binary` (default) or `decimal` for size labels |
+| `NAVIGATION_TYPE` | `sidebar` / `topbar` / `mixed` (stored preference) |
+| `DISPLAY_WIDTH` | `xl` / `2xl` / `full` content width |
 | `MAIL_FROM` | Envelope From for outbound mail |
 | `SMTP_HOST` / `SMTP_PORT` / `SMTP_SECURE` / `SMTP_USER` / `SMTP_PASS` | SMTP relay (when unset, mail goes to `data/mail-outbox/`) |
 | `SMTP_STARTTLS` | Force STARTTLS when not using implicit TLS (`SMTP_SECURE`) |

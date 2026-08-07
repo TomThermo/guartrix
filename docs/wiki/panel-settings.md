@@ -1,6 +1,6 @@
 # Panel settings (Admin UI)
 
-Admins configure panel-wide options under **Admin → Settings** (General, Mail, Security, Alerts, **Go-live**), similar to Pterodactyl’s admin settings.
+Admins configure panel-wide options under **Admin → Settings** (General, Mail, Backup, Security, Misc, Alerts, **Go-live**), similar to Pelican / Pterodactyl admin settings.
 
 ## What it stores
 
@@ -8,11 +8,15 @@ Overrides live in **`data/panel-settings.json`** (mode `0600`). Values merge on 
 
 | Tab | Examples |
 |-----|----------|
-| General | Public host / base URL, registration, default quotas, Cloudflare DNS |
+| General | App name / logo / favicon, public host / base URL, registration, default quotas, Cloudflare DNS |
 | Mail | `MAIL_FROM`, SMTP host/port/TLS/user/password, **Send test mail** |
-| Security | `HTTPS_ENABLED`, `SESSION_SECURE`, roles that must use 2FA; **Redis** status (read-only) + test connection |
+| Backup | Default backup retention, offsite hook command |
+| Security | `HTTPS_ENABLED`, `SESSION_SECURE`, `TRUST_PROXY` / trusted proxies (+ Cloudflare IP preset), 2FA roles; **Redis** status + test |
+| Misc | Debug banner, unit prefix (MB vs MiB), navigation preference, display width |
 | Alerts | Activity webhook, alert email, muted action keys |
 | Go-live | Live readiness checks (`GET /api/admin/readiness`), job queue status, SLA operator attestations |
+
+Public branding is also exposed at **`GET /api/public/branding`** for the web shell (no auth).
 
 Secrets (SMTP password, Cloudflare token) are never returned in full — leave the field blank to keep the current value.
 

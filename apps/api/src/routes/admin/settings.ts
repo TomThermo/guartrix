@@ -6,6 +6,7 @@ import { sendMail, isSmtpConfigured } from "../../mail.js";
 import {
   applyPanelSettings,
   getPanelSettingsView,
+  getPublicBranding,
   mergePanelSettingsPatch,
   readStoredSettings,
   restartRequiredForPatch,
@@ -15,6 +16,8 @@ import {
 } from "../../panel-settings.js";
 
 export function registerAdminSettingsRoutes(app: FastifyInstance): void {
+  app.get("/api/public/branding", async () => getPublicBranding());
+
   app.get("/api/admin/settings", async (request, reply) => {
     if (!(await requireAdmin(request, reply, "settings.read"))) return;
     return getPanelSettingsView();

@@ -1,8 +1,13 @@
-import { BACKUP_KEEP_COUNT_PRESETS } from "@msm/shared";
 import { Col, Form, Row } from "react-bootstrap";
 import { useI18n } from "../../i18n/react";
 
 export type GeneralPanelProps = {
+  appName: string;
+  onAppNameChange: (value: string) => void;
+  appLogo: string;
+  onAppLogoChange: (value: string) => void;
+  appFavicon: string;
+  onAppFaviconChange: (value: string) => void;
   publicHost: string;
   onPublicHostChange: (value: string) => void;
   publicBaseUrl: string;
@@ -15,8 +20,6 @@ export type GeneralPanelProps = {
   onDefaultMaxMemoryMbChange: (value: number) => void;
   defaultMaxDatabases: number;
   onDefaultMaxDatabasesChange: (value: number) => void;
-  defaultBackupKeepCount: number;
-  onDefaultBackupKeepCountChange: (value: number) => void;
   cloudflareDomain: string;
   onCloudflareDomainChange: (value: string) => void;
   cloudflareZoneId: string;
@@ -24,11 +27,15 @@ export type GeneralPanelProps = {
   cloudflareApiToken: string;
   onCloudflareApiTokenChange: (value: string) => void;
   cloudflareApiTokenSet: boolean;
-  backupOffsiteCmd: string;
-  onBackupOffsiteCmdChange: (value: string) => void;
 };
 
 export function GeneralPanel({
+  appName,
+  onAppNameChange,
+  appLogo,
+  onAppLogoChange,
+  appFavicon,
+  onAppFaviconChange,
   publicHost,
   onPublicHostChange,
   publicBaseUrl,
@@ -41,8 +48,6 @@ export function GeneralPanel({
   onDefaultMaxMemoryMbChange,
   defaultMaxDatabases,
   onDefaultMaxDatabasesChange,
-  defaultBackupKeepCount,
-  onDefaultBackupKeepCountChange,
   cloudflareDomain,
   onCloudflareDomainChange,
   cloudflareZoneId,
@@ -50,13 +55,60 @@ export function GeneralPanel({
   cloudflareApiToken,
   onCloudflareApiTokenChange,
   cloudflareApiTokenSet,
-  backupOffsiteCmd,
-  onBackupOffsiteCmdChange,
 }: GeneralPanelProps) {
   const { t } = useI18n();
 
   return (
     <Row className="g-3">
+      <Col xs={12}>
+        <h2 className="admin-section-title">
+          <i className="fa-solid fa-palette" aria-hidden />
+          {t("adminSettings.brandingHeading")}
+        </h2>
+      </Col>
+      <Col md={6}>
+        <Form.Group>
+          <Form.Label>{t("adminSettings.appName")}</Form.Label>
+          <Form.Control
+            value={appName}
+            onChange={(e) => onAppNameChange(e.target.value)}
+            required
+            maxLength={64}
+          />
+          <Form.Text muted>{t("adminSettings.appNameHelp")}</Form.Text>
+        </Form.Group>
+      </Col>
+      <Col md={6}>
+        <Form.Group>
+          <Form.Label>{t("adminSettings.appLogo")}</Form.Label>
+          <Form.Control
+            value={appLogo}
+            onChange={(e) => onAppLogoChange(e.target.value)}
+            placeholder="/logo.svg"
+            className="font-monospace"
+          />
+          <Form.Text muted>{t("adminSettings.appLogoHelp")}</Form.Text>
+        </Form.Group>
+      </Col>
+      <Col md={6}>
+        <Form.Group>
+          <Form.Label>{t("adminSettings.appFavicon")}</Form.Label>
+          <Form.Control
+            value={appFavicon}
+            onChange={(e) => onAppFaviconChange(e.target.value)}
+            placeholder="/favicon.ico"
+            className="font-monospace"
+          />
+          <Form.Text muted>{t("adminSettings.appFaviconHelp")}</Form.Text>
+        </Form.Group>
+      </Col>
+
+      <Col xs={12}>
+        <h2 className="admin-section-title">
+          <i className="fa-solid fa-globe" aria-hidden />
+          {t("adminSettings.publicHeading")}
+        </h2>
+      </Col>
       <Col md={6}>
         <Form.Group>
           <Form.Label>{t("adminSettings.publicHost")}</Form.Label>
@@ -126,24 +178,7 @@ export function GeneralPanel({
           />
         </Form.Group>
       </Col>
-      <Col md={4}>
-        <Form.Group>
-          <Form.Label>{t("adminSettings.defaultBackupKeepCount")}</Form.Label>
-          <Form.Select
-            value={defaultBackupKeepCount}
-            onChange={(e) =>
-              onDefaultBackupKeepCountChange(Number(e.target.value))
-            }
-          >
-            {BACKUP_KEEP_COUNT_PRESETS.map((n) => (
-              <option key={n} value={n}>
-                {t("backups.backupsCount", { n })}
-              </option>
-            ))}
-          </Form.Select>
-          <Form.Text muted>{t("adminSettings.defaultBackupKeepCountHelp")}</Form.Text>
-        </Form.Group>
-      </Col>
+
       <Col xs={12}>
         <h2 className="admin-section-title">
           <i className="fa-solid fa-cloud" aria-hidden />
@@ -183,18 +218,6 @@ export function GeneralPanel({
                 : t("adminSettings.secretEmpty")
             }
           />
-        </Form.Group>
-      </Col>
-      <Col xs={12}>
-        <Form.Group>
-          <Form.Label>{t("adminSettings.backupOffsiteCmd")}</Form.Label>
-          <Form.Control
-            value={backupOffsiteCmd}
-            onChange={(e) => onBackupOffsiteCmdChange(e.target.value)}
-            placeholder='rclone copy "{path}" b2:bucket/{serverId}/'
-            className="font-monospace"
-          />
-          <Form.Text muted>{t("adminSettings.backupOffsiteCmdHelp")}</Form.Text>
         </Form.Group>
       </Col>
     </Row>

@@ -28,6 +28,15 @@ export type PanelSettings = {
   activityAlertMute: string[];
   backupOffsiteCmd: string;
   backupOffsiteCmdSet: boolean;
+  appName: string;
+  appLogo: string;
+  appFavicon: string;
+  debugMode: boolean;
+  unitPrefix: "binary" | "decimal";
+  navigationType: "sidebar" | "topbar" | "mixed";
+  displayWidth: "xl" | "2xl" | "full";
+  trustProxy: boolean;
+  trustedProxies: string;
   redis: {
     configured: boolean;
     enabled: boolean;
@@ -73,6 +82,15 @@ export type PanelSettingsPatch = {
   alertEmail?: string;
   activityAlertMute?: string[] | string;
   backupOffsiteCmd?: string;
+  appName?: string;
+  appLogo?: string;
+  appFavicon?: string;
+  debugMode?: boolean;
+  unitPrefix?: "binary" | "decimal";
+  navigationType?: "sidebar" | "topbar" | "mixed";
+  displayWidth?: "xl" | "2xl" | "full";
+  trustProxy?: boolean;
+  trustedProxies?: string;
   slaRestoreDrillAt?: string | null;
   slaIncidentRunbookAck?: boolean;
   slaPentestAck?: boolean;
@@ -83,7 +101,7 @@ export type PanelSettingsPatch = {
 export type ReadinessCheck = {
   id: string;
   tone: "pass" | "warn" | "fail" | "info";
-  tab?: "general" | "mail" | "security" | "alerts" | "golive";
+  tab?: "general" | "mail" | "backup" | "security" | "misc" | "alerts" | "golive";
   detail?: string;
 };
 

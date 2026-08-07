@@ -37,6 +37,16 @@ export type PanelSettingsStored = {
   alertEmail?: string;
   activityAlertMute?: string[];
   backupOffsiteCmd?: string;
+  /** White-label / Pelican-style branding & misc (Admin → Settings). */
+  appName?: string;
+  appLogo?: string;
+  appFavicon?: string;
+  debugMode?: boolean;
+  unitPrefix?: "binary" | "decimal";
+  navigationType?: "sidebar" | "topbar" | "mixed";
+  displayWidth?: "xl" | "2xl" | "full";
+  trustProxy?: boolean;
+  trustedProxies?: string;
   /** Operator SLA attestations (Admin → Go-live). ISO dates / booleans. */
   slaRestoreDrillAt?: string | null;
   slaIncidentRunbookAck?: boolean;
@@ -74,6 +84,15 @@ export type PanelSettingsView = {
   activityAlertMute: string[];
   backupOffsiteCmd: string;
   backupOffsiteCmdSet: boolean;
+  appName: string;
+  appLogo: string;
+  appFavicon: string;
+  debugMode: boolean;
+  unitPrefix: "binary" | "decimal";
+  navigationType: "sidebar" | "topbar" | "mixed";
+  displayWidth: "xl" | "2xl" | "full";
+  trustProxy: boolean;
+  trustedProxies: string;
   /** Redis HA status (read-only; configure via install / .env). */
   redis: {
     configured: boolean;
@@ -99,6 +118,9 @@ const ENV_SYNC_KEYS = [
   "PUBLIC_BASE_URL",
   "SESSION_SECURE",
   "HTTPS_ENABLED",
+  "TRUST_PROXY",
+  "TRUSTED_PROXIES",
+  "APP_NAME",
 ] as const;
 
 function settingsPath(): string {
@@ -246,6 +268,39 @@ export function applyPanelSettings(stored: PanelSettingsStored): void {
   if (stored.backupOffsiteCmd !== undefined) {
     config.backupOffsiteCmd = String(stored.backupOffsiteCmd).trim();
   }
+  if (stored.appName !== undefined) {
+    config.appName = String(stored.appName).trim().slice(0, 64) || "Guartrix";
+  }
+  if (stored.appLogo !== undefined) {
+    config.appLogo = String(stored.appLogo).trim();
+  }
+  if (stored.appFavicon !== undefined) {
+    config.appFavicon = String(stored.appFavicon).trim() || "/favicon.ico";
+  }
+  if (stored.debugMode !== undefined) {
+    config.debugMode = Boolean(stored.debugMode);
+  }
+  if (stored.unitPrefix !== undefined) {
+    config.unitPrefix =
+      stored.unitPrefix === "decimal" ? "decimal" : "binary";
+  }
+  if (stored.navigationType !== undefined) {
+    const v = stored.navigationType;
+    config.navigationType =
+      v === "sidebar" || v === "topbar" || v === "mixed" ? v : "mixed";
+  }
+  if (stored.displayWidth !== undefined) {
+    const v = stored.displayWidth;
+    config.displayWidth = v === "2xl" || v === "full" || v === "xl" ? v : "xl";
+  }
+  if (stored.trustProxy !== undefined) {
+    config.trustProxy = Boolean(stored.trustProxy);
+    process.env.TRUST_PROXY = stored.trustProxy ? "1" : "0";
+  }
+  if (stored.trustedProxies !== undefined) {
+    config.trustedProxies = String(stored.trustedProxies).trim();
+    process.env.TRUSTED_PROXIES = config.trustedProxies;
+  }
   // Track HTTPS for GET view / env sync (prod-web still needs restart).
   if (stored.httpsEnabled !== undefined) {
     process.env.HTTPS_ENABLED = stored.httpsEnabled ? "true" : "false";
@@ -292,6 +347,15 @@ export async function getPanelSettingsView(): Promise<PanelSettingsView> {
     activityAlertMute: [...config.alerts.mutedActions],
     backupOffsiteCmd: config.backupOffsiteCmd,
     backupOffsiteCmdSet: Boolean(config.backupOffsiteCmd),
+    appName: config.appName,
+    appLogo: config.appLogo,
+    appFavicon: config.appFavicon,
+    debugMode: config.debugMode,
+    unitPrefix: config.unitPrefix,
+    navigationType: config.navigationType,
+    displayWidth: config.displayWidth,
+    trustProxy: config.trustProxy,
+    trustedProxies: config.trustedProxies,
     redis: {
       configured: redis.configured,
       enabled: redis.enabled,
@@ -337,6 +401,15 @@ export type PanelSettingsPatch = {
   alertEmail?: string;
   activityAlertMute?: string[] | string;
   backupOffsiteCmd?: string;
+  appName?: string;
+  appLogo?: string;
+  appFavicon?: string;
+  debugMode?: boolean;
+  unitPrefix?: "binary" | "decimal";
+  navigationType?: "sidebar" | "topbar" | "mixed";
+  displayWidth?: "xl" | "2xl" | "full";
+  trustProxy?: boolean;
+  trustedProxies?: string;
   slaRestoreDrillAt?: string | null;
   slaIncidentRunbookAck?: boolean;
   slaPentestAck?: boolean;
@@ -474,6 +547,47 @@ export function mergePanelSettingsPatch(
   if (patch.backupOffsiteCmd !== undefined) {
     next.backupOffsiteCmd = String(patch.backupOffsiteCmd).trim();
   }
+  if (patch.appName !== undefined) {
+    const v = String(patch.appName).trim().slice(0, 64);
+    if (!v) throw new Error("appName is required");
+    next.appName = v;
+  }
+  if (patch.appLogo !== undefined) {
+    next.appLogo = String(patch.appLogo).trim().slice(0, 500);
+  }
+  if (patch.appFavicon !== undefined) {
+    next.appFavicon = String(patch.appFavicon).trim().slice(0, 500) || "/favicon.ico";
+  }
+  if (patch.debugMode !== undefined) {
+    next.debugMode = Boolean(patch.debugMode);
+  }
+  if (patch.unitPrefix !== undefined) {
+    next.unitPrefix = patch.unitPrefix === "decimal" ? "decimal" : "binary";
+  }
+  if (patch.navigationType !== undefined) {
+    const v = patch.navigationType;
+    if (v !== "sidebar" && v !== "topbar" && v !== "mixed") {
+      throw new Error("navigationType must be sidebar, topbar, or mixed");
+    }
+    next.navigationType = v;
+  }
+  if (patch.displayWidth !== undefined) {
+    const v = patch.displayWidth;
+    if (v !== "xl" && v !== "2xl" && v !== "full") {
+      throw new Error("displayWidth must be xl, 2xl, or full");
+    }
+    next.displayWidth = v;
+  }
+  if (patch.trustProxy !== undefined) {
+    next.trustProxy = Boolean(patch.trustProxy);
+  }
+  if (patch.trustedProxies !== undefined) {
+    next.trustedProxies = String(patch.trustedProxies)
+      .split(/[\s,]+/)
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .join(",");
+  }
   if (patch.slaRestoreDrillAt !== undefined) {
     const v = patch.slaRestoreDrillAt;
     next.slaRestoreDrillAt =
@@ -542,6 +656,16 @@ export async function syncEnvFromSettings(
           ? "true"
           : "false",
     ],
+    [
+      "TRUST_PROXY",
+      stored.trustProxy === undefined
+        ? undefined
+        : stored.trustProxy
+          ? "1"
+          : "0",
+    ],
+    ["TRUSTED_PROXIES", stored.trustedProxies],
+    ["APP_NAME", stored.appName],
   ];
 
   let next = content;
@@ -565,6 +689,21 @@ export function restartRequiredForPatch(patch: PanelSettingsPatch): boolean {
     patch.publicHost !== undefined ||
     patch.publicBaseUrl !== undefined ||
     patch.httpsEnabled !== undefined ||
-    patch.sessionSecure !== undefined
+    patch.sessionSecure !== undefined ||
+    patch.trustProxy !== undefined ||
+    patch.trustedProxies !== undefined
   );
+}
+
+/** Unauthenticated branding/layout prefs for the web shell. */
+export function getPublicBranding() {
+  return {
+    appName: config.appName,
+    appLogo: config.appLogo,
+    appFavicon: config.appFavicon || "/favicon.ico",
+    unitPrefix: config.unitPrefix,
+    navigationType: config.navigationType,
+    displayWidth: config.displayWidth,
+    debugMode: config.debugMode,
+  };
 }
