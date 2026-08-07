@@ -3,6 +3,11 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.3.10] — 2026-08-07
+
+### Added
+- Admin sidebar badges: server / node / user counts next to Servers, Nodes, and Users
+
 ## [1.3.9] — 2026-08-07
 
 ### Added

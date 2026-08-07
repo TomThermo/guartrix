@@ -164,4 +164,8 @@ export const adminSettingsApi = {
       method: "POST",
       body: "{}",
     }),
+  getAdminNavCounts: () =>
+    request<{ servers: number; nodes: number; users: number }>(
+      "/api/admin/nav-counts",
+    ),
 };

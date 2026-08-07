@@ -20,7 +20,7 @@ Use this page as the visual tour. For deeper behavior, limits, and internal note
 
 ### Login
 
-Open the panel URL → sign in with your username and password. Admins open **Admin** in the top bar for **Status**, **Settings**, **Nodes**, **License**, **Activity**, **Billing**, and **Users**. Your account menu (username) has **Billing**, **Security**, and **Sign out**.
+Open the panel URL → sign in with your username and password. Admins open **Admin** in the top bar for **Status**, **Settings**, **Nodes**, **License**, **Activity**, **Billing**, and **Users**. The admin sidebar shows live **counts** next to Servers, Nodes, and Users. Your account menu (username) has **Billing**, **Security**, and **Sign out**.
 
 ![Login](assets/01-login.png)
 
