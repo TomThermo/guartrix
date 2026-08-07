@@ -3,6 +3,13 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.3.15] — 2026-08-07
+
+### Changed
+
+- Refreshed all wiki screenshots at fixed **1440×900** via demo admin (`scripts/ensure-demo-admin.mjs`, no 2FA banner).
+- Added `38-admin-servers.png` / `39-admin-settings.png`; capture script defaults to local demo login.
+
 ## [1.3.14] — 2026-08-07
 
 ### Changed

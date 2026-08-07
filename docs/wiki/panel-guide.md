@@ -78,8 +78,6 @@ Each row shows clickable chips for **disk used / limit**, **online players** (`0
 
 ![Create server](assets/03-create-server.png)
 
-> **Screenshot note:** `03-create-server.png` should show the **Backup retention** field under Resources. Re-run `scripts/capture-wiki-screenshots.mjs` after shipping UI that includes it.
-
 The same page has an **Import archive** tab to create a server from an existing world/server `.zip` or `.tar.gz` (same retention field applies). **Clone** lives on the server detail page (top actions).
 
 ![Import server](assets/37-import-server.png)
@@ -101,13 +99,15 @@ More: [Server management](server-management.md) · [Files and backups](files-and
 **Settings** — panel-wide configuration with top tabs: **General** (branding, public URL, registration, quotas, Cloudflare), **Mail**, **Backup** (default retention + offsite hook), **Security**, **Misc**, **Alerts**, **Go-live**.
 Overrides are stored in `data/panel-settings.json`; HTTPS/URL changes also update `.env` and need a panel restart.
 
+![Admin settings](assets/39-admin-settings.png)
+
 More: [Panel settings](panel-settings.md)
 
 ## Admin: Servers
 
 **Servers** (`/admin/servers`) — searchable table of every Minecraft server. Edit name, owner, RAM/disk/CPU, suspend, and **backup retention** in a modal; open full server settings for world/startup/mounts. Servers over their backup limit prune automatically on the next backup. The per-server **Backups** tab shows the keep limit **read-only**.
 
-> Screenshot `38-admin-servers.png` is produced by `scripts/capture-wiki-screenshots.mjs` — re-run on the operator host after deploy, then embed it here. (`/admin/server-backups` redirects here.)
+![Admin servers](assets/38-admin-servers.png)
 
 More: [Files and backups](files-and-backups.md) · [Server management](server-management.md)
 
@@ -263,8 +263,6 @@ More: [Networking and allocations](networking-and-allocations.md)
 Create archives, download/upload, and restore. The tab shows the **keep limit read-only** (set at create time or in **Admin → Servers**). Pair with **Automatic schedule** on the same tab for recurring backups, or with **Schedules** chains for backup → wait → restart flows. Panel default for new servers: **Admin → Settings → Backup**.
 
 ![Backups](assets/11-server-backups.png)
-
-> **Screenshot note:** `11-server-backups.png` should show create/schedule plus the read-only keep limit (not an editable retention form). Re-run the capture script after deploy.
 
 More: [Files and backups](files-and-backups.md)
 

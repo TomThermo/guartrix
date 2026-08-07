@@ -2,10 +2,14 @@
 /**
  * Capture wiki / README screenshots from the live panel.
  *
- * Usage:
- *   GUARTRIX_USER=admin GUARTRIX_PASS='…' GUARTRIX_SERVER_ID=… \
- *   GUARTRIX_TOTP_FROM_DB=1 \
+ * Recommended (local / operator demo, no 2FA banner):
+ *   GUARTRIX_BASE_URL=http://127.0.0.1:3080 \
+ *   GUARTRIX_USER=demo GUARTRIX_PASS='DemoScreenshots!2026' \
+ *   GUARTRIX_SERVER_ID=… GUARTRIX_DEMO_SERVER_NAME=server1 \
  *     node scripts/capture-wiki-screenshots.mjs
+ *
+ * Create/refresh the demo admin first:
+ *   node scripts/ensure-demo-admin.mjs
  *
  * Optional:
  *   GUARTRIX_DEMO_SERVER_NAME=server1  — hide other servers on dashboard
@@ -14,8 +18,10 @@
  *   GUARTRIX_TOTP_FROM_DB=1            — load/unseal admin TOTP from panel DB
  *   GUARTRIX_TOTP_SECRET               — base32 secret (when not using FROM_DB)
  *   GUARTRIX_TOTP                      — one-shot 6-digit code (overrides secret)
+ *   GUARTRIX_VIEWPORT=1440x900         — fixed screenshot size (default)
+ *   GUARTRIX_HIDE_2FA_BANNER=1         — strip 2FA-required UI from shots (default on)
  *
- * Requires: puppeteer installed in /tmp/gx-shot (or PUPPETEER_MODULE).
+ * Requires: puppeteer in /tmp/gx-shot (or PUPPETEER_MODULE) + Chrome/Chromium.
  */
 import { createRequire } from "node:module";
 import crypto from "node:crypto";
@@ -48,13 +54,20 @@ function loadEnvFile() {
 }
 loadEnvFile();
 
-const BASE = process.env.GUARTRIX_BASE_URL || "https://guartrix.com";
-const USER = process.env.GUARTRIX_USER || process.env.ADMIN_USERNAME || "admin";
+const BASE = process.env.GUARTRIX_BASE_URL || "http://127.0.0.1:3080";
+const USER = process.env.GUARTRIX_USER || "demo";
 const PASS = process.env.GUARTRIX_PASS || process.env.ADMIN_PASSWORD || "";
 const SERVER_ID = process.env.GUARTRIX_SERVER_ID || "";
 const DEMO_NAME = process.env.GUARTRIX_DEMO_SERVER_NAME || "server1";
 const SCRUB_IPS = process.env.GUARTRIX_SCRUB_IPS !== "0";
 const PLACEHOLDER_PLAYERS = process.env.GUARTRIX_PLACEHOLDER_PLAYERS !== "0";
+const HIDE_2FA_BANNER = process.env.GUARTRIX_HIDE_2FA_BANNER !== "0";
+const VIEWPORT = (() => {
+  const raw = (process.env.GUARTRIX_VIEWPORT || "1440x900").toLowerCase();
+  const m = raw.match(/^(\d+)\s*x\s*(\d+)$/);
+  if (!m) return { width: 1440, height: 900 };
+  return { width: Number(m[1]), height: Number(m[2]) };
+})();
 const TOTP_FROM_DB =
   process.env.GUARTRIX_TOTP_FROM_DB === "1" ||
   process.env.GUARTRIX_TOTP_FROM_DB === "true";
@@ -175,7 +188,42 @@ const PLACEHOLDERS = {
 
 async function sanitizePage(page) {
   await page.evaluate(
-    ({ demoName, scrubIps }) => {
+    ({ demoName, scrubIps, hide2fa }) => {
+      if (hide2fa) {
+        // Strip 2FA-required banner / account menu warning for clean docs shots
+        for (const el of document.querySelectorAll(".alert, .badge, [title]")) {
+          const text = (el.textContent || "").toLowerCase();
+          const title = (el.getAttribute("title") || "").toLowerCase();
+          if (
+            text.includes("two-factor") ||
+            text.includes("tweefactor") ||
+            title.includes("two-factor") ||
+            title.includes("tweefactor")
+          ) {
+            el.remove();
+          }
+        }
+        for (const el of document.querySelectorAll(
+          ".app-nav-account-toggle.btn-warning, .dropdown-toggle.btn-warning",
+        )) {
+          el.classList.remove("btn-warning");
+          el.classList.add("btn-outline-secondary");
+        }
+      }
+
+      // Hide free-tier / license warning banners for clean wiki shots
+      for (const el of document.querySelectorAll(".alert")) {
+        const text = (el.textContent || "").toLowerCase();
+        if (
+          text.includes("license") ||
+          text.includes("free tier") ||
+          text.includes("license_key") ||
+          text.includes("licentie")
+        ) {
+          el.remove();
+        }
+      }
+
       // Hide other servers on the dashboard list
       for (const row of document.querySelectorAll(".server-row")) {
         const nameEl = row.querySelector(".server-row-name");
@@ -220,7 +268,7 @@ async function sanitizePage(page) {
         }
       }
     },
-    { demoName: DEMO_NAME, scrubIps: SCRUB_IPS },
+    { demoName: DEMO_NAME, scrubIps: SCRUB_IPS, hide2fa: HIDE_2FA_BANNER },
   );
 }
 
@@ -234,12 +282,15 @@ async function waitForIcons(page) {
 }
 
 async function shot(page, name, opts = {}) {
-  await new Promise((r) => setTimeout(r, opts.delay ?? 400));
+  await new Promise((r) => setTimeout(r, opts.delay ?? 500));
   await waitForIcons(page);
   await sanitizePage(page);
+  // Default: fixed viewport size so every wiki asset is ~the same dimensions.
+  // Pass fullPage:true only when intentionally capturing tall pages.
   await page.screenshot({
     path: path.join(OUT, name),
-    fullPage: opts.fullPage ?? true,
+    fullPage: opts.fullPage ?? false,
+    type: "png",
   });
   console.log("wrote", name);
 }
@@ -298,16 +349,25 @@ async function main() {
   const browser = await puppeteer.launch({
     headless: true,
     ignoreHTTPSErrors: true,
+    executablePath:
+      process.env.PUPPETEER_EXECUTABLE_PATH ||
+      process.env.CHROME_PATH ||
+      "/usr/local/bin/google-chrome",
     args: [
       "--no-sandbox",
       "--disable-setuid-sandbox",
-      "--window-size=1440,900",
+      `--window-size=${VIEWPORT.width},${VIEWPORT.height}`,
       "--ignore-certificate-errors",
+      "--disable-dev-shm-usage",
     ],
-    defaultViewport: { width: 1440, height: 900 },
+    defaultViewport: { ...VIEWPORT, deviceScaleFactor: 1 },
   });
   const page = await browser.newPage();
   page.setDefaultTimeout(45000);
+  await page.setViewport({ ...VIEWPORT, deviceScaleFactor: 1 });
+  console.log(
+    `Capturing ${BASE} as ${USER} @ ${VIEWPORT.width}x${VIEWPORT.height}`,
+  );
 
   if (TOTP_FROM_DB) {
     TOTP_SECRET = await loadTotpSecretFromDb();
@@ -378,34 +438,34 @@ async function main() {
 
   // --- Login ---
   await page.goto(`${BASE}/login`, { waitUntil: "networkidle2" });
-  await page.waitForSelector(
-    'input[name="username"], input[type="text"], #username',
-  );
-  const userSel = (await page.$('input[name="username"]'))
-    ? 'input[name="username"]'
-    : (await page.$("#username"))
-      ? "#username"
+  await page.waitForSelector("#username, input[name='username'], input[type='text']");
+  const userSel = (await page.$("#username"))
+    ? "#username"
+    : (await page.$('input[name="username"]'))
+      ? 'input[name="username"]'
       : 'input[type="text"]';
-  const passSel = (await page.$('input[name="password"]'))
-    ? 'input[name="password"]'
-    : (await page.$("#password"))
-      ? "#password"
+  const passSel = (await page.$("#password"))
+    ? "#password"
+    : (await page.$('input[name="password"]'))
+      ? 'input[name="password"]'
       : 'input[type="password"]';
   await page.click(userSel, { clickCount: 3 });
-  await page.type(userSel, USER, { delay: 20 });
+  await page.keyboard.press("Backspace");
+  await page.type(userSel, USER, { delay: 15 });
   await page.click(passSel, { clickCount: 3 });
-  await page.type(passSel, PASS, { delay: 20 });
+  await page.keyboard.press("Backspace");
+  await page.type(passSel, PASS, { delay: 15 });
   // SPA login — do not wait for navigation (password step stays on /login for 2FA).
-  await page.click('button[type="submit"], .btn-primary');
-  await page
-    .waitForFunction(
+  await Promise.all([
+    page.waitForFunction(
       () =>
         Boolean(document.querySelector("#totp-code")) ||
         !location.pathname.includes("/login"),
       { timeout: 60000 },
-    )
-    .catch(() => {});
-  await new Promise((r) => setTimeout(r, 800));
+    ).catch(() => undefined),
+    page.click('button[type="submit"], .btn-primary'),
+  ]);
+  await new Promise((r) => setTimeout(r, 1000));
 
   // Admin 2FA: SPA stays on /login and shows #totp-code.
   const totpInput = await page.$("#totp-code, input[autocomplete='one-time-code']");
@@ -447,7 +507,7 @@ async function main() {
   await shot(page, "03-create-server.png");
 
   // Users
-  await page.goto(`${BASE}/users`, { waitUntil: "networkidle2" });
+  await page.goto(`${BASE}/admin/users`, { waitUntil: "networkidle2" });
   await shot(page, "04-users.png");
 
   // System / nodes
@@ -460,7 +520,7 @@ async function main() {
   }
 
   // Status
-  await page.goto(`${BASE}/statusline`, { waitUntil: "networkidle2" });
+  await page.goto(`${BASE}/admin/status`, { waitUntil: "networkidle2" });
   await shot(page, "07-statusline.png");
 
   // Admin activity

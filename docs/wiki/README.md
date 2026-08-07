@@ -134,25 +134,24 @@ All screenshots live under [`assets/`](assets/) and are embedded in the [Panel g
 
 ### Screenshot refresh (after UI changes)
 
-Re-capture on the **operator host** (live panel) when UI changes:
+Re-capture on a running panel (local or operator host):
 
 ```bash
-GUARTRIX_USER=admin GUARTRIX_PASS='…' GUARTRIX_SERVER_ID=… \
-GUARTRIX_TOTP_FROM_DB=1 \
+node scripts/ensure-demo-admin.mjs   # demo admin, no 2FA banner
+GUARTRIX_BASE_URL=http://127.0.0.1:3080 \
+GUARTRIX_USER=demo GUARTRIX_PASS='DemoScreenshots!2026' \
+GUARTRIX_SERVER_ID=… GUARTRIX_DEMO_SERVER_NAME=server1 \
+GUARTRIX_VIEWPORT=1440x900 \
   node scripts/capture-wiki-screenshots.mjs
 ```
 
-**After v1.2.3–1.3.x**, prioritize retaking:
+All assets are captured at a fixed **1440×900** viewport. The demo admin has `twoFactorRequired=false` and the capture script strips leftover 2FA / license banners.
 
-| Asset | Why |
-|-------|-----|
-| `03-create-server.png` | Backup retention field on create |
-| `11-server-backups.png` | Read-only keep limit + schedule/create (no editable retention form) |
-| `38-admin-servers.png` | Admin → Servers fleet editor |
-| `39-admin-settings.png` | Settings tabs (General / Backup / …) |
-| `02-dashboard.png` (and other full-page shots) | Footer product version + Admin nav layout |
-
-Cloud agent VMs usually cannot reach the production panel for capture — run the script on the operator checkout.
+| Asset | Notes |
+|-------|-------|
+| `01`–`37` | Full panel tour (refreshed together) |
+| `38-admin-servers.png` | Admin → Servers |
+| `39-admin-settings.png` | Admin → Settings |
 
 ## Version
 
