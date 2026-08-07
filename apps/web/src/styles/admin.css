@@ -410,6 +410,33 @@
   word-break: break-word;
 }
 
+.node-basic-settings {
+  max-width: min(72rem, 100%);
+}
+
+.node-ssl-toggle .btn {
+  font-size: 0.84rem;
+  font-weight: 600;
+  white-space: normal;
+  padding: 0.55rem 0.75rem;
+}
+
+@media (max-width: 575.98px) {
+  .node-ssl-toggle {
+    flex-direction: column;
+  }
+
+  .node-ssl-toggle .btn {
+    border-radius: var(--bh-radius-sm, 0.35rem) !important;
+    width: 100%;
+  }
+
+  .node-ssl-toggle .btn + .btn {
+    margin-left: 0 !important;
+    margin-top: 0.35rem;
+  }
+}
+
 /* Account security */
 .account-page .account-prefs-grid {
   display: grid;

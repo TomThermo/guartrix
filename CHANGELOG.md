@@ -3,6 +3,11 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.3.5] — 2026-08-07
+
+### Changed
+- Admin → Nodes Basic Settings: wider layout; SSL mode as three toggle buttons instead of a dropdown
+
 ## [1.3.4] — 2026-08-07
 
 ### Added
