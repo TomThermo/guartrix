@@ -395,6 +395,150 @@
   background: rgba(255, 255, 255, 0.08);
 }
 
+.node-overview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.node-overview__actions .admin-section-title {
+  margin-bottom: 0;
+}
+
+.node-info-tiles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.node-meta-tile,
+.node-stat-card {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--bh-radius-sm, 0.4rem);
+  background: rgba(0, 0, 0, 0.18);
+  padding: 0.65rem 0.75rem;
+  min-width: 0;
+}
+
+.node-meta-tile--wide {
+  grid-column: span 2;
+}
+
+.node-meta-tile__label,
+.node-stat-card__label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--bh-muted);
+  font-weight: 650;
+  margin-bottom: 0.2rem;
+}
+
+.node-meta-tile__value,
+.node-stat-card__value {
+  font-size: 0.92rem;
+  font-weight: 650;
+  color: var(--bh-text);
+  word-break: break-word;
+}
+
+.node-meta-tile__hint,
+.node-stat-card__hint,
+.node-stat-card__sub {
+  font-size: 0.72rem;
+  color: var(--bh-muted);
+  font-weight: 500;
+}
+
+.node-live-dash {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 0.85rem;
+  align-items: stretch;
+  margin-bottom: 1rem;
+}
+
+.node-live-dash__side {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+  align-content: start;
+}
+
+.node-live-dash__center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 12rem;
+  padding: 0.35rem 0.5rem;
+}
+
+.node-disk-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  text-align: center;
+}
+
+.node-disk-hero__svg {
+  color: var(--bh-text);
+  filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.25));
+}
+
+.node-disk-hero__legend {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+}
+
+.node-disk-hero__row {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.node-disk-hero__dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.node-disk-hero__dot--empty {
+  background: transparent;
+}
+
+@media (max-width: 991.98px) {
+  .node-info-tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .node-meta-tile--wide {
+    grid-column: span 2;
+  }
+
+  .node-live-dash {
+    grid-template-columns: 1fr;
+  }
+
+  .node-live-dash__center {
+    order: -1;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .node-info-tiles,
+  .node-live-dash__side {
+    grid-template-columns: 1fr;
+  }
+
+  .node-meta-tile--wide {
+    grid-column: auto;
+  }
+}
+
 .node-config-pre {
   max-height: 22rem;
   overflow: auto;

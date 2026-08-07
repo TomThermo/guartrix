@@ -19,87 +19,108 @@ function DiskPie({
   usedLabel,
   freeLabel,
   totalLabel,
+  size = 176,
 }: {
   usedPercent: number;
   usedLabel: string;
   freeLabel: string;
   totalLabel: string;
+  size?: number;
 }) {
   const { t } = useI18n();
   const pct = Math.max(0, Math.min(100, usedPercent));
-  const r = 36;
+  const r = size * 0.38;
+  const stroke = Math.max(14, size * 0.09);
   const c = 2 * Math.PI * r;
   const usedLen = (pct / 100) * c;
   const freeLen = c - usedLen;
   const color =
     pct >= 90 ? "var(--bs-danger)" : pct >= 70 ? "var(--bs-warning)" : "var(--bh-accent, #5dba6a)";
+  const mid = size / 2;
 
   return (
-    <div className="node-disk-pie d-flex align-items-center gap-3 flex-wrap">
+    <div className="node-disk-hero">
       <svg
-        width="96"
-        height="96"
-        viewBox="0 0 96 96"
-        className="node-disk-pie__svg flex-shrink-0"
+        width={size}
+        height={size}
+        viewBox={`0 0 ${size} ${size}`}
+        className="node-disk-hero__svg"
         aria-hidden
       >
-        <g transform="rotate(-90 48 48)">
+        <g transform={`rotate(-90 ${mid} ${mid})`}>
           <circle
-            cx="48"
-            cy="48"
+            cx={mid}
+            cy={mid}
             r={r}
             fill="none"
             stroke="rgba(255,255,255,0.08)"
-            strokeWidth="12"
+            strokeWidth={stroke}
           />
           <circle
-            cx="48"
-            cy="48"
+            cx={mid}
+            cy={mid}
             r={r}
             fill="none"
             stroke={color}
-            strokeWidth="12"
+            strokeWidth={stroke}
             strokeDasharray={`${usedLen} ${freeLen}`}
             strokeLinecap="butt"
           />
         </g>
         <text
-          x="48"
-          y="48"
+          x={mid}
+          y={mid - 8}
           textAnchor="middle"
           dominantBaseline="central"
-          className="node-disk-pie__pct"
           fill="currentColor"
-          fontSize="14"
+          fontSize={size * 0.16}
           fontWeight="700"
         >
           {pct.toFixed(0)}%
         </text>
+        <text
+          x={mid}
+          y={mid + size * 0.12}
+          textAnchor="middle"
+          fill="rgba(143, 163, 150, 0.95)"
+          fontSize={size * 0.065}
+          fontWeight="600"
+        >
+          {t("admin.nodeStorage")}
+        </text>
       </svg>
-      <div className="small min-w-0">
-        <div className="fw-semibold mb-1">{t("admin.nodeStorage")}</div>
-        <div className="d-flex align-items-center gap-2 mb-1">
-          <span
-            className="rounded-circle d-inline-block"
-            style={{ width: 8, height: 8, background: color }}
-          />
+      <div className="node-disk-hero__legend">
+        <div className="node-disk-hero__row">
+          <span className="node-disk-hero__dot" style={{ background: color }} />
           <span>
-            {t("admin.nodeDiskUsed")}: {usedLabel}
+            {t("admin.nodeDiskUsed")}: <strong>{usedLabel}</strong>
           </span>
         </div>
-        <div className="d-flex align-items-center gap-2 mb-1 text-secondary">
+        <div className="node-disk-hero__row text-secondary">
           <span
-            className="rounded-circle d-inline-block"
-            style={{ width: 8, height: 8, background: "rgba(255,255,255,0.2)" }}
+            className="node-disk-hero__dot"
+            style={{ background: "rgba(255,255,255,0.22)" }}
           />
           <span>
             {t("admin.nodeDiskFree")}: {freeLabel}
           </span>
         </div>
-        <div className="text-secondary">
-          {t("admin.nodeDiskTotal")}: {totalLabel}
+        <div className="node-disk-hero__row text-secondary">
+          <span className="node-disk-hero__dot node-disk-hero__dot--empty" />
+          <span>
+            {t("admin.nodeDiskTotal")}: {totalLabel}
+          </span>
         </div>
       </div>
+    </div>
+  );
+}
+
+function MetaTile({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+  return (
+    <div className="node-meta-tile">
+      <div className="node-meta-tile__label">{label}</div>
+      <div className={`node-meta-tile__value ${mono ? "font-monospace" : ""}`}>{value}</div>
     </div>
   );
 }
@@ -248,6 +269,8 @@ export function NodeLiveStats({
   const formatNet = (v: number) =>
     v >= 1024 ? `${(v / 1024).toFixed(1)}` : `${Math.round(v)}`;
   const chartId = `node_chart_${nodeId}`;
+  const latestRx = rxPoints.length ? rxPoints[rxPoints.length - 1]!.value : 0;
+  const latestTx = txPoints.length ? txPoints[txPoints.length - 1]!.value : 0;
 
   if (!active) return null;
 
@@ -278,30 +301,84 @@ export function NodeLiveStats({
         </Alert>
       )}
 
-      <dl className="admin-kv mb-3">
-        <dt>{t("admin.nodeDaemonVersion")}</dt>
-        <dd className="font-monospace">{daemon.daemonVersion}</dd>
-        <dt>{t("admin.nodeCpuThreads")}</dt>
-        <dd>{daemon.cpuCount}</dd>
-        <dt>{t("admin.nodeArch")}</dt>
-        <dd className="font-monospace">{daemon.arch}</dd>
-        <dt>{t("admin.nodeKernel")}</dt>
-        <dd className="font-monospace small">{daemon.osVersion}</dd>
-        <dt>{t("admin.nodeHostname")}</dt>
-        <dd className="text-truncate">{daemon.hostname}</dd>
-        <dt>{t("admin.nodeUptime")}</dt>
-        <dd>{formatUptime(daemon.uptime)}</dd>
-        {daemon.network && (
-          <>
-            <dt>{t("admin.nodeNetIn")}</dt>
-            <dd>{daemon.network.rxLabel}</dd>
-            <dt>{t("admin.nodeNetOut")}</dt>
-            <dd>{daemon.network.txLabel}</dd>
-          </>
-        )}
-      </dl>
+      <div className="node-live-dash">
+        <div className="node-live-dash__side">
+          <MetaTile
+            label={t("admin.nodeDaemonVersion")}
+            value={daemon.daemonVersion}
+            mono
+          />
+          <MetaTile label={t("admin.nodeCpuThreads")} value={String(daemon.cpuCount)} />
+          <MetaTile label={t("admin.nodeArch")} value={daemon.arch} mono />
+          <MetaTile label={t("admin.nodeKernel")} value={daemon.osVersion} mono />
+          <MetaTile label={t("admin.nodeHostname")} value={daemon.hostname} />
+          <MetaTile label={t("admin.nodeUptime")} value={formatUptime(daemon.uptime)} />
+        </div>
 
-      <section className="console-metrics node-live-metrics mb-3" aria-label={t("admin.nodeLiveCharts")}>
+        <div className="node-live-dash__center">
+          {daemon.disk ? (
+            <DiskPie
+              size={188}
+              usedPercent={daemon.disk.usedPercent}
+              usedLabel={daemon.disk.usedLabel}
+              freeLabel={daemon.disk.freeLabel}
+              totalLabel={daemon.disk.totalLabel}
+            />
+          ) : (
+            <p className="small text-secondary mb-0 text-center">
+              {t("admin.nodeDiskUnknown")}
+            </p>
+          )}
+        </div>
+
+        <div className="node-live-dash__side">
+          <div className="node-stat-card">
+            <div className="node-stat-card__label">{t("admin.nodeCpu")}</div>
+            <div className="node-stat-card__value text-success">
+              {cpuAbs.toFixed(0)}%
+              <span className="node-stat-card__sub">
+                {" "}
+                {t("admin.nodeOf")} {cpuCap}%
+              </span>
+            </div>
+          </div>
+          <div className="node-stat-card">
+            <div className="node-stat-card__label">{t("admin.nodeMemoryLive")}</div>
+            <div className="node-stat-card__value">
+              {formatGb(usedMb)}
+              <span className="node-stat-card__sub">
+                {" "}
+                {t("admin.nodeOf")} {formatGb(daemon.totalMemoryMb)}
+              </span>
+            </div>
+          </div>
+          <div className="node-stat-card">
+            <div className="node-stat-card__label">{t("admin.nodeNetIn")}</div>
+            <div className="node-stat-card__value" style={{ color: "#6a9ed4" }}>
+              {formatNet(latestRx)}
+              <span className="node-stat-card__sub">
+                {netMax >= 1024 ? " MiB/s" : " KiB/s"}
+              </span>
+            </div>
+            <div className="node-stat-card__hint">{daemon.network?.rxLabel ?? "—"} total</div>
+          </div>
+          <div className="node-stat-card">
+            <div className="node-stat-card__label">{t("admin.nodeNetOut")}</div>
+            <div className="node-stat-card__value" style={{ color: "#c9a066" }}>
+              {formatNet(latestTx)}
+              <span className="node-stat-card__sub">
+                {netMax >= 1024 ? " MiB/s" : " KiB/s"}
+              </span>
+            </div>
+            <div className="node-stat-card__hint">{daemon.network?.txLabel ?? "—"} total</div>
+          </div>
+        </div>
+      </div>
+
+      <section
+        className="console-metrics node-live-metrics mb-2"
+        aria-label={t("admin.nodeLiveCharts")}
+      >
         <div className="console-metrics__head">
           <h3 className="console-metrics__title">{t("admin.nodeLiveCharts")}</h3>
           <span className="console-metrics__hint">{t("admin.nodeLiveChartsHint")}</span>
@@ -366,18 +443,7 @@ export function NodeLiveStats({
         </div>
       </section>
 
-      {daemon.disk ? (
-        <DiskPie
-          usedPercent={daemon.disk.usedPercent}
-          usedLabel={daemon.disk.usedLabel}
-          freeLabel={daemon.disk.freeLabel}
-          totalLabel={daemon.disk.totalLabel}
-        />
-      ) : (
-        <p className="small text-secondary mb-0">{t("admin.nodeDiskUnknown")}</p>
-      )}
-
-      <div className="small text-secondary mt-3">
+      <div className="small text-secondary">
         {t("admin.nodeLiveRefresh", {
           at: data?.generatedAt
             ? new Date(data.generatedAt).toLocaleTimeString()

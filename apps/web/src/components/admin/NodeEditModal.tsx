@@ -9,7 +9,6 @@ import {
   Modal,
   Nav,
   Spinner,
-  Stack,
   Tab,
 } from "react-bootstrap";
 import { api } from "../../api";
@@ -348,51 +347,16 @@ export function NodeEditModal({
 
           <Tab.Content>
             <Tab.Pane eventKey="overview">
-              <div className="row g-3">
-                <div className="col-lg-7">
-                  <section className="admin-inset-card h-100">
-                    <h2 className="admin-section-title mb-3">
-                      <i className="fa-solid fa-circle-info" aria-hidden />
-                      {t("admin.nodeInformation")}
-                    </h2>
-                    <dl className="admin-kv mb-0">
-                      <dt>{t("admin.nodeType")}</dt>
-                      <dd>{node.isLocal ? t("admin.nodeLocal") : t("admin.nodeRemote")}</dd>
-                      <dt>{t("admin.nodeLocation")}</dt>
-                      <dd>{node.location || "—"}</dd>
-                      <dt>{t("admin.nodeAddress")}</dt>
-                      <dd className="font-monospace small">{node.publicUrl}</dd>
-                      <dt>{t("admin.nodeServers")}</dt>
-                      <dd>{node.serverCount}</dd>
-                      <dt>{t("admin.nodeRam")}</dt>
-                      <dd>
-                        {node.memoryMb > 0
-                          ? `${formatGb(node.memoryUsedMb)} / ${formatGb(node.memoryMb)} (${ramPct}%) ${t("admin.nodeAllocated")}`
-                          : "—"}
-                      </dd>
-                      <dt>{t("admin.nodeLastSeen")}</dt>
-                      <dd>
-                        {node.lastSeenAt
-                          ? new Date(node.lastSeenAt).toLocaleString()
-                          : "—"}
-                      </dd>
-                      <dt>SFTP</dt>
-                      <dd className="font-monospace small">
-                        {node.sftpHostname
-                          ? `${node.sftpHostname}:${node.sftpPort}`
-                          : "—"}
-                      </dd>
-                    </dl>
-                  </section>
-                </div>
-                <div className="col-lg-5">
-                  <section className="admin-inset-card h-100">
-                    <h2 className="admin-section-title mb-3">
+              <div className="node-overview">
+                <section className="admin-inset-card node-overview__actions">
+                  <div className="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <h2 className="admin-section-title mb-0">
                       <i className="fa-solid fa-gears" aria-hidden />
                       {t("admin.nodeActions")}
                     </h2>
-                    <Stack gap={2}>
+                    <div className="d-flex flex-wrap gap-2">
                       <Button
+                        size="sm"
                         variant="primary"
                         disabled={busy}
                         onClick={() => void onTest()}
@@ -401,51 +365,111 @@ export function NodeEditModal({
                           <Spinner size="sm" animation="border" />
                         ) : (
                           <>
-                            <i className="fa-solid fa-heart-pulse me-2" aria-hidden />
+                            <i className="fa-solid fa-heart-pulse me-1" aria-hidden />
                             {t("admin.testConnection")}
                           </>
                         )}
                       </Button>
                       {!node.isLocal && (
                         <Button
+                          size="sm"
                           variant="outline-primary"
                           disabled={busy}
                           onClick={() => onInstall(node)}
                         >
-                          <i className="fa-solid fa-download me-2" aria-hidden />
+                          <i className="fa-solid fa-download me-1" aria-hidden />
                           {t("admin.installDaemon")}
                         </Button>
                       )}
                       <Button
+                        size="sm"
                         variant="outline-secondary"
                         disabled={busy}
                         onClick={() => void onRegenerate()}
                       >
-                        <i className="fa-solid fa-key me-2" aria-hidden />
+                        <i className="fa-solid fa-key me-1" aria-hidden />
                         {t("admin.newToken")}
                       </Button>
                       {!node.isLocal && (
                         <Button
+                          size="sm"
                           variant="outline-danger"
                           disabled={busy}
                           onClick={() => void onDelete()}
                         >
-                          <i className="fa-solid fa-trash me-2" aria-hidden />
+                          <i className="fa-solid fa-trash me-1" aria-hidden />
                           {t("common.delete")}
                         </Button>
                       )}
-                    </Stack>
-                  </section>
-                </div>
-                <div className="col-12">
-                  <section className="admin-inset-card">
-                    <h2 className="admin-section-title mb-3">
-                      <i className="fa-solid fa-microchip" aria-hidden />
-                      {t("admin.nodeLiveTitle")}
-                    </h2>
-                    <NodeLiveStats nodeId={node.id} active={tab === "overview"} />
-                  </section>
-                </div>
+                    </div>
+                  </div>
+                </section>
+
+                <section className="admin-inset-card">
+                  <h2 className="admin-section-title mb-3">
+                    <i className="fa-solid fa-circle-info" aria-hidden />
+                    {t("admin.nodeInformation")}
+                  </h2>
+                  <div className="node-info-tiles">
+                    <div className="node-meta-tile">
+                      <div className="node-meta-tile__label">{t("admin.nodeType")}</div>
+                      <div className="node-meta-tile__value">
+                        {node.isLocal ? t("admin.nodeLocal") : t("admin.nodeRemote")}
+                      </div>
+                    </div>
+                    <div className="node-meta-tile">
+                      <div className="node-meta-tile__label">{t("admin.nodeLocation")}</div>
+                      <div className="node-meta-tile__value">{node.location || "—"}</div>
+                    </div>
+                    <div className="node-meta-tile">
+                      <div className="node-meta-tile__label">{t("admin.nodeServers")}</div>
+                      <div className="node-meta-tile__value">{node.serverCount}</div>
+                    </div>
+                    <div className="node-meta-tile">
+                      <div className="node-meta-tile__label">{t("admin.nodeRam")}</div>
+                      <div className="node-meta-tile__value">
+                        {node.memoryMb > 0
+                          ? `${formatGb(node.memoryUsedMb)} / ${formatGb(node.memoryMb)}`
+                          : "—"}
+                      </div>
+                      {node.memoryMb > 0 ? (
+                        <div className="node-meta-tile__hint">
+                          {ramPct}% {t("admin.nodeAllocated")}
+                        </div>
+                      ) : null}
+                    </div>
+                    <div className="node-meta-tile node-meta-tile--wide">
+                      <div className="node-meta-tile__label">{t("admin.nodeAddress")}</div>
+                      <div className="node-meta-tile__value font-monospace small">
+                        {node.publicUrl}
+                      </div>
+                    </div>
+                    <div className="node-meta-tile">
+                      <div className="node-meta-tile__label">SFTP</div>
+                      <div className="node-meta-tile__value font-monospace small">
+                        {node.sftpHostname
+                          ? `${node.sftpHostname}:${node.sftpPort}`
+                          : "—"}
+                      </div>
+                    </div>
+                    <div className="node-meta-tile">
+                      <div className="node-meta-tile__label">{t("admin.nodeLastSeen")}</div>
+                      <div className="node-meta-tile__value small">
+                        {node.lastSeenAt
+                          ? new Date(node.lastSeenAt).toLocaleString()
+                          : "—"}
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <section className="admin-inset-card">
+                  <h2 className="admin-section-title mb-3">
+                    <i className="fa-solid fa-microchip" aria-hidden />
+                    {t("admin.nodeLiveTitle")}
+                  </h2>
+                  <NodeLiveStats nodeId={node.id} active={tab === "overview"} />
+                </section>
               </div>
             </Tab.Pane>
 

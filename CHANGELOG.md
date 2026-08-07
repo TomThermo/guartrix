@@ -3,6 +3,11 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.3.7] — 2026-08-07
+
+### Changed
+- Admin → Nodes Overview: denser dashboard layout (info tiles + side-by-side live stats, larger centered disk pie, charts below)
+
 ## [1.3.6] — 2026-08-07
 
 ### Added
