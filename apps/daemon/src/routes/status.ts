@@ -9,6 +9,7 @@ import {
   hostDiskUsage,
   hostLoadAvg,
   hostLocalIps,
+  hostNetworkTotals,
   hostNodeName,
   hostPublicIp,
   hostTotalMemoryGb,
@@ -70,11 +71,12 @@ export function registerDaemonStatusRoutes(
   /** Full health snapshot for the /statusline admin dashboard. */
   app.get("/status", async () => {
     const cpuCount = hostCpuCount();
-    const [mysql, containers, dockerVersion, disk] = await Promise.all([
+    const [mysql, containers, dockerVersion, disk, network] = await Promise.all([
       getMysqlStatus().catch(() => null),
       listGuartrixContainers().catch(() => []),
       getDockerVersion().catch(() => "unknown"),
       hostDiskUsage().catch(() => null),
+      hostNetworkTotals().catch(() => ({ rxBytes: 0, txBytes: 0 })),
     ]);
 
     // Prefer live resourceMonitor cache (Docker Engine stream); fill gaps via CLI
@@ -151,6 +153,12 @@ export function registerDaemonStatusRoutes(
             freeLabel: formatBytes(disk.freeBytes),
           }
         : null,
+      network: {
+        rxBytes: network.rxBytes,
+        txBytes: network.txBytes,
+        rxLabel: formatBytes(network.rxBytes),
+        txLabel: formatBytes(network.txBytes),
+      },
       mysql,
       sftp: sftpSnapshot(deps.getSftpHandle()),
       containers: containersWithStats,

@@ -53,7 +53,9 @@ export {
   hostCpuCount,
   hostLoadAvg,
   hostDiskUsage,
+  hostNetworkTotals,
   type HostDiskUsage,
+  type HostNetworkTotals,
 } from "./host-resources.js";
 
 export {

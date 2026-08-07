@@ -154,6 +154,12 @@ export interface StatusNode {
       usedLabel: string;
       freeLabel: string;
     } | null;
+    network?: {
+      rxBytes: number;
+      txBytes: number;
+      rxLabel: string;
+      txLabel: string;
+    } | null;
   };
   mysql?: {
     running: boolean;

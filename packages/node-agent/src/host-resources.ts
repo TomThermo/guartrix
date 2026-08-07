@@ -79,3 +79,41 @@ export async function hostDiskUsage(dirPath?: string): Promise<HostDiskUsage> {
   const usedPercent = totalBytes > 0 ? Math.round((usedBytes / totalBytes) * 1000) / 10 : 0;
   return { totalBytes, usedBytes, freeBytes, usedPercent };
 }
+
+export interface HostNetworkTotals {
+  rxBytes: number;
+  txBytes: number;
+}
+
+/**
+ * Cumulative host NIC counters (all non-loopback interfaces) from /proc/net/dev.
+ * Returns zeros when unavailable (e.g. non-Linux).
+ */
+export async function hostNetworkTotals(): Promise<HostNetworkTotals> {
+  try {
+    const raw = await fsp.readFile("/proc/net/dev", "utf8");
+    let rxBytes = 0;
+    let txBytes = 0;
+    for (const line of raw.split("\n")) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("Inter") || trimmed.startsWith("face")) {
+        continue;
+      }
+      const colon = trimmed.indexOf(":");
+      if (colon < 0) continue;
+      const iface = trimmed.slice(0, colon).trim();
+      if (!iface || iface === "lo") continue;
+      const cols = trimmed
+        .slice(colon + 1)
+        .trim()
+        .split(/\s+/);
+      const rx = Number(cols[0]);
+      const tx = Number(cols[8]);
+      if (Number.isFinite(rx)) rxBytes += rx;
+      if (Number.isFinite(tx)) txBytes += tx;
+    }
+    return { rxBytes, txBytes };
+  } catch {
+    return { rxBytes: 0, txBytes: 0 };
+  }
+}

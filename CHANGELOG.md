@@ -3,6 +3,11 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.3.6] — 2026-08-07
+
+### Added
+- Admin → Nodes Overview: console-style live charts for host CPU, memory, and network in/out (daemon reports NIC totals from `/proc/net/dev`)
+
 ## [1.3.5] — 2026-08-07
 
 ### Changed

@@ -355,7 +355,7 @@ export function NodeEditModal({
                       <i className="fa-solid fa-circle-info" aria-hidden />
                       {t("admin.nodeInformation")}
                     </h2>
-                    <dl className="admin-kv mb-3">
+                    <dl className="admin-kv mb-0">
                       <dt>{t("admin.nodeType")}</dt>
                       <dd>{node.isLocal ? t("admin.nodeLocal") : t("admin.nodeRemote")}</dd>
                       <dt>{t("admin.nodeLocation")}</dt>
@@ -383,12 +383,6 @@ export function NodeEditModal({
                           : "—"}
                       </dd>
                     </dl>
-                    <hr className="border-secondary opacity-25 my-3" />
-                    <h3 className="admin-section-title mb-3">
-                      <i className="fa-solid fa-microchip" aria-hidden />
-                      {t("admin.nodeLiveTitle")}
-                    </h3>
-                    <NodeLiveStats nodeId={node.id} active={tab === "overview"} />
                   </section>
                 </div>
                 <div className="col-lg-5">
@@ -441,6 +435,15 @@ export function NodeEditModal({
                         </Button>
                       )}
                     </Stack>
+                  </section>
+                </div>
+                <div className="col-12">
+                  <section className="admin-inset-card">
+                    <h2 className="admin-section-title mb-3">
+                      <i className="fa-solid fa-microchip" aria-hidden />
+                      {t("admin.nodeLiveTitle")}
+                    </h2>
+                    <NodeLiveStats nodeId={node.id} active={tab === "overview"} />
                   </section>
                 </div>
               </div>

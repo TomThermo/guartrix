@@ -184,6 +184,7 @@ export function registerStatusRoutes(app: FastifyInstance): void {
             totalMemoryGb: snapshot.totalMemoryGb,
             freeMemoryMb: snapshot.freeMemoryMb,
             disk: snapshot.disk,
+            network: snapshot.network ?? null,
           },
           mysql: snapshot.mysql,
           sftp: {
