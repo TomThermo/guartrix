@@ -3,7 +3,7 @@ import type { DaemonNode } from "@msm/shared";
 import { Alert, Button, Modal, Spinner } from "react-bootstrap";
 import { api } from "../api";
 import { useI18n } from "../i18n/react";
-import { DetailsStep } from "./add-node/DetailsStep";
+import { DetailsStep, type NodeSslMode } from "./add-node/DetailsStep";
 import { DoneStep } from "./add-node/DoneStep";
 import { HowtoStep } from "./add-node/HowtoStep";
 import { InstallStep, type InstallInfo } from "./add-node/InstallStep";
@@ -25,7 +25,7 @@ export function AddNodeModal({ existingNode, onClose, onChanged }: Props) {
 
   const [name, setName] = useState("");
   const [fqdn, setFqdn] = useState("");
-  const [scheme, setScheme] = useState<"http" | "https">("http");
+  const [sslMode, setSslMode] = useState<NodeSslMode>("http");
   const [daemonPort, setDaemonPort] = useState(8081);
   const [location, setLocation] = useState("");
 
@@ -114,7 +114,8 @@ export function AddNodeModal({ existingNode, onClose, onChanged }: Props) {
       const res = await api.createNode({
         name,
         fqdn,
-        scheme,
+        scheme: sslMode === "http" ? "http" : "https",
+        behindProxy: sslMode === "https-proxy",
         daemonPort,
         location: location.trim() || null,
       });
@@ -278,8 +279,8 @@ export function AddNodeModal({ existingNode, onClose, onChanged }: Props) {
             onNameChange={setName}
             fqdn={fqdn}
             onFqdnChange={setFqdn}
-            scheme={scheme}
-            onSchemeChange={setScheme}
+            sslMode={sslMode}
+            onSslModeChange={setSslMode}
             daemonPort={daemonPort}
             onDaemonPortChange={setDaemonPort}
             location={location}

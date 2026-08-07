@@ -20,6 +20,15 @@ export const nodesApi = {
     ),
   listAdminNodes: () =>
     request<{ nodes: import("@msm/shared").DaemonNode[] }>("/api/admin/nodes"),
+  lookupDns: (host: string) =>
+    request<{
+      host: string;
+      ok: boolean;
+      addresses: string[];
+      kind: "ip" | "dns";
+      panelSecure: boolean;
+      error?: string;
+    }>(`/api/admin/dns-lookup?host=${encodeURIComponent(host)}`),
   createNode: (body: import("@msm/shared").CreateNodeRequest) =>
     request<import("@msm/shared").CreateNodeResponse>("/api/admin/nodes", {
       method: "POST",

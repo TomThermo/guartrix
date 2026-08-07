@@ -3,6 +3,12 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.3.3] — 2026-08-07
+
+### Added
+- Admin → Nodes **Basic Settings**: display name, domain (+ DNS validation), connect port, SSL mode (HTTP / HTTPS / HTTPS with reverse proxy), `behindProxy` on nodes
+- `GET /api/admin/dns-lookup` for hostname resolution hints
+
 ## [1.3.2] — 2026-08-07
 
 ### Added

@@ -27,7 +27,7 @@ Remote config lives at **`/var/lib/guartrix/daemon.env`** (not `$INSTALL_DIR/dat
 
 ![Add node wizard](assets/06-add-node-modal.png)
 
-For an existing remote node, open the node (table row / edit) and use **Install daemon** on the Overview tab to reopen the wizard. Overview also shows **live** host CPU, memory, and storage (pie chart) while the editor is open.
+For an existing remote node, open the node (table row / edit). **Basic Settings** covers display name, domain, connect port, and SSL mode (HTTP / HTTPS / HTTPS with reverse proxy), with live DNS validation. **Overview** shows live host CPU, memory, and storage. Use **Install daemon** on Overview to reopen the wizard.
 
 See also the [Panel guide](panel-guide.md) for the rest of the admin UI.
 

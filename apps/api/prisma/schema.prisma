@@ -52,6 +52,11 @@ model Node {
   fqdn        String
   scheme      String     @default("http")
   daemonPort  Int        @default(8081)
+  /**
+   * Panel reaches the daemon over HTTPS while TLS is terminated at a reverse
+   * proxy (Cloudflare / nginx / Caddy). Daemon itself may speak plain HTTP.
+   */
+  behindProxy Boolean    @default(false)
   /** SHA-256 hex of the daemon bearer token. */
   tokenHash   String
   isLocal     Boolean    @default(false)

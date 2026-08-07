@@ -1,4 +1,5 @@
 import type { FastifyInstance } from "fastify";
+import dns from "node:dns/promises";
 import { z } from "zod";
 import { nanoid } from "nanoid";
 import {
@@ -8,6 +9,7 @@ import {
 } from "@msm/shared";
 import { logActivity } from "../../activity-log.js";
 import { requireAdmin, requireAuth, verifyAccountPassword } from "../../auth/auth.js";
+import { config } from "../../config.js";
 import { prisma } from "../../db.js";
 import {
   daemonGetStatus,
@@ -39,6 +41,7 @@ const createSchema = z.object({
   fqdn: z.string().min(1).max(255),
   scheme: z.enum(["http", "https"]).optional().default("http"),
   daemonPort: z.number().int().min(1).max(65535).optional().default(8081),
+  behindProxy: z.boolean().optional().default(false),
   memoryMb: z.number().int().min(0).optional().default(0),
   location: locationSchema,
 });
@@ -48,6 +51,7 @@ const updateSchema = z.object({
   fqdn: z.string().min(1).max(255).optional(),
   scheme: z.enum(["http", "https"]).optional(),
   daemonPort: z.number().int().min(1).max(65535).optional(),
+  behindProxy: z.boolean().optional(),
   memoryMb: z.number().int().min(0).optional(),
   location: locationSchema,
 });
@@ -127,6 +131,57 @@ export function registerNodeRoutes(app: FastifyInstance): void {
     return { nodes: await listNodesWithUsage() };
   });
 
+  /** Resolve FQDN/IP for Basic Settings DNS hint. */
+  app.get("/api/admin/dns-lookup", async (request, reply) => {
+    if (!(await requireAdmin(request, reply, "nodes.read"))) return;
+    const q = (request.query ?? {}) as Record<string, unknown>;
+    const host = String(q.host ?? q.fqdn ?? "")
+      .trim()
+      .replace(/^\[|\]$/g, "");
+    const panelSecure = /^https:/i.test(config.publicBaseUrl);
+    if (!host) {
+      return reply.status(400).send({
+        error: "host required",
+        panelSecure,
+      });
+    }
+    if (/^\d{1,3}(\.\d{1,3}){3}$/.test(host) || host.includes(":")) {
+      return {
+        host,
+        ok: true,
+        addresses: [host],
+        kind: "ip" as const,
+        panelSecure,
+      };
+    }
+    try {
+      const answers = await dns.lookup(host, { all: true, verbatim: true });
+      const addresses = [
+        ...new Set(
+          answers
+            .map((a) => a.address)
+            .filter((a) => Boolean(a)),
+        ),
+      ];
+      return {
+        host,
+        ok: addresses.length > 0,
+        addresses,
+        kind: "dns" as const,
+        panelSecure,
+      };
+    } catch (err) {
+      return {
+        host,
+        ok: false,
+        addresses: [] as string[],
+        kind: "dns" as const,
+        panelSecure,
+        error: err instanceof Error ? err.message : String(err),
+      };
+    }
+  });
+
   app.post("/api/admin/nodes", async (request, reply) => {
     const admin = await requireAdmin(request, reply, "nodes.write");
     if (!admin) return;
@@ -158,6 +213,7 @@ export function registerNodeRoutes(app: FastifyInstance): void {
         fqdn: parsed.data.fqdn,
         scheme: parsed.data.scheme,
         daemonPort: parsed.data.daemonPort,
+        behindProxy: parsed.data.behindProxy,
         memoryMb: parsed.data.memoryMb,
         location,
         tokenHash: hashDaemonToken(token),
@@ -203,6 +259,7 @@ export function registerNodeRoutes(app: FastifyInstance): void {
         fqdn?: string;
         scheme?: string;
         daemonPort?: number;
+        behindProxy?: boolean;
         memoryMb?: number;
         location?: string | null;
       } = { ...parsed.data };

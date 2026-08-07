@@ -110,7 +110,13 @@ function NodeRow({
       <td className="text-center d-none d-xl-table-cell">
         <StatusGlyph
           kind={ssl ? "ssl" : "http"}
-          title={ssl ? t("admin.sslYes") : t("admin.sslNo")}
+          title={
+            ssl
+              ? node.behindProxy
+                ? t("admin.nodeSslHttpsProxy")
+                : t("admin.sslYes")
+              : t("admin.sslNo")
+          }
         />
       </td>
       <td className="text-center d-none d-lg-table-cell">

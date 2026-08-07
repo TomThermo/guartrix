@@ -55,6 +55,7 @@ export function serializeNode(
     fqdn: string;
     scheme: string;
     daemonPort: number;
+    behindProxy?: boolean;
     isLocal: boolean;
     memoryMb: number;
     mysqlPort?: number;
@@ -82,6 +83,7 @@ export function serializeNode(
     fqdn: node.fqdn,
     scheme: node.scheme,
     daemonPort: node.daemonPort,
+    behindProxy: Boolean(node.behindProxy),
     isLocal: node.isLocal,
     memoryMb: capacity,
     memoryUsedMb: used,

@@ -21,6 +21,11 @@ export interface DaemonNode {
   fqdn: string;
   scheme: string;
   daemonPort: number;
+  /**
+   * HTTPS to the panel’s connect URL while TLS terminates at a reverse proxy
+   * (daemon may speak plain HTTP locally).
+   */
+  behindProxy: boolean;
   isLocal: boolean;
   /** Host / configured capacity in MB (0 = unknown). */
   memoryMb: number;
@@ -57,6 +62,7 @@ export interface CreateNodeRequest {
   fqdn: string;
   scheme?: "http" | "https";
   daemonPort?: number;
+  behindProxy?: boolean;
   memoryMb?: number;
   /** Optional region / location label. */
   location?: string | null;
@@ -67,6 +73,7 @@ export interface UpdateNodeRequest {
   fqdn?: string;
   scheme?: "http" | "https";
   daemonPort?: number;
+  behindProxy?: boolean;
   memoryMb?: number;
   /** Optional region / location label; empty string clears. */
   location?: string | null;

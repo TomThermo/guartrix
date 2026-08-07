@@ -64,6 +64,17 @@ export function parseDaemonPublicUrl(raw: string): {
 }
 
 type TabId = "overview" | "settings" | "allocations";
+type SslMode = "http" | "https" | "https-proxy";
+
+function sslModeFromNode(node: DaemonNode): SslMode {
+  if (node.scheme === "https" && node.behindProxy) return "https-proxy";
+  if (node.scheme === "https") return "https";
+  return "http";
+}
+
+function schemeFromSslMode(mode: SslMode): "http" | "https" {
+  return mode === "http" ? "http" : "https";
+}
 
 interface Props {
   node: DaemonNode;
@@ -91,18 +102,57 @@ export function NodeEditModal({
   const { t } = useI18n();
   const [tab, setTab] = useState<TabId>("overview");
   const [name, setName] = useState(node.name);
-  const [url, setUrl] = useState(node.publicUrl);
+  const [fqdn, setFqdn] = useState(node.fqdn);
+  const [daemonPort, setDaemonPort] = useState(String(node.daemonPort));
+  const [sslMode, setSslMode] = useState<SslMode>(() => sslModeFromNode(node));
   const [location, setLocation] = useState(node.location ?? "");
   const [localError, setLocalError] = useState<string | null>(null);
   const [localNotice, setLocalNotice] = useState<string | null>(null);
+  const [dnsAddresses, setDnsAddresses] = useState<string[]>([]);
+  const [dnsOk, setDnsOk] = useState<boolean | null>(null);
+  const [dnsLoading, setDnsLoading] = useState(false);
+  const [panelSecure, setPanelSecure] = useState(
+    () => window.location.protocol === "https:",
+  );
 
   useEffect(() => {
     setName(node.name);
-    setUrl(node.publicUrl);
+    setFqdn(node.fqdn);
+    setDaemonPort(String(node.daemonPort));
+    setSslMode(sslModeFromNode(node));
     setLocation(node.location ?? "");
     setLocalError(null);
     setLocalNotice(null);
   }, [node]);
+
+  useEffect(() => {
+    const host = fqdn.trim();
+    if (!host || tab !== "settings") return;
+    let cancelled = false;
+    setDnsLoading(true);
+    const timer = window.setTimeout(() => {
+      void api
+        .lookupDns(host)
+        .then((res) => {
+          if (cancelled) return;
+          setDnsAddresses(res.addresses);
+          setDnsOk(res.ok);
+          setPanelSecure(res.panelSecure);
+        })
+        .catch(() => {
+          if (cancelled) return;
+          setDnsAddresses([]);
+          setDnsOk(false);
+        })
+        .finally(() => {
+          if (!cancelled) setDnsLoading(false);
+        });
+    }, 400);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [fqdn, tab]);
 
   const ramPct =
     node.memoryMb > 0
@@ -186,18 +236,30 @@ export function NodeEditModal({
 
   async function onSaveSettings() {
     const trimmed = name.trim();
+    const host = fqdn.trim();
+    const port = Number(daemonPort);
     if (!trimmed) {
-      setLocalError("Name is required");
+      setLocalError(t("admin.nodeNameRequired"));
+      return;
+    }
+    if (!host) {
+      setLocalError(t("admin.nodeDomainRequired"));
+      return;
+    }
+    if (!Number.isInteger(port) || port < 1 || port > 65535) {
+      setLocalError(t("admin.nodePortInvalid"));
       return;
     }
     onBusy(node.id);
     setLocalError(null);
     onError(null);
     try {
-      const parsed = parseDaemonPublicUrl(url);
       await api.updateNode(node.id, {
         name: trimmed,
-        ...parsed,
+        fqdn: host,
+        daemonPort: port,
+        scheme: schemeFromSslMode(sslMode),
+        behindProxy: sslMode === "https-proxy",
         location: location.trim() || null,
       });
       setLocalNotice(t("admin.nodeSaved"));
@@ -265,7 +327,7 @@ export function NodeEditModal({
             <Nav.Item>
               <Nav.Link eventKey="settings">
                 <i className="fa-solid fa-sliders me-1" aria-hidden />
-                {t("admin.nodeTabSettings")}
+                {t("admin.nodeTabBasic")}
               </Nav.Link>
             </Nav.Item>
             <Nav.Item>
@@ -377,7 +439,11 @@ export function NodeEditModal({
             </Tab.Pane>
 
             <Tab.Pane eventKey="settings">
-              <section className="admin-inset-card" style={{ maxWidth: "36rem" }}>
+              <section className="admin-inset-card" style={{ maxWidth: "40rem" }}>
+                <h2 className="admin-section-title mb-3">
+                  <i className="fa-solid fa-sliders" aria-hidden />
+                  {t("admin.nodeTabBasic")}
+                </h2>
                 <Form
                   onSubmit={(e) => {
                     e.preventDefault();
@@ -385,7 +451,10 @@ export function NodeEditModal({
                   }}
                 >
                   <Form.Group className="mb-3">
-                    <Form.Label>{t("admin.nodeName")}</Form.Label>
+                    <Form.Label>
+                      {t("admin.nodeDisplayName")}{" "}
+                      <span className="text-danger">*</span>
+                    </Form.Label>
                     <Form.Control
                       value={name}
                       onChange={(e) => setName(e.target.value)}
@@ -393,17 +462,96 @@ export function NodeEditModal({
                       required
                     />
                   </Form.Group>
+
                   <Form.Group className="mb-3">
-                    <Form.Label>{t("admin.nodeDaemonUrl")}</Form.Label>
+                    <Form.Label>
+                      {t("admin.nodeDomainName")}{" "}
+                      <span className="text-danger">*</span>
+                    </Form.Label>
                     <Form.Control
                       className="font-monospace"
-                      value={url}
-                      onChange={(e) => setUrl(e.target.value)}
-                      placeholder="https://node.example.com"
+                      value={fqdn}
+                      onChange={(e) => setFqdn(e.target.value)}
+                      placeholder="node.example.com"
                       required
                     />
-                    <Form.Text muted>{t("admin.nodeDaemonUrlHint")}</Form.Text>
+                    <div className="small mt-1">
+                      {dnsLoading ? (
+                        <span className="text-secondary">
+                          <Spinner size="sm" animation="border" className="me-1" />
+                          {t("admin.nodeDnsChecking")}
+                        </span>
+                      ) : dnsOk === true && dnsAddresses[0] ? (
+                        <span className="text-success">
+                          <i className="fa-solid fa-circle-check me-1" aria-hidden />
+                          {t("admin.nodeDnsValid", { ip: dnsAddresses[0] })}
+                        </span>
+                      ) : dnsOk === false ? (
+                        <span className="text-warning">
+                          <i
+                            className="fa-solid fa-triangle-exclamation me-1"
+                            aria-hidden
+                          />
+                          {t("admin.nodeDnsInvalid")}
+                        </span>
+                      ) : null}
+                    </div>
+                    {panelSecure && sslMode === "http" && (
+                      <Alert variant="warning" className="py-2 small mt-2 mb-0">
+                        {t("admin.nodeSslRequiredHint")}
+                      </Alert>
+                    )}
                   </Form.Group>
+
+                  <Form.Group className="mb-3">
+                    <Form.Label>
+                      {t("admin.nodeConnectPort")}{" "}
+                      <span className="text-danger">*</span>
+                    </Form.Label>
+                    <Form.Control
+                      type="number"
+                      style={{ maxWidth: "10rem" }}
+                      value={daemonPort}
+                      onChange={(e) => setDaemonPort(e.target.value)}
+                      min={1}
+                      max={65535}
+                      required
+                    />
+                    <Form.Text muted>
+                      {sslMode === "https-proxy"
+                        ? t("admin.nodePortHintProxy")
+                        : sslMode === "https"
+                          ? t("admin.nodePortHintHttps")
+                          : t("admin.nodePortHintHttp")}
+                    </Form.Text>
+                  </Form.Group>
+
+                  <Form.Group className="mb-3">
+                    <Form.Label>{t("admin.nodeSslMode")}</Form.Label>
+                    <Form.Select
+                      value={sslMode}
+                      onChange={(e) => setSslMode(e.target.value as SslMode)}
+                    >
+                      <option value="http">{t("admin.nodeSslHttp")}</option>
+                      <option value="https">{t("admin.nodeSslHttps")}</option>
+                      <option value="https-proxy">
+                        {t("admin.nodeSslHttpsProxy")}
+                      </option>
+                    </Form.Select>
+                    <Form.Text muted>
+                      {sslMode === "https-proxy"
+                        ? t("admin.nodeSslProxyHint")
+                        : sslMode === "https"
+                          ? t("admin.nodeSslHttpsHint")
+                          : t("admin.nodeSslHttpHint")}
+                    </Form.Text>
+                    {panelSecure && sslMode === "http" && (
+                      <Alert variant="danger" className="py-2 small mt-2 mb-0">
+                        {t("admin.nodeSslMismatch")}
+                      </Alert>
+                    )}
+                  </Form.Group>
+
                   <Form.Group className="mb-3">
                     <Form.Label>{t("admin.locationLabel")}</Form.Label>
                     <Form.Control
@@ -412,7 +560,19 @@ export function NodeEditModal({
                       maxLength={64}
                       placeholder={t("admin.locationPlaceholder")}
                     />
+                    <Form.Text muted>{t("admin.locationHint")}</Form.Text>
                   </Form.Group>
+
+                  <div className="small text-secondary mb-3 font-monospace">
+                    {t("admin.nodePreviewUrl")}:{" "}
+                    {`${schemeFromSslMode(sslMode)}://${fqdn.trim() || "…"}:${daemonPort || "…"}`}
+                    {sslMode === "https-proxy" ? (
+                      <span className="ms-2 badge text-bg-secondary">
+                        {t("admin.nodeBehindProxyBadge")}
+                      </span>
+                    ) : null}
+                  </div>
+
                   <Button type="submit" variant="primary" disabled={busy}>
                     {busy ? (
                       <Spinner size="sm" animation="border" />

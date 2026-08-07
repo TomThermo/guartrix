@@ -2,13 +2,15 @@ import type { FormEvent } from "react";
 import { Col, Form, Row } from "react-bootstrap";
 import { useI18n } from "../../i18n/react";
 
+export type NodeSslMode = "http" | "https" | "https-proxy";
+
 export type DetailsStepProps = {
   name: string;
   onNameChange: (value: string) => void;
   fqdn: string;
   onFqdnChange: (value: string) => void;
-  scheme: "http" | "https";
-  onSchemeChange: (value: "http" | "https") => void;
+  sslMode: NodeSslMode;
+  onSslModeChange: (value: NodeSslMode) => void;
   daemonPort: number;
   onDaemonPortChange: (value: number) => void;
   location: string;
@@ -21,8 +23,8 @@ export function DetailsStep({
   onNameChange,
   fqdn,
   onFqdnChange,
-  scheme,
-  onSchemeChange,
+  sslMode,
+  onSslModeChange,
   daemonPort,
   onDaemonPortChange,
   location,
@@ -39,7 +41,10 @@ export function DetailsStep({
       <Row className="g-2">
         <Col md={6}>
           <Form.Group>
-            <Form.Label>Name</Form.Label>
+            <Form.Label>
+              {t("admin.nodeDisplayName")}{" "}
+              <span className="text-danger">*</span>
+            </Form.Label>
             <Form.Control
               value={name}
               onChange={(e) => onNameChange(e.target.value)}
@@ -51,7 +56,10 @@ export function DetailsStep({
         </Col>
         <Col md={6}>
           <Form.Group>
-            <Form.Label>Host / FQDN</Form.Label>
+            <Form.Label>
+              {t("admin.nodeDomainName")}{" "}
+              <span className="text-danger">*</span>
+            </Form.Label>
             <Form.Control
               value={fqdn}
               onChange={(e) => onFqdnChange(e.target.value)}
@@ -65,19 +73,23 @@ export function DetailsStep({
         </Col>
         <Col md={6}>
           <Form.Group>
-            <Form.Label>Scheme</Form.Label>
+            <Form.Label>{t("admin.nodeSslMode")}</Form.Label>
             <Form.Select
-              value={scheme}
-              onChange={(e) => onSchemeChange(e.target.value as "http" | "https")}
+              value={sslMode}
+              onChange={(e) => onSslModeChange(e.target.value as NodeSslMode)}
             >
-              <option value="http">http (default LAN/VPS)</option>
-              <option value="https">https (TLS for the daemon)</option>
+              <option value="http">{t("admin.nodeSslHttp")}</option>
+              <option value="https">{t("admin.nodeSslHttps")}</option>
+              <option value="https-proxy">{t("admin.nodeSslHttpsProxy")}</option>
             </Form.Select>
           </Form.Group>
         </Col>
         <Col md={6}>
           <Form.Group>
-            <Form.Label>Daemon port</Form.Label>
+            <Form.Label>
+              {t("admin.nodeConnectPort")}{" "}
+              <span className="text-danger">*</span>
+            </Form.Label>
             <Form.Control
               type="number"
               value={daemonPort}
@@ -85,6 +97,13 @@ export function DetailsStep({
               min={1}
               max={65535}
             />
+            <Form.Text className="text-secondary">
+              {sslMode === "https-proxy"
+                ? t("admin.nodePortHintProxy")
+                : sslMode === "https"
+                  ? t("admin.nodePortHintHttps")
+                  : t("admin.nodePortHintHttp")}
+            </Form.Text>
           </Form.Group>
         </Col>
         <Col md={12}>
