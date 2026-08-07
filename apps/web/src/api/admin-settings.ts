@@ -55,6 +55,9 @@ export type PanelSettings = {
   slaPentestAck: boolean;
   slaCapacityReviewAt: string | null;
   slaSecretRotationAt: string | null;
+  turnstileEnabled: boolean;
+  turnstileSiteKey: string;
+  turnstileSecretKeySet: boolean;
 };
 
 export type PanelSettingsPatch = {
@@ -96,6 +99,9 @@ export type PanelSettingsPatch = {
   slaPentestAck?: boolean;
   slaCapacityReviewAt?: string | null;
   slaSecretRotationAt?: string | null;
+  turnstileEnabled?: boolean;
+  turnstileSiteKey?: string;
+  turnstileSecretKey?: string;
 };
 
 export type ReadinessCheck = {

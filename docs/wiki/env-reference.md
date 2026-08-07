@@ -11,7 +11,7 @@ Daemon env file (token, MySQL root for game DBs, Docker knobs) — template: [`d
 
 Editing the wrong path on a remote node has no effect — systemd loads `/var/lib/guartrix/daemon.env`.
 
-Many operator knobs (public URL, SMTP, registration, quotas, 2FA policy, alerts, Cloudflare, HTTPS flags) can also be managed in **Admin → Settings**, which stores overrides in `data/panel-settings.json` and may sync selected keys back into `.env` (restart needed for HTTPS / public URL). See [Panel settings](panel-settings.md).
+Many operator knobs (public URL, SMTP, registration, quotas, 2FA policy, Turnstile, alerts, Cloudflare DNS, HTTPS flags) can also be managed in **Admin → Settings**, which stores overrides in `data/panel-settings.json` and may sync selected keys back into `.env` (restart needed for HTTPS / public URL). See [Panel settings](panel-settings.md).
 
 ## Core panel
 
@@ -160,6 +160,7 @@ The license **server** is hosted separately by Guartrix (default `https://licens
 | Variable | Purpose |
 |----------|---------|
 | `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ZONE_ID` / `CLOUDFLARE_ACCOUNT_ID` / `CLOUDFLARE_DOMAIN` | Auto A/SRV records (token: Zone DNS Edit on one zone — see [security.md](security.md)) |
+| `TURNSTILE_ENABLED` / `TURNSTILE_SITE_KEY` / `TURNSTILE_SECRET_KEY` | Cloudflare Turnstile bot check on login/register (prefer **Admin → Settings → Security**; both keys required when enabled) |
 | `ALLOW_INSECURE_DEFAULTS` | Set `1` only for local dev — otherwise API refuses default `SESSION_SECRET` / `ADMIN_PASSWORD` |
 | `TLS_CERT_FILE` / `TLS_KEY_FILE` | Override Origin cert paths (panel behind Cloudflare) |
 | `DAEMON_TLS_CERT_FILE` / `DAEMON_TLS_KEY_FILE` | SNI cert for DNS-only `node1.*` / `DAEMON_PUBLIC_HOST` (LE by default) |

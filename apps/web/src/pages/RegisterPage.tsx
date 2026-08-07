@@ -4,6 +4,7 @@ import { Alert, Button, Form, Spinner } from "react-bootstrap";
 import { api } from "../api";
 import { useAuth } from "../auth";
 import { AuthShell } from "../components/AuthShell";
+import { TurnstileWidget } from "../components/TurnstileWidget";
 import { useI18n } from "../i18n/react";
 
 export function RegisterPage() {
@@ -19,6 +20,10 @@ export function RegisterPage() {
   const [verifyFirst, setVerifyFirst] = useState(false);
   const [policy, setPolicy] = useState<string | null>(null);
   const [enabled, setEnabled] = useState<boolean | null>(null);
+  const [turnstileEnabled, setTurnstileEnabled] = useState(false);
+  const [turnstileSiteKey, setTurnstileSiteKey] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const [turnstileReset, setTurnstileReset] = useState(0);
 
   useEffect(() => {
     void api
@@ -26,6 +31,8 @@ export function RegisterPage() {
       .then((c) => {
         setEnabled(c.registrationEnabled);
         setPolicy(c.passwordPolicy);
+        setTurnstileEnabled(Boolean(c.turnstileEnabled && c.turnstileSiteKey));
+        setTurnstileSiteKey(c.turnstileSiteKey ?? null);
       })
       .catch(() => setEnabled(false));
   }, []);
@@ -43,6 +50,10 @@ export function RegisterPage() {
       setError(t("auth.mustAcceptTerms"));
       return;
     }
+    if (turnstileEnabled && !turnstileToken.trim()) {
+      setError(t("auth.turnstileRequired"));
+      return;
+    }
     setBusy(true);
     try {
       const res = await api.register({
@@ -50,6 +61,7 @@ export function RegisterPage() {
         email: email.trim(),
         password,
         acceptTerms: true,
+        ...(turnstileToken ? { turnstileToken } : {}),
       });
       if (res.emailVerificationRequired && !res.user) {
         setVerifyFirst(true);
@@ -58,6 +70,8 @@ export function RegisterPage() {
       await refreshUser();
     } catch (err) {
       setError(err instanceof Error ? err.message : t("auth.registrationFailed"));
+      setTurnstileToken("");
+      setTurnstileReset((n) => n + 1);
     } finally {
       setBusy(false);
     }
@@ -165,6 +179,13 @@ export function RegisterPage() {
             </span>
           }
         />
+        {turnstileEnabled && turnstileSiteKey && (
+          <TurnstileWidget
+            key={turnstileReset}
+            siteKey={turnstileSiteKey}
+            onToken={setTurnstileToken}
+          />
+        )}
         <Button type="submit" variant="primary" className="w-100" disabled={busy || enabled === null}>
           {busy ? (
             <>

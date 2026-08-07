@@ -4,16 +4,24 @@ import type {
 } from "@msm/shared";
 import { request } from "./client";
 
+export type AuthPublicConfig = {
+  registrationEnabled: boolean;
+  passwordMinLength: number;
+  passwordPolicy: string;
+  emailVerificationRequired?: boolean;
+  turnstileEnabled?: boolean;
+  turnstileSiteKey?: string | null;
+};
+
 export const authApi = {
   me: () => request<AuthMeResponse>("/api/auth/me"),
-  authConfig: () =>
-    request<{
-      registrationEnabled: boolean;
-      passwordMinLength: number;
-      passwordPolicy: string;
-      emailVerificationRequired?: boolean;
-    }>("/api/auth/config"),
-  login: (username: string, password: string, rememberMe = false) =>
+  authConfig: () => request<AuthPublicConfig>("/api/auth/config"),
+  login: (
+    username: string,
+    password: string,
+    rememberMe = false,
+    turnstileToken?: string,
+  ) =>
     request<{
       ok: boolean;
       user?: AuthUser;
@@ -21,7 +29,12 @@ export const authApi = {
       csrfToken?: string;
     }>("/api/auth/login", {
       method: "POST",
-      body: JSON.stringify({ username, password, rememberMe }),
+      body: JSON.stringify({
+        username,
+        password,
+        rememberMe,
+        ...(turnstileToken ? { turnstileToken } : {}),
+      }),
     }),
   loginTwoFactor: (code: string) =>
     request<{ ok: boolean; user: AuthUser; csrfToken?: string }>(
@@ -68,6 +81,7 @@ export const authApi = {
     email: string;
     password: string;
     acceptTerms: true;
+    turnstileToken?: string;
   }) =>
     request<{
       ok: boolean;

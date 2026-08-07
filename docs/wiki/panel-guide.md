@@ -26,7 +26,7 @@ Open the panel URL → sign in with your username and password. Admins open **Ad
 
 ### Register
 
-Self-serve registration (when enabled). New accounts start with **0** servers / RAM / databases until an admin raises quotas or the user pays via **Billing** (Mollie).
+Self-serve registration (when enabled). New accounts start with **0** servers / RAM / databases until an admin raises quotas or the user pays via **Billing** (Mollie). Admins can require Cloudflare Turnstile (“I'm not a robot”) on **login and registration** under **Admin → Settings → Security**.
 
 More: [Application API & Mollie](application-api.md) · [Accounts & quotas](accounts-and-quotas.md)
 
@@ -96,7 +96,7 @@ More: [Server management](server-management.md) · [Files and backups](files-and
 
 ## Admin: Settings
 
-**Settings** — panel-wide configuration with top tabs: **General** (branding, public URL, registration, quotas, Cloudflare), **Mail**, **Backup** (default retention + offsite hook), **Security**, **Misc**, **Alerts**, **Go-live**.
+**Settings** — panel-wide configuration with top tabs: **General** (branding, public URL, registration, quotas, Cloudflare DNS), **Mail**, **Backup** (default retention + offsite hook), **Security** (HTTPS, proxies, 2FA roles, Turnstile, Redis), **Misc**, **Alerts**, **Go-live**.
 Overrides are stored in `data/panel-settings.json`; HTTPS/URL changes also update `.env` and need a panel restart.
 
 ![Admin settings](assets/39-admin-settings.png)

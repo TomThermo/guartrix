@@ -14,6 +14,7 @@ import {
   toAuthUser,
 } from "../../auth/auth.js";
 import { assertSameOrigin, issueSessionCsrfToken } from "../../auth/csrf.js";
+import { assertTurnstileToken } from "../../auth/turnstile.js";
 import {
   configQuotaDefaults,
   usernameSchema,
@@ -31,6 +32,7 @@ const registerSchema = z.object({
   acceptTerms: z.literal(true, {
     errorMap: () => ({ message: "You must accept the Terms of Service" }),
   }),
+  turnstileToken: z.string().optional(),
 });
 
 export function registerSessionRegisterRoutes(app: FastifyInstance): void {
@@ -44,6 +46,14 @@ export function registerSessionRegisterRoutes(app: FastifyInstance): void {
 
     const limited = await checkLoginRate(request);
     if (limited) return reply.status(429).send({ error: limited });
+
+    const botErr = await assertTurnstileToken(
+      (request.body as { turnstileToken?: string } | null)?.turnstileToken,
+      request.ip,
+    );
+    if (botErr) {
+      return reply.status(400).send({ error: botErr });
+    }
 
     const parsed = registerSchema.safeParse(request.body);
     if (!parsed.success) {

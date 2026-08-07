@@ -41,6 +41,14 @@ export const config = {
     /** Apex domain, e.g. guartrix.online */
     domain: (process.env.CLOUDFLARE_DOMAIN?.trim() || "").replace(/^\.+|\.+$/g, ""),
   },
+  /** Cloudflare Turnstile (login / register bot check). */
+  turnstile: {
+    enabled:
+      process.env.TURNSTILE_ENABLED === "1" ||
+      process.env.TURNSTILE_ENABLED === "true",
+    siteKey: process.env.TURNSTILE_SITE_KEY?.trim() || "",
+    secretKey: process.env.TURNSTILE_SECRET_KEY?.trim() || "",
+  },
   /** Public self-serve registration (default on for soft launch). */
   registrationEnabled:
     process.env.REGISTRATION_ENABLED !== "false" &&

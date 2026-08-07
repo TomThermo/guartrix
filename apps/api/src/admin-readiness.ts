@@ -1,6 +1,7 @@
 /**
  * Admin go-live / SaaS readiness checks (live signals + operator attestations).
  */
+import { isTurnstileConfigured } from "./auth/turnstile.js";
 import { config } from "./config.js";
 import { isSmtpConfigured } from "./mail.js";
 import { getRedisStatus, isRedisConfigured } from "./redis.js";
@@ -131,6 +132,22 @@ export async function buildReadinessReport(opts?: {
     detail: admin2fa
       ? "TWO_FACTOR_REQUIRED_ROLES includes ADMIN"
       : "Require TOTP for ADMIN under Security settings",
+  });
+
+  const turnstileOn = isTurnstileConfigured();
+  checks.push({
+    id: "turnstile",
+    tone: turnstileOn
+      ? "pass"
+      : registrationOpen
+        ? "warn"
+        : "info",
+    tab: "security",
+    detail: turnstileOn
+      ? "Cloudflare Turnstile enabled on login/register"
+      : registrationOpen
+        ? "Public registration without Turnstile — enable under Security settings"
+        : "Turnstile off (optional when registration is closed)",
   });
 
   if (!isRedisConfigured()) {

@@ -3,6 +3,12 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.3.16] — 2026-08-07
+
+### Added
+
+- Cloudflare Turnstile (“I'm not a robot”) on login and registration — toggle + keys under **Admin → Settings → Security** (or `TURNSTILE_*` env); Go-live readiness warn when registration is open without Turnstile; CSP allows `challenges.cloudflare.com`.
+
 ## [1.3.15] — 2026-08-07
 
 ### Changed

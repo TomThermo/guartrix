@@ -218,6 +218,7 @@ export const en = {
     inviteExpires: "· expires {when}",
     signInToAccept: "Sign in to accept",
     acceptInvite: "Accept invite",
+    turnstileRequired: "Please complete the bot check (I'm not a robot).",
   },
   account: {
     language: "Language",
@@ -1549,7 +1550,7 @@ export const en = {
     displayWidth: "Display width",
     displayWidthFull: "Full width",
     miscDeferredNote:
-      "Captcha, OAuth login, and user avatar uploads are not available yet — they need separate integrations.",
+      "OAuth login and user avatar uploads are not available yet — they need separate integrations.",
     backupEncryptionNote:
       "At-rest backup encryption is configured via BACKUP_ENCRYPTION / BACKUP_ENCRYPTION_KEY in .env (not edited here).",
     loadFailed: "Failed to load settings",
@@ -1587,6 +1588,7 @@ export const en = {
       https_session: "HTTPS / secure cookies",
       trust_proxy: "Trusted proxy",
       admin_2fa: "Admin 2FA required",
+      turnstile: "Cloudflare Turnstile",
       redis: "Redis HA",
       alerts: "Crash / security alerts",
       daemon_jwt_legacy: "Daemon JWT legacy",
@@ -1632,6 +1634,12 @@ export const en = {
     sessionSecure: "Secure session cookies (SESSION_SECURE)",
     twoFactorRoles: "Require 2FA for roles",
     twoFactorRolesHelp: "Users in these roles must enroll TOTP before using the panel.",
+    turnstileHeading: "Cloudflare Turnstile (I'm not a robot)",
+    turnstileHelp:
+      "Shows Cloudflare's bot check on login and registration. Create a widget at Cloudflare → Turnstile, then paste the site key and secret. Both keys are required when the switch is on.",
+    turnstileEnabled: "Require Turnstile on login & registration",
+    turnstileSiteKey: "Turnstile site key",
+    turnstileSecretKey: "Turnstile secret key",
     activityWebhookUrl: "Activity webhook URL",
     backupOffsiteCmd: "Backup offsite command",
     backupOffsiteCmdHelp:

@@ -12,6 +12,10 @@ import {
 } from "../../auth/auth.js";
 import { config } from "../../config.js";
 import { assertSameOrigin, issueSessionCsrfToken } from "../../auth/csrf.js";
+import {
+  assertTurnstileToken,
+  turnstilePublicConfig,
+} from "../../auth/turnstile.js";
 import { prisma } from "../../db.js";
 import { isSmtpConfigured } from "../../mail.js";
 import {
@@ -73,9 +77,17 @@ export function registerAuthRoutes(app: FastifyInstance): void {
     passwordPolicy: passwordPolicyMessage(),
     /** When SMTP is set, new accounts must verify email before login. */
     emailVerificationRequired: isSmtpConfigured(),
+    ...turnstilePublicConfig(),
   }));
 
-  app.post<{ Body: { username?: string; password?: string; rememberMe?: boolean } }>(
+  app.post<{
+    Body: {
+      username?: string;
+      password?: string;
+      rememberMe?: boolean;
+      turnstileToken?: string;
+    };
+  }>(
     "/api/auth/login",
     async (request, reply) => {
       const originErr = assertSameOrigin(request);
@@ -84,6 +96,14 @@ export function registerAuthRoutes(app: FastifyInstance): void {
       const limited = await checkLoginRate(request);
       if (limited) {
         return reply.status(429).send({ error: limited });
+      }
+
+      const botErr = await assertTurnstileToken(
+        request.body?.turnstileToken,
+        request.ip,
+      );
+      if (botErr) {
+        return reply.status(400).send({ error: botErr });
       }
 
       await ensureBootstrapAdmin();

@@ -79,6 +79,10 @@ export function AdminSettingsPage() {
   const [trustProxy, setTrustProxy] = useState(true);
   const [trustedProxies, setTrustedProxies] = useState("");
   const [twoFactorRoles, setTwoFactorRoles] = useState<string[]>([]);
+  const [turnstileEnabled, setTurnstileEnabled] = useState(false);
+  const [turnstileSiteKey, setTurnstileSiteKey] = useState("");
+  const [turnstileSecretKey, setTurnstileSecretKey] = useState("");
+  const [turnstileSecretKeySet, setTurnstileSecretKeySet] = useState(false);
 
   const [debugMode, setDebugMode] = useState(false);
   const [unitPrefix, setUnitPrefix] = useState<"binary" | "decimal">("binary");
@@ -131,6 +135,10 @@ export function AdminSettingsPage() {
     setTrustProxy(Boolean(s.trustProxy));
     setTrustedProxies(s.trustedProxies || "");
     setTwoFactorRoles(s.twoFactorRequiredRoles ?? []);
+    setTurnstileEnabled(Boolean(s.turnstileEnabled));
+    setTurnstileSiteKey(s.turnstileSiteKey ?? "");
+    setTurnstileSecretKey("");
+    setTurnstileSecretKeySet(Boolean(s.turnstileSecretKeySet));
     setDebugMode(Boolean(s.debugMode));
     setUnitPrefix(s.unitPrefix === "decimal" ? "decimal" : "binary");
     setNavigationType(
@@ -236,6 +244,8 @@ export function AdminSettingsPage() {
         navigationType,
         displayWidth,
         twoFactorRequiredRoles: twoFactorRoles,
+        turnstileEnabled,
+        turnstileSiteKey,
         activityWebhookUrl,
         alertEmail,
         activityAlertMute,
@@ -251,6 +261,9 @@ export function AdminSettingsPage() {
       }
       if (smtpPass !== "") {
         body.smtpPass = smtpPass;
+      }
+      if (turnstileSecretKey !== "") {
+        body.turnstileSecretKey = turnstileSecretKey;
       }
       const res = await api.updatePanelSettings(body);
       applyView(res);
@@ -438,6 +451,13 @@ export function AdminSettingsPage() {
                   onTestRedis={() => void onTestRedis()}
                   twoFactorRoles={twoFactorRoles}
                   onToggleRole={toggleRole}
+                  turnstileEnabled={turnstileEnabled}
+                  onTurnstileEnabledChange={setTurnstileEnabled}
+                  turnstileSiteKey={turnstileSiteKey}
+                  onTurnstileSiteKeyChange={setTurnstileSiteKey}
+                  turnstileSecretKey={turnstileSecretKey}
+                  onTurnstileSecretKeyChange={setTurnstileSecretKey}
+                  turnstileSecretKeySet={turnstileSecretKeySet}
                 />
               )}
 

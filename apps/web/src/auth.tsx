@@ -21,6 +21,7 @@ interface AuthState {
     username: string,
     password: string,
     rememberMe?: boolean,
+    turnstileToken?: string,
   ) => Promise<{ requiresTwoFactor: boolean }>;
   loginTwoFactor: (code: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -82,8 +83,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [clearSession]);
 
   const login = useCallback(
-    async (username: string, password: string, rememberMe = false) => {
-      const result = await api.login(username, password, rememberMe);
+    async (
+      username: string,
+      password: string,
+      rememberMe = false,
+      turnstileToken?: string,
+    ) => {
+      const result = await api.login(
+        username,
+        password,
+        rememberMe,
+        turnstileToken,
+      );
       if (result.requiresTwoFactor) {
         setPendingTwoFactor(true);
         setAuthenticated(false);

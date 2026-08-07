@@ -27,6 +27,7 @@ Important behavior:
 
 - sessions regenerate on login
 - password reset invalidates active sessions
+- optional Cloudflare Turnstile on `POST /api/auth/login` and `POST /api/auth/register` when enabled (Admin → Settings → Security or `TURNSTILE_*`); public flags via `GET /api/auth/config` (`turnstileEnabled`, `turnstileSiteKey` only)
 - CSRF checks require Origin or Referer on mutating cookie-authenticated API routes (missing both is rejected unless `CSRF_ALLOW_MISSING_ORIGIN=1`), plus matching `x-csrf-token` header once the session is authenticated
 - session storage can be file-backed or Redis-backed depending on deployment mode
 - Unauthenticated `GET /api/invites/:token` returns masked `emailHint` + server name only; full email after sign-in

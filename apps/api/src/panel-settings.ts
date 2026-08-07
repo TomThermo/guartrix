@@ -53,6 +53,10 @@ export type PanelSettingsStored = {
   slaPentestAck?: boolean;
   slaCapacityReviewAt?: string | null;
   slaSecretRotationAt?: string | null;
+  /** Cloudflare Turnstile on login / register. */
+  turnstileEnabled?: boolean;
+  turnstileSiteKey?: string;
+  turnstileSecretKey?: string;
 };
 
 /** Public GET shape — secrets masked. */
@@ -111,6 +115,9 @@ export type PanelSettingsView = {
   slaPentestAck: boolean;
   slaCapacityReviewAt: string | null;
   slaSecretRotationAt: string | null;
+  turnstileEnabled: boolean;
+  turnstileSiteKey: string;
+  turnstileSecretKeySet: boolean;
 };
 
 const ENV_SYNC_KEYS = [
@@ -305,6 +312,15 @@ export function applyPanelSettings(stored: PanelSettingsStored): void {
   if (stored.httpsEnabled !== undefined) {
     process.env.HTTPS_ENABLED = stored.httpsEnabled ? "true" : "false";
   }
+  if (stored.turnstileEnabled !== undefined) {
+    config.turnstile.enabled = Boolean(stored.turnstileEnabled);
+  }
+  if (stored.turnstileSiteKey !== undefined) {
+    config.turnstile.siteKey = String(stored.turnstileSiteKey).trim();
+  }
+  if (stored.turnstileSecretKey !== undefined) {
+    config.turnstile.secretKey = String(stored.turnstileSecretKey);
+  }
 }
 
 export function loadAndApplyPanelSettings(): void {
@@ -372,6 +388,9 @@ export async function getPanelSettingsView(): Promise<PanelSettingsView> {
     slaPentestAck: Boolean(stored.slaPentestAck),
     slaCapacityReviewAt: stored.slaCapacityReviewAt ?? null,
     slaSecretRotationAt: stored.slaSecretRotationAt ?? null,
+    turnstileEnabled: config.turnstile.enabled,
+    turnstileSiteKey: config.turnstile.siteKey,
+    turnstileSecretKeySet: Boolean(config.turnstile.secretKey),
   };
 }
 
@@ -415,6 +434,10 @@ export type PanelSettingsPatch = {
   slaPentestAck?: boolean;
   slaCapacityReviewAt?: string | null;
   slaSecretRotationAt?: string | null;
+  turnstileEnabled?: boolean;
+  turnstileSiteKey?: string;
+  /** Empty / omit = leave unchanged; non-empty = set. */
+  turnstileSecretKey?: string;
 };
 
 function asNonNegInt(value: unknown, label: string): number {
@@ -608,6 +631,18 @@ export function mergePanelSettingsPatch(
     const v = patch.slaSecretRotationAt;
     next.slaSecretRotationAt =
       v === null || v === "" ? null : String(v).trim();
+  }
+  if (patch.turnstileEnabled !== undefined) {
+    next.turnstileEnabled = Boolean(patch.turnstileEnabled);
+  }
+  if (patch.turnstileSiteKey !== undefined) {
+    next.turnstileSiteKey = String(patch.turnstileSiteKey).trim();
+  }
+  if (patch.turnstileSecretKey !== undefined) {
+    const secret = String(patch.turnstileSecretKey);
+    if (secret !== SECRET_UNCHANGED) {
+      next.turnstileSecretKey = secret.trim();
+    }
   }
 
   return next;

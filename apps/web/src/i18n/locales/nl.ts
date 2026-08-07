@@ -221,6 +221,7 @@ export const nl: Messages = {
     inviteExpires: "· verloopt {when}",
     signInToAccept: "Log in om te accepteren",
     acceptInvite: "Uitnodiging accepteren",
+    turnstileRequired: "Voltooi de botcheck (Ik ben geen robot).",
   },
   account: {
     language: "Taal",
@@ -1557,7 +1558,7 @@ export const nl: Messages = {
     displayWidth: "Weergavebreedte",
     displayWidthFull: "Volledige breedte",
     miscDeferredNote:
-      "Captcha, OAuth-login en avatar-uploads volgen later — aparte integraties.",
+      "OAuth-login en avatar-uploads volgen later — aparte integraties.",
     backupEncryptionNote:
       "Back-upencryptie via BACKUP_ENCRYPTION / BACKUP_ENCRYPTION_KEY in .env (niet hier).",
 
@@ -1596,6 +1597,7 @@ export const nl: Messages = {
       https_session: "HTTPS / secure cookies",
       trust_proxy: "Trusted proxy",
       admin_2fa: "Admin 2FA verplicht",
+      turnstile: "Cloudflare Turnstile",
       redis: "Redis HA",
       alerts: "Crash / security-alerts",
       daemon_jwt_legacy: "Daemon JWT legacy",
@@ -1642,6 +1644,12 @@ export const nl: Messages = {
     twoFactorRoles: "2FA verplicht voor rollen",
     twoFactorRolesHelp:
       "Gebruikers in deze rollen moeten TOTP inschakelen voordat ze het paneel gebruiken.",
+    turnstileHeading: "Cloudflare Turnstile (Ik ben geen robot)",
+    turnstileHelp:
+      "Toont de Cloudflare-botcheck bij inloggen en registratie. Maak een widget in Cloudflare → Turnstile en plak site key + secret. Beide keys zijn verplicht als de schakelaar aan staat.",
+    turnstileEnabled: "Turnstile verplicht bij inloggen & registratie",
+    turnstileSiteKey: "Turnstile site key",
+    turnstileSecretKey: "Turnstile secret key",
     activityWebhookUrl: "Activity-webhook-URL",
     backupOffsiteCmd: "Offsite back-up commando",
     backupOffsiteCmdHelp:

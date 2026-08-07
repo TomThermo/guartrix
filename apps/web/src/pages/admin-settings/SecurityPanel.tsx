@@ -45,6 +45,13 @@ export type SecurityPanelProps = {
   onTestRedis: () => void;
   twoFactorRoles: string[];
   onToggleRole: (role: string) => void;
+  turnstileEnabled: boolean;
+  onTurnstileEnabledChange: (value: boolean) => void;
+  turnstileSiteKey: string;
+  onTurnstileSiteKeyChange: (value: string) => void;
+  turnstileSecretKey: string;
+  onTurnstileSecretKeyChange: (value: string) => void;
+  turnstileSecretKeySet: boolean;
 };
 
 export function SecurityPanel({
@@ -61,6 +68,13 @@ export function SecurityPanel({
   onTestRedis,
   twoFactorRoles,
   onToggleRole,
+  turnstileEnabled,
+  onTurnstileEnabledChange,
+  turnstileSiteKey,
+  onTurnstileSiteKeyChange,
+  turnstileSecretKey,
+  onTurnstileSecretKeyChange,
+  turnstileSecretKeySet,
 }: SecurityPanelProps) {
   const { t } = useI18n();
 
@@ -194,6 +208,52 @@ export function SecurityPanel({
           ))}
         </div>
       </Col>
+      <Col xs={12}>
+        <AdminInsetCard>
+          <div className="fw-semibold mb-2">
+            <i className="fa-solid fa-robot me-2 text-secondary" aria-hidden />
+            {t("adminSettings.turnstileHeading")}
+          </div>
+          <p className="small text-secondary mb-3">
+            {t("adminSettings.turnstileHelp")}
+          </p>
+          <Form.Check
+            type="switch"
+            id="turnstile-enabled"
+            className="mb-3"
+            label={t("adminSettings.turnstileEnabled")}
+            checked={turnstileEnabled}
+            onChange={(e) => onTurnstileEnabledChange(e.target.checked)}
+          />
+          <Form.Group className="mb-3">
+            <Form.Label>{t("adminSettings.turnstileSiteKey")}</Form.Label>
+            <Form.Control
+              type="text"
+              value={turnstileSiteKey}
+              onChange={(e) => onTurnstileSiteKeyChange(e.target.value)}
+              className="font-monospace"
+              autoComplete="off"
+              placeholder="0x4AAAAAAA…"
+            />
+          </Form.Group>
+          <Form.Group>
+            <Form.Label>{t("adminSettings.turnstileSecretKey")}</Form.Label>
+            <Form.Control
+              type="password"
+              value={turnstileSecretKey}
+              onChange={(e) => onTurnstileSecretKeyChange(e.target.value)}
+              className="font-monospace"
+              autoComplete="new-password"
+              placeholder={
+                turnstileSecretKeySet
+                  ? t("adminSettings.secretSet")
+                  : t("adminSettings.secretEmpty")
+              }
+            />
+          </Form.Group>
+        </AdminInsetCard>
+      </Col>
     </Row>
   );
 }
+

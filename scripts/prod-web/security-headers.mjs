@@ -30,6 +30,7 @@ export function withSecurityHeaders(handler) {
         "'self'",
         `'nonce-${cspNonce}'`,
         "https://static.cloudflareinsights.com",
+        "https://challenges.cloudflare.com",
         ...(allowUnsafeInlineScript ? ["'unsafe-inline'"] : []),
         ...scriptSrcExtra,
       ].join(" "),

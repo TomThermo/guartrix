@@ -4,6 +4,7 @@ import { Alert, Button, Form, Spinner } from "react-bootstrap";
 import { api } from "../api";
 import { useAuth } from "../auth";
 import { AuthShell } from "../components/AuthShell";
+import { TurnstileWidget } from "../components/TurnstileWidget";
 import { useI18n } from "../i18n/react";
 
 const REMEMBER_KEY = "guartrix.rememberMe";
@@ -38,11 +39,19 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [registrationEnabled, setRegistrationEnabled] = useState(true);
+  const [turnstileEnabled, setTurnstileEnabled] = useState(false);
+  const [turnstileSiteKey, setTurnstileSiteKey] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const [turnstileReset, setTurnstileReset] = useState(0);
 
   useEffect(() => {
     void api
       .authConfig()
-      .then((c) => setRegistrationEnabled(c.registrationEnabled))
+      .then((c) => {
+        setRegistrationEnabled(c.registrationEnabled);
+        setTurnstileEnabled(Boolean(c.turnstileEnabled && c.turnstileSiteKey));
+        setTurnstileSiteKey(c.turnstileSiteKey ?? null);
+      })
       .catch(() => undefined);
   }, []);
 
@@ -56,8 +65,18 @@ export function LoginPage() {
     e.preventDefault();
     setBusy(true);
     setError(null);
+    if (turnstileEnabled && !turnstileToken.trim()) {
+      setError(t("auth.turnstileRequired"));
+      setBusy(false);
+      return;
+    }
     try {
-      const result = await login(username, password, rememberMe);
+      const result = await login(
+        username,
+        password,
+        rememberMe,
+        turnstileToken || undefined,
+      );
       if (rememberMe) {
         localStorage.setItem(REMEMBER_KEY, "1");
         localStorage.setItem(USERNAME_KEY, username.trim());
@@ -71,6 +90,8 @@ export function LoginPage() {
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : t("auth.loginFailed"));
+      setTurnstileToken("");
+      setTurnstileReset((n) => n + 1);
     } finally {
       setBusy(false);
     }
@@ -184,6 +205,13 @@ export function LoginPage() {
           checked={rememberMe}
           onChange={(e) => setRememberMe(e.target.checked)}
         />
+        {turnstileEnabled && turnstileSiteKey && (
+          <TurnstileWidget
+            key={turnstileReset}
+            siteKey={turnstileSiteKey}
+            onToken={setTurnstileToken}
+          />
+        )}
         <Button type="submit" variant="primary" className="w-100" disabled={busy}>
           {busy ? (
             <>
