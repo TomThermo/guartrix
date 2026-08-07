@@ -20,6 +20,7 @@ Operator and developer documentation for the Guartrix Minecraft hosting panel.
 | [Install the panel](install-panel.md) | Ubuntu install (download → run) + existing checkout |
 | [Install nodes](install-nodes.md) | Add remote daemons (SSH wizard / curl) |
 | [Upgrade to 1.1](upgrade-to-1.1.md) | 1.0.x → 1.1.0 migrate, env, scale smoke |
+| [Upgrade to 1.2](upgrade-to-1.2.md) | 1.1.x → 1.2 SaaS/SLA env, Go-live, peer-only transfer |
 
 ## Getting started
 
@@ -112,7 +113,9 @@ Operator and developer documentation for the Guartrix Minecraft hosting panel.
 | `scripts/install-panel.sh` / `install-daemon.sh` | Host installers |
 | `scripts/db-migrate.sh` | Prisma migrate deploy |
 | `scripts/monitor.sh` | Watchdog |
-| `scripts/scale-smoke.sh` | 1.1 readiness smoke |
+| `scripts/scale-smoke.sh` | Readiness smoke (+ `/api/v1`, metrics token, SaaS env hints) |
+| `scripts/sla-restore-drill.sh` | Panel DB backup / staging restore drill |
+| `scripts/sla-secret-rotation-drill.sh` | Secret rotation checklist |
 | `scripts/lib.sh` | Shared helpers |
 
 See also [Operations](operations.md) · [Release builds](release-builds.md) · [API surface map](api-surface-map.md) · [Contributing](../../CONTRIBUTING.md).

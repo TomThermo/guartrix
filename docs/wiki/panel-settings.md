@@ -18,9 +18,9 @@ Secrets (SMTP password, Cloudflare token) are never returned in full — leave t
 
 ### Go-live tab
 
-Shows pass/warn/fail for SMTP, registration, HTTPS, TRUST_PROXY, admin 2FA, Redis, alerts, daemon JWT legacy, scheduler locks, and BullMQ vs in-process jobs. Deep-links jump to the matching settings tab.
+Shows pass/warn/fail for SMTP, registration, HTTPS, TRUST_PROXY, admin 2FA, Redis, alerts, daemon JWT legacy, scheduler locks, transfer staging policy, and BullMQ vs in-process jobs. Deep-links jump to the matching settings tab. Under `REQUIRE_REDIS_HA=1`, missing Redis/BullMQ/alerts/attestations are treated more strictly.
 
-SLA checkboxes/dates (restore drill, capacity review, secret rotation, incident runbook ack, pentest ack) are **operator attestations** stored in `panel-settings.json` — see [SLA ops](sla-ops.md).
+SLA checkboxes/dates (restore drill, capacity review, secret rotation, incident runbook ack, pentest ack) are **operator attestations** stored in `panel-settings.json` — see [SLA ops](sla-ops.md) · [Upgrade to 1.2](upgrade-to-1.2.md).
 
 ## Restart required
 
@@ -38,7 +38,7 @@ Other keys (registration, mail, quotas, 2FA roles, alerts, Cloudflare, SLA attes
 - The Settings UI is the preferred way to change the knobs above on a running panel.
 - Do not commit `data/panel-settings.json` (under `data/`, gitignored with other operator state).
 
-Go-live checklist (webhook, SMTP, Mollie, backups): for **customer installs** after download — use **Admin → Settings → Go-live** and [Improvement map — Sprint 10](../roadmap.md).
+Go-live checklist (webhook, SMTP, Mollie, backups, HA): for **customer installs** after download — use **Admin → Settings → Go-live** and [Improvement map — Sprint 10/11](../roadmap.md).
 
 ## Nodes
 

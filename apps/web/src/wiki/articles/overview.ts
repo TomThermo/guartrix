@@ -123,13 +123,15 @@ export const overviewArticles: WikiArticle[] = [
         bullets: [
           "Panel path: /api-docs",
           "Interactive Try it: /api-docs/explorer",
+          "Stable public alias: /api/v1/* (same handlers as /api/*)",
           "Old /wiki/api-* URLs redirect automatically.",
         ],
         code: [
           {
             label: "Links",
             language: "text",
-            content: "/api-docs\n/api-docs/explorer\n/api-docs/client\n/api-docs/application",
+            content:
+              "/api-docs\n/api-docs/explorer\n/api-docs/client\n/api-docs/application\n/api/v1/health",
           },
         ],
       },

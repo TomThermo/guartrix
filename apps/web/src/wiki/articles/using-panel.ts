@@ -308,6 +308,7 @@ export const usingPanelArticles: WikiArticle[] = [
         bullets: [
           "TOTP can be optional or required for selected roles.",
           "Subusers receive fine-grained per-server permissions.",
+          "Invite accept requires a matching verified email (`emailVerified`).",
           "Client API keys and app passwords extend account access for scripts and SFTP clients.",
         ],
       },
@@ -636,19 +637,34 @@ export const usingPanelArticles: WikiArticle[] = [
     slug: "node-transfer",
     title: "Move between nodes",
     summary:
-      "Transfer a stopped server from one node to another, including data, allocations, and database handling.",
+      "Transfer a stopped server peer node→node (files + MySQL). Panel disk staging is opt-in only.",
     category: "Using the panel",
-    keywords: ["transfer", "move", "nodes", "allocations", "database", "stopped server"],
+    keywords: [
+      "transfer",
+      "move",
+      "nodes",
+      "allocations",
+      "database",
+      "stopped server",
+      "peer",
+      "staging",
+    ],
     sourcePath: "docs/wiki/node-transfer.md",
-    relatedSlugs: ["server-management", "networking-allocations", "install-nodes"],
+    relatedSlugs: ["server-management", "networking-allocations", "install-nodes", "sla-ops"],
     sections: [
       {
         title: "Transfer flow",
         bullets: [
           "The server must be stopped before transfer starts.",
-          "The panel streams an archive from source daemon to destination daemon.",
+          "Destination pulls the world archive from the source daemon (peer deploy-from).",
+          "MySQL prefers peer restore-from; panel SQL temp only if TRANSFER_ALLOW_PANEL_STAGING=1.",
           "Allocations, firewall state, and optional DNS-related behavior are rebound on the destination.",
-          "MySQL data is dumped and restored as part of the move flow when needed.",
+        ],
+      },
+      {
+        title: "Panel staging",
+        paragraphs: [
+          "From 1.2, panel tmpdisk staging defaults off so large worlds cannot cliff panel disk/IO. Enable TRANSFER_ALLOW_PANEL_STAGING=1 only when nodes cannot reach each other.",
         ],
       },
     ],

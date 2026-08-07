@@ -116,11 +116,20 @@ export const operationsArticles: WikiArticle[] = [
     slug: "panel-settings",
     title: "Panel settings",
     summary:
-      "Configure public URLs, registration, SMTP, security flags, Redis visibility, and alert sinks from Admin -> Settings.",
+      "Configure public URLs, registration, SMTP, security flags, Redis visibility, alerts, and the Go-live readiness tab from Admin -> Settings.",
     category: "Operations",
-    keywords: ["settings", "smtp", "registration", "redis", "alerts", "public host"],
+    keywords: [
+      "settings",
+      "smtp",
+      "registration",
+      "redis",
+      "alerts",
+      "public host",
+      "go-live",
+      "sla",
+    ],
     sourcePath: "docs/wiki/panel-settings.md",
-    relatedSlugs: ["security", "operations", "notifications-alerts"],
+    relatedSlugs: ["sla-ops", "security", "operations", "notifications-alerts"],
     sections: [
       {
         title: "What it controls",
@@ -129,6 +138,7 @@ export const operationsArticles: WikiArticle[] = [
           "Mail settings including SMTP and test mail.",
           "Security settings such as HTTPS flags and 2FA-required roles.",
           "Alert delivery settings such as activity webhook and alert email.",
+          "Go-live: live readiness checks, BullMQ job status, and SLA operator attestations.",
         ],
       },
       {
@@ -136,6 +146,51 @@ export const operationsArticles: WikiArticle[] = [
         paragraphs: [
           "Overrides are stored in `data/panel-settings.json` and merged on top of `.env`.",
           "Public host, base URL, HTTPS, and session-secure changes also patch `.env` and require a restart, while many other values apply immediately to the API.",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "sla-ops",
+    title: "SLA ops",
+    summary:
+      "Templates for managed SaaS posture: HA env, incident steps, restore/secret drills, monitoring, and pentest process.",
+    category: "Operations",
+    keywords: [
+      "sla",
+      "go-live",
+      "bullmq",
+      "require_redis_ha",
+      "restore drill",
+      "pentest",
+      "rto",
+      "rpo",
+    ],
+    sourcePath: "docs/wiki/sla-ops.md",
+    relatedSlugs: ["panel-settings", "scaling", "security", "upgrade-to-1.2"],
+    sections: [
+      {
+        title: "Engineering gates",
+        bullets: [
+          "REQUIRE_REDIS_HA / PANEL_HA refuse boot without Redis + BullMQ + redis session/rate stores.",
+          "TRANSFER_ALLOW_PANEL_STAGING defaults off (peer-only node transfers).",
+          "Admin → Go-live shows live checks and operator attestations.",
+        ],
+      },
+      {
+        title: "Operator drills",
+        bullets: [
+          "bash scripts/sla-restore-drill.sh (--restore-latest for staging MySQL)",
+          "bash scripts/sla-secret-rotation-drill.sh",
+          "bash scripts/scale-smoke.sh",
+          "Record dates under Go-live; keep pentest ack false until an external assessment exists.",
+        ],
+      },
+      {
+        title: "Also see",
+        bullets: [
+          "SLA contract template and Prometheus alert example in the docs wiki.",
+          "Pentest scope brief for independent assessors.",
         ],
       },
     ],
@@ -194,6 +249,13 @@ export const operationsArticles: WikiArticle[] = [
           "Backup busy lock (BACKUP_BUSY_TTL_MS)",
           "Daemon /events single-primary bridge lock + fan-out",
           "Console and event pub/sub across API replicas",
+          "BullMQ job queues (backups, schedules, transfers, disk-watch, maintenance)",
+        ],
+      },
+      {
+        title: "Managed HA flag",
+        paragraphs: [
+          "Set REQUIRE_REDIS_HA=1 (or PANEL_HA=1) so the API refuses to start without Redis + BullMQ and redis-backed session/rate stores.",
         ],
       },
     ],
@@ -206,7 +268,7 @@ export const operationsArticles: WikiArticle[] = [
     category: "Operations",
     keywords: ["upgrade", "1.1", "migrate", "scale", "redis", "rate limit"],
     sourcePath: "docs/wiki/upgrade-to-1.1.md",
-    relatedSlugs: ["scaling", "operations", "env-reference"],
+    relatedSlugs: ["upgrade-to-1.2", "scaling", "operations", "env-reference"],
     sections: [
       {
         title: "What 1.1.0 means",
@@ -228,9 +290,48 @@ export const operationsArticles: WikiArticle[] = [
       {
         title: "Known limits in 1.1",
         bullets: [
-          "World transfers prefer node→node; MySQL dumps on transfer may briefly use panel temp.",
+          "World transfers prefer node→node; from 1.2 panel staging is opt-in only.",
           "Stats history lives on the daemon (lost if that node restarts).",
           "Still load-test your fleet size before go-live.",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "upgrade-to-1.2",
+    title: "Upgrade to 1.2",
+    summary:
+      "Upgrade 1.1.x to 1.2 SaaS/SLA: Go-live, BullMQ, /api/v1, peer-only transfers, HA flag.",
+    category: "Operations",
+    keywords: [
+      "upgrade",
+      "1.2",
+      "saas",
+      "sla",
+      "bullmq",
+      "api/v1",
+      "go-live",
+      "transfer",
+    ],
+    sourcePath: "docs/wiki/upgrade-to-1.2.md",
+    relatedSlugs: ["sla-ops", "upgrade-to-1.1", "scaling", "panel-settings"],
+    sections: [
+      {
+        title: "What 1.2 adds",
+        bullets: [
+          "Admin → Go-live readiness and SLA attestations",
+          "BullMQ jobs + REQUIRE_REDIS_HA boot gate",
+          "Stable /api/v1 dual-mount",
+          "Peer-only transfers by default (TRANSFER_ALLOW_PANEL_STAGING=0)",
+          "Owner aggregate API_OWNER_RATE_LIMIT",
+        ],
+      },
+      {
+        title: "After upgrade",
+        bullets: [
+          "Merge env knobs from .env.example",
+          "Rebuild/restart, then bash scripts/scale-smoke.sh",
+          "Run restore/secret drills and attest under Go-live",
         ],
       },
     ],

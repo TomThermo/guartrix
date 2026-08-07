@@ -11,7 +11,7 @@
 | **Product** | [guartrix.com](https://guartrix.com) |
 | **Public wiki** | `/wiki` on the panel web app |
 | **Source** | [github.com/TomThermo/guartrix](https://github.com/TomThermo/guartrix) |
-| **Documentation** | [Wiki](docs/wiki/README.md) · [Panel guide](docs/wiki/panel-guide.md) · [Improvement map](docs/roadmap.md) · [Changelog](CHANGELOG.md) |
+| **Documentation** | [Wiki](docs/wiki/README.md) · [Panel guide](docs/wiki/panel-guide.md) · [SLA ops](docs/wiki/sla-ops.md) · [Improvement map](docs/roadmap.md) · [Changelog](CHANGELOG.md) |
 
 ---
 
@@ -33,7 +33,7 @@ Supported server types include **Java Edition** (Vanilla, Paper, Purpur, Fabric,
 | **Web UI** | React 19, Vite 6, React Router, Bootstrap 5 / React-Bootstrap |
 | **API** | Fastify 5, Prisma → **MySQL** (panel DB) |
 | **Daemon / nodes** | Fastify agent, Docker Engine (game containers), SFTP (`ssh2`), node-local MySQL for game DBs |
-| **Optional** | Redis (sessions / rate limits / HA), SMTP, Mollie, Sentry, Prometheus metrics |
+| **Optional** | Redis + BullMQ (multi-API HA / durable jobs), SMTP, Mollie, Sentry, Prometheus metrics |
 | **Prod serve** | `prod-web.mjs` serves `apps/web/dist` and proxies `/api` + `/ws` to the API |
 
 Install targets and OS matrix: [Requirements](#requirements). Monorepo layout: [Architecture](#architecture).
@@ -56,11 +56,11 @@ Full UI tour: [Panel guide](docs/wiki/panel-guide.md).
 
 ## Capabilities
 
-**Game servers** — create, import, clone, reinstall; change type/version; world reset and upload; live console and power controls; join card (copy/QR); seed map + optional BlueMap. **Java** and **native Bedrock** server families (BDS, PocketMine-MP, Nukkit) with UDP-primary networking for Bedrock. Admin **node→node transfer** (rebind ports/DNS).
+**Game servers** — create, import, clone, reinstall; change type/version; world reset and upload; live console and power controls; join card (copy/QR); seed map + optional BlueMap. **Java** and **native Bedrock** server families (BDS, PocketMine-MP, Nukkit) with UDP-primary networking for Bedrock. Admin **peer node→node transfer** (panel disk staging opt-in only via `TRANSFER_ALLOW_PANEL_STAGING`).
 
 **Resources** — RAM, CPU, and disk limits; live Docker stats plus ~1h **daemon-side stats history** for charts; optional Schedules chains and Backup tab schedules; crash auto-restart; owner alerts and Discord status webhooks.
 
-**Files & access** — IDE-style file manager (folder tree, Monaco editor tabs, drag-and-drop upload); SFTP on port 2022 (`{username}.{serverId}`); subusers with invite links and scoped permissions; optional encrypted backups and offsite hook.
+**Files & access** — IDE-style file manager (folder tree, Monaco editor tabs, drag-and-drop upload); SFTP on port 2022 (`{username}.{serverId}`); subusers with invite links (accept requires `emailVerified`) and scoped permissions; optional encrypted backups and offsite hook.
 
 **Players** — online list, whitelist, bans, and moderation history tabs.
 
@@ -68,7 +68,7 @@ Full UI tour: [Panel guide](docs/wiki/panel-guide.md).
 
 **Data** — backups (manual and scheduled via `BackupSchedule`); per-server MySQL on the node (may share Docker MySQL with the panel on full installs).
 
-**Platform** — registration with email verification; quotas (new accounts start at zero); optional TOTP; activity log, Discord/email, and web-push alerts; GDPR export/delete; Client API keys; Mollie billing and Application API; in-panel **`/api-docs`**; license validation via `license.guartrix.com` (unlicensed free tier: 1 node, 1 server, 10 GB disk); i18n EN/NL; Redis HA (sessions, rate limits, backup busy lock, daemon event bridge); dual session rate budgets (`API_SESSION_RATE_LIMIT` + `API_SESSION_READ_RATE_LIMIT`); paginated server lists + dashboard Load more; Admin → Settings / Status; **1.1** control-plane scale path (~100 nodes / ~1000 servers on strong hardware).
+**Platform** — registration with email verification; quotas (new accounts start at zero); optional TOTP; activity log, Discord/email, and web-push alerts; GDPR export/delete; Client API keys; Mollie billing and Application API; stable **`/api` + `/api/v1`** dual-mount; in-panel **`/api-docs`**; license validation via `license.guartrix.com` (unlicensed free tier: 1 node, 1 server, 10 GB disk); i18n EN/NL; Redis HA + BullMQ jobs (`REQUIRE_REDIS_HA` for managed multi-API); owner aggregate rate limits (`API_OWNER_RATE_LIMIT`); dual session rate budgets; paginated server lists; Admin → Settings (**Go-live** readiness + SLA attestations) / Status; **1.1** scale path + **1.2** SaaS/SLA engineering track.
 
 ---
 
@@ -151,7 +151,7 @@ API ──HTTP + WebSocket──► Daemon(s) (:8081) ──► Docker · SFTP (
 | `packages/node-agent` | Docker, files, SFTP, metrics, MySQL helper |
 | `packages/shared` | Shared types, permissions, license verification |
 
-Further reading: [Architecture](docs/wiki/architecture.md) · [Scaling](docs/wiki/scaling.md) · [Upgrade to 1.1](docs/wiki/upgrade-to-1.1.md) · [Licensing](docs/wiki/licensing.md)
+Further reading: [Architecture](docs/wiki/architecture.md) · [Scaling](docs/wiki/scaling.md) · [Upgrade to 1.1](docs/wiki/upgrade-to-1.1.md) · [Upgrade to 1.2](docs/wiki/upgrade-to-1.2.md) · [SLA ops](docs/wiki/sla-ops.md) · [Licensing](docs/wiki/licensing.md)
 
 ---
 
@@ -180,7 +180,13 @@ For production nodes, **preseed Docker Engine + Node 22** before `install-daemon
 | 2022 | Public (per node) | SFTP |
 | 25565+ | Public | Game traffic |
 
-Commercial packages: [Release builds](docs/wiki/release-builds.md) · day-to-day ops: [Operations](docs/wiki/operations.md) · [Security](docs/wiki/security.md)
+Commercial packages: [Release builds](docs/wiki/release-builds.md) · day-to-day ops: [Operations](docs/wiki/operations.md) · [Security](docs/wiki/security.md) · managed posture: [SLA ops](docs/wiki/sla-ops.md) · [Pentest scope](docs/wiki/pentest-scope.md)
+
+```bash
+# SaaS / HA smoke (after Redis + panel are up)
+bash scripts/scale-smoke.sh
+bash scripts/sla-restore-drill.sh --backup-only
+```
 
 ### Accounts
 
@@ -193,7 +199,7 @@ Details: [Accounts & quotas](docs/wiki/accounts-and-quotas.md)
 
 ### HTTP API
 
-Automate the panel without a browser:
+Automate the panel without a browser. Prefer the stable **`/api/v1/…`** alias (same handlers as `/api/…` — see [API conventions](docs/wiki/api-conventions.md)).
 
 | Audience | Key | Docs |
 |----------|-----|------|
@@ -203,10 +209,10 @@ Automate the panel without a browser:
 
 ```bash
 # Permission catalog (no auth)
-curl -sS https://guartrix.com/api/account/api-reference | jq '.clientApi.presets'
+curl -sS https://guartrix.com/api/v1/account/api-reference | jq '.clientApi.presets'
 
 # Your servers
-curl -sS -H "Authorization: Bearer gt_YOUR_KEY" https://guartrix.com/api/servers
+curl -sS -H "Authorization: Bearer gt_YOUR_KEY" https://guartrix.com/api/v1/servers
 ```
 
 OpenAPI: [docs/openapi.yaml](docs/openapi.yaml) · Create keys under **Account → Security**.
