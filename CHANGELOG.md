@@ -3,6 +3,11 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.3.12] — 2026-08-07
+
+### Fixed
+- Admin → Status Nodes container table: dark-mode friendly header/row colors (no Bootstrap light `table-secondary`)
+
 ## [1.3.11] — 2026-08-07
 
 ### Changed

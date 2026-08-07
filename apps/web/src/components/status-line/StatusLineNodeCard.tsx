@@ -14,7 +14,7 @@ function ContainerRow({ container }: { container: StatusContainer }) {
   const running = container.state.toLowerCase() === "running";
   const noContainer = container.id.startsWith("panel-");
   return (
-    <tr className={noContainer ? "table-secondary" : undefined}>
+    <tr className={noContainer ? "status-containers-table__muted" : undefined}>
       <td>
         {container.isMysql ? (
           <span>
@@ -264,9 +264,13 @@ export function StatusLineNodeCard({ node }: { node: StatusNode }) {
             {mysqlContainers.length ? ` · ${mysqlContainers.length} DB` : ""})
           </div>
           <div className="table-responsive">
-            <Table size="sm" hover className="mb-0 align-middle">
+            <Table
+              size="sm"
+              hover
+              className="mb-0 align-middle status-containers-table"
+            >
               <thead>
-                <tr className="small text-secondary">
+                <tr>
                   <th>Type / server</th>
                   <th>Container</th>
                   <th>ID</th>
