@@ -24,6 +24,7 @@ export const en = {
     nodes: "Nodes",
     terms: "Terms",
     privacy: "Privacy",
+    version: "Product version",
   },
   common: {
     save: "Save",

@@ -10,6 +10,27 @@ import react from "@vitejs/plugin-react";
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const webDir = path.dirname(fileURLToPath(import.meta.url));
 
+function readProductVersion(): string {
+  try {
+    const fromFile = fs
+      .readFileSync(path.join(rootDir, "VERSION"), "utf8")
+      .trim()
+      .split(/\s/)[0];
+    if (fromFile) return fromFile;
+  } catch {
+    /* fall through */
+  }
+  try {
+    const pkg = JSON.parse(
+      fs.readFileSync(path.join(webDir, "package.json"), "utf8"),
+    ) as { version?: string };
+    if (pkg.version?.trim()) return pkg.version.trim();
+  } catch {
+    /* fall through */
+  }
+  return "0.0.0";
+}
+
 function loadFaSafelist(): string[] {
   try {
     const raw = fs.readFileSync(path.join(webDir, "fa-safelist.json"), "utf8");
@@ -148,11 +169,13 @@ function backupTransferProxyPlugin(): Plugin {
 export default defineConfig(({ mode }) => {
   loadEnv(mode, rootDir, "");
   const apiPort = readApiPort();
+  const appVersion = readProductVersion();
 
   return {
     plugins: [react(), backupTransferProxyPlugin(), faSubsetPlugin()],
     define: {
       "import.meta.env.VITE_API_PORT": JSON.stringify(apiPort),
+      "import.meta.env.VITE_APP_VERSION": JSON.stringify(appVersion),
     },
     optimizeDeps: {
       include: ["monaco-editor", "@monaco-editor/react"],

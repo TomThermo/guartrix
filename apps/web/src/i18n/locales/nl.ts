@@ -26,6 +26,7 @@ export const nl: Messages = {
     nodes: "Nodes",
     terms: "Voorwaarden",
     privacy: "Privacy",
+    version: "Productversie",
   },
   common: {
     save: "Opslaan",

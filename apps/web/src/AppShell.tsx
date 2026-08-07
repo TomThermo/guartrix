@@ -10,6 +10,7 @@ import {
   Spinner,
 } from "react-bootstrap";
 import { api } from "./api";
+import { getAppVersionLabel } from "./app-version";
 import { useAuth } from "./auth";
 import { useI18n } from "./i18n/react";
 
@@ -348,7 +349,10 @@ export function AppShell({ children }: { children: ReactNode }) {
       <footer className="main-footer">
         <Container className="main-footer-inner">
           <div className="main-footer-copy">
-            Copyright © 2026 · Powered by <strong>Guartrix</strong>.
+            Copyright © 2026 · Powered by <strong>Guartrix</strong>{" "}
+            <span className="main-footer-version" title={t("nav.version")}>
+              {getAppVersionLabel()}
+            </span>
             {" · "}
             <Link to="/wiki">
               <i className="fa-solid fa-book-open me-1" />

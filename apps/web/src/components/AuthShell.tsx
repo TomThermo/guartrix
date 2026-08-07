@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import type { ReactNode } from "react";
 import { Card, Col, Container, Row } from "react-bootstrap";
+import { getAppVersionLabel } from "../app-version";
 import { useI18n } from "../i18n/react";
 
 export function AuthShell({
@@ -38,6 +39,8 @@ export function AuthShell({
             </Card.Body>
           </Card>
           <div className="text-center mt-3 small text-secondary">
+            <span title={t("nav.version")}>{getAppVersionLabel()}</span>
+            <span className="mx-2">·</span>
             <Link to="/wiki" className="link-secondary">
               <i className="fa-solid fa-book-open me-1" />
               Wiki

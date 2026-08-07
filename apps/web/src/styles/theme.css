@@ -242,6 +242,11 @@ body {
   order: 1;
 }
 
+.main-footer-version {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.9;
+}
+
 .main-footer a {
   color: var(--bh-accent);
   text-decoration: none;
