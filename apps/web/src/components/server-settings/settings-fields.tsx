@@ -37,7 +37,7 @@ export const CATEGORIES: { id: CategoryId; label: string; hint: string; icon: st
   {
     id: "performance",
     label: "Performance",
-    hint: "RAM, view distance, simulation",
+    hint: "View distance, simulation, tick time",
     icon: "fa-gauge-high",
   },
   {

@@ -3,6 +3,12 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.2.7] — 2026-08-07
+
+### Changed
+
+- **Settings → Performance:** Memory / Disk / CPU fields are admin-only (hidden for non-admins). View distance, simulation, compression, and tick time stay available to users with settings permission.
+
 ## [1.2.6] — 2026-08-07
 
 ### Changed

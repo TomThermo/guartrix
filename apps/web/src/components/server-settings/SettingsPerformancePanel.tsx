@@ -32,68 +32,49 @@ export function SettingsPerformancePanel({
 }) {
   return (
               <>
-                <fieldset disabled={!startupEditable} className="settings-fieldset border-0 p-0 mb-1">
-                  <Row className="g-3 mb-1">
-                    <Col md={6}>
-                      <Field
-                        label="Memory"
-                        hint={
-                          isAdmin
-                            ? "Java heap (-Xmx). Restart to apply."
-                            : "Java heap (-Xmx). Only an admin can change this."
-                        }
-                      >
-                        <MemorySelect
-                          valueMb={memoryMb}
-                          onChangeMb={setMemoryMb}
-                          maxMb={memoryCapMb}
-                          disabled={!startupEditable || !isAdmin}
-                        />
-                      </Field>
-                    </Col>
-                    <Col md={6}>
-                      <Field
-                        label="Disk limit"
-                        hint={
-                          isAdmin
-                            ? "Max storage for this server’s files."
-                            : "Max storage for this server. Only an admin can change this."
-                        }
-                      >
-                        <MemorySelect
-                          valueMb={diskMb}
-                          onChangeMb={setDiskMb}
-                          disabled={!startupEditable || !isAdmin}
-                        />
-                      </Field>
-                    </Col>
-                  </Row>
-                  <Row className="g-3 mb-1">
-                    <Col md={6}>
-                      <Field
-                        label="CPU limit"
-                        hint={
-                          isAdmin
-                            ? "100 = 1 CPU core. Restart to apply."
-                            : "CPU cap. Only an admin can change this."
-                        }
-                      >
-                        <Form.Select
-                          value={cpuLimit}
-                          onChange={(e) => setCpuLimit(Number(e.target.value))}
-                          disabled={!startupEditable || !isAdmin}
-                        >
-                          <option value={0}>Unlimited</option>
-                          <option value={50}>0.5 core (50%)</option>
-                          <option value={100}>1 core (100%)</option>
-                          <option value={200}>2 cores (200%)</option>
-                          <option value={400}>4 cores (400%)</option>
-                          <option value={800}>8 cores (800%)</option>
-                        </Form.Select>
-                      </Field>
-                    </Col>
-                  </Row>
-                </fieldset>
+                {isAdmin ? (
+                  <fieldset disabled={!startupEditable} className="settings-fieldset border-0 p-0 mb-1">
+                    <Row className="g-3 mb-1">
+                      <Col md={6}>
+                        <Field label="Memory" hint="Java heap (-Xmx). Restart to apply.">
+                          <MemorySelect
+                            valueMb={memoryMb}
+                            onChangeMb={setMemoryMb}
+                            maxMb={memoryCapMb}
+                            disabled={!startupEditable}
+                          />
+                        </Field>
+                      </Col>
+                      <Col md={6}>
+                        <Field label="Disk limit" hint="Max storage for this server’s files.">
+                          <MemorySelect
+                            valueMb={diskMb}
+                            onChangeMb={setDiskMb}
+                            disabled={!startupEditable}
+                          />
+                        </Field>
+                      </Col>
+                    </Row>
+                    <Row className="g-3 mb-1">
+                      <Col md={6}>
+                        <Field label="CPU limit" hint="100 = 1 CPU core. Restart to apply.">
+                          <Form.Select
+                            value={cpuLimit}
+                            onChange={(e) => setCpuLimit(Number(e.target.value))}
+                            disabled={!startupEditable}
+                          >
+                            <option value={0}>Unlimited</option>
+                            <option value={50}>0.5 core (50%)</option>
+                            <option value={100}>1 core (100%)</option>
+                            <option value={200}>2 cores (200%)</option>
+                            <option value={400}>4 cores (400%)</option>
+                            <option value={800}>8 cores (800%)</option>
+                          </Form.Select>
+                        </Field>
+                      </Col>
+                    </Row>
+                  </fieldset>
+                ) : null}
                 <fieldset disabled={!settingsEditable} className="settings-fieldset border-0 p-0">
                   <Row className="g-3 mb-1">
                     <Col md={6}>
