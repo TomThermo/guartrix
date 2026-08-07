@@ -387,6 +387,14 @@
   background: var(--bh-bg, transparent);
 }
 
+.node-disk-pie__svg {
+  color: var(--bh-text);
+}
+
+.node-live-stats .progress {
+  background: rgba(255, 255, 255, 0.08);
+}
+
 /* Account security */
 .account-page .account-prefs-grid {
   display: grid;

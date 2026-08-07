@@ -7,7 +7,6 @@ import {
   Form,
   Modal,
   Nav,
-  ProgressBar,
   Spinner,
   Stack,
   Tab,
@@ -16,6 +15,7 @@ import { api } from "../../api";
 import { useI18n } from "../../i18n/react";
 import { copyText, formatGb } from "../../utils";
 import { NodePortPoolPanel } from "../NodePortPoolPanel";
+import { NodeLiveStats } from "./NodeLiveStats";
 
 function statusVariant(
   status: DaemonNode["status"],
@@ -285,7 +285,7 @@ export function NodeEditModal({
                       <i className="fa-solid fa-circle-info" aria-hidden />
                       {t("admin.nodeInformation")}
                     </h2>
-                    <dl className="admin-kv">
+                    <dl className="admin-kv mb-3">
                       <dt>{t("admin.nodeType")}</dt>
                       <dd>{node.isLocal ? t("admin.nodeLocal") : t("admin.nodeRemote")}</dd>
                       <dt>{t("admin.nodeLocation")}</dt>
@@ -297,7 +297,7 @@ export function NodeEditModal({
                       <dt>{t("admin.nodeRam")}</dt>
                       <dd>
                         {node.memoryMb > 0
-                          ? `${formatGb(node.memoryUsedMb)} / ${formatGb(node.memoryMb)} (${ramPct}%)`
+                          ? `${formatGb(node.memoryUsedMb)} / ${formatGb(node.memoryMb)} (${ramPct}%) ${t("admin.nodeAllocated")}`
                           : "—"}
                       </dd>
                       <dt>{t("admin.nodeLastSeen")}</dt>
@@ -313,15 +313,12 @@ export function NodeEditModal({
                           : "—"}
                       </dd>
                     </dl>
-                    {node.memoryMb > 0 && (
-                      <ProgressBar
-                        now={ramPct}
-                        variant={node.memoryAvailableMb < 1024 ? "warning" : "success"}
-                        className="mt-3"
-                        style={{ height: "0.4rem" }}
-                        title={`${formatGb(node.memoryUsedMb)} / ${formatGb(node.memoryMb)}`}
-                      />
-                    )}
+                    <hr className="border-secondary opacity-25 my-3" />
+                    <h3 className="admin-section-title mb-3">
+                      <i className="fa-solid fa-microchip" aria-hidden />
+                      {t("admin.nodeLiveTitle")}
+                    </h3>
+                    <NodeLiveStats nodeId={node.id} active={tab === "overview"} />
                   </section>
                 </div>
                 <div className="col-lg-5">

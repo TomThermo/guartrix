@@ -164,6 +164,20 @@ export interface StatusNode {
   containers: StatusContainer[];
 }
 
+/** Live snapshot for one node — GET /api/admin/nodes/:id/status */
+export interface AdminNodeStatusResponse {
+  id: string;
+  name: string;
+  isLocal: boolean;
+  publicUrl: string;
+  reachable: boolean;
+  error?: string;
+  generatedAt: string;
+  daemon?: StatusNode["daemon"];
+  mysql?: StatusNode["mysql"];
+  sftp?: StatusNode["sftp"];
+}
+
 /** Aggregated response for GET /api/admin/status (admin-only). */
 export interface AdminStatusResponse {
   generatedAt: string;

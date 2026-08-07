@@ -32,6 +32,10 @@ export const nodesApi = {
     }),
   deleteNode: (id: string) =>
     request<{ ok: boolean }>(`/api/admin/nodes/${id}`, { method: "DELETE" }),
+  getAdminNodeStatus: (id: string) =>
+    request<import("@msm/shared").AdminNodeStatusResponse>(
+      `/api/admin/nodes/${encodeURIComponent(id)}/status`,
+    ),
   testNode: (id: string) =>
     request<import("@msm/shared").NodeTestResult & { node: import("@msm/shared").DaemonNode }>(
       `/api/admin/nodes/${id}/test`,

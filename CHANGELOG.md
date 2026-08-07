@@ -3,6 +3,11 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.3.2] — 2026-08-07
+
+### Added
+- Admin → Nodes fullscreen Overview: live daemon host stats (version, CPU threads/arch/kernel, CPU & memory bars, storage pie chart) via `GET /api/admin/nodes/:id/status` (polls every 5s)
+
 ## [1.3.1] — 2026-08-07
 
 ### Fixed

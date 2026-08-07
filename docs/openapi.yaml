@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Guartrix API
-  version: 1.3.1
+  version: 1.3.2
   description: |
     Machine-readable surface for the Guartrix panel. Paths under /api also answer at /api/v1 (dual-mount).
 
@@ -1133,6 +1133,21 @@ paths:
     post:
       tags: [Admin]
       summary: "POST /api/admin/nodes/{id}/remote-install"
+      security:
+        - SessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+  /api/admin/nodes/{id}/status:
+    get:
+      tags: [Admin]
+      summary: "GET /api/admin/nodes/{id}/status"
+      description: Live daemon host snapshot (CPU load, memory, disk) for one node.
       security:
         - SessionCookie: []
       parameters:

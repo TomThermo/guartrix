@@ -10,6 +10,7 @@ import { logActivity } from "../../activity-log.js";
 import { requireAdmin, requireAuth, verifyAccountPassword } from "../../auth/auth.js";
 import { prisma } from "../../db.js";
 import {
+  daemonGetStatus,
   daemonTestNode,
   setNodeToken,
   clearNodeToken,
@@ -18,6 +19,7 @@ import {
   generateDaemonToken,
   hashDaemonToken,
   listNodesWithUsage,
+  nodePublicUrl,
   removeNodeSftpDns,
   syncNodeSftpDns,
   writeLocalDaemonEnvIfLocal,
@@ -254,6 +256,77 @@ export function registerNodeRoutes(app: FastifyInstance): void {
         metadata: { node: existing.name, fqdn: existing.fqdn },
       });
       return { ok: true };
+    },
+  );
+
+  /** Live host snapshot for one node (Overview modal polling). */
+  app.get<{ Params: { id: string } }>(
+    "/api/admin/nodes/:id/status",
+    async (request, reply) => {
+      if (!(await requireAdmin(request, reply, "nodes.read"))) return;
+      const existing = await prisma.node.findUnique({
+        where: { id: request.params.id },
+      });
+      if (!existing) return reply.status(404).send({ error: "Not found" });
+      const publicUrl = nodePublicUrl(existing);
+      try {
+        const snapshot = await daemonGetStatus(existing.id);
+        await prisma.node.update({
+          where: { id: existing.id },
+          data: {
+            status: "ONLINE",
+            lastSeenAt: new Date(),
+            memoryMb: snapshot.totalMemoryMb,
+          },
+        });
+        return {
+          id: existing.id,
+          name: existing.name,
+          isLocal: existing.isLocal,
+          publicUrl,
+          reachable: true as const,
+          daemon: {
+            hostname: snapshot.hostname,
+            publicIp: snapshot.publicIp,
+            localIps: snapshot.localIps,
+            osVersion: snapshot.osVersion,
+            arch: snapshot.arch,
+            cpuCount: snapshot.cpuCount,
+            loadAvg: snapshot.loadAvg,
+            dockerVersion: snapshot.dockerVersion,
+            daemonVersion: snapshot.daemonVersion,
+            daemonPid: snapshot.daemonPid,
+            daemonPort: snapshot.daemonPort,
+            daemonMemoryRssMb: snapshot.daemonMemoryRssMb,
+            uptime: snapshot.uptime,
+            totalMemoryMb: snapshot.totalMemoryMb,
+            totalMemoryGb: snapshot.totalMemoryGb,
+            freeMemoryMb: snapshot.freeMemoryMb,
+            disk: snapshot.disk,
+          },
+          mysql: snapshot.mysql,
+          sftp: {
+            listening: Boolean(snapshot.sftp?.listening),
+            port: snapshot.sftp?.port ?? existing.sftpPort ?? 2022,
+            hostname: existing.sftpHostname ?? null,
+          },
+          generatedAt: new Date().toISOString(),
+        };
+      } catch (err) {
+        await prisma.node.update({
+          where: { id: existing.id },
+          data: { status: "OFFLINE" },
+        });
+        return {
+          id: existing.id,
+          name: existing.name,
+          isLocal: existing.isLocal,
+          publicUrl,
+          reachable: false as const,
+          error: err instanceof Error ? err.message : String(err),
+          generatedAt: new Date().toISOString(),
+        };
+      }
     },
   );
 
