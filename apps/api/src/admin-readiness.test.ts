@@ -28,6 +28,9 @@ beforeEach(() => {
   process.env.TRUST_PROXY = "1";
   process.env.DAEMON_JWT_LEGACY = "false";
   process.env.TWO_FACTOR_REQUIRED_ROLES = "ADMIN";
+  delete process.env.REQUIRE_REDIS_HA;
+  delete process.env.PANEL_HA;
+  delete process.env.TRANSFER_ALLOW_PANEL_STAGING;
   mocks.isSmtpConfigured.mockReturnValue(true);
   mocks.isRedisConfigured.mockReturnValue(true);
   mocks.getRedisStatus.mockResolvedValue({
@@ -62,6 +65,26 @@ describe("buildReadinessReport", () => {
       },
     });
     expect(report.checks.find((c) => c.id === "jobs")?.tone).toBe("pass");
+    expect(report.checks.find((c) => c.id === "transfer_staging")?.tone).toBe("pass");
+  });
+
+  it("fails redis stores when REQUIRE_REDIS_HA and stores are not redis", async () => {
+    process.env.REQUIRE_REDIS_HA = "1";
+    mocks.getRedisStatus.mockResolvedValue({
+      configured: true,
+      enabled: true,
+      connected: true,
+      urlMasked: "redis://***",
+      latencyMs: 1,
+      error: null,
+      sessionStore: "file",
+      rateLimitStore: "file",
+    });
+    const report = await buildReadinessReport({
+      jobs: { mode: "in_process", redisRequired: false },
+    });
+    expect(report.checks.find((c) => c.id === "redis")?.tone).toBe("fail");
+    expect(report.checks.find((c) => c.id === "jobs")?.tone).toBe("fail");
   });
 
   it("fails smtp when registration open and SMTP unset", async () => {

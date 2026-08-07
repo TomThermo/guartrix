@@ -40,6 +40,7 @@ export type PanelSettingsStored = {
   slaIncidentRunbookAck?: boolean;
   slaPentestAck?: boolean;
   slaCapacityReviewAt?: string | null;
+  slaSecretRotationAt?: string | null;
 };
 
 /** Public GET shape — secrets masked. */
@@ -87,6 +88,7 @@ export type PanelSettingsView = {
   slaIncidentRunbookAck: boolean;
   slaPentestAck: boolean;
   slaCapacityReviewAt: string | null;
+  slaSecretRotationAt: string | null;
 };
 
 const ENV_SYNC_KEYS = [
@@ -296,6 +298,7 @@ export async function getPanelSettingsView(): Promise<PanelSettingsView> {
     slaIncidentRunbookAck: Boolean(stored.slaIncidentRunbookAck),
     slaPentestAck: Boolean(stored.slaPentestAck),
     slaCapacityReviewAt: stored.slaCapacityReviewAt ?? null,
+    slaSecretRotationAt: stored.slaSecretRotationAt ?? null,
   };
 }
 
@@ -328,6 +331,7 @@ export type PanelSettingsPatch = {
   slaIncidentRunbookAck?: boolean;
   slaPentestAck?: boolean;
   slaCapacityReviewAt?: string | null;
+  slaSecretRotationAt?: string | null;
 };
 
 function asNonNegInt(value: unknown, label: string): number {
@@ -469,6 +473,11 @@ export function mergePanelSettingsPatch(
   if (patch.slaCapacityReviewAt !== undefined) {
     const v = patch.slaCapacityReviewAt;
     next.slaCapacityReviewAt =
+      v === null || v === "" ? null : String(v).trim();
+  }
+  if (patch.slaSecretRotationAt !== undefined) {
+    const v = patch.slaSecretRotationAt;
+    next.slaSecretRotationAt =
       v === null || v === "" ? null : String(v).trim();
   }
 

@@ -44,6 +44,7 @@ export type PanelSettings = {
   slaIncidentRunbookAck: boolean;
   slaPentestAck: boolean;
   slaCapacityReviewAt: string | null;
+  slaSecretRotationAt: string | null;
 };
 
 export type PanelSettingsPatch = {
@@ -74,6 +75,7 @@ export type PanelSettingsPatch = {
   slaIncidentRunbookAck?: boolean;
   slaPentestAck?: boolean;
   slaCapacityReviewAt?: string | null;
+  slaSecretRotationAt?: string | null;
 };
 
 export type ReadinessCheck = {
@@ -92,6 +94,7 @@ export type ReadinessReport = {
     incidentRunbookAck?: boolean;
     pentestScheduledOrDone?: boolean;
     capacityReviewAt?: string | null;
+    secretRotationAt?: string | null;
   };
   jobs?: {
     mode: "bullmq" | "in_process";

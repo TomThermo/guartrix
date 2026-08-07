@@ -20,6 +20,9 @@ const READINESS_LABELS: Record<string, MessageKey> = {
   sla_restore_drill: "adminSettings.readiness.sla_restore_drill",
   sla_incident_runbook: "adminSettings.readiness.sla_incident_runbook",
   sla_pentest: "adminSettings.readiness.sla_pentest",
+  sla_capacity_review: "adminSettings.readiness.sla_capacity_review",
+  sla_secret_rotation: "adminSettings.readiness.sla_secret_rotation",
+  transfer_staging: "adminSettings.readiness.transfer_staging",
 };
 
 export type GoLivePanelProps = {
@@ -31,6 +34,8 @@ export type GoLivePanelProps = {
   onSlaRestoreDrillAtChange: (v: string) => void;
   slaCapacityReviewAt: string;
   onSlaCapacityReviewAtChange: (v: string) => void;
+  slaSecretRotationAt: string;
+  onSlaSecretRotationAtChange: (v: string) => void;
   slaIncidentRunbookAck: boolean;
   onSlaIncidentRunbookAckChange: (v: boolean) => void;
   slaPentestAck: boolean;
@@ -55,6 +60,8 @@ export function GoLivePanel({
   onSlaRestoreDrillAtChange,
   slaCapacityReviewAt,
   onSlaCapacityReviewAtChange,
+  slaSecretRotationAt,
+  onSlaSecretRotationAtChange,
   slaIncidentRunbookAck,
   onSlaIncidentRunbookAckChange,
   slaPentestAck,
@@ -194,6 +201,14 @@ export function GoLivePanel({
             type="date"
             value={slaCapacityReviewAt}
             onChange={(e) => onSlaCapacityReviewAtChange(e.target.value)}
+          />
+        </Form.Group>
+        <Form.Group className="mb-3">
+          <Form.Label>{t("adminSettings.slaSecretRotation")}</Form.Label>
+          <Form.Control
+            type="date"
+            value={slaSecretRotationAt}
+            onChange={(e) => onSlaSecretRotationAtChange(e.target.value)}
           />
         </Form.Group>
         <Form.Check

@@ -5,11 +5,12 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     env:
       # prisma generate / schema parse only — no live DB in this job
       DATABASE_URL: mysql://ci:ci@127.0.0.1:3306/ci
@@ -39,16 +40,26 @@ jobs:
       - name: Typecheck web
         run: npm run typecheck -w @msm/web
 
-      - name: Biome lint (Sprint 10 paths)
+      - name: Biome lint (SaaS / SLA paths)
         run: >
           npx biome check
           apps/api/src/admin-readiness.ts
           apps/api/src/admin-readiness.test.ts
+          apps/api/src/saas-flags.ts
+          apps/api/src/saas-flags.test.ts
+          apps/api/src/api-v1-rewrite.ts
+          apps/api/src/api-v1-rewrite.test.ts
+          apps/api/src/http-error.ts
           apps/api/src/jobs
+          apps/api/src/auth/owner-rate-limit.ts
+          apps/api/src/auth/api-rate-limit.ts
+          apps/api/src/auth/api-rate-limit.test.ts
           apps/api/src/routes/admin/readiness.ts
           apps/api/src/routes/auth/invites-policy.ts
           apps/api/src/routes/auth/invites-accept.test.ts
+          apps/api/src/servers/disk-watch.ts
           apps/web/src/pages/admin-settings/GoLivePanel.tsx
+          e2e
 
       - name: OpenAPI coverage
         run: npm run check:openapi
@@ -65,7 +76,67 @@ jobs:
       - name: Build workspaces
         run: npm run build
 
-  # Optional E2E against a staging panel (set repo secrets). Skips when unset.
+  api-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: guartrix_panel
+          MYSQL_USER: guartrix
+          MYSQL_PASSWORD: guartrix
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=20
+    env:
+      DATABASE_URL: mysql://guartrix:guartrix@127.0.0.1:3306/guartrix_panel
+      SESSION_SECRET: ci-github-actions-session-secret-xx
+      ADMIN_PASSWORD: CiAdminPassw0rd!
+      ALLOW_INSECURE_DEFAULTS: "1"
+      REDIS_URL: redis://127.0.0.1:6379/0
+      REDIS_ENABLED: "1"
+      SESSION_STORE: redis
+      RATE_LIMIT_STORE: redis
+      JOBS_BULLMQ: "1"
+      PUBLIC_BASE_URL: http://127.0.0.1:3001
+      CSRF_ALLOW_MISSING_ORIGIN: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm run db:generate
+      - run: npm run build -w @msm/shared
+      - name: Migrate database
+        run: bash scripts/db-migrate.sh
+      - name: SaaS flags + API v1 rewrite unit suite
+        run: npx vitest run apps/api/src/saas-flags.test.ts apps/api/src/api-v1-rewrite.test.ts apps/api/src/admin-readiness.test.ts
+      - name: Redis ping smoke
+        run: |
+          node -e '
+          const Redis = require("ioredis");
+          const r = new Redis(process.env.REDIS_URL);
+          r.ping().then((x) => { if (x !== "PONG") process.exit(1); console.log("redis ok"); return r.quit(); });
+          '
+
+  # Optional E2E against a staging panel (set repo secrets / vars).
   e2e-staging:
     if: ${{ github.event_name == 'workflow_dispatch' || (github.ref == 'refs/heads/main' && vars.E2E_STAGING_ENABLED == 'true') }}
     runs-on: ubuntu-latest
@@ -82,6 +153,8 @@ jobs:
       - name: Playwright smoke
         env:
           E2E_BASE_URL: ${{ secrets.E2E_BASE_URL }}
+          E2E_USER: ${{ secrets.E2E_USER }}
+          E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
           E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
           E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
         run: |
@@ -89,4 +162,6 @@ jobs:
             echo "E2E_BASE_URL not set — skip"
             exit 0
           fi
-          npx playwright test
+          export E2E_USER="${E2E_USER:-$E2E_ADMIN_EMAIL}"
+          export E2E_PASSWORD="${E2E_PASSWORD:-$E2E_ADMIN_PASSWORD}"
+          npm run test:e2e

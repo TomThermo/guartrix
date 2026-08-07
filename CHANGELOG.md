@@ -3,6 +3,15 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.2.0] — 2026-08-07
+
+- SaaS harden: `REQUIRE_REDIS_HA`/`PANEL_HA` refuses boot without Redis+BullMQ+redis stores
+- Transfers peer-only by default (`TRANSFER_ALLOW_PANEL_STAGING=0`); panel staging opt-in
+- Owner aggregate API rate limit (`API_OWNER_RATE_LIMIT`); `RATE_LIMITED` error code
+- BullMQ disk-watch ticks; Go-live secret-rotation attestation + transfer staging check
+- CI: MySQL+Redis integration job, Playwright secret mapping, expanded Biome SaaS paths
+- Ops: `scripts/sla-restore-drill.sh`, `scripts/sla-secret-rotation-drill.sh`, [pentest-scope](docs/wiki/pentest-scope.md)
+
 ## [1.1.3] — 2026-08-07
 
 - Fix `/api/v1` dual-mount: use Fastify `rewriteUrl` so routes resolve (onRequest rewrite was too late for the router)

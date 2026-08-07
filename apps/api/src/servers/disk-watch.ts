@@ -39,13 +39,7 @@ async function acquireDiskWatchLock(): Promise<boolean> {
       await redis.pexpire(DISK_WATCH_LOCK_KEY, ttl);
       return true;
     }
-    const result = await redis.set(
-      DISK_WATCH_LOCK_KEY,
-      instanceId,
-      "PX",
-      ttl,
-      "NX",
-    );
+    const result = await redis.set(DISK_WATCH_LOCK_KEY, instanceId, "PX", ttl, "NX");
     return result === "OK";
   } catch {
     return true;
@@ -115,37 +109,54 @@ async function checkServerDisk(s: {
   }
 }
 
-export function startDiskWatch(): void {
+/** One disk-watch pass (leader lock + paged scans). Used by BullMQ workers. */
+export async function runDiskWatchTick(): Promise<void> {
+  try {
+    const isLeader = await acquireDiskWatchLock();
+    if (!isLeader) return;
+
+    const pageSize = diskWatchPageSize();
+    const concurrency = diskWatchConcurrency();
+    let cursor: string | undefined;
+
+    for (;;) {
+      const servers = await prisma.server.findMany({
+        where: { diskMb: { gt: 0 } },
+        select: { id: true, name: true, diskMb: true, status: true },
+        orderBy: { id: "asc" },
+        take: pageSize,
+        ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
+      });
+      if (servers.length === 0) break;
+
+      await mapPool(servers, concurrency, checkServerDisk);
+      cursor = servers[servers.length - 1]?.id;
+      if (servers.length < pageSize) break;
+    }
+  } catch (err) {
+    console.warn("[guartrix] Disk watch failed:", err instanceof Error ? err.message : err);
+  }
+}
+
+/**
+ * Schedule disk-watch ticks.
+ * When `enqueue` is set (BullMQ HA), the timer only enqueues; workers run {@link runDiskWatchTick}.
+ */
+export function startDiskWatch(opts?: { enqueue?: () => Promise<unknown> }): void {
   const intervalMs = diskWatchIntervalMs();
   const run = async () => {
-    try {
-      const isLeader = await acquireDiskWatchLock();
-      if (!isLeader) return;
-
-      const pageSize = diskWatchPageSize();
-      const concurrency = diskWatchConcurrency();
-      let cursor: string | undefined;
-
-      for (;;) {
-        const servers = await prisma.server.findMany({
-          where: { diskMb: { gt: 0 } },
-          select: { id: true, name: true, diskMb: true, status: true },
-          orderBy: { id: "asc" },
-          take: pageSize,
-          ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
-        });
-        if (servers.length === 0) break;
-
-        await mapPool(servers, concurrency, checkServerDisk);
-        cursor = servers[servers.length - 1]?.id;
-        if (servers.length < pageSize) break;
+    if (opts?.enqueue) {
+      try {
+        await opts.enqueue();
+      } catch (err) {
+        console.warn(
+          "[guartrix] Disk watch enqueue failed:",
+          err instanceof Error ? err.message : err,
+        );
       }
-    } catch (err) {
-      console.warn(
-        "[guartrix] Disk watch failed:",
-        err instanceof Error ? err.message : err,
-      );
+      return;
     }
+    await runDiskWatchTick();
   };
 
   setTimeout(() => void run(), 30_000);

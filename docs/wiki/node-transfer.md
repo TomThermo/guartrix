@@ -38,21 +38,23 @@ source node; after cutover it stays on the destination with `ERROR` and a messag
 
 | Item | Behaviour |
 |------|-----------|
-| World / files | Dest daemon pulls `.tar.gz` from source (`deploy-from`); panel staging only as fallback |
+| World / files | Dest daemon pulls `.tar.gz` from source (`deploy-from`); panel staging **opt-in** (`TRANSFER_ALLOW_PANEL_STAGING=1`) |
 | Allocations | All rows rebind `nodeId` (primary port remapped if requested) |
 | Firewall | Closed on source, opened on destination |
 | DNS subdomain | A/SRV updated to destination public IPv4 when Cloudflare is configured |
 | Server id / ownership / subusers | Unchanged |
 | Backups (panel) | Stay on the panel host |
-| MySQL databases | Dest pulls dump via `restore-from` (peer); panel SQL temp only as fallback |
+| MySQL databases | Dest pulls dump via `restore-from` (peer); panel SQL temp only when staging is allowed |
 
 ## Ops notes
 
 Prefer node→node copy: destination calls source `/export` with a short-lived
 panel-issued bearer, then deploys locally. The panel does **not** hold the world
-archive when peer copy works. If nodes cannot reach each other, the panel falls
-back to temp staging (~1× world size). MySQL prefers the same peer path
-(`POST /mysql/databases/restore-from` pulling source `/mysql/databases/dump`);
-panel SQL staging is fallback only. Activity log records `server.transfer`.
+archive when peer copy works. Panel tmpdisk staging is **disabled by default**
+(`TRANSFER_ALLOW_PANEL_STAGING=0`) so large worlds cannot cliff panel disk/IO;
+set `TRANSFER_ALLOW_PANEL_STAGING=1` only when peers cannot reach each other.
+MySQL prefers the same peer path
+(`POST /mysql/databases/restore-from` pulling source `/mysql/databases/dump`).
+Activity log records `server.transfer`.
 
 See also [Install nodes](install-nodes.md) and [Architecture](architecture.md).

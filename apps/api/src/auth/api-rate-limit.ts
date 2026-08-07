@@ -1,5 +1,7 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
+import { rateLimitedError } from "../http-error.js";
 import { getRateLimitStore } from "../rate-limit-store.js";
+import { checkOwnerApiRate } from "./owner-rate-limit.js";
 
 const WINDOW_MS = 60_000;
 const MAX = Number(process.env.API_SESSION_RATE_LIMIT ?? 600);
@@ -78,13 +80,21 @@ export function registerApiSessionRateLimit(app: FastifyInstance): void {
     };
     const ip = request.ip || "unknown";
 
+    const ownerId = session.userId?.trim();
+    if (ownerId) {
+      const ownerLimited = await checkOwnerApiRate(ownerId);
+      if (ownerLimited) {
+        return reply.status(429).send(rateLimitedError(ownerLimited));
+      }
+    }
+
     if (isApiSessionReadPoll(request)) {
       if (!Number.isFinite(READ_MAX) || READ_MAX <= 0) return;
       const readKey = sessionRateLimitKey(session, ip, "read");
       if (!readKey) return;
       const rl = await getRateLimitStore().hit(readKey, WINDOW_MS, READ_MAX);
       if (rl.limited) {
-        return reply.status(429).send({ error: "Too many API requests — slow down" });
+        return reply.status(429).send(rateLimitedError("Too many API requests — slow down"));
       }
       return;
     }
@@ -95,7 +105,7 @@ export function registerApiSessionRateLimit(app: FastifyInstance): void {
 
     const rl = await getRateLimitStore().hit(key, WINDOW_MS, MAX);
     if (rl.limited) {
-      return reply.status(429).send({ error: "Too many API requests — slow down" });
+      return reply.status(429).send(rateLimitedError("Too many API requests — slow down"));
     }
   });
 }

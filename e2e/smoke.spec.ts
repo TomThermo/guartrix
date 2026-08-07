@@ -26,12 +26,24 @@ test.describe("panel smoke", () => {
     test.skip(!password, "Set E2E_PASSWORD for authenticated smoke");
     await page.goto(baseUrl!);
     // Already authenticated session → dashboard
-    if (await page.getByRole("link", { name: /dashboard|servers/i }).first().isVisible().catch(() => false)) {
+    if (
+      await page
+        .getByRole("link", { name: /dashboard|servers/i })
+        .first()
+        .isVisible()
+        .catch(() => false)
+    ) {
       await expect(page.locator("body")).toBeVisible();
       return;
     }
-    await page.getByLabel(/username|email/i).first().fill(user);
-    await page.getByLabel(/^password$/i).first().fill(password);
+    await page
+      .getByLabel(/username|email/i)
+      .first()
+      .fill(user);
+    await page
+      .getByLabel(/^password$/i)
+      .first()
+      .fill(password);
     await page.getByRole("button", { name: /sign in|log in|login/i }).click();
     // 2FA step may appear — skip full path if so
     const totp = page.getByLabel(/authenticator|code|2fa/i);
@@ -49,11 +61,23 @@ test.describe("panel smoke", () => {
   test("open first server console when available", async ({ page }) => {
     test.skip(!password, "Set E2E_PASSWORD for authenticated smoke");
     await page.goto(baseUrl!);
-    if (!(await page.getByLabel(/^password$/i).first().isVisible().catch(() => false))) {
+    if (
+      !(await page
+        .getByLabel(/^password$/i)
+        .first()
+        .isVisible()
+        .catch(() => false))
+    ) {
       // may already be in-app
     } else {
-      await page.getByLabel(/username|email/i).first().fill(user);
-      await page.getByLabel(/^password$/i).first().fill(password);
+      await page
+        .getByLabel(/username|email/i)
+        .first()
+        .fill(user);
+      await page
+        .getByLabel(/^password$/i)
+        .first()
+        .fill(password);
       await page.getByRole("button", { name: /sign in|log in|login/i }).click();
       const totp = page.getByLabel(/authenticator|code|2fa/i);
       if (await totp.isVisible().catch(() => false)) return;
@@ -68,10 +92,16 @@ test.describe("panel smoke", () => {
     }
     await serverLink.click();
     await expect(page).toHaveURL(/\/servers\//, { timeout: 15_000 });
-    const consoleTab = page.getByRole("tab", { name: /console/i }).or(
-      page.getByRole("link", { name: /console/i }),
-    ).or(page.getByRole("button", { name: /console/i }));
-    if (await consoleTab.first().isVisible().catch(() => false)) {
+    const consoleTab = page
+      .getByRole("tab", { name: /console/i })
+      .or(page.getByRole("link", { name: /console/i }))
+      .or(page.getByRole("button", { name: /console/i }));
+    if (
+      await consoleTab
+        .first()
+        .isVisible()
+        .catch(() => false)
+    ) {
       await consoleTab.first().click();
     }
     await expect(page.locator("body")).toBeVisible();

@@ -13,6 +13,10 @@ On this operator host: `https://guartrix.com/api/…` (or `/api/v1/…`).
 
 **Compatibility policy:** `/api/v1` dual-mounts today’s `/api` handlers via Fastify `rewriteUrl` (must rewrite before routing — an `onRequest` rewrite is too late). Prefer `/api/v1` for new integrators. Breaking changes land on a future `/api/v2`; `/api` stays during the v1 window. Errors prefer `{ error, code?, details? }` (`http-error.ts`); legacy Zod flatten may still appear on older 400s.
 
+### Stable error codes
+
+Common `code` values: `VALIDATION_ERROR`, `BAD_REQUEST`, `UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`, `RATE_LIMITED`, `EMAIL_NOT_VERIFIED`, `TWO_FACTOR_REQUIRED`, `SERVER_SUSPENDED`, `CONFLICT`, `INTERNAL`. Rate limits return HTTP **429** with `code: "RATE_LIMITED"`.
+
 All examples below use:
 
 ```bash
@@ -91,7 +95,7 @@ Validation errors (`400`) may return Zod flatten:
 |------|---------------|---------|
 | Client API `gt_` | 120 / min / key | `API_KEY_RATE_LIMIT` |
 | Application API `gta_` | 120 / min / key | `APPLICATION_API_RATE_LIMIT` |
-| Cookie session | 600 / min / **userId** (mutations); dashboard poll GETs use a separate higher budget (`API_SESSION_READ_RATE_LIMIT`, default ~1800) | (session rate limit) |
+| Cookie session | 600 / min / **userId** (mutations); dashboard poll GETs use a separate higher budget (`API_SESSION_READ_RATE_LIMIT`, default ~1800); plus owner aggregate `API_OWNER_RATE_LIMIT` (default 1800) across session + Client API keys | (session / owner rate limit) |
 
 429 response:
 

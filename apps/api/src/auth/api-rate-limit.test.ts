@@ -6,10 +6,7 @@ import {
   registerApiSessionRateLimit,
   sessionRateLimitKey,
 } from "./api-rate-limit.js";
-import {
-  MemoryRateLimitStore,
-  setActiveRateLimitStore,
-} from "../rate-limit-store.js";
+import { MemoryRateLimitStore, setActiveRateLimitStore } from "../rate-limit-store.js";
 
 function fakeReq(
   url: string,
@@ -26,13 +23,9 @@ function fakeReq(
 
 function mockApp(): {
   app: FastifyInstance;
-  run: (
-    request: FastifyRequest,
-  ) => Promise<{ statusCode?: number; body?: unknown } | undefined>;
+  run: (request: FastifyRequest) => Promise<{ statusCode?: number; body?: unknown } | undefined>;
 } {
-  let hook:
-    | ((request: FastifyRequest, reply: FastifyReply) => Promise<unknown>)
-    | undefined;
+  let hook: ((request: FastifyRequest, reply: FastifyReply) => Promise<unknown>) | undefined;
   const app = {
     addHook: (
       _name: string,
@@ -65,15 +58,9 @@ describe("isApiSessionReadPoll", () => {
   it("matches dashboard list/stats GETs only", () => {
     expect(isApiSessionReadPoll(fakeReq("/api/servers"))).toBe(true);
     expect(isApiSessionReadPoll(fakeReq("/api/servers/stats"))).toBe(true);
-    expect(
-      isApiSessionReadPoll(fakeReq("/api/servers/abc/stats/history")),
-    ).toBe(true);
-    expect(
-      isApiSessionReadPoll(fakeReq("/api/servers", { method: "POST" })),
-    ).toBe(false);
-    expect(isApiSessionReadPoll(fakeReq("/api/servers/abc/backups"))).toBe(
-      false,
-    );
+    expect(isApiSessionReadPoll(fakeReq("/api/servers/abc/stats/history"))).toBe(true);
+    expect(isApiSessionReadPoll(fakeReq("/api/servers", { method: "POST" }))).toBe(false);
+    expect(isApiSessionReadPoll(fakeReq("/api/servers/abc/backups"))).toBe(false);
   });
 });
 
@@ -83,19 +70,13 @@ describe("isApiSessionRateLimitExempt", () => {
     expect(isApiSessionRateLimitExempt(fakeReq("/api/health"))).toBe(true);
     expect(isApiSessionRateLimitExempt(fakeReq("/api/ready"))).toBe(true);
     expect(isApiSessionRateLimitExempt(fakeReq("/api/metrics"))).toBe(true);
-    expect(isApiSessionRateLimitExempt(fakeReq("/api/public/invite"))).toBe(
+    expect(isApiSessionRateLimitExempt(fakeReq("/api/public/invite"))).toBe(true);
+    expect(isApiSessionRateLimitExempt(fakeReq("/api/internal/x"))).toBe(true);
+    expect(isApiSessionRateLimitExempt(fakeReq("/api/servers", { apiKeyAuth: { id: "k" } }))).toBe(
       true,
     );
-    expect(isApiSessionRateLimitExempt(fakeReq("/api/internal/x"))).toBe(true);
     expect(
-      isApiSessionRateLimitExempt(
-        fakeReq("/api/servers", { apiKeyAuth: { id: "k" } }),
-      ),
-    ).toBe(true);
-    expect(
-      isApiSessionRateLimitExempt(
-        fakeReq("/api/servers", { applicationAuth: { id: "a" } }),
-      ),
+      isApiSessionRateLimitExempt(fakeReq("/api/servers", { applicationAuth: { id: "a" } })),
     ).toBe(true);
     expect(isApiSessionRateLimitExempt(fakeReq("/api/servers"))).toBe(false);
   });
@@ -108,28 +89,19 @@ describe("sessionRateLimitKey", () => {
   });
 
   it("keys by userId when present (not shared NAT IP)", () => {
-    expect(
-      sessionRateLimitKey(
-        { authenticated: true, userId: "user_a" },
-        "10.0.0.1",
-      ),
-    ).toBe("api-session:user:user_a");
-    expect(
-      sessionRateLimitKey(
-        { authenticated: true, userId: "user_b" },
-        "10.0.0.1",
-        "read",
-      ),
-    ).toBe("api-session-read:user:user_b");
+    expect(sessionRateLimitKey({ authenticated: true, userId: "user_a" }, "10.0.0.1")).toBe(
+      "api-session:user:user_a",
+    );
+    expect(sessionRateLimitKey({ authenticated: true, userId: "user_b" }, "10.0.0.1", "read")).toBe(
+      "api-session-read:user:user_b",
+    );
   });
 
   it("falls back to IP when authenticated without userId", () => {
-    expect(
-      sessionRateLimitKey({ authenticated: true }, "203.0.113.9"),
-    ).toBe("api-session:ip:203.0.113.9");
-    expect(sessionRateLimitKey({ authenticated: true }, "")).toBe(
-      "api-session:ip:unknown",
+    expect(sessionRateLimitKey({ authenticated: true }, "203.0.113.9")).toBe(
+      "api-session:ip:203.0.113.9",
     );
+    expect(sessionRateLimitKey({ authenticated: true }, "")).toBe("api-session:ip:unknown");
   });
 });
 
@@ -140,14 +112,8 @@ describe("session rate limit isolation", () => {
     const windowMs = 60_000;
     const ip = "198.51.100.1";
 
-    const keyA = sessionRateLimitKey(
-      { authenticated: true, userId: "a" },
-      ip,
-    )!;
-    const keyB = sessionRateLimitKey(
-      { authenticated: true, userId: "b" },
-      ip,
-    )!;
+    const keyA = sessionRateLimitKey({ authenticated: true, userId: "a" }, ip)!;
+    const keyB = sessionRateLimitKey({ authenticated: true, userId: "b" }, ip)!;
 
     expect(store.hit(keyA, windowMs, max).limited).toBe(false);
     expect(store.hit(keyA, windowMs, max).limited).toBe(false);

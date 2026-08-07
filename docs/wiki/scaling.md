@@ -49,7 +49,7 @@ When Redis is connected, the panel uses it for:
 | Sessions | `RedisSessionStore` |
 | Rate limits | Shared sliding-window counters |
 | Transfer jobs | Keys `guartrix:transfer:*` (+ disk mirror) |
-| Schedules / backups | One API holds `guartrix:scheduler:lock` (**fail-closed** if Redis errors); BullMQ queues when `REDIS_URL` + `JOBS_BULLMQ=1` |
+| Schedules / backups / disk-watch | One API holds `guartrix:scheduler:lock` (**fail-closed** if Redis errors); BullMQ queues when `REDIS_URL` + `JOBS_BULLMQ=1`. Set `REQUIRE_REDIS_HA=1` (or `PANEL_HA=1`) so boot refuses in-process fallback |
 | Backup/restore busy | Per-server `guartrix:backup-busy:{id}` (`SET NX`, `BACKUP_BUSY_TTL_MS`) |
 | Daemon `/events` bridges | One API holds `guartrix:bridge:lock`; others consume Redis `guartrix:events` fan-out |
 | Console / daemon events | Pub/sub `guartrix:events` for cross-replica fan-out |

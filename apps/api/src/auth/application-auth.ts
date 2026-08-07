@@ -16,14 +16,20 @@ export async function requireApplication(
   if (!ctx) {
     const rate = applicationRateLimitedMessage(request);
     if (rate) {
-      reply.status(429).send({ error: rate });
+      const { rateLimitedError } = await import("../http-error.js");
+      reply.status(429).send(rateLimitedError(rate));
       return null;
     }
-    reply.status(401).send({ error: "Invalid or missing Application API key" });
+    reply
+      .status(401)
+      .send({ error: "Invalid or missing Application API key", code: "UNAUTHORIZED" });
     return null;
   }
   if (!applicationHasScope(ctx, scope)) {
-    reply.status(403).send({ error: `Missing Application API scope: ${scope}` });
+    reply.status(403).send({
+      error: `Missing Application API scope: ${scope}`,
+      code: "FORBIDDEN",
+    });
     return null;
   }
   return ctx;

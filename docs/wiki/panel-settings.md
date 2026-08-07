@@ -20,7 +20,7 @@ Secrets (SMTP password, Cloudflare token) are never returned in full — leave t
 
 Shows pass/warn/fail for SMTP, registration, HTTPS, TRUST_PROXY, admin 2FA, Redis, alerts, daemon JWT legacy, scheduler locks, and BullMQ vs in-process jobs. Deep-links jump to the matching settings tab.
 
-SLA checkboxes/dates (restore drill, capacity review, incident runbook ack, pentest ack) are **operator attestations** stored in `panel-settings.json` — see [SLA ops](sla-ops.md).
+SLA checkboxes/dates (restore drill, capacity review, secret rotation, incident runbook ack, pentest ack) are **operator attestations** stored in `panel-settings.json` — see [SLA ops](sla-ops.md).
 
 ## Restart required
 

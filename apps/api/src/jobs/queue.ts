@@ -1,9 +1,11 @@
 /**
  * Durable job queues (BullMQ) when Redis is configured.
- * Falls back to in-process mode for single-API installs.
+ * Falls back to in-process mode for single-API installs
+ * (unless REQUIRE_REDIS_HA / PANEL_HA — then init failure refuses to soft-fallback).
  */
 import type { ReadinessReport } from "../admin-readiness.js";
 import { isRedisConfigured, redisUrl } from "../redis.js";
+import { requireRedisHa } from "../saas-flags.js";
 
 export type JobsStatus = NonNullable<ReadinessReport["jobs"]>;
 
@@ -137,12 +139,17 @@ export async function initJobQueues(handlers: {
 
     mode = "bullmq";
   } catch (err) {
-    console.warn(
-      "[jobs] BullMQ init failed — falling back to in-process:",
-      err instanceof Error ? err.message : err,
-    );
-    mode = "in_process";
+    const msg = err instanceof Error ? err.message : String(err);
     await closeJobQueues().catch(() => undefined);
+    if (requireRedisHa()) {
+      console.error(
+        "[jobs] BullMQ init failed under REQUIRE_REDIS_HA/PANEL_HA — refusing in-process fallback:",
+        msg,
+      );
+      throw new Error(`BullMQ required for HA: ${msg}`);
+    }
+    console.warn("[jobs] BullMQ init failed — falling back to in-process:", msg);
+    mode = "in_process";
   }
 }
 

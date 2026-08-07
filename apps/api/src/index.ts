@@ -16,7 +16,9 @@ import { ensureBootstrapAdmin, registerOwnershipGuard } from "./auth/auth.js";
 import { registerBearerAuthResolver } from "./auth/bearer-resolver.js";
 import { registerCsrfGuard, allowedOrigins } from "./auth/csrf.js";
 import { registerApiSessionRateLimit } from "./auth/api-rate-limit.js";
+import { rewriteApiV1Url } from "./api-v1-rewrite.js";
 import { config } from "./config.js";
+import { requireRedisHa } from "./saas-flags.js";
 import { loadAndApplyPanelSettings } from "./panel-settings.js";
 import { prisma } from "./db.js";
 import { migrateLegacyBrandFiles } from "./brand-migrate.js";
@@ -255,17 +257,7 @@ async function main() {
     requestTimeout: 0,
     // Stable public API alias: /api/v1/* → /api/* (same handlers).
     // Must use rewriteUrl — onRequest is too late for the router.
-    rewriteUrl: (req) => {
-      const url = req.url ?? "";
-      if (
-        url === "/api/v1" ||
-        url.startsWith("/api/v1/") ||
-        url.startsWith("/api/v1?")
-      ) {
-        return url.replace(/^\/api\/v1/, "/api");
-      }
-      return url;
-    },
+    rewriteUrl: (req) => rewriteApiV1Url(req.url ?? ""),
     // Only honour X-Forwarded-For from known reverse proxies (default: localhost).
     // Prevents spoofed client IPs from bypassing login rate limits if the API
     // is ever reachable beyond prod-web.
@@ -460,6 +452,7 @@ async function main() {
   const { initJobQueues, enqueueJob, closeJobQueues, jobsMode } = await import(
     "./jobs/queue.js"
   );
+  const { runDiskWatchTick } = await import("./servers/disk-watch.js");
   await initJobQueues({
     onBackupTick: async () => {
       const backups = await runDueBackupSchedules();
@@ -488,12 +481,45 @@ async function main() {
         app.log.info({ pruned }, "Pruned expired activity events");
       }
     },
+    onDiskWatchTick: async () => {
+      await runDiskWatchTick();
+    },
     onTransfer: async ({ serverId, meta }) => {
       const { executeQueuedTransfer } = await import("./servers/transfer.js");
       await executeQueuedTransfer(serverId, meta);
     },
   });
   app.log.info({ jobsMode: jobsMode() }, "Job queue mode");
+
+  if (requireRedisHa() && jobsMode() !== "bullmq") {
+    app.log.error(
+      "REQUIRE_REDIS_HA/PANEL_HA is set but BullMQ did not start — check REDIS_URL and JOBS_BULLMQ",
+    );
+    process.exit(1);
+  }
+  if (requireRedisHa()) {
+    const { isRedisConfigured, getRedisStatus } = await import("./redis.js");
+    if (!isRedisConfigured()) {
+      app.log.error("REQUIRE_REDIS_HA/PANEL_HA requires REDIS_URL");
+      process.exit(1);
+    }
+    const st = await getRedisStatus();
+    if (!st.connected) {
+      app.log.error(
+        { err: st.error },
+        "REQUIRE_REDIS_HA/PANEL_HA requires a connected Redis",
+      );
+      process.exit(1);
+    }
+    const sessionOk = (process.env.SESSION_STORE || "").trim().toLowerCase() === "redis";
+    const rateOk = (process.env.RATE_LIMIT_STORE || "").trim().toLowerCase() === "redis";
+    if (!sessionOk || !rateOk) {
+      app.log.error(
+        "REQUIRE_REDIS_HA/PANEL_HA requires SESSION_STORE=redis and RATE_LIMIT_STORE=redis",
+      );
+      process.exit(1);
+    }
+  }
 
   const schedulerTimer = setInterval(() => {
     void (async () => {
@@ -550,7 +576,15 @@ async function main() {
   }
 
   startActivityWatch();
-  startDiskWatch();
+  // BullMQ: timer enqueues; worker runs runDiskWatchTick. Else: in-process tick.
+  if (jobsMode() === "bullmq") {
+    startDiskWatch({
+      enqueue: () =>
+        enqueueJob("disk-watch", "tick", {}, { jobId: "disk-watch-tick" }),
+    });
+  } else {
+    startDiskWatch();
+  }
   startDiscordStatusWorker();
   void startDaemonEventBridge();
   const { startPanelEventBus } = await import("./redis.js");

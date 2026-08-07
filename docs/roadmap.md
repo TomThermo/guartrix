@@ -5,7 +5,7 @@ Formerly called “roadmap”; same file, clearer name.
 
 **Scale (100n/1000c):** [docs/scale-100n-1000c-roadmap.md](scale-100n-1000c-roadmap.md) · **Live:** [guartrix.com](https://guartrix.com) · **Wiki:** [docs/wiki/README.md](wiki/README.md) · **History:** [CHANGELOG.md](../CHANGELOG.md)
 
-Last updated: **2026-08-07** · product **v1.1.3**
+Last updated: **2026-08-07** · product **v1.2.0**
 
 ---
 
@@ -17,6 +17,7 @@ Last updated: **2026-08-07** · product **v1.1.3**
 | Sprint 9 — polish (product) | ✅ Complete on this host |
 | Scale 100n/1000c control-plane | ✅ **1.1.0** ([roadmap](scale-100n-1000c-roadmap.md) · [upgrade](wiki/upgrade-to-1.1.md)) |
 | Sprint 10 — SaaS / SLA track | ✅ **1.1.2** (Go-live UI, BullMQ, `/api/v1`, peer MySQL, CI) |
+| Sprint 11 — SaaS harden | ✅ **1.2.0** (HA flag, peer-only transfer, owner limits, ops drills, CI) |
 | Customer go-live (webhook/SMTP/Mollie) | Their install — Admin → Settings → Go-live |
 | P2 — eggs/nests, Redis Cluster/Sentinel | Optional / later |
 
@@ -30,14 +31,30 @@ Last updated: **2026-08-07** · product **v1.1.3**
 - Disk quota + CPU limits, allocations, activity log, 2FA, Client/Application API
 - Node transfer, schedule chains + file archives, Mollie billing
 - License enforcement (free tier + paid caps), hosting tools, PWA shell + Web Push
-- Redis multi-API HA (sessions, rate limits, transfers, scheduler lock, event bus)
+- Redis multi-API HA (sessions, rate limits, transfers, scheduler lock, event bus, BullMQ)
 - i18n EN/NL, schedules in Prisma (`ScheduledTask`), node location labels
 - Admin → Settings UI, license hardening (daemon tickets), modpack/plugin Modrinth UX
 - `startOnBoot` respects user stop (`stoppedByUser` DB flag)
+- SaaS harden: `REQUIRE_REDIS_HA`, peer-only transfers, owner API rate limits, SLA drill scripts
 
 ### Still open
 
-Optional **P2** (eggs/nests, Redis Cluster/Sentinel). External pentest + contractual SLA remain **process** (attest in Admin → Go-live; see [sla-ops.md](wiki/sla-ops.md)). Webhook, SMTP, and Mollie are **customer setup** after install.
+Optional **P2** (eggs/nests, Redis Cluster/Sentinel). **External pentest execution** and **legal SLA contracts** remain process (attest in Admin → Go-live; see [sla-ops.md](wiki/sla-ops.md) · [pentest-scope.md](wiki/pentest-scope.md)). Webhook, SMTP, and Mollie are **customer setup** after install.
+
+---
+
+## Sprint 11 — SaaS harden *(1.2.0)*
+
+| Item | Status |
+|------|--------|
+| `REQUIRE_REDIS_HA` / `PANEL_HA` boot + Go-live hard fails | [x] |
+| BullMQ owns disk-watch ticks; no silent HA fallback | [x] |
+| `TRANSFER_ALLOW_PANEL_STAGING` default off (peer-only) | [x] |
+| Stable error codes + `RATE_LIMITED`; `/api/v1` rewrite helper | [x] |
+| `API_OWNER_RATE_LIMIT` aggregate abuse control | [x] |
+| CI: expanded Biome paths, MySQL+Redis integration job, Playwright secrets map | [x] |
+| SLA restore/secret-rotation drill scripts + pentest-scope wiki | [x] |
+| Go-live secret-rotation attestation | [x] |
 
 ---
 

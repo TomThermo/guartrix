@@ -10,9 +10,21 @@ const password = process.env.E2E_PASSWORD?.trim() || "";
 
 async function ensureLoggedIn(page: import("@playwright/test").Page) {
   await page.goto(baseUrl!);
-  if (await page.getByLabel(/^password$/i).first().isVisible().catch(() => false)) {
-    await page.getByLabel(/username|email/i).first().fill(user);
-    await page.getByLabel(/^password$/i).first().fill(password);
+  if (
+    await page
+      .getByLabel(/^password$/i)
+      .first()
+      .isVisible()
+      .catch(() => false)
+  ) {
+    await page
+      .getByLabel(/username|email/i)
+      .first()
+      .fill(user);
+    await page
+      .getByLabel(/^password$/i)
+      .first()
+      .fill(password);
     await page.getByRole("button", { name: /sign in|log in|login/i }).click();
     const totp = page.getByLabel(/authenticator|code|2fa/i);
     if (await totp.isVisible().catch(() => false)) {
@@ -29,10 +41,7 @@ async function ensureLoggedIn(page: import("@playwright/test").Page) {
 test.describe("panel authz / CSRF smokes", () => {
   test.skip(!baseUrl, "Set E2E_BASE_URL to a running panel");
 
-  test("mutating API without CSRF is rejected for cookie session", async ({
-    request,
-    page,
-  }) => {
+  test("mutating API without CSRF is rejected for cookie session", async ({ request, page }) => {
     test.skip(!password, "Set E2E_PASSWORD");
     const ok = await ensureLoggedIn(page);
     test.skip(!ok, "2FA blocked login");
@@ -52,9 +61,7 @@ test.describe("panel authz / CSRF smokes", () => {
     expect([403, 200, 204]).toContain(res.status());
     if (res.status() === 403) {
       const body = await res.json().catch(() => ({}));
-      expect(String((body as { error?: string }).error ?? "")).toMatch(
-        /origin|csrf|referer/i,
-      );
+      expect(String((body as { error?: string }).error ?? "")).toMatch(/origin|csrf|referer/i);
     }
   });
 
@@ -99,7 +106,12 @@ test.describe("panel authz / CSRF smokes", () => {
       .getByRole("tab", { name: /files/i })
       .or(page.getByRole("link", { name: /files/i }))
       .or(page.getByRole("button", { name: /files/i }));
-    if (await filesTab.first().isVisible().catch(() => false)) {
+    if (
+      await filesTab
+        .first()
+        .isVisible()
+        .catch(() => false)
+    ) {
       await filesTab.first().click();
     }
     await expect(page.locator("body")).toBeVisible();
@@ -114,7 +126,12 @@ test.describe("panel authz / CSRF smokes", () => {
     // Non-admins may redirect; admins see settings shell
     await expect(page.locator("body")).toBeVisible();
     const denied = page.getByText(/forbidden|not allowed|sign in/i);
-    if (await denied.first().isVisible().catch(() => false)) {
+    if (
+      await denied
+        .first()
+        .isVisible()
+        .catch(() => false)
+    ) {
       test.info().annotations.push({
         type: "note",
         description: "User may lack admin — OK for non-admin accounts",

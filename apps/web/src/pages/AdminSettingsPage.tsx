@@ -76,6 +76,7 @@ export function AdminSettingsPage() {
   const [readinessLoading, setReadinessLoading] = useState(false);
   const [slaRestoreDrillAt, setSlaRestoreDrillAt] = useState("");
   const [slaCapacityReviewAt, setSlaCapacityReviewAt] = useState("");
+  const [slaSecretRotationAt, setSlaSecretRotationAt] = useState("");
   const [slaIncidentRunbookAck, setSlaIncidentRunbookAck] = useState(false);
   const [slaPentestAck, setSlaPentestAck] = useState(false);
 
@@ -112,6 +113,9 @@ export function AdminSettingsPage() {
     );
     setSlaCapacityReviewAt(
       s.slaCapacityReviewAt ? s.slaCapacityReviewAt.slice(0, 10) : "",
+    );
+    setSlaSecretRotationAt(
+      s.slaSecretRotationAt ? s.slaSecretRotationAt.slice(0, 10) : "",
     );
     setSlaIncidentRunbookAck(Boolean(s.slaIncidentRunbookAck));
     setSlaPentestAck(Boolean(s.slaPentestAck));
@@ -186,6 +190,7 @@ export function AdminSettingsPage() {
         backupOffsiteCmd,
         slaRestoreDrillAt: slaRestoreDrillAt || null,
         slaCapacityReviewAt: slaCapacityReviewAt || null,
+        slaSecretRotationAt: slaSecretRotationAt || null,
         slaIncidentRunbookAck,
         slaPentestAck,
       };
@@ -393,6 +398,8 @@ export function AdminSettingsPage() {
                   onSlaRestoreDrillAtChange={setSlaRestoreDrillAt}
                   slaCapacityReviewAt={slaCapacityReviewAt}
                   onSlaCapacityReviewAtChange={setSlaCapacityReviewAt}
+                  slaSecretRotationAt={slaSecretRotationAt}
+                  onSlaSecretRotationAtChange={setSlaSecretRotationAt}
                   slaIncidentRunbookAck={slaIncidentRunbookAck}
                   onSlaIncidentRunbookAckChange={setSlaIncidentRunbookAck}
                   slaPentestAck={slaPentestAck}

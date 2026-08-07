@@ -1,5 +1,25 @@
 /** Typed JSON error helpers for Client / Application API responses. */
 
+/**
+ * Stable public error codes (prefer on `/api/v1` and new Client/Application paths).
+ * Legacy Zod flatten (`{ error: { formErrors, fieldErrors } }`) may still appear on older 400s.
+ */
+export const API_ERROR_CODES = [
+  "BAD_REQUEST",
+  "VALIDATION_ERROR",
+  "UNAUTHORIZED",
+  "FORBIDDEN",
+  "NOT_FOUND",
+  "RATE_LIMITED",
+  "EMAIL_NOT_VERIFIED",
+  "TWO_FACTOR_REQUIRED",
+  "SERVER_SUSPENDED",
+  "CONFLICT",
+  "INTERNAL",
+] as const;
+
+export type ApiErrorCode = (typeof API_ERROR_CODES)[number];
+
 export type ApiErrorBody = {
   error: string;
   code?: string;
@@ -14,14 +34,16 @@ export function errorMessage(err: unknown, fallback = "Request failed"): string 
 }
 
 /** Build a consistent `{ error, code?, details? }` payload. */
-export function apiError(
-  error: string,
-  opts?: { code?: string; details?: unknown },
-): ApiErrorBody {
+export function apiError(error: string, opts?: { code?: string; details?: unknown }): ApiErrorBody {
   const body: ApiErrorBody = { error };
   if (opts?.code) body.code = opts.code;
   if (opts?.details !== undefined) body.details = opts.details;
   return body;
+}
+
+/** 429 envelope used by session / API-key / owner rate limits. */
+export function rateLimitedError(error: string): ApiErrorBody {
+  return apiError(error, { code: "RATE_LIMITED" });
 }
 
 /**

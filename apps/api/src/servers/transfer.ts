@@ -67,9 +67,7 @@ export interface StartTransferInput {
  * Validate and kick off an async node transfer. Returns the initial job status.
  * Throws with a user-facing Error message on precondition failure.
  */
-export async function startServerTransfer(
-  input: StartTransferInput,
-): Promise<TransferJobStatus> {
+export async function startServerTransfer(input: StartTransferInput): Promise<TransferJobStatus> {
   const existing = getTransferJobInMemory(input.serverId);
   if (existing && !existing.done) {
     throw new Error("A transfer is already in progress for this server");
@@ -117,16 +115,9 @@ export async function startServerTransfer(
   if (newPort !== server.port) {
     // Remapping primary also requires updating the primary allocation.
   }
-  const free = await processManager.isPortFree(
-    newPort,
-    server.id,
-    input.toNodeId,
-    primaryProto,
-  );
+  const free = await processManager.isPortFree(newPort, server.id, input.toNodeId, primaryProto);
   if (!free) {
-    throw new Error(
-      `Port ${newPort}/${primaryProto} is already in use on the destination node`,
-    );
+    throw new Error(`Port ${newPort}/${primaryProto} is already in use on the destination node`);
   }
 
   // Every allocated port (primary + extras) must be free on the destination.
@@ -141,9 +132,7 @@ export async function startServerTransfer(
       },
     });
     if (clash?.serverId) {
-      throw new Error(
-        `Port ${port}/${alloc.protocol} is already assigned on the destination node`,
-      );
+      throw new Error(`Port ${port}/${alloc.protocol} is already assigned on the destination node`);
     }
     const hostFree = await processManager.isPortFree(
       port,
@@ -152,9 +141,7 @@ export async function startServerTransfer(
       alloc.protocol === "udp" ? "udp" : "tcp",
     );
     if (!hostFree) {
-      throw new Error(
-        `Port ${port}/${alloc.protocol} is already in use on the destination host`,
-      );
+      throw new Error(`Port ${port}/${alloc.protocol} is already in use on the destination host`);
     }
   }
 
@@ -225,9 +212,7 @@ async function runTransfer(
   },
 ): Promise<void> {
   const { serverId, fromNodeId, toNodeId } = job;
-  const staging = await fs.mkdtemp(
-    path.join(os.tmpdir(), `guartrix-transfer-${serverId}-`),
-  );
+  const staging = await fs.mkdtemp(path.join(os.tmpdir(), `guartrix-transfer-${serverId}-`));
   let cutOver = false;
   let peerCopied = false;
   let payloadBytes = 0;
@@ -236,30 +221,28 @@ async function runTransfer(
   try {
     // Prefer node→node pull so the panel never holds the world archive.
     setTransferStep(job, 1, "Copying archive node→node…");
-    await setServerProgress(
-      serverId,
-      "TRANSFERRING",
-      "Transfer: copying files between nodes…",
-    );
+    await setServerProgress(serverId, "TRANSFERRING", "Transfer: copying files between nodes…");
     try {
-      const peer = await daemonPeerDeployArchiveOnNode(
-        serverId,
-        fromNodeId,
-        toNodeId,
-      );
+      const peer = await daemonPeerDeployArchiveOnNode(serverId, fromNodeId, toNodeId);
       payloadBytes = peer.bytes ?? 0;
       peerCopied = true;
       setTransferChunkProgress(
         job,
         1,
         1,
-        payloadBytes > 0
-          ? `Peer-copied ${formatBytes(payloadBytes)}`
-          : "Peer-copied archive",
+        payloadBytes > 0 ? `Peer-copied ${formatBytes(payloadBytes)}` : "Peer-copied archive",
         payloadBytes,
         payloadBytes,
       );
     } catch (peerErr) {
+      const { transferAllowPanelStaging } = await import("../saas-flags.js");
+      if (!transferAllowPanelStaging()) {
+        throw new Error(
+          `Peer file deploy failed and panel staging is disabled (set TRANSFER_ALLOW_PANEL_STAGING=1 to opt in): ${
+            peerErr instanceof Error ? peerErr.message : String(peerErr)
+          }`,
+        );
+      }
       logger.warn(
         {
           err: peerErr instanceof Error ? peerErr : new Error(String(peerErr)),
@@ -270,11 +253,7 @@ async function runTransfer(
         "Peer deploy failed — falling back to panel staging",
       );
       setTransferStep(job, 1, "Exporting archive from source…");
-      await setServerProgress(
-        serverId,
-        "TRANSFERRING",
-        "Transfer: exporting files…",
-      );
+      await setServerProgress(serverId, "TRANSFERRING", "Transfer: exporting files…");
       archivePath = path.join(staging, "source.tar.gz");
       await daemonExportArchiveToFileOnNode(serverId, fromNodeId, archivePath);
       const archiveStat = await fs.stat(archivePath);
@@ -296,10 +275,7 @@ async function runTransfer(
     // Move allocation rows to the destination (remap primary port if requested).
     const allocs = await prisma.allocation.findMany({ where: { serverId } });
     for (const alloc of allocs) {
-      const nextPort =
-        alloc.isPrimary && meta.newPort !== meta.oldPort
-          ? meta.newPort
-          : alloc.port;
+      const nextPort = alloc.isPrimary && meta.newPort !== meta.oldPort ? meta.newPort : alloc.port;
       // Clear any free pool row that would collide, then update.
       await prisma.allocation.deleteMany({
         where: {
@@ -333,11 +309,7 @@ async function runTransfer(
         throw new Error("Transfer archive missing after panel staging export");
       }
       setTransferStep(job, 3, `Deploying ${formatBytes(payloadBytes)}…`);
-      await setServerProgress(
-        serverId,
-        "TRANSFERRING",
-        "Transfer: deploying to destination…",
-      );
+      await setServerProgress(serverId, "TRANSFERRING", "Transfer: deploying to destination…");
       setTransferChunkProgress(
         job,
         3,
@@ -351,20 +323,9 @@ async function runTransfer(
       archivePath = null;
     } else {
       setTransferStep(job, 3, "Finalizing deploy…");
-      await setServerProgress(
-        serverId,
-        "TRANSFERRING",
-        "Transfer: finalizing on destination…",
-      );
+      await setServerProgress(serverId, "TRANSFERRING", "Transfer: finalizing on destination…");
     }
-    setTransferChunkProgress(
-      job,
-      3,
-      0.75,
-      "Moving MySQL databases…",
-      payloadBytes,
-      payloadBytes,
-    );
+    setTransferChunkProgress(job, 3, 0.75, "Moving MySQL databases…", payloadBytes, payloadBytes);
     await updateServerProperties(serverId, {}, meta.newPort);
 
     // Move MySQL databases (dump source → create/restore dest → drop source).
@@ -406,12 +367,17 @@ async function runTransfer(
           await daemonMysqlPeerRestoreOnNode(fromNodeId, toNodeId, db.name);
           peerMysql = true;
         } catch (peerMysqlErr) {
+          const { transferAllowPanelStaging } = await import("../saas-flags.js");
+          if (!transferAllowPanelStaging()) {
+            throw new Error(
+              `Peer MySQL restore failed for ${db.name} and panel staging is disabled (set TRANSFER_ALLOW_PANEL_STAGING=1 to opt in): ${
+                peerMysqlErr instanceof Error ? peerMysqlErr.message : String(peerMysqlErr)
+              }`,
+            );
+          }
           logger.warn(
             {
-              err:
-                peerMysqlErr instanceof Error
-                  ? peerMysqlErr
-                  : new Error(String(peerMysqlErr)),
+              err: peerMysqlErr instanceof Error ? peerMysqlErr : new Error(String(peerMysqlErr)),
               serverId,
               db: db.name,
             },
@@ -437,9 +403,9 @@ async function runTransfer(
           username: db.username,
           remote: db.remote,
         }).catch(() => undefined);
-        const destStatus = await (
-          await import("../nodes/daemon-client.js")
-        ).daemonMysqlStatus(toNodeId);
+        const destStatus = await (await import("../nodes/daemon-client.js")).daemonMysqlStatus(
+          toNodeId,
+        );
         await prisma.database.update({
           where: { id: db.id },
           data: {
@@ -453,14 +419,7 @@ async function runTransfer(
         });
       }
     }
-    setTransferChunkProgress(
-      job,
-      3,
-      1,
-      "Deploy complete",
-      payloadBytes,
-      payloadBytes,
-    );
+    setTransferChunkProgress(job, 3, 1, "Deploy complete", payloadBytes, payloadBytes);
 
     setTransferStep(job, 4, "Updating DNS & wiping source…");
     await setServerProgress(serverId, "TRANSFERRING", "Transfer: DNS & cleanup…");
@@ -471,9 +430,7 @@ async function runTransfer(
       if (cloudflareConfigured() && meta.subdomain) {
         const destNode = await prisma.node.findUnique({ where: { id: toNodeId } });
         const { resolveNodePublicIpv4 } = await import("../nodes/nodes.js");
-        const ipv4 = destNode
-          ? resolveNodePublicIpv4(destNode)
-          : null;
+        const ipv4 = destNode ? resolveNodePublicIpv4(destNode) : null;
         if (ipv4) {
           await ensureServerSubdomain({
             preferredSlug: meta.name,
@@ -491,10 +448,7 @@ async function runTransfer(
     }
 
     await daemonWipeServerOnNode(serverId, fromNodeId).catch((err) => {
-      logger.warn(
-        { err, serverId },
-        "transfer wipe on source node failed",
-      );
+      logger.warn({ err, serverId }, "transfer wipe on source node failed");
     });
 
     setTransferStep(job, 5, null);

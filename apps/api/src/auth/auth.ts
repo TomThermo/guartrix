@@ -370,10 +370,11 @@ export async function requireAuth(
   if (!user) {
     const rateMsg = apiKeyRateLimitedMessage(request);
     if (rateMsg) {
-      await reply.status(429).send({ error: rateMsg });
+      const { rateLimitedError } = await import("../http-error.js");
+      await reply.status(429).send(rateLimitedError(rateMsg));
       return null;
     }
-    await reply.status(401).send({ error: "Unauthorized" });
+    await reply.status(401).send({ error: "Unauthorized", code: "UNAUTHORIZED" });
     return null;
   }
   return user;

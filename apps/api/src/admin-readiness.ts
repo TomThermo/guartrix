@@ -5,6 +5,7 @@ import { config } from "./config.js";
 import { isSmtpConfigured } from "./mail.js";
 import { getRedisStatus, isRedisConfigured } from "./redis.js";
 import { readStoredSettings } from "./panel-settings.js";
+import { requireRedisHa, transferAllowPanelStaging } from "./saas-flags.js";
 
 export type ReadinessTone = "pass" | "warn" | "fail" | "info";
 
@@ -21,6 +22,7 @@ export type SlaAttestation = {
   incidentRunbookAck?: boolean;
   pentestScheduledOrDone?: boolean;
   capacityReviewAt?: string | null;
+  secretRotationAt?: string | null;
 };
 
 export type ReadinessReport = {
@@ -61,6 +63,7 @@ export async function buildReadinessReport(opts?: {
   const registrationOpen = config.registrationEnabled;
   const webhook = config.alerts.webhookUrl.trim();
   const alertEmail = config.alerts.alertEmail.trim();
+  const haRequired = requireRedisHa();
   const https =
     process.env.HTTPS_ENABLED === "true" ||
     process.env.HTTPS_ENABLED === "1" ||
@@ -133,17 +136,30 @@ export async function buildReadinessReport(opts?: {
   if (!isRedisConfigured()) {
     checks.push({
       id: "redis",
-      tone: "warn",
+      tone: haRequired ? "fail" : "warn",
       tab: "security",
-      detail: "Redis not configured — single-API only (OK for one panel process)",
+      detail: haRequired
+        ? "REQUIRE_REDIS_HA/PANEL_HA set but Redis is not configured"
+        : "Redis not configured — single-API only (OK for one panel process)",
     });
   } else if (redis.connected) {
-    checks.push({
-      id: "redis",
-      tone: "pass",
-      tab: "security",
-      detail: `Redis connected${redis.latencyMs != null ? ` (${redis.latencyMs} ms)` : ""}`,
-    });
+    const sessionOk = redis.sessionStore === "redis";
+    const rateOk = redis.rateLimitStore === "redis";
+    if (haRequired && (!sessionOk || !rateOk)) {
+      checks.push({
+        id: "redis",
+        tone: "fail",
+        tab: "security",
+        detail: `HA requires SESSION_STORE=redis and RATE_LIMIT_STORE=redis (now ${redis.sessionStore}/${redis.rateLimitStore})`,
+      });
+    } else {
+      checks.push({
+        id: "redis",
+        tone: "pass",
+        tab: "security",
+        detail: `Redis connected${redis.latencyMs != null ? ` (${redis.latencyMs} ms)` : ""}`,
+      });
+    }
   } else {
     checks.push({
       id: "redis",
@@ -165,7 +181,7 @@ export async function buildReadinessReport(opts?: {
   } else {
     checks.push({
       id: "alerts",
-      tone: "warn",
+      tone: haRequired ? "fail" : "warn",
       tab: "alerts",
       detail: "No activity webhook or alert email — crashes may go unnoticed",
     });
@@ -181,11 +197,20 @@ export async function buildReadinessReport(opts?: {
 
   checks.push({
     id: "scheduler_locks",
-    tone: isRedisConfigured() ? (redis.connected ? "pass" : "fail") : "info",
+    tone: isRedisConfigured() ? (redis.connected ? "pass" : "fail") : haRequired ? "fail" : "info",
     tab: "security",
     detail: isRedisConfigured()
       ? "Scheduler/bridge locks use Redis (fail-closed when Redis enabled)"
       : "No Redis — in-process scheduler (single API instance)",
+  });
+
+  checks.push({
+    id: "transfer_staging",
+    tone: transferAllowPanelStaging() ? (haRequired ? "warn" : "info") : "pass",
+    tab: "golive",
+    detail: transferAllowPanelStaging()
+      ? "TRANSFER_ALLOW_PANEL_STAGING=1 — peer first, panel disk fallback allowed"
+      : "Peer-only transfers (panel staging disabled; SaaS default)",
   });
 
   const sla: SlaAttestation = {
@@ -193,6 +218,7 @@ export async function buildReadinessReport(opts?: {
     incidentRunbookAck: Boolean(stored.slaIncidentRunbookAck),
     pentestScheduledOrDone: Boolean(stored.slaPentestAck),
     capacityReviewAt: stored.slaCapacityReviewAt ?? null,
+    secretRotationAt: stored.slaSecretRotationAt ?? null,
   };
 
   if (sla.restoreDrillAt) {
@@ -205,7 +231,7 @@ export async function buildReadinessReport(opts?: {
   } else {
     checks.push({
       id: "sla_restore_drill",
-      tone: "info",
+      tone: haRequired ? "warn" : "info",
       tab: "golive",
       detail: "Operator attestation: panel DB restore drill not recorded",
     });
@@ -213,7 +239,7 @@ export async function buildReadinessReport(opts?: {
 
   checks.push({
     id: "sla_incident_runbook",
-    tone: sla.incidentRunbookAck ? "pass" : "info",
+    tone: sla.incidentRunbookAck ? "pass" : haRequired ? "warn" : "info",
     tab: "golive",
     detail: sla.incidentRunbookAck
       ? "Incident runbook acknowledged"
@@ -222,12 +248,44 @@ export async function buildReadinessReport(opts?: {
 
   checks.push({
     id: "sla_pentest",
-    tone: sla.pentestScheduledOrDone ? "pass" : "info",
+    tone: sla.pentestScheduledOrDone ? "pass" : haRequired ? "warn" : "info",
     tab: "golive",
     detail: sla.pentestScheduledOrDone
       ? "External pentest scheduled or completed (operator attested)"
       : "External pentest is process — not auto-verified",
   });
+
+  if (sla.capacityReviewAt) {
+    checks.push({
+      id: "sla_capacity_review",
+      tone: "pass",
+      tab: "golive",
+      detail: `Capacity review attested at ${sla.capacityReviewAt}`,
+    });
+  } else {
+    checks.push({
+      id: "sla_capacity_review",
+      tone: haRequired ? "warn" : "info",
+      tab: "golive",
+      detail: "Operator attestation: capacity review not recorded",
+    });
+  }
+
+  if (sla.secretRotationAt) {
+    checks.push({
+      id: "sla_secret_rotation",
+      tone: "pass",
+      tab: "golive",
+      detail: `Secret rotation drill attested at ${sla.secretRotationAt}`,
+    });
+  } else {
+    checks.push({
+      id: "sla_secret_rotation",
+      tone: haRequired ? "warn" : "info",
+      tab: "golive",
+      detail: "Operator attestation: secret rotation drill not recorded",
+    });
+  }
 
   if (opts?.jobs) {
     const j = opts.jobs;
@@ -245,11 +303,13 @@ export async function buildReadinessReport(opts?: {
     } else {
       checks.push({
         id: "jobs",
-        tone: isRedisConfigured() ? "warn" : "info",
+        tone: haRequired || isRedisConfigured() ? "fail" : "info",
         tab: "golive",
-        detail: isRedisConfigured()
-          ? "Redis is up but jobs still in-process — enable BullMQ worker path"
-          : "In-process scheduler (single API) — configure Redis + BullMQ for HA",
+        detail: haRequired
+          ? "REQUIRE_REDIS_HA/PANEL_HA requires BullMQ job queues"
+          : isRedisConfigured()
+            ? "Redis is up but jobs still in-process — enable BullMQ worker path"
+            : "In-process scheduler (single API) — configure Redis + BullMQ for HA",
       });
     }
   }

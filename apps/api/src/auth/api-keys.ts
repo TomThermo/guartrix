@@ -127,6 +127,17 @@ export async function checkApiKeyRate(keyId: string): Promise<string | null> {
   return null;
 }
 
+/** Per-key then aggregate owner budget (Client API abuse control). */
+export async function checkApiKeyAndOwnerRate(
+  keyId: string,
+  userId: string,
+): Promise<string | null> {
+  const keyLimited = await checkApiKeyRate(keyId);
+  if (keyLimited) return keyLimited;
+  const { checkOwnerApiRate } = await import("./owner-rate-limit.js");
+  return checkOwnerApiRate(userId);
+}
+
 /**
  * Resolve a personal Client API key from Authorization: Bearer gt_…
  * Daemon tokens (hex) are ignored here — internal routes validate those themselves.
@@ -158,7 +169,7 @@ export async function resolveApiKeyAuth(
     return null;
   }
 
-  const limited = await checkApiKeyRate(row.id);
+  const limited = await checkApiKeyAndOwnerRate(row.id, row.userId);
   if (limited) {
     (request as FastifyRequest & { apiKeyRateLimited?: string }).apiKeyRateLimited =
       limited;
