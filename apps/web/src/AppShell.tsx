@@ -167,93 +167,20 @@ export function AppShell({ children }: { children: ReactNode }) {
               </Link>
 
               {isAdmin && (
-                <Dropdown align="end" className="app-nav-dropdown">
-                  <Dropdown.Toggle
-                    variant={licenseOk ? "outline-secondary" : "outline-danger"}
-                    size="sm"
-                    id="app-nav-admin"
-                    className="app-nav-dropdown-toggle"
-                  >
-                    <i className="fa-solid fa-user-shield me-1" />
-                    {t("nav.admin")}
-                    {!licenseOk && (
-                      <span
-                        className="app-nav-alert-dot"
-                        title={t("nav.licenseIssue")}
-                      />
-                    )}
-                  </Dropdown.Toggle>
-                  <Dropdown.Menu className="app-nav-dropdown-menu">
-                    <Dropdown.Header>{t("nav.panel")}</Dropdown.Header>
-                    <Dropdown.Item
-                      as={Link}
-                      to="/statusline"
-                      onClick={closeNav}
-                    >
-                      <i className="fa-solid fa-heart-pulse fa-fw me-2 text-secondary" />
-                      {t("nav.status")}
-                    </Dropdown.Item>
-                    <Dropdown.Item
-                      as={Link}
-                      to="/admin/servers"
-                      onClick={closeNav}
-                    >
-                      <i className="fa-solid fa-server fa-fw me-2 text-secondary" />
-                      {t("nav.serverManagement")}
-                    </Dropdown.Item>
-                    <Dropdown.Item
-                      as={Link}
-                      to="/admin/settings"
-                      onClick={closeNav}
-                    >
-                      <i className="fa-solid fa-sliders fa-fw me-2 text-secondary" />
-                      {t("nav.settings")}
-                    </Dropdown.Item>
-                    <Dropdown.Item
-                      as={Link}
-                      to="/admin/system"
-                      onClick={closeNav}
-                    >
-                      <i className="fa-solid fa-server fa-fw me-2 text-secondary" />
-                      {t("nav.nodes")}
-                    </Dropdown.Item>
-                    <Dropdown.Item
-                      as={Link}
-                      to="/admin/license"
-                      onClick={closeNav}
-                      className={!licenseOk ? "text-danger" : undefined}
-                    >
-                      <i className="fa-solid fa-key fa-fw me-2 text-secondary" />
-                      {t("nav.license")}
-                      {!licenseOk && (
-                        <Badge bg="danger" className="ms-2">
-                          {t("nav.attention")}
-                        </Badge>
-                      )}
-                    </Dropdown.Item>
-                    <Dropdown.Item
-                      as={Link}
-                      to="/admin/activity"
-                      onClick={closeNav}
-                    >
-                      <i className="fa-solid fa-list-check fa-fw me-2 text-secondary" />
-                      {t("nav.activity")}
-                    </Dropdown.Item>
-                    <Dropdown.Item
-                      as={Link}
-                      to="/admin/billing"
-                      onClick={closeNav}
-                    >
-                      <i className="fa-solid fa-file-invoice-dollar fa-fw me-2 text-secondary" />
-                      {t("nav.panelBilling")}
-                    </Dropdown.Item>
-                    <Dropdown.Divider />
-                    <Dropdown.Item as={Link} to="/users" onClick={closeNav}>
-                      <i className="fa-solid fa-users-gear fa-fw me-2 text-secondary" />
-                      {t("nav.users")}
-                    </Dropdown.Item>
-                  </Dropdown.Menu>
-                </Dropdown>
+                <Link
+                  to="/admin"
+                  className={`btn btn-sm ${licenseOk ? "btn-outline-secondary" : "btn-outline-danger"}`}
+                  onClick={closeNav}
+                >
+                  <i className="fa-solid fa-user-shield me-1" />
+                  {t("nav.admin")}
+                  {!licenseOk && (
+                    <span
+                      className="app-nav-alert-dot"
+                      title={t("nav.licenseIssue")}
+                    />
+                  )}
+                </Link>
               )}
 
               {user && (

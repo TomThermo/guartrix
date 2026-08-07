@@ -1,6 +1,6 @@
 # Status overview (Admin → Status)
 
-Admins open **Admin → Status** (`/statusline`) for a live health board of the panel stack and every game node.
+Admins open **Admin → Status** (`/admin/status`) for a live health board of the panel stack and every game node.
 
 ![Statusline](assets/07-statusline.png)
 

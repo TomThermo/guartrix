@@ -31,7 +31,7 @@ owner rate limits — see [env-reference](env-reference.md).
 
 ## Incident
 
-1. Check **Admin → Status** (`/statusline`) and `GET /api/ready`.
+1. Check **Admin → Status** (`/admin/status`) and `GET /api/ready`.
 2. If Redis HA: confirm Redis ping under Settings → Security / Go-live.
 3. Watchdog / `ACTIVITY_WEBHOOK_URL` — confirm restart alerts.
 4. Daemon nodes: firewall to panel IP only; game/SFTP ports public.

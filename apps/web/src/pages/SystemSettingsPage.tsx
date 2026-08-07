@@ -234,7 +234,7 @@ export function SystemSettingsPage() {
             <i className="fa-solid fa-plus me-2" />
             {t("admin.addNode")}
           </Button>
-          <Link to="/users" className="btn btn-sm btn-outline-secondary">
+          <Link to="/admin/users" className="btn btn-sm btn-outline-secondary">
             {t("nav.users")}
           </Link>
         </Stack>

@@ -106,6 +106,11 @@ const AdminServersPage = lazy(() =>
     default: m.AdminServersPage,
   })),
 );
+const AdminLayout = lazy(() =>
+  import("./components/admin/AdminLayout").then((m) => ({
+    default: m.AdminLayout,
+  })),
+);
 const StatusLinePage = lazy(() =>
   import("./pages/StatusLinePage").then((m) => ({ default: m.StatusLinePage })),
 );
@@ -185,84 +190,33 @@ export function AuthenticatedRoutes({ user }: { user: AuthUser | null }) {
           <Route path="/account/billing" element={<AccountBillingPage />} />
           <Route
             path="/users"
-            element={
-              user?.role === "ADMIN" ? <UsersPage /> : <Navigate to="/" replace />
-            }
-          />
-          <Route
-            path="/admin/billing"
-            element={
-              user?.role === "ADMIN" ? (
-                <AdminBillingPage />
-              ) : (
-                <Navigate to="/" replace />
-              )
-            }
-          />
-          <Route
-            path="/admin/servers"
-            element={
-              user?.role === "ADMIN" ? (
-                <AdminServersPage />
-              ) : (
-                <Navigate to="/" replace />
-              )
-            }
-          />
-          <Route
-            path="/admin/server-backups"
-            element={<Navigate to="/admin/servers" replace />}
-          />
-          <Route
-            path="/admin/settings"
-            element={
-              user?.role === "ADMIN" ? (
-                <AdminSettingsPage />
-              ) : (
-                <Navigate to="/" replace />
-              )
-            }
-          />
-          <Route
-            path="/admin/system"
-            element={
-              user?.role === "ADMIN" ? (
-                <SystemSettingsPage />
-              ) : (
-                <Navigate to="/" replace />
-              )
-            }
-          />
-          <Route
-            path="/admin/license"
-            element={
-              user?.role === "ADMIN" ? (
-                <AdminLicensePage />
-              ) : (
-                <Navigate to="/" replace />
-              )
-            }
-          />
-          <Route
-            path="/admin/activity"
-            element={
-              user?.role === "ADMIN" ? (
-                <AdminActivityPage />
-              ) : (
-                <Navigate to="/" replace />
-              )
-            }
+            element={<Navigate to="/admin/users" replace />}
           />
           <Route
             path="/statusline"
+            element={<Navigate to="/admin/status" replace />}
+          />
+          <Route
+            path="/admin"
             element={
               user?.role === "ADMIN" ? (
-                <StatusLinePage />
+                <AdminLayout />
               ) : (
                 <Navigate to="/" replace />
               )
             }
-          />
+          >
+            <Route index element={<Navigate to="status" replace />} />
+            <Route path="status" element={<StatusLinePage />} />
+            <Route path="servers" element={<AdminServersPage />} />
+            <Route path="server-backups" element={<Navigate to="/admin/servers" replace />} />
+            <Route path="settings" element={<AdminSettingsPage />} />
+            <Route path="system" element={<SystemSettingsPage />} />
+            <Route path="license" element={<AdminLicensePage />} />
+            <Route path="activity" element={<AdminActivityPage />} />
+            <Route path="billing" element={<AdminBillingPage />} />
+            <Route path="users" element={<UsersPage />} />
+          </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>

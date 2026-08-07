@@ -375,7 +375,7 @@ export const operationsArticles: WikiArticle[] = [
           "The watchdog checks API and daemon liveness/readiness.",
           "It restarts unhealthy panel processes without intentionally killing Minecraft containers.",
           "Webhook alerts can fire when restart loops or critical backoff events happen.",
-          "Admin → Status (`/statusline`) shows web, API, Redis, and per-node health.",
+          "Admin → Status (`/admin/status`) shows web, API, Redis, and per-node health.",
         ],
       },
       {

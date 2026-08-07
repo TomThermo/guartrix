@@ -3,6 +3,12 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.2.9] — 2026-08-07
+
+### Changed
+
+- **Admin panel:** single top-nav **Admin** button opens a dedicated admin area with a left sidebar (Status, Servers, Settings, Nodes, License, Activity, Billing, Users) instead of a dropdown of loose links. `/users` and `/statusline` redirect into `/admin/…`.
+
 ## [1.2.8] — 2026-08-07
 
 ### Changed
