@@ -27,7 +27,7 @@ Remote config lives at **`/var/lib/guartrix/daemon.env`** (not `$INSTALL_DIR/dat
 
 ![Add node wizard](assets/06-add-node-modal.png)
 
-For an existing remote node, use **Install daemon** on the node card to reopen the wizard.
+For an existing remote node, open the node (table row / edit) and use **Install daemon** on the Overview tab to reopen the wizard.
 
 See also the [Panel guide](panel-guide.md) for the rest of the admin UI.
 

@@ -16,6 +16,8 @@ interface Props {
   nodeName: string;
   onError: (message: string | null) => void;
   onNotice: (message: string | null) => void;
+  /** Drop the top border when nested inside a modal section. */
+  embedded?: boolean;
 }
 
 export function NodePortPoolPanel({
@@ -23,6 +25,7 @@ export function NodePortPoolPanel({
   nodeName,
   onError,
   onNotice,
+  embedded = false,
 }: Props) {
   const { t } = useI18n();
   const [allocations, setAllocations] = useState<PortAllocation[]>([]);
@@ -130,10 +133,10 @@ export function NodePortPoolPanel({
   }
 
   return (
-    <div className="mt-3 border-top pt-3">
+    <div className={embedded ? "" : "mt-3 border-top pt-3"}>
       <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
-        <strong className="small">{t("admin.portPool")}</strong>
-        <span className="small text-secondary">
+        {!embedded && <strong className="small">{t("admin.portPool")}</strong>}
+        <span className={`small text-secondary ${embedded ? "ms-auto" : ""}`}>
           {t("admin.portPoolStats", {
             free,
             assigned,

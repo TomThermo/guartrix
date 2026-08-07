@@ -3,6 +3,14 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.3.1] — 2026-08-07
+
+### Fixed
+- Admin Settings Misc / Go-live tab icons (`fa-ellipsis`, `fa-rocket`) missing from Font Awesome production safelist
+
+### Changed
+- **Admin → Nodes**: full-width compact table (health / reachable / name / address / SSL / type / servers) instead of half-width cards; open a row for a fullscreen editor (Overview · Settings · Allocations)
+
 ## [1.3.0] — 2026-08-07
 
 ### Added
