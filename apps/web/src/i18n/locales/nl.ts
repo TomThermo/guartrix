@@ -643,7 +643,7 @@ export const nl: Messages = {
     retentionSaved: "Bewaring opgeslagen — maximaal {n} back-ups.",
     saveRetentionFailed: "Kon bewaringslimiet niet opslaan",
     retentionReadOnly:
-      "Maximaal {n} back-ups bewaard (instelbaar door gebruikers met back-uprechten).",
+      "Maximaal {n} back-ups bewaard (ingesteld door een beheerder).",
     backupsCount: "{n} back-ups",
     lastRun: "Laatste run: {when}",
     nextRun: "Volgende run: {when}",

@@ -1,13 +1,11 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import {
-  BACKUP_KEEP_COUNT_PRESETS,
   BACKUP_UPLOAD_MAX_BYTES,
   type BackupSchedule,
   type BackupScheduleMode,
   type ServerBackup,
 } from "@msm/shared";
 import {
-  Alert,
   Button,
   Col,
   Form,
@@ -52,9 +50,7 @@ export function BackupPanel({
   const [intervalHours, setIntervalHours] = useState(6);
   const [dailyAt, setDailyAt] = useState("03:00");
   const [cronExpression, setCronExpression] = useState("0 3 * * *");
-  const [keepCount, setKeepCount] = useState(7);
   const [savingSchedule, setSavingSchedule] = useState(false);
-  const [savingRetention, setSavingRetention] = useState(false);
 
   const [uploadNote, setUploadNote] = useState("");
   const [uploadFile, setUploadFile] = useState<File | null>(null);
@@ -70,8 +66,6 @@ export function BackupPanel({
   const [restoreTarget, setRestoreTarget] = useState<ServerBackup | null>(null);
   const [actionBusy, setActionBusy] = useState(false);
 
-  const [encryptionEnabled, setEncryptionEnabled] = useState(false);
-
   const maxUploadLabel = formatBytes(BACKUP_UPLOAD_MAX_BYTES);
 
   const refresh = useCallback(async (opts?: { syncForm?: boolean }) => {
@@ -79,13 +73,11 @@ export function BackupPanel({
     setBackups(data.backups);
     setSchedule(data.schedule);
     setBusy(data.busy);
-    setEncryptionEnabled(Boolean(data.encryptionEnabled));
     if (opts?.syncForm) {
       setMode(data.schedule.mode);
       setIntervalHours(data.schedule.intervalHours);
       setDailyAt(data.schedule.dailyAt);
       setCronExpression(data.schedule.cronExpression || "0 3 * * *");
-      setKeepCount(data.schedule.keepCount);
     }
   }, [serverId]);
 
@@ -244,24 +236,6 @@ export function BackupPanel({
     downloadAbortRef.current?.abort();
   }
 
-  async function onSaveRetention(e: FormEvent) {
-    e.preventDefault();
-    if (!canEditSchedule) return;
-    setSavingRetention(true);
-    onError(null);
-    onNotice(null);
-    try {
-      const result = await api.updateBackupSchedule(serverId, { keepCount });
-      setSchedule(result.schedule);
-      setKeepCount(result.schedule.keepCount);
-      onNotice(t("backups.retentionSaved", { n: result.schedule.keepCount }));
-    } catch (err) {
-      onError(err instanceof Error ? err.message : t("backups.saveRetentionFailed"));
-    } finally {
-      setSavingRetention(false);
-    }
-  }
-
   async function onSaveSchedule(e: FormEvent) {
     e.preventDefault();
     if (!canEditSchedule) return;
@@ -344,44 +318,10 @@ export function BackupPanel({
 
   return (
     <div>
-      <h2 className="h5 mb-3">{t("backups.title")}</h2>
-      <Alert variant="light" className="border small">
-        {t("backups.help", { max: maxUploadLabel })}
-        {encryptionEnabled ? <> {t("backups.helpEncrypted")}</> : null}
-      </Alert>
-
-      <div className="border rounded p-3 mb-4 bg-body-tertiary">
-        <h3 className="h6 mb-2">
-          <i className="fa-solid fa-layer-group me-2" />
-          {t("backups.retentionTitle")}
-        </h3>
-        <p className="small text-secondary mb-3">{t("backups.retentionHelp")}</p>
-        {canEditSchedule ? (
-          <Form onSubmit={(e) => void onSaveRetention(e)} className="d-flex flex-wrap align-items-end gap-3">
-            <Form.Group className="mb-0">
-              <Form.Label className="small mb-1">{t("backups.retentionLabel")}</Form.Label>
-              <Form.Select
-                value={keepCount}
-                onChange={(e) => setKeepCount(Number(e.target.value))}
-                style={{ minWidth: "12rem" }}
-              >
-                {BACKUP_KEEP_COUNT_PRESETS.map((n) => (
-                  <option key={n} value={n}>
-                    {t("backups.backupsCount", { n })}
-                  </option>
-                ))}
-              </Form.Select>
-            </Form.Group>
-            <Button type="submit" variant="outline-primary" disabled={savingRetention}>
-              {savingRetention ? t("common.saving") : t("common.save")}
-            </Button>
-          </Form>
-        ) : (
-          <p className="small mb-0">
-            {t("backups.retentionReadOnly", { n: schedule.keepCount })}
-          </p>
-        )}
-      </div>
+      <h2 className="h5 mb-1">{t("backups.title")}</h2>
+      <p className="small text-secondary mb-4">
+        {t("backups.retentionReadOnly", { n: schedule.keepCount })}
+      </p>
 
       <Row className="g-4 mb-4">
         {canCreate && (

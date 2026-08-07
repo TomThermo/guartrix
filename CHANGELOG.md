@@ -3,6 +3,12 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.2.8] — 2026-08-07
+
+### Changed
+
+- **Backups tab:** removed the long help banner and the retention editor; shows the keep limit read-only. Retention is set in **Admin → Servers** (or at create-server time).
+
 ## [1.2.7] — 2026-08-07
 
 ### Changed

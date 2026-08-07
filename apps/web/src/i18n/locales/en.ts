@@ -637,7 +637,7 @@ export const en = {
       "Per server. After each new backup (manual, scheduled, or upload), older copies beyond this limit are removed automatically. Default is 7.",
     retentionSaved: "Retention saved — keeping the last {n} backups.",
     saveRetentionFailed: "Could not save retention limit",
-    retentionReadOnly: "Keeping the last {n} backups (editable by users with backup permission).",
+    retentionReadOnly: "Keeping the last {n} backups (set by an admin).",
     backupsCount: "{n} backups",
     lastRun: "Last run: {when}",
     nextRun: "Next run: {when}",
