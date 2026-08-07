@@ -11,7 +11,7 @@ https://your-panel.example.com/api/v1/…   # same handlers (compatibility alias
 
 On this operator host: `https://guartrix.com/api/…` (or `/api/v1/…`).
 
-**Compatibility policy:** `/api/v1` dual-mounts today’s `/api` handlers. Prefer `/api/v1` for new integrators. Breaking changes land on a future `/api/v2`; `/api` stays during the v1 window. Errors prefer `{ error, code?, details? }` (`http-error.ts`); legacy Zod flatten may still appear on older 400s.
+**Compatibility policy:** `/api/v1` dual-mounts today’s `/api` handlers via Fastify `rewriteUrl` (must rewrite before routing — an `onRequest` rewrite is too late). Prefer `/api/v1` for new integrators. Breaking changes land on a future `/api/v2`; `/api` stays during the v1 window. Errors prefer `{ error, code?, details? }` (`http-error.ts`); legacy Zod flatten may still appear on older 400s.
 
 All examples below use:
 

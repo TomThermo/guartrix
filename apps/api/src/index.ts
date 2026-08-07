@@ -253,6 +253,19 @@ async function main() {
     bodyLimit: 32 * 1024 * 1024,
     connectionTimeout: 0,
     requestTimeout: 0,
+    // Stable public API alias: /api/v1/* → /api/* (same handlers).
+    // Must use rewriteUrl — onRequest is too late for the router.
+    rewriteUrl: (req) => {
+      const url = req.url ?? "";
+      if (
+        url === "/api/v1" ||
+        url.startsWith("/api/v1/") ||
+        url.startsWith("/api/v1?")
+      ) {
+        return url.replace(/^\/api\/v1/, "/api");
+      }
+      return url;
+    },
     // Only honour X-Forwarded-For from known reverse proxies (default: localhost).
     // Prevents spoofed client IPs from bypassing login rate limits if the API
     // is ever reachable beyond prod-web.
@@ -267,14 +280,6 @@ async function main() {
               trustedProxyList.includes(bare)
             );
           },
-  });
-
-  // Stable public API alias: /api/v1/* → /api/* (same handlers).
-  app.addHook("onRequest", async (request) => {
-    const url = request.raw.url ?? "";
-    if (url === "/api/v1" || url.startsWith("/api/v1/") || url.startsWith("/api/v1?")) {
-      request.raw.url = url.replace(/^\/api\/v1/, "/api");
-    }
   });
 
   app.addContentTypeParser(

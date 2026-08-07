@@ -5,7 +5,7 @@ Formerly called “roadmap”; same file, clearer name.
 
 **Scale (100n/1000c):** [docs/scale-100n-1000c-roadmap.md](scale-100n-1000c-roadmap.md) · **Live:** [guartrix.com](https://guartrix.com) · **Wiki:** [docs/wiki/README.md](wiki/README.md) · **History:** [CHANGELOG.md](../CHANGELOG.md)
 
-Last updated: **2026-08-06** · product **v1.1.2**
+Last updated: **2026-08-07** · product **v1.1.3**
 
 ---
 
@@ -48,7 +48,7 @@ Optional **P2** (eggs/nests, Redis Cluster/Sentinel). External pentest + contrac
 | Invite accept requires `emailVerified` | [x] |
 | Admin → Settings → Go-live readiness + SLA attestations | [x] |
 | BullMQ job queues when Redis configured (fail-closed scheduler lock) | [x] |
-| `/api/v1` dual-mount + error envelope docs | [x] |
+| `/api/v1` dual-mount + error envelope docs | [x] (1.1.3: Fastify `rewriteUrl`) |
 | Peer MySQL on node transfer (`restore-from`) | [x] |
 | CI Biome lint + Playwright staging workflow | [x] |
 | SLA ops wiki + pentest scope brief | [x] |

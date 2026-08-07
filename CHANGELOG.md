@@ -3,6 +3,10 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.1.3] — 2026-08-07
+
+- Fix `/api/v1` dual-mount: use Fastify `rewriteUrl` so routes resolve (onRequest rewrite was too late for the router)
+
 ## [1.1.2] — 2026-08-06
 
 - Sprint 10 SaaS/SLA: invite accept requires `emailVerified`; Admin → Settings → Go-live readiness + SLA attestations
