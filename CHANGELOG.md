@@ -3,6 +3,11 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.3.13] — 2026-08-07
+
+### Changed
+- Admin → Settings: section nav moved to top horizontal pills (same pattern as Status tabs)
+
 ## [1.3.12] — 2026-08-07
 
 ### Fixed

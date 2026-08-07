@@ -3,10 +3,8 @@ import { Navigate } from "react-router-dom";
 import {
   Alert,
   Button,
-  Col,
   Form,
   Nav,
-  Row,
   Spinner,
 } from "react-bootstrap";
 import { api, type PanelSettings } from "../api";
@@ -344,31 +342,27 @@ export function AdminSettingsPage() {
       loading={loading}
       loadingLabel={t("common.loading")}
     >
-      <Form onSubmit={onSave}>
-        <Row className="g-4 admin-settings-layout">
-          <Col xs={12} md={4} lg={3}>
-            <div className="settings-nav-wrap admin-nav-wrap">
-              <Nav
-                variant="pills"
-                className="settings-nav admin-nav gap-1"
-                activeKey={tab}
-                onSelect={(k) => k && setTab(k as SettingsTab)}
-              >
-                {SETTINGS_TABS.map((item) => (
-                  <Nav.Item key={item.id}>
-                    <Nav.Link eventKey={item.id}>
-                      <i className={`fa-solid ${item.icon}`} aria-hidden />
-                      {t(item.labelKey)}
-                    </Nav.Link>
-                  </Nav.Item>
-                ))}
-              </Nav>
-            </div>
-          </Col>
-          <Col xs={12} md={8} lg={9} className="admin-settings-content">
-            <AdminPanelCard>
-              {tab === "general" && (
-                <GeneralPanel
+      <Form onSubmit={onSave} className="admin-settings">
+        <Nav
+          variant="pills"
+          className="admin-settings__tabs gap-1 mb-3 flex-wrap"
+          activeKey={tab}
+          onSelect={(k) => k && setTab(k as SettingsTab)}
+        >
+          {SETTINGS_TABS.map((item) => (
+            <Nav.Item key={item.id}>
+              <Nav.Link eventKey={item.id}>
+                <i className={`fa-solid ${item.icon} me-1`} aria-hidden />
+                {t(item.labelKey)}
+              </Nav.Link>
+            </Nav.Item>
+          ))}
+        </Nav>
+
+        <div className="admin-settings-content">
+          <AdminPanelCard>
+            {tab === "general" && (
+              <GeneralPanel
                   appName={appName}
                   onAppNameChange={setAppName}
                   appLogo={appLogo}
@@ -516,8 +510,7 @@ export function AdminSettingsPage() {
                 </Button>
               </div>
             </AdminPanelCard>
-          </Col>
-        </Row>
+          </div>
       </Form>
     </AdminPageShell>
   );

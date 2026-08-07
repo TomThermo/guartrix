@@ -1,6 +1,6 @@
 # Panel settings (Admin UI)
 
-Admins configure panel-wide options under **Admin → Settings** (General, Mail, Backup, Security, Misc, Alerts, **Go-live**), similar to Pelican / Pterodactyl admin settings.
+Admins configure panel-wide options under **Admin → Settings** (top tabs: General, Mail, Backup, Security, Misc, Alerts, **Go-live**), similar to Pelican / Pterodactyl admin settings.
 
 ## What it stores
 
