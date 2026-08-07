@@ -87,6 +87,7 @@ Main capabilities:
 - upload existing backup archives
 - restore to the current server
 - delete old backups
+- **retention limit per server** — how many backups to keep (default **7**, max **50**); set on **Server → Backups → Backup retention**; older archives are pruned automatically after each new backup (manual, scheduled, or upload)
 - schedule recurring backups (daily, weekly, interval, or **cron** five-field expression) stored as MySQL **`BackupSchedule`** rows (batched by `SCHEDULER_BACKUP_BATCH`)
 - optional **offsite hook** after each backup (`BACKUP_OFFSITE_CMD` or **Admin → Settings → Alerts**)
 - **MySQL dumps** for databases linked to the server are embedded under `guartrix-mysql/` in the archive and restored with the backup

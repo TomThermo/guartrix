@@ -53,6 +53,7 @@ export function BackupPanel({
   const [cronExpression, setCronExpression] = useState("0 3 * * *");
   const [keepCount, setKeepCount] = useState(7);
   const [savingSchedule, setSavingSchedule] = useState(false);
+  const [savingRetention, setSavingRetention] = useState(false);
 
   const [uploadNote, setUploadNote] = useState("");
   const [uploadFile, setUploadFile] = useState<File | null>(null);
@@ -242,6 +243,24 @@ export function BackupPanel({
     downloadAbortRef.current?.abort();
   }
 
+  async function onSaveRetention(e: FormEvent) {
+    e.preventDefault();
+    if (!canEditSchedule) return;
+    setSavingRetention(true);
+    onError(null);
+    onNotice(null);
+    try {
+      const result = await api.updateBackupSchedule(serverId, { keepCount });
+      setSchedule(result.schedule);
+      setKeepCount(result.schedule.keepCount);
+      onNotice(t("backups.retentionSaved", { n: result.schedule.keepCount }));
+    } catch (err) {
+      onError(err instanceof Error ? err.message : t("backups.saveRetentionFailed"));
+    } finally {
+      setSavingRetention(false);
+    }
+  }
+
   async function onSaveSchedule(e: FormEvent) {
     e.preventDefault();
     if (!canEditSchedule) return;
@@ -254,7 +273,6 @@ export function BackupPanel({
         intervalHours,
         dailyAt,
         cronExpression,
-        keepCount,
       });
       setSchedule(result.schedule);
       onNotice(
@@ -331,6 +349,39 @@ export function BackupPanel({
         {encryptionEnabled ? <> {t("backups.helpEncrypted")}</> : null}
       </Alert>
 
+      <div className="border rounded p-3 mb-4 bg-light">
+        <h3 className="h6 mb-2">
+          <i className="fa-solid fa-layer-group me-2" />
+          {t("backups.retentionTitle")}
+        </h3>
+        <p className="small text-secondary mb-3">{t("backups.retentionHelp")}</p>
+        {canEditSchedule ? (
+          <Form onSubmit={(e) => void onSaveRetention(e)} className="d-flex flex-wrap align-items-end gap-3">
+            <Form.Group className="mb-0">
+              <Form.Label className="small mb-1">{t("backups.retentionLabel")}</Form.Label>
+              <Form.Select
+                value={keepCount}
+                onChange={(e) => setKeepCount(Number(e.target.value))}
+                style={{ minWidth: "12rem" }}
+              >
+                {[3, 5, 7, 10, 14, 20, 30].map((n) => (
+                  <option key={n} value={n}>
+                    {t("backups.backupsCount", { n })}
+                  </option>
+                ))}
+              </Form.Select>
+            </Form.Group>
+            <Button type="submit" variant="outline-primary" disabled={savingRetention}>
+              {savingRetention ? t("common.saving") : t("common.save")}
+            </Button>
+          </Form>
+        ) : (
+          <p className="small mb-0">
+            {t("backups.retentionReadOnly", { n: schedule.keepCount })}
+          </p>
+        )}
+      </div>
+
       <Row className="g-4 mb-4">
         {canCreate && (
           <Col lg={5}>
@@ -398,20 +449,6 @@ export function BackupPanel({
               cronExpression={cronExpression}
               onCronExpressionChange={setCronExpression}
             />
-
-            <Form.Group className="mb-3">
-              <Form.Label>{t("backups.keepLast")}</Form.Label>
-              <Form.Select
-                value={keepCount}
-                onChange={(e) => setKeepCount(Number(e.target.value))}
-              >
-                {[3, 5, 7, 10, 14, 20, 30].map((n) => (
-                  <option key={n} value={n}>
-                    {t("backups.backupsCount", { n })}
-                  </option>
-                ))}
-              </Form.Select>
-            </Form.Group>
 
             <div className="small text-secondary mb-3">
               {t("backups.lastRun", { when: formatWhen(schedule.lastRunAt) })}

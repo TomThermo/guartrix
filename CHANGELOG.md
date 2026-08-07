@@ -3,6 +3,12 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.2.4] — 2026-08-07
+
+### Changed
+
+- **Backups:** per-server retention limit (`keepCount`) moved to a dedicated **Backup retention** block on the Backups tab (was hidden inside the automatic schedule form).
+
 ## [1.2.3] — 2026-08-07
 
 - Web footer shows product version (`vX.Y.Z` from `VERSION` at build time)

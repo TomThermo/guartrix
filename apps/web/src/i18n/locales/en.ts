@@ -627,6 +627,13 @@ export const en = {
     everyHours: "Every {h} hour{plural}",
     timeLocal: "Time (server local)",
     keepLast: "Keep last",
+    retentionTitle: "Backup retention",
+    retentionLabel: "Maximum backups kept",
+    retentionHelp:
+      "Per server. After each new backup (manual, scheduled, or upload), older copies beyond this limit are removed automatically. Default is 7.",
+    retentionSaved: "Retention saved — keeping the last {n} backups.",
+    saveRetentionFailed: "Could not save retention limit",
+    retentionReadOnly: "Keeping the last {n} backups (editable by users with backup permission).",
     backupsCount: "{n} backups",
     lastRun: "Last run: {when}",
     nextRun: "Next run: {when}",

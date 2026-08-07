@@ -632,6 +632,14 @@ export const nl: Messages = {
     everyHours: "Elke {h} uur{plural}",
     timeLocal: "Tijd (server lokaal)",
     keepLast: "Bewaar laatste",
+    retentionTitle: "Back-upbewaring",
+    retentionLabel: "Maximaal aantal back-ups",
+    retentionHelp:
+      "Per server. Na elke nieuwe back-up (handmatig, gepland of upload) worden oudere kopieën boven deze limiet automatisch verwijderd. Standaard is 7.",
+    retentionSaved: "Bewaring opgeslagen — maximaal {n} back-ups.",
+    saveRetentionFailed: "Kon bewaringslimiet niet opslaan",
+    retentionReadOnly:
+      "Maximaal {n} back-ups bewaard (instelbaar door gebruikers met back-uprechten).",
     backupsCount: "{n} back-ups",
     lastRun: "Laatste run: {when}",
     nextRun: "Volgende run: {when}",
