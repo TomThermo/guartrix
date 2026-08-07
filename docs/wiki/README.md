@@ -35,7 +35,7 @@ Operator and developer documentation for the Guartrix Minecraft hosting panel.
 | Page | Description |
 |------|-------------|
 | [Accounts & quotas](accounts-and-quotas.md) | Register, verify, reset, quotas, subusers |
-| [Panel settings (Admin UI)](panel-settings.md) | Domain, SMTP, HTTPS, quotas, alerts, **Go-live** readiness |
+| [Panel settings (Admin UI)](panel-settings.md) | Domain, SMTP, HTTPS, quotas, default backup retention, alerts, **Go-live** readiness |
 | [SLA ops (templates)](sla-ops.md) | Incident / restore / secrets / capacity / HA |
 | [SLA contract template](sla-contract-template.md) | Non-legal starting point for uptime / RTO / support |
 | [Monitoring alerts example](monitoring-alerts.example.yml) | Prometheus rule sketches |
@@ -64,7 +64,7 @@ Operator and developer documentation for the Guartrix Minecraft hosting panel.
 | Page | Description |
 |------|-------------|
 | [Server management](server-management.md) | Create/import/clone/reinstall/transfer, Java + Bedrock |
-| [Files and backups](files-and-backups.md) | File manager, SFTP jail, BackupSchedule |
+| [Files and backups](files-and-backups.md) | File manager, SFTP jail, BackupSchedule, **per-server retention**, Admin → Servers |
 | [Databases](databases.md) | Per-server MySQL on the node |
 | [Networking and allocations](networking-and-allocations.md) | Ports, Bedrock UDP, Geyser, BlueMap |
 | [Player management](player-management.md) | Online, whitelist, bans, history |
@@ -131,6 +131,28 @@ See also [Operations](operations.md) · [Release builds](release-builds.md) · [
 | ![SFTP](assets/10-server-sftp.png) | ![Plugin Management](assets/12-server-addons.png) | ![System](assets/05-system-nodes.png) |
 
 All screenshots live under [`assets/`](assets/) and are embedded in the [Panel guide](panel-guide.md).
+
+### Screenshot refresh (after UI changes)
+
+Re-capture on the **operator host** (live panel) when UI changes:
+
+```bash
+GUARTRIX_USER=admin GUARTRIX_PASS='…' GUARTRIX_SERVER_ID=… \
+GUARTRIX_TOTP_FROM_DB=1 \
+  node scripts/capture-wiki-screenshots.mjs
+```
+
+**After v1.2.3–1.3.x**, prioritize retaking:
+
+| Asset | Why |
+|-------|-----|
+| `03-create-server.png` | Backup retention field on create |
+| `11-server-backups.png` | Read-only keep limit + schedule/create (no editable retention form) |
+| `38-admin-servers.png` | Admin → Servers fleet editor |
+| `39-admin-settings.png` | Settings tabs (General / Backup / …) |
+| `02-dashboard.png` (and other full-page shots) | Footer product version + Admin nav layout |
+
+Cloud agent VMs usually cannot reach the production panel for capture — run the script on the operator checkout.
 
 ## Version
 

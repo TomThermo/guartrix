@@ -34,7 +34,7 @@ Changing **public host**, **public base URL**, **HTTPS**, or **session secure** 
 bash build/start.sh
 ```
 
-Other keys (registration, mail, quotas, 2FA roles, alerts, Cloudflare, SLA attestations) apply to the API **immediately** without restart.
+Other keys (registration, mail, quotas, default backup retention, 2FA roles, alerts, Cloudflare, SLA attestations) apply to the API **immediately** without restart.
 
 ## Relation to `.env`
 
@@ -47,3 +47,5 @@ Go-live checklist (webhook, SMTP, Mollie, backups, HA): for **customer installs*
 ## Nodes
 
 **Admin → Nodes** (`/admin/system`) remains node/daemon management — not panel env settings.
+
+**Admin → Servers** (`/admin/servers`) is the fleet server editor (resources, suspend, backup retention) — not under Settings tabs.

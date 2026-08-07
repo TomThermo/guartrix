@@ -193,7 +193,7 @@ Hardening checklist: [security.md](wiki/security.md). Code-side controls are shi
 
 Laatst bijgewerkt: 2026-08-06 · **v1.0.164**
 
-Alle sprints hieronder zijn **af**. Geen Sprint 10 gedefinieerd; zie Sprint 9 hierboven. Historical sprint checklists remain for archive only — current product version is **v1.0.164**.
+Alle sprints hieronder zijn **af**. Geen Sprint 10 gedefinieerd; zie Sprint 9 hierboven. Historical sprint checklists remain for archive only — current product version is **v1.3.13** (see `VERSION` / changelog).
 
 <details>
 <summary>Sprint polish-checklists (ingeklapt — alles afgevinkt)</summary>

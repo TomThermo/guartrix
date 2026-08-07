@@ -88,9 +88,9 @@ Main capabilities:
 - restore to the current server
 - delete old backups
 - **retention limit per server** — how many backups to keep (default **7**, max **50**); set when **creating a server**, or centrally in **Admin → Servers** (edit modal); older archives are pruned automatically after each new backup (manual, scheduled, or upload). The Backups tab shows the current limit read-only.
-- panel default for new servers: **Admin → Settings → General** (`defaultBackupKeepCount`) or env `DEFAULT_BACKUP_KEEP_COUNT`
+- panel default for new servers: **Admin → Settings → Backup** (`defaultBackupKeepCount`) or env `DEFAULT_BACKUP_KEEP_COUNT`
 - schedule recurring backups (daily, weekly, interval, or **cron** five-field expression) stored as MySQL **`BackupSchedule`** rows (batched by `SCHEDULER_BACKUP_BATCH`)
-- optional **offsite hook** after each backup (`BACKUP_OFFSITE_CMD` or **Admin → Settings → Alerts**)
+- optional **offsite hook** after each backup (`BACKUP_OFFSITE_CMD` or **Admin → Settings → Backup**)
 - **MySQL dumps** for databases linked to the server are embedded under `guartrix-mysql/` in the archive and restored with the backup
 
 Distinct from [Schedules](schedules.md) step chains (backup → wait → restart → command).

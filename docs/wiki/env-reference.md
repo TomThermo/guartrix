@@ -66,7 +66,7 @@ Installer: `--mysql-docker` (default) or `--mysql-external` / `--database-url`.
 | `DEFAULT_MAX_SERVERS` | New-user server quota (default **0**) |
 | `DEFAULT_MAX_MEMORY_MB` | New-user RAM quota (default **0**) |
 | `DEFAULT_MAX_DATABASES` | New-user DB quota (default **0**) |
-| `DEFAULT_BACKUP_KEEP_COUNT` | Default max backups kept for new servers (1–50, default **7**); overridable in Admin → Settings |
+| `DEFAULT_BACKUP_KEEP_COUNT` | Default max backups kept for new servers (1–50, default **7**); overridable in Admin → Settings → Backup and Admin → Servers |
 | `APP_NAME` | Panel product name in navbar / title (default Guartrix); also Admin → Settings → General |
 | `APP_LOGO` / `APP_FAVICON` | Optional logo/favicon path or URL |
 | `PANEL_DEBUG` | Operator debug banner (`1`/`true`) |

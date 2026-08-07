@@ -24,11 +24,11 @@ The main UI entrypoints are:
 `CreateServerPage` supports two modes:
 
 1. **Create**
-   Choose name, server software family, Minecraft version, memory, disk, and port. Admins can also choose the node.
+   Choose name, server software family, Minecraft version, memory, disk, port, and **backup retention** (max archives kept; defaults from Admin settings). Admins can also choose the node.
 2. **Import archive**
-   Create a server from an uploaded `.zip` or `.tar.gz` archive.
+   Create a server from an uploaded `.zip` or `.tar.gz` archive (same retention field).
 
-World preset, seed, difficulty, gamemode, and initial server properties are part of the provisioning surface. The API work is mostly handled by `routes/servers-crud.ts` and `servers/server-provision.ts`.
+World preset, seed, difficulty, gamemode, and initial server properties are part of the provisioning surface. The API work is mostly handled by `routes/servers/crud.ts` and `servers/server-provision.ts`. Retention is written via `applyInitialBackupRetention` — see [Files and backups](files-and-backups.md).
 
 ### Java Edition
 

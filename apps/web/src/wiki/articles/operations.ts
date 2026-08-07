@@ -134,11 +134,14 @@ export const operationsArticles: WikiArticle[] = [
       {
         title: "What it controls",
         bullets: [
-          "General settings like public host, base URL, registration, and default quotas.",
+          "General settings like app branding, public host, base URL, registration, and default quotas.",
+          "Backup tab: default backup retention for new servers and offsite hook command.",
           "Mail settings including SMTP and test mail.",
-          "Security settings such as HTTPS flags and 2FA-required roles.",
+          "Security settings such as HTTPS flags, trusted proxies, and 2FA-required roles.",
+          "Misc: debug banner, unit prefix, navigation preference, display width.",
           "Alert delivery settings such as activity webhook and alert email.",
           "Go-live: live readiness checks, BullMQ job status, and SLA operator attestations.",
+          "Per-server retention edits live under Admin → Servers.",
         ],
       },
       {

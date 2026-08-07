@@ -3,6 +3,13 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.3.14] — 2026-08-07
+
+### Changed
+
+- Docs/wiki/README sync against Admin → Servers, Settings → Backup, read-only Backups-tab keep limit, and screenshot refresh checklist.
+- Capture script shots for `/admin/servers` and `/admin/settings`.
+
 ## [1.3.13] — 2026-08-07
 
 ### Changed

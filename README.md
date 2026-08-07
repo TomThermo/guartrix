@@ -66,9 +66,9 @@ Full UI tour: [Panel guide](docs/wiki/panel-guide.md).
 
 **Content** — Modrinth plugins/mods and modpacks; recommended plugin stacks; optional CurseForge; one-click Geyser; Velocity/Bungee **backend** helpers (does not host the proxy); BlueMap / world map.
 
-**Data** — backups (manual and scheduled via `BackupSchedule`); per-server MySQL on the node (may share Docker MySQL with the panel on full installs).
+**Data** — backups (manual and scheduled via `BackupSchedule`); **per-server retention** set on create or fleet-wide under **Admin → Servers** (Backups tab is read-only for the keep limit); per-server MySQL on the node (may share Docker MySQL with the panel on full installs).
 
-**Platform** — registration with email verification; quotas (new accounts start at zero); optional TOTP; activity log, Discord/email, and web-push alerts; GDPR export/delete; Client API keys; Mollie billing and Application API; stable **`/api` + `/api/v1`** dual-mount; in-panel **`/api-docs`**; license validation via `license.guartrix.com` (unlicensed free tier: 1 node, 1 server, 10 GB disk); i18n EN/NL; Redis HA + BullMQ jobs (`REQUIRE_REDIS_HA` for managed multi-API); owner aggregate rate limits (`API_OWNER_RATE_LIMIT`); dual session rate budgets; paginated server lists; Admin → Settings (**Go-live** readiness + SLA attestations) / Status; **1.1** scale path + **1.2** SaaS/SLA engineering track.
+**Platform** — registration with email verification; quotas (new accounts start at zero); optional TOTP; activity log, Discord/email, and web-push alerts; GDPR export/delete; Client API keys; Mollie billing and Application API; stable **`/api` + `/api/v1`** dual-mount; in-panel **`/api-docs`**; license validation via `license.guartrix.com` (unlicensed free tier: 1 node, 1 server, 10 GB disk); i18n EN/NL; Redis HA + BullMQ jobs (`REQUIRE_REDIS_HA` for managed multi-API); owner aggregate rate limits (`API_OWNER_RATE_LIMIT`); dual session rate budgets; paginated server lists; dedicated **Admin** area (Status / Servers / Settings with Go-live + Backup tabs / Nodes / …); footer shows product **version**; **1.1** scale path + **1.2+** SaaS/SLA engineering track.
 
 ---
 

@@ -121,8 +121,10 @@ export const usingPanelArticles: WikiArticle[] = [
       {
         title: "Admin surfaces",
         bullets: [
-          "Admins get Status, Settings, System, License, Activity, Billing, and Users.",
-          "These pages cover health, panel settings, node management, licensing, payments, and account administration.",
+          "Admins open a dedicated Admin area with sidebar: Status, Servers, Settings, Nodes, License, Activity, Billing, and Users.",
+          "Admin → Servers edits name, owner, resources, suspend, and backup retention for every server.",
+          "Settings tabs include General, Mail, Backup (default retention + offsite), Security, Misc, Alerts, and Go-live.",
+          "Sidebar badges show live counts next to Servers, Nodes, and Users.",
         ],
         images: [
           {
@@ -327,7 +329,7 @@ export const usingPanelArticles: WikiArticle[] = [
       {
         title: "Lifecycle actions",
         bullets: [
-          "Create or import a server from the New server flow.",
+          "Create or import a server from the New server flow (includes backup retention).",
           "Clone or reinstall from the server header actions.",
           "Move a stopped server to another node when capacity or location changes.",
           "Use start, stop, restart, and kill for day-to-day power control.",
@@ -336,7 +338,8 @@ export const usingPanelArticles: WikiArticle[] = [
           {
             src: wikiAsset("03-create-server.png"),
             alt: "Create server page",
-            caption: "Create a new server with engine, version, RAM, and port choices.",
+            caption:
+              "Create a new server with engine, version, RAM, port, and backup retention.",
           },
           {
             src: wikiAsset("37-import-server.png"),
@@ -427,15 +430,18 @@ export const usingPanelArticles: WikiArticle[] = [
       {
         title: "Backup and restore",
         bullets: [
-          "Create manual backups or schedule them later.",
+          "The Backups tab shows the keep limit read-only (set at create time or in Admin → Servers).",
+          "Create manual backups or enable the automatic schedule on the same tab.",
           "Download, upload, restore, and delete backup archives from the panel.",
+          "Panel default for new servers: Admin → Settings → Backup.",
           "Safety-sensitive flows like reinstall and transfer can create backups before destructive actions.",
         ],
         images: [
           {
             src: wikiAsset("11-server-backups.png"),
             alt: "Backups tab",
-            caption: "Backup management for create, upload, restore, and download flows.",
+            caption:
+              "Create/upload/restore backups; keep limit is read-only on this tab.",
           },
         ],
       },

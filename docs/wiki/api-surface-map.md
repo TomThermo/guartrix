@@ -15,7 +15,8 @@ Use this page when you need to answer "where is this feature implemented?" befor
 | `AccountSecurityPage` | TOTP, recovery codes, client API keys, app passwords, push, export/delete account, theme/locale |
 | `AccountBillingPage` | End-user payments, subscriptions, plan purchases |
 | `AdminBillingPage` | Plans, Application API keys, recent payments |
-| `AdminSettingsPage` | Panel-wide settings overrides, SMTP, alerts, security flags, Redis status |
+| `AdminSettingsPage` | Panel-wide settings overrides, branding, Backup tab, SMTP, alerts, security flags, Redis status, Go-live |
+| `AdminServersPage` | Fleet server editor (`/admin/servers`) — resources, suspend, backup retention |
 | `SystemSettingsPage` | Nodes, daemon connectivity, capacity, install/reinstall actions |
 | `StatusLinePage` | Panel and node health overview |
 | `UsersPage` | Admin user management, quotas, roles, 2FA reset |
@@ -31,7 +32,7 @@ Routes live under `apps/api/src/routes/` — **one folder per API area**, one fi
 |--------|----------|
 | `auth/` | Session login/register (`session.ts`), panel users (`users.ts`), 2FA, invites |
 | `account/` | Profile API, GDPR, push, Client `gt_` keys, SFTP `gtap_` passwords |
-| `admin/` | Panel settings, license, status, global activity |
+| `admin/` | Panel settings, license, status, global activity, fleet servers (`servers.ts`) |
 | `billing/` | User checkout (`user.ts`), admin plans (`admin.ts`), Application plans (`application.ts`), shared schemas (`serialize.ts`) |
 | `nodes/` | Node CRUD + daemon SFTP auth callback |
 | `servers/` | Client `/api/servers/*` (power, files, backups, DBs, addons, tasks, …) |
