@@ -1,13 +1,9 @@
+import type { ReactNode } from "react";
 import type { StatusContainer, StatusNode } from "@msm/shared";
-import { Alert, Badge, Card, Col, Row, Table } from "react-bootstrap";
+import { Alert, Badge, Table } from "react-bootstrap";
 import { t as translate } from "../../i18n";
 import { formatGb, statusVariant } from "../../utils";
-import {
-  CopyableIp,
-  HealthDot,
-  MiniBar,
-  RoleBadge,
-} from "./StatusLineUi";
+import { CopyableIp, HealthDot, MiniBar } from "./StatusLineUi";
 import {
   containerStateVariant,
   formatUptime,
@@ -33,7 +29,9 @@ function ContainerRow({ container }: { container: StatusContainer }) {
               Minecraft
             </Badge>
             {container.serverName ?? (
-              <span className="text-secondary font-monospace">{container.serverId ?? "?"}</span>
+              <span className="text-secondary font-monospace">
+                {container.serverId ?? "?"}
+              </span>
             )}
           </span>
         )}
@@ -88,6 +86,15 @@ function ContainerRow({ container }: { container: StatusContainer }) {
   );
 }
 
+function MetaCell({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="node-meta-tile">
+      <div className="node-meta-tile__label">{label}</div>
+      <div className="node-meta-tile__value">{children}</div>
+    </div>
+  );
+}
+
 export function StatusLineNodeCard({ node }: { node: StatusNode }) {
   const daemon = node.daemon;
   const allIps = [
@@ -98,179 +105,133 @@ export function StatusLineNodeCard({ node }: { node: StatusNode }) {
   const mysqlContainers = node.containers.filter((c) => c.isMysql);
 
   return (
-    <Card className="h-100">
-      <Card.Body>
-        <div className="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
-          <div>
-            <Card.Title className="h5 mb-1 d-flex flex-wrap align-items-center gap-2">
-              <HealthDot ok={node.reachable} />
-              <span>{node.name}</span>
-              <RoleBadge>Daemon</RoleBadge>
-              {node.isLocal ? (
-                <Badge bg="secondary">Local (panel host)</Badge>
-              ) : (
-                <Badge bg="dark">Remote node</Badge>
-              )}
-            </Card.Title>
-            <div className="small text-secondary mb-1">
-              Game node: manages Docker, Minecraft containers, firewall, and MySQL on this machine.
+    <section className="admin-inset-card status-node-card">
+      <div className="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+        <div className="min-w-0">
+          <h2 className="admin-section-title mb-1">
+            <HealthDot ok={node.reachable} />
+            <i className="fa-solid fa-microchip" aria-hidden />
+            {node.name}
+            <Badge bg="secondary" className="ms-1 fw-normal">
+              {node.isLocal ? "Local" : "Remote"}
+            </Badge>
+          </h2>
+          <div className="small text-secondary font-monospace text-truncate">
+            {node.publicUrl}
+          </div>
+        </div>
+        <Badge bg={node.reachable ? "success" : "danger"} className="fs-6">
+          {node.reachable ? "Online" : "Offline"}
+        </Badge>
+      </div>
+
+      {!node.reachable && (
+        <Alert variant="danger" className="small mb-3 py-2">
+          {node.error ?? "daemon unreachable from the panel"}
+        </Alert>
+      )}
+
+      {daemon && (
+        <>
+          <div className="status-node-ips mb-3">
+            <div className="small text-secondary mb-2">
+              <i className="fa-solid fa-globe me-1" aria-hidden />
+              IP addresses
             </div>
-            <div className="small text-secondary">
-              Daemon-API: <span className="font-monospace">{node.publicUrl}</span>
+            <div className="d-flex flex-wrap gap-2">
+              {allIps.length > 0 ? (
+                allIps.map((ip, i) => (
+                  <div key={`${ip.iface}-${i}`} className="status-ip-chip">
+                    <span className="status-ip-chip__iface">{ip.iface}</span>
+                    <CopyableIp ip={ip.address} />
+                  </div>
+                ))
+              ) : (
+                <span className="text-secondary small">Unknown</span>
+              )}
             </div>
           </div>
-          <Badge bg={node.reachable ? "success" : "danger"} className="fs-6">
-            {node.reachable ? "Online" : "Offline"}
-          </Badge>
-        </div>
 
-        {!node.reachable && (
-          <Alert variant="danger" className="small mb-3">
-            {node.error ?? "daemon unreachable from the panel"}
-          </Alert>
-        )}
-
-        {daemon && (
-          <>
-            <div className="p-3 rounded bg-body-tertiary mb-3">
-              <div className="small text-secondary mb-2">
-                <i className="fa-solid fa-globe me-1" />
-                IP addresses on this game node
-              </div>
-              <div className="d-flex flex-wrap gap-3">
-                {allIps.length > 0 ? (
-                  allIps.map((ip, i) => (
-                    <div key={`${ip.iface}-${i}`}>
-                      <div className="small text-secondary text-uppercase">{ip.iface}</div>
-                      <div className="fs-5 fw-semibold">
-                        <CopyableIp ip={ip.address} />
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <span className="text-secondary">Unknown</span>
-                )}
-              </div>
-            </div>
-
-            <div className="d-flex align-items-center gap-2 mb-3 p-2 rounded bg-body-tertiary small">
-              <i className="fa-solid fa-microchip text-secondary" />
-              <span>
-                <strong>Daemon process</strong> ({daemon.hostname}) · port{" "}
-                <span className="font-monospace">{daemon.daemonPort}</span> · pid{" "}
-                <span className="font-monospace">{daemon.daemonPid}</span> · v
-                {daemon.daemonVersion}
+          <div className="node-info-tiles mb-3">
+            <MetaCell label="Hostname">{daemon.hostname}</MetaCell>
+            <MetaCell label="OS / arch">
+              {daemon.osVersion} ({daemon.arch})
+            </MetaCell>
+            <MetaCell label="Uptime">{formatUptime(daemon.uptime)}</MetaCell>
+            <MetaCell label="Daemon RAM">{daemon.daemonMemoryRssMb} MB</MetaCell>
+            <MetaCell label="CPU cores">{daemon.cpuCount}</MetaCell>
+            <MetaCell label="Load">
+              <Badge bg={loadAvgVariant(daemon.loadAvg[0], daemon.cpuCount)} className="me-1">
+                {daemon.loadAvg[0].toFixed(2)}
+              </Badge>
+              <span className="text-secondary small">
+                {daemon.loadAvg[1].toFixed(2)} / {daemon.loadAvg[2].toFixed(2)}
               </span>
-            </div>
-
-            <Row className="g-3 mb-3">
-              <Col xs={6} md={3}>
-                <div className="small text-secondary">Hostname</div>
-                <div className="fw-semibold text-truncate">{daemon.hostname}</div>
-              </Col>
-              <Col xs={6} md={3}>
-                <div className="small text-secondary">OS / arch</div>
-                <div className="fw-semibold text-truncate">
-                  {daemon.osVersion} ({daemon.arch})
-                </div>
-              </Col>
-              <Col xs={6} md={3}>
-                <div className="small text-secondary">Daemon uptime</div>
-                <div className="fw-semibold">{formatUptime(daemon.uptime)}</div>
-              </Col>
-              <Col xs={6} md={3}>
-                <div className="small text-secondary">Daemon RAM (RSS)</div>
-                <div className="fw-semibold">{daemon.daemonMemoryRssMb} MB</div>
-              </Col>
-              <Col xs={6} md={3}>
-                <div className="small text-secondary">CPU cores</div>
-                <div className="fw-semibold">{daemon.cpuCount}</div>
-              </Col>
-              <Col xs={6} md={3}>
-                <div className="small text-secondary">Load average</div>
-                <div className="fw-semibold">
-                  <Badge bg={loadAvgVariant(daemon.loadAvg[0], daemon.cpuCount)} className="me-1">
-                    {daemon.loadAvg[0].toFixed(2)}
-                  </Badge>
-                  <span className="text-secondary small">
-                    {daemon.loadAvg[1].toFixed(2)} / {daemon.loadAvg[2].toFixed(2)}
-                  </span>
-                </div>
-              </Col>
-              <Col xs={6} md={3}>
-                <div className="small text-secondary">RAM host</div>
-                <div className="fw-semibold d-flex align-items-center gap-2">
-                  <MiniBar
-                    percent={
-                      daemon.totalMemoryMb > 0
-                        ? ((daemon.totalMemoryMb - daemon.freeMemoryMb) / daemon.totalMemoryMb) *
-                          100
-                        : 0
-                    }
-                  />
-                  {formatGb(daemon.totalMemoryMb - daemon.freeMemoryMb)} /{" "}
-                  {formatGb(daemon.totalMemoryMb)}
-                </div>
-              </Col>
-              <Col xs={6} md={3}>
-                <div className="small text-secondary">Docker engine</div>
-                <div className="fw-semibold">{daemon.dockerVersion}</div>
-              </Col>
-              <Col xs={12} md={6}>
-                <div className="small text-secondary">Disk space</div>
+            </MetaCell>
+            <MetaCell label="RAM host">
+              <span className="d-flex align-items-center gap-2 flex-wrap">
+                <MiniBar
+                  percent={
+                    daemon.totalMemoryMb > 0
+                      ? ((daemon.totalMemoryMb - daemon.freeMemoryMb) /
+                          daemon.totalMemoryMb) *
+                        100
+                      : 0
+                  }
+                />
+                {formatGb(daemon.totalMemoryMb - daemon.freeMemoryMb)} /{" "}
+                {formatGb(daemon.totalMemoryMb)}
+              </span>
+            </MetaCell>
+            <MetaCell label="Docker">{daemon.dockerVersion}</MetaCell>
+            <MetaCell label="Daemon">
+              :{daemon.daemonPort} · pid {daemon.daemonPid} · v{daemon.daemonVersion}
+            </MetaCell>
+            <div className="node-meta-tile node-meta-tile--wide">
+              <div className="node-meta-tile__label">Disk</div>
+              <div className="node-meta-tile__value">
                 {daemon.disk ? (
-                  <div className="fw-semibold d-flex align-items-center gap-2">
+                  <span className="d-flex align-items-center gap-2 flex-wrap">
                     <MiniBar percent={daemon.disk.usedPercent} width={100} />
                     {daemon.disk.usedLabel} / {daemon.disk.totalLabel}
-                    <span className="text-secondary small">
-                      ({daemon.disk.usedPercent.toFixed(1)}%, {daemon.disk.freeLabel} free)
+                    <span className="node-meta-tile__hint">
+                      {daemon.disk.usedPercent.toFixed(1)}% · {daemon.disk.freeLabel} free
                     </span>
-                  </div>
+                  </span>
                 ) : (
-                  <span className="text-secondary">—</span>
+                  "—"
                 )}
-              </Col>
-            </Row>
-          </>
-        )}
-
-        {node.mysql &&
-          (() => {
-            const mysqlContainer = mysqlContainers[0];
-            return (
-              <div className="d-flex align-items-center gap-2 mb-3 p-2 rounded bg-body-tertiary flex-wrap">
-                <HealthDot ok={node.mysql!.running} />
-                <RoleBadge>Database on this node</RoleBadge>
-                <i className="fa-solid fa-database text-secondary" />
-                <span className="fw-semibold">MySQL</span>
-                <Badge bg={node.mysql!.running ? "success" : "danger"}>
-                  {node.mysql!.running ? "Running" : "Down"}
-                </Badge>
-                {mysqlContainer && node.mysql!.running && (
-                  <>
-                    <span className="small d-flex align-items-center gap-1">
-                      CPU <MiniBar percent={mysqlContainer.cpuPercent} />
-                      {mysqlContainer.cpuPercent.toFixed(1)}%
-                    </span>
-                    <span className="small d-flex align-items-center gap-1">
-                      RAM <MiniBar percent={mysqlContainer.memoryPercent} />
-                      {mysqlContainer.memoryUsedLabel} / {mysqlContainer.memoryLimitLabel}
-                    </span>
-                  </>
-                )}
-                <span className="small text-secondary font-monospace ms-auto">
-                  {node.mysql!.host}:{node.mysql!.port} · {node.mysql!.image}
-                </span>
               </div>
-            );
-          })()}
+            </div>
+          </div>
+        </>
+      )}
 
-        {node.sftp && (
-          <div className="d-flex align-items-center gap-2 mb-3 p-2 rounded bg-body-tertiary flex-wrap">
+      <div className="status-service-row mb-3">
+        {node.mysql ? (
+          <div className="status-service-pill">
+            <HealthDot ok={node.mysql.running} />
+            <i className="fa-solid fa-database" aria-hidden />
+            <strong>MySQL</strong>
+            <Badge bg={node.mysql.running ? "success" : "danger"}>
+              {node.mysql.running ? "Running" : "Down"}
+            </Badge>
+            {mysqlContainers[0] && node.mysql.running ? (
+              <span className="small d-flex align-items-center gap-1">
+                <MiniBar percent={mysqlContainers[0].cpuPercent} />
+                {mysqlContainers[0].cpuPercent.toFixed(0)}%
+              </span>
+            ) : null}
+            <span className="small text-secondary font-monospace ms-auto">
+              {node.mysql.host}:{node.mysql.port}
+            </span>
+          </div>
+        ) : null}
+        {node.sftp ? (
+          <div className="status-service-pill">
             <HealthDot ok={node.reachable && node.sftp.listening} />
-            <RoleBadge>SFTP on this node</RoleBadge>
-            <i className="fa-solid fa-network-wired text-secondary" />
-            <span className="fw-semibold">SFTP</span>
+            <i className="fa-solid fa-network-wired" aria-hidden />
+            <strong>SFTP</strong>
             <Badge
               bg={
                 node.reachable && node.sftp.listening
@@ -289,50 +250,47 @@ export function StatusLineNodeCard({ node }: { node: StatusNode }) {
             <span className="small text-secondary font-monospace ms-auto">
               {node.sftp.hostname
                 ? `${node.sftp.hostname}:${node.sftp.port}`
-                : `port ${node.sftp.port}`}
+                : `:${node.sftp.port}`}
             </span>
           </div>
-        )}
+        ) : null}
+      </div>
 
-        {node.containers.length > 0 ? (
-          <>
-            <div className="small text-secondary mb-2">
-              <i className="fa-solid fa-cubes me-1" />
-              Servers on this node ({gameContainers.length} Minecraft
-              {mysqlContainers.length ? ` · ${mysqlContainers.length} database` : ""})
-              <span className="ms-1">
-                — stopped servers stay visible (container is removed on stop)
-              </span>
-            </div>
-            <div className="table-responsive">
-              <Table size="sm" hover className="mb-0 align-middle">
-                <thead>
-                  <tr className="small text-secondary">
-                    <th>Type / server</th>
-                    <th>Container</th>
-                    <th>ID</th>
-                    <th>Image</th>
-                    <th>Ports</th>
-                    <th>Docker</th>
-                    <th>Panel</th>
-                    <th>CPU</th>
-                    <th>RAM</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {node.containers.map((c) => (
-                    <ContainerRow key={c.id} container={c} />
-                  ))}
-                </tbody>
-              </Table>
-            </div>
-          </>
-        ) : (
-          node.reachable && (
-            <div className="text-secondary small">{translate("admin.noContainers")}</div>
-          )
-        )}
-      </Card.Body>
-    </Card>
+      {node.containers.length > 0 ? (
+        <>
+          <div className="small text-secondary mb-2">
+            <i className="fa-solid fa-cubes me-1" aria-hidden />
+            Servers ({gameContainers.length} Minecraft
+            {mysqlContainers.length ? ` · ${mysqlContainers.length} DB` : ""})
+          </div>
+          <div className="table-responsive">
+            <Table size="sm" hover className="mb-0 align-middle">
+              <thead>
+                <tr className="small text-secondary">
+                  <th>Type / server</th>
+                  <th>Container</th>
+                  <th>ID</th>
+                  <th>Image</th>
+                  <th>Ports</th>
+                  <th>Docker</th>
+                  <th>Panel</th>
+                  <th>CPU</th>
+                  <th>RAM</th>
+                </tr>
+              </thead>
+              <tbody>
+                {node.containers.map((c) => (
+                  <ContainerRow key={c.id} container={c} />
+                ))}
+              </tbody>
+            </Table>
+          </div>
+        </>
+      ) : (
+        node.reachable && (
+          <div className="text-secondary small">{translate("admin.noContainers")}</div>
+        )
+      )}
+    </section>
   );
 }

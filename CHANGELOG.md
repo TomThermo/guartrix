@@ -3,6 +3,11 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.3.11] — 2026-08-07
+
+### Changed
+- Admin → Status: tabbed layout (Overview / Nodes / Logs) with denser tiles and service pills
+
 ## [1.3.10] — 2026-08-07
 
 ### Added

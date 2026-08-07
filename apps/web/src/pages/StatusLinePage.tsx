@@ -1,20 +1,21 @@
-import { Alert, Button, Col, Row, Spinner } from "react-bootstrap";
+import { useState } from "react";
+import { Alert, Button, Nav, Spinner, Tab } from "react-bootstrap";
 import { useI18n } from "../i18n/react";
 import { SystemLogsPanel } from "../components/SystemLogsPanel";
 import { StatusLineNodeCard } from "../components/status-line/StatusLineNodeCard";
 import {
-  StatusLineArchitectureCard,
-  StatusLineGameNodeSummary,
-  StatusLinePanelCards,
-  StatusLineVersionCard,
+  StatusLineOverview,
 } from "../components/status-line/StatusLineSummary";
 import { STATUS_REFRESH_MS, useAdminStatus } from "../components/status-line/useAdminStatus";
+
+type StatusTab = "overview" | "nodes" | "logs";
 
 export function StatusLinePage() {
   const { t } = useI18n();
   const { data, loading, error, setError, refresh } = useAdminStatus(STATUS_REFRESH_MS);
+  const [tab, setTab] = useState<StatusTab>("overview");
 
-  if (loading) {
+  if (loading && !data) {
     return (
       <div className="text-center py-5">
         <Spinner animation="border" />
@@ -22,55 +23,91 @@ export function StatusLinePage() {
     );
   }
 
-  const panel = data?.panel;
-  const apiInfo = panel?.api;
-
   return (
-    <div>
+    <div className="status-page">
       <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
         <div>
-          <h1 className="h3 mb-1">{t("admin.statusTitle")}</h1>
+          <h1 className="h3 mb-1">
+            <i className="fa-solid fa-heart-pulse me-2" aria-hidden />
+            {t("admin.statusTitle")}
+          </h1>
           <p className="text-secondary mb-0 small">
-            {t("admin.statusSubtitle")} Refreshes every {Math.round(STATUS_REFRESH_MS / 1000)}s.
+            {t("admin.statusSubtitle")}{" "}
+            {t("admin.statusRefreshHint", {
+              seconds: String(Math.round(STATUS_REFRESH_MS / 1000)),
+            })}
           </p>
         </div>
         <div className="d-flex align-items-center gap-2">
           {data && (
             <div className="small text-secondary">
-              Updated {new Date(data.generatedAt).toLocaleTimeString()}
+              {t("admin.statusUpdated", {
+                time: new Date(data.generatedAt).toLocaleTimeString(),
+              })}
             </div>
           )}
           <Button size="sm" variant="outline-secondary" onClick={() => void refresh(true)}>
-            <i className="fa-solid fa-rotate me-1" />
+            <i className="fa-solid fa-rotate me-1" aria-hidden />
             {t("common.refresh")}
           </Button>
         </div>
       </div>
 
       {error && (
-        <Alert variant="danger" dismissible onClose={() => setError(null)}>
+        <Alert variant="danger" dismissible onClose={() => setError(null)} className="mb-3">
           {error}
         </Alert>
       )}
 
-      <StatusLineArchitectureCard />
+      <Tab.Container
+        activeKey={tab}
+        onSelect={(k) => setTab((k as StatusTab) || "overview")}
+      >
+        <Nav variant="pills" className="status-page__tabs gap-1 mb-3 flex-wrap">
+          <Nav.Item>
+            <Nav.Link eventKey="overview">
+              <i className="fa-solid fa-gauge-high me-1" aria-hidden />
+              {t("admin.statusTabOverview")}
+            </Nav.Link>
+          </Nav.Item>
+          <Nav.Item>
+            <Nav.Link eventKey="nodes">
+              <i className="fa-solid fa-network-wired me-1" aria-hidden />
+              {t("admin.statusTabNodes")}
+              {data ? (
+                <span className="admin-shell__count ms-2">{data.nodes.length}</span>
+              ) : null}
+            </Nav.Link>
+          </Nav.Item>
+          <Nav.Item>
+            <Nav.Link eventKey="logs">
+              <i className="fa-solid fa-terminal me-1" aria-hidden />
+              {t("admin.statusTabLogs")}
+            </Nav.Link>
+          </Nav.Item>
+        </Nav>
 
-      {panel?.version && <StatusLineVersionCard version={panel.version} />}
-
-      <StatusLinePanelCards panel={panel} apiInfo={apiInfo} />
-
-      {data && <StatusLineGameNodeSummary data={data} />}
-
-      <div className="small text-secondary text-uppercase mb-2">Per node</div>
-      <Row className="g-3">
-        {data?.nodes.map((node) => (
-          <Col key={node.id} xs={12}>
-            <StatusLineNodeCard node={node} />
-          </Col>
-        ))}
-      </Row>
-
-      {data && <SystemLogsPanel nodes={data.nodes} />}
+        <Tab.Content>
+          <Tab.Pane eventKey="overview">
+            {data ? <StatusLineOverview data={data} /> : null}
+          </Tab.Pane>
+          <Tab.Pane eventKey="nodes">
+            <div className="status-nodes">
+              {data?.nodes.map((node) => (
+                <StatusLineNodeCard key={node.id} node={node} />
+              ))}
+              {data && data.nodes.length === 0 ? (
+                <section className="admin-inset-card">
+                  <p className="small text-secondary mb-0">{t("admin.statusNoNodes")}</p>
+                </section>
+              ) : null}
+            </div>
+          </Tab.Pane>
+          <Tab.Pane eventKey="logs">
+            {data ? <SystemLogsPanel nodes={data.nodes} /> : null}
+          </Tab.Pane>
+        </Tab.Content>
+      </Tab.Container>
     </div>
   );
 }

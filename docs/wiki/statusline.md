@@ -8,11 +8,9 @@ Admins open **Admin → Status** (`/admin/status`) for a live health board of th
 
 | Area | Contents |
 |------|----------|
-| Architecture strip | Web → API → Daemon → Minecraft path |
-| Version | Running panel version vs license channel |
-| Panel cards | Web (URL / ports / PID), API (port / uptime / memory / Node), Watchdog, Redis (if enabled) |
-| Nodes | Summary plus **per-node** cards: reachability, containers, CPU/RAM, MySQL, etc. |
-| System logs | Tail of operator-relevant log streams |
+| **Overview** tab | Compact architecture strip, version badge, panel tiles (Web / API / Watchdog / Redis), game-layer chips + node mini-list |
+| **Nodes** tab | Per-node detail: IPs, host metrics, MySQL/SFTP, container table |
+| **Logs** tab | Live tails (daemon, API, web, watchdog, MySQL, Minecraft consoles) |
 
 The page auto-refreshes on an interval (`STATUS_REFRESH_MS` in the web app).
 
