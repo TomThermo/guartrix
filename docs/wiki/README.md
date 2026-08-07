@@ -36,6 +36,9 @@ Operator and developer documentation for the Guartrix Minecraft hosting panel.
 | [Accounts & quotas](accounts-and-quotas.md) | Register, verify, reset, quotas, subusers |
 | [Panel settings (Admin UI)](panel-settings.md) | Domain, SMTP, HTTPS, quotas, alerts, **Go-live** readiness |
 | [SLA ops (templates)](sla-ops.md) | Incident / restore / secrets / capacity / HA |
+| [SLA contract template](sla-contract-template.md) | Non-legal starting point for uptime / RTO / support |
+| [Monitoring alerts example](monitoring-alerts.example.yml) | Prometheus rule sketches |
+| [SLA drill log example](sla-drill-log.example.md) | How to record drills |
 | [Pentest scope](pentest-scope.md) | Independent assessment brief |
 | [Status overview](statusline.md) | Admin → Status health board |
 | [Activity log](activity-log.md) | Audit trail, filters, retention, alerts |

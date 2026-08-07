@@ -3,6 +3,11 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.2.1] — 2026-08-07
+
+- Ops pack: SLA contract template, Prometheus alert example, drill log example
+- `sla-restore-drill.sh --restore-latest` (compose MySQL staging) + scale-smoke HA/metrics probes
+
 ## [1.2.0] — 2026-08-07
 
 - SaaS harden: `REQUIRE_REDIS_HA`/`PANEL_HA` refuses boot without Redis+BullMQ+redis stores

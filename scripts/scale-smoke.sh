@@ -7,7 +7,14 @@ set -euo pipefail
 
 API_BASE="${API_BASE:-http://127.0.0.1:3001}"
 DAEMON_BASE="${DAEMON_BASE:-http://127.0.0.1:8081}"
-WEB_BASE="${WEB_BASE:-http://127.0.0.1:8080}"
+# Prefer WEB_PORT from .env (cloud/dev often 3080); fall back to :80 then :8080.
+if [[ -z "${WEB_BASE:-}" && -f .env ]]; then
+  WEB_PORT_ENV="$(rg -n '^WEB_PORT=' .env | head -1 | cut -d= -f2- | tr -d '\r' || true)"
+  if [[ -n "${WEB_PORT_ENV}" ]]; then
+    WEB_BASE="http://127.0.0.1:${WEB_PORT_ENV}"
+  fi
+fi
+WEB_BASE="${WEB_BASE:-http://127.0.0.1:80}"
 ROUNDS="${ROUNDS:-20}"
 
 ok=0
@@ -57,7 +64,7 @@ if [[ -f .env ]]; then
   # shellcheck disable=SC1091
   set +u
   # do not source secrets loudly — just grep presence
-  for key in REDIS_URL SESSION_STORE RATE_LIMIT_STORE API_SESSION_RATE_LIMIT API_SESSION_READ_RATE_LIMIT ACTIVITY_LOG_RETENTION_DAYS PRISMA_SLOW_MS; do
+  for key in REDIS_URL SESSION_STORE RATE_LIMIT_STORE REQUIRE_REDIS_HA PANEL_HA TRANSFER_ALLOW_PANEL_STAGING API_OWNER_RATE_LIMIT JOBS_BULLMQ API_SESSION_RATE_LIMIT API_SESSION_READ_RATE_LIMIT ACTIVITY_WEBHOOK_URL ALERT_EMAIL METRICS_TOKEN; do
     if rg -n "^[# ]*$key=" .env >/dev/null 2>&1; then
       echo "  present  $key"
     else
@@ -67,6 +74,19 @@ if [[ -f .env ]]; then
   set -u
 else
   echo "  (no .env in cwd)"
+fi
+
+echo
+echo "== SaaS / HA probes =="
+check "API /api/v1/health" curl -sf "$API_BASE/api/v1/health"
+if [[ -n "${METRICS_TOKEN:-}" ]] || rg -n '^METRICS_TOKEN=.' .env >/dev/null 2>&1; then
+  TOKEN="${METRICS_TOKEN:-}"
+  if [[ -z "$TOKEN" && -f .env ]]; then
+    TOKEN="$(rg -n '^METRICS_TOKEN=' .env | head -1 | cut -d= -f2- | tr -d '\r')"
+  fi
+  check "API /api/metrics (token)" curl -sf -H "Authorization: Bearer $TOKEN" "$API_BASE/api/metrics"
+else
+  check "API /api/metrics" curl -sf "$API_BASE/api/metrics"
 fi
 
 echo

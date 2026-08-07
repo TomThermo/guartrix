@@ -4,7 +4,9 @@ Operator runbooks for **managed SaaS / contractual SLA** posture. Numbers are
 **templates** — fill RTO/RPO and contacts for your install. Attest drills in
 **Admin → Settings → Go-live**.
 
-External pentest and legal SLA text are **process**, not auto-greened by the panel.
+External pentest execution and counsel-signed contracts are **process**, not auto-greened by the panel.
+Use [sla-contract-template.md](sla-contract-template.md) as a drafting aid and
+[monitoring-alerts.example.yml](monitoring-alerts.example.yml) for Prometheus sketches.
 Engineering controls: `REQUIRE_REDIS_HA` / `PANEL_HA`, BullMQ, peer-only transfers,
 owner rate limits — see [env-reference](env-reference.md).
 

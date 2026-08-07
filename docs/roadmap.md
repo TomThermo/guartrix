@@ -5,7 +5,7 @@ Formerly called “roadmap”; same file, clearer name.
 
 **Scale (100n/1000c):** [docs/scale-100n-1000c-roadmap.md](scale-100n-1000c-roadmap.md) · **Live:** [guartrix.com](https://guartrix.com) · **Wiki:** [docs/wiki/README.md](wiki/README.md) · **History:** [CHANGELOG.md](../CHANGELOG.md)
 
-Last updated: **2026-08-07** · product **v1.2.0**
+Last updated: **2026-08-07** · product **v1.2.1**
 
 ---
 
@@ -43,7 +43,7 @@ Optional **P2** (eggs/nests, Redis Cluster/Sentinel). **External pentest executi
 
 ---
 
-## Sprint 11 — SaaS harden *(1.2.0)*
+## Sprint 11 — SaaS harden *(1.2.0)* · ops pack **1.2.1**
 
 | Item | Status |
 |------|--------|

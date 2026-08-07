@@ -80,7 +80,8 @@ Installer: `--mysql-docker` (default) or `--mysql-external` / `--database-url`.
 | `REDIS_ENABLED` | `0` disables Redis even if `REDIS_URL` is set; default on when URL is present |
 | `JOBS_BULLMQ` | `1` (default) use BullMQ when Redis is configured; `0` force in-process scheduler |
 | `JOBS_EMBEDDED` | `1` (default) run BullMQ workers inside the API process; `0` queues only (external worker later) |
-| `REQUIRE_REDIS_HA` / `PANEL_HA` | `1` = managed HA: boot requires Redis connected + BullMQ + `SESSION_STORE=redis` + `RATE_LIMIT_STORE=redis`; Go-live fails softer single-API warnings |
+| `REQUIRE_REDIS_HA` / `PANEL_HA` | `1` = managed HA: boot requires Redis connected + BullMQ + `SESSION_STORE=redis` + `RATE_LIMIT_STORE=redis`; Go-live treats missing alerts/attestations more strictly |
+| `METRICS_TOKEN` | When set, `GET /api/metrics` requires `Authorization: Bearer …` |
 | `TRANSFER_ALLOW_PANEL_STAGING` | `0` (default) peer-only node transfer; `1` allows panel tmpdisk fallback when peer copy fails |
 | `API_OWNER_RATE_LIMIT` | Aggregate Client API + cookie session requests/min per owning userId (default **1800**; `0` disables) |
 | `SCHEDULER_LOCK_TTL_MS` | Redis scheduler lock TTL (default 15000). With Redis configured, lock acquisition **fail-closed** on Redis errors |

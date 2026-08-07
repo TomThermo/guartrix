@@ -1,0 +1,31 @@
+# Example Prometheus alert rules for a managed Guartrix panel.
+# Adapt job names / scrape configs to your estate. Not loaded by the panel itself.
+groups:
+  - name: guartrix-panel
+    rules:
+      - alert: GuartrixPanelNotReady
+        expr: probe_success{job="guartrix-ready"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Panel /api/ready failing"
+          description: "Control plane not ready for >2m — check API, MySQL, Redis."
+
+      - alert: GuartrixMetricsAbsent
+        expr: up{job="guartrix-metrics"} == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Panel /api/metrics scrape down"
+          description: "Verify METRICS_TOKEN and scrape Authorization: Bearer."
+
+      # Blackbox or custom exporter recommended for Redis ping + BullMQ failed depth.
+      - alert: GuartrixHighHttp5xx
+        expr: increase(http_requests_total{job="guartrix-api",code=~"5.."}[5m]) > 20
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Elevated 5xx on panel API"
