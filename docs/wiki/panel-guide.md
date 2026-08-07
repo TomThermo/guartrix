@@ -20,7 +20,7 @@ Use this page as the visual tour. For deeper behavior, limits, and internal note
 
 ### Login
 
-Open the panel URL → sign in with your username and password. Admins open **Admin** in the top bar for **Status**, **Settings**, **Nodes**, **License**, **Activity**, **Billing**, and **Users**. Your account menu (username) has **Billing**, **Security**, and **Sign out**.
+Open the panel URL → sign in with your username and password. Admins open **Admin** in the top bar for **Status**, **Settings**, **Server backups**, **Nodes**, **License**, **Activity**, **Billing**, and **Users**. Your account menu (username) has **Billing**, **Security**, and **Sign out**. The footer shows the product version (`vX.Y.Z`).
 
 ![Login](assets/01-login.png)
 
@@ -74,13 +74,17 @@ Each row shows clickable chips for **disk used / limit**, **online players** (`0
 
 ## Create a server
 
-**+ New server** — pick software under **Java Edition** (Vanilla, Paper, Purpur, Fabric, Quilt, Forge, NeoForge) or **Bedrock Edition** (official Mojang BDS stable/preview, PocketMine-MP, Nukkit), version, RAM, port, and (admins) which node. Bedrock servers use **UDP** as the primary game port. Optional **world preset** (Default / Flat / Void) and **seed** are applied before the first boot. The panel **starts the server automatically** after create, import, or clone (and sets **Start on boot** so it comes back after a panel restart unless you stopped it manually).
+**+ New server** — pick software under **Java Edition** (Vanilla, Paper, Purpur, Fabric, Quilt, Forge, NeoForge) or **Bedrock Edition** (official Mojang BDS stable/preview, PocketMine-MP, Nukkit), version, RAM, port, **backup retention** (max archives to keep for this server; defaults from panel settings), and (admins) which node. Bedrock servers use **UDP** as the primary game port. Optional **world preset** (Default / Flat / Void) and **seed** are applied before the first boot. The panel **starts the server automatically** after create, import, or clone (and sets **Start on boot** so it comes back after a panel restart unless you stopped it manually).
 
 ![Create server](assets/03-create-server.png)
 
-The same page has an **Import archive** tab to create a server from an existing world/server `.zip` or `.tar.gz`. **Clone** lives on the server detail page (top actions).
+> **Screenshot note:** `03-create-server.png` should show the **Backup retention** field under Resources. Re-run `scripts/capture-wiki-screenshots.mjs` after shipping UI that includes it.
 
-More: [Server management](server-management.md)
+The same page has an **Import archive** tab to create a server from an existing world/server `.zip` or `.tar.gz` (same retention field applies). **Clone** lives on the server detail page (top actions).
+
+![Import server](assets/37-import-server.png)
+
+More: [Server management](server-management.md) · [Files and backups](files-and-backups.md)
 
 ---
 
@@ -95,10 +99,23 @@ More: [Server management](server-management.md)
 ## Admin: Settings
 
 **Settings** — panel-wide configuration (domain / public URL, registration & default quotas,
-Cloudflare DNS, SMTP mail + test send, HTTPS / session flags, 2FA-required roles, activity alerts).
+**default backup retention** for new servers, Cloudflare DNS, SMTP mail + test send, HTTPS / session flags,
+2FA-required roles, activity alerts, **Go-live** readiness).
 Overrides are stored in `data/panel-settings.json`; HTTPS/URL changes also update `.env` and need a panel restart.
 
 More: [Panel settings](panel-settings.md)
+
+## Admin: Server backups
+
+**Server backups** (`/admin/server-backups`) — fleet view of every Minecraft server’s backup
+retention limit. Set the **default for new servers** (same value as Settings → General) and edit
+**max backups kept** per row. The table shows how many archives are stored now; servers over the
+limit prune automatically on the next backup. Owners can still change retention on
+**Server → Backups**.
+
+> Screenshot `38-admin-server-backups.png` is produced by `scripts/capture-wiki-screenshots.mjs` — re-run on the operator host after deploy, then embed it here.
+
+More: [Files and backups](files-and-backups.md)
 
 ## Admin: Nodes
 
@@ -248,9 +265,15 @@ More: [Networking and allocations](networking-and-allocations.md)
 
 ### Backups
 
-Create archives, download/upload, restore. Pair with **Schedules** for automation.
+Create archives, download/upload, and restore. Set **Backup retention** (max archives kept for this
+server) in the dedicated block at the top of the tab — older copies are pruned after each new
+backup. Pair with **Automatic schedule** on the same tab for recurring backups, or with
+**Schedules** chains for backup → wait → restart flows. Admins can also edit limits for all
+servers under **Admin → Server backups**.
 
 ![Backups](assets/11-server-backups.png)
+
+> **Screenshot note:** `11-server-backups.png` should show the dedicated **Backup retention** block (not only “Keep last” inside the schedule form). Re-run the capture script after UI ship.
 
 More: [Files and backups](files-and-backups.md)
 

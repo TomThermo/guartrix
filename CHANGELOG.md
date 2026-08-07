@@ -3,6 +3,13 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.2.6] — 2026-08-07
+
+### Changed
+
+- Docs/wiki/README sync for Admin → Server backups, create-server retention, and screenshot refresh checklist.
+- Extended `scripts/capture-wiki-screenshots.mjs` for admin server-backups + settings shots.
+
 ## [1.2.5] — 2026-08-07
 
 ### Added

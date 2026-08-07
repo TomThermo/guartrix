@@ -481,6 +481,14 @@ async function main() {
   await page.goto(`${BASE}/admin/billing`, { waitUntil: "networkidle2" });
   await shot(page, "29-admin-billing.png");
 
+  // Admin → Server backups (fleet retention)
+  await page.goto(`${BASE}/admin/server-backups`, { waitUntil: "networkidle2" });
+  await shot(page, "38-admin-server-backups.png");
+
+  // Admin → Settings (General includes default backup retention)
+  await page.goto(`${BASE}/admin/settings`, { waitUntil: "networkidle2" });
+  await shot(page, "39-admin-settings.png");
+
   // Server detail tabs
   const sid = SERVER_ID;
   const serverBase = `${BASE}/servers/${sid}`;

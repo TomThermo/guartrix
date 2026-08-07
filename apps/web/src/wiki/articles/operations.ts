@@ -134,11 +134,12 @@ export const operationsArticles: WikiArticle[] = [
       {
         title: "What it controls",
         bullets: [
-          "General settings like public host, base URL, registration, and default quotas.",
+          "General settings like public host, base URL, registration, default quotas, and default backup retention for new servers.",
           "Mail settings including SMTP and test mail.",
           "Security settings such as HTTPS flags and 2FA-required roles.",
           "Alert delivery settings such as activity webhook and alert email.",
           "Go-live: live readiness checks, BullMQ job status, and SLA operator attestations.",
+          "Fleet backup limits live under Admin → Server backups (not a Settings tab).",
         ],
       },
       {

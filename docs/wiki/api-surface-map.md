@@ -15,7 +15,8 @@ Use this page when you need to answer "where is this feature implemented?" befor
 | `AccountSecurityPage` | TOTP, recovery codes, client API keys, app passwords, push, export/delete account, theme/locale |
 | `AccountBillingPage` | End-user payments, subscriptions, plan purchases |
 | `AdminBillingPage` | Plans, Application API keys, recent payments |
-| `AdminSettingsPage` | Panel-wide settings overrides, SMTP, alerts, security flags, Redis status |
+| `AdminSettingsPage` | Panel-wide settings overrides, SMTP, alerts, security flags, Redis status, Go-live, default backup retention |
+| `AdminServerBackupsPage` | Fleet backup retention limits (`/admin/server-backups`) |
 | `SystemSettingsPage` | Nodes, daemon connectivity, capacity, install/reinstall actions |
 | `StatusLinePage` | Panel and node health overview |
 | `UsersPage` | Admin user management, quotas, roles, 2FA reset |

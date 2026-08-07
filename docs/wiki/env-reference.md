@@ -66,7 +66,7 @@ Installer: `--mysql-docker` (default) or `--mysql-external` / `--database-url`.
 | `DEFAULT_MAX_SERVERS` | New-user server quota (default **0**) |
 | `DEFAULT_MAX_MEMORY_MB` | New-user RAM quota (default **0**) |
 | `DEFAULT_MAX_DATABASES` | New-user DB quota (default **0**) |
-| `DEFAULT_BACKUP_KEEP_COUNT` | Default max backups kept for new servers (1–50, default **7**); overridable in Admin → Settings |
+| `DEFAULT_BACKUP_KEEP_COUNT` | Default max backups kept for new servers (1–50, default **7**); overridable in Admin → Settings → General and Admin → Server backups |
 | `MAIL_FROM` | Envelope From for outbound mail |
 | `SMTP_HOST` / `SMTP_PORT` / `SMTP_SECURE` / `SMTP_USER` / `SMTP_PASS` | SMTP relay (when unset, mail goes to `data/mail-outbox/`) |
 | `SMTP_STARTTLS` | Force STARTTLS when not using implicit TLS (`SMTP_SECURE`) |
@@ -85,8 +85,7 @@ Installer: `--mysql-docker` (default) or `--mysql-external` / `--database-url`.
 | `METRICS_TOKEN` | When set, `GET /api/metrics` requires `Authorization: Bearer …` |
 | `TRANSFER_ALLOW_PANEL_STAGING` | `0` (default) peer-only node transfer; `1` allows panel tmpdisk fallback when peer copy fails |
 | `API_OWNER_RATE_LIMIT` | Aggregate Client API + cookie session requests/min per owning userId (default **1800**; `0` disables) |
-| `SCHEDULER_LOCK_TTL_MS` | Redis scheduler lock TTL (default 15000). With Redis configured, lock acquisition **fail-closed** on Redis errors |
-| `SCHEDULER_LOCK_TTL_MS` | Redis leader-lock TTL for backup/schedule ticks (default **15000**) |
+| `SCHEDULER_LOCK_TTL_MS` | Redis leader-lock TTL for backup/schedule ticks (default **15000**). With Redis configured, lock acquisition **fail-closed** on Redis errors |
 | `BACKUP_BUSY_TTL_MS` | Redis TTL for per-server backup/restore busy lock (default **7200000** = 2h; clamp 1m–24h). Without Redis, lock is process-local. |
 | `DAEMON_BRIDGE_RECONNECT_BASE_MS` | Exp backoff base for daemon `/events` reconnect (default **1000**) |
 | `DAEMON_BRIDGE_RECONNECT_MAX_MS` | Exp backoff cap (default **60000**) |
