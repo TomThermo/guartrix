@@ -88,7 +88,7 @@ export function registerApplicationServerCoreRoutes(app: FastifyInstance): void 
     try {
       const { assertNodeCapacity, resolveCreateNodeId } = await import("../../nodes/nodes.js");
       nodeId = await resolveCreateNodeId(data.nodeId);
-      await assertNodeCapacity(nodeId, data.memoryMb);
+      await assertNodeCapacity(nodeId, data.memoryMb, { placement: true });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       return reply.status(400).send({ error: message });

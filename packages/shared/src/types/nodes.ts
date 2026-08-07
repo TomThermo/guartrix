@@ -15,9 +15,13 @@ export type NodeStatus = "ONLINE" | "OFFLINE" | "UNKNOWN";
 
 export interface DaemonNode {
   id: string;
+  /** Stable UUID (separate from short nanoid id). */
+  uuid: string;
   name: string;
   /** Optional region / location label (e.g. "eu-west"). */
   location: string | null;
+  /** Free-form tags. */
+  tags: string[];
   fqdn: string;
   scheme: string;
   daemonPort: number;
@@ -27,22 +31,45 @@ export interface DaemonNode {
    */
   behindProxy: boolean;
   isLocal: boolean;
-  /** Host / configured capacity in MB (0 = unknown). */
+  /** Host / configured memory budget in MiB (0 = unlimited). */
   memoryMb: number;
+  memoryOverallocate: number;
   /** Sum of allocated server memoryMb on this node. */
   memoryUsedMb: number;
-  /** Remaining capacity before host reserve (matches assertNodeCapacity). */
+  /** Remaining memory budget after overallocate (matches assertNodeCapacity). */
   memoryUsableMb: number;
-  /** Host reserve held back for OS/panel/Docker (0 if capacity unknown). */
+  /** Extra MiB granted by overallocate % (0 if unlimited). */
   memoryReserveMb: number;
-  /** Remaining capacity (memoryMb - memoryUsedMb), 0 if capacity unknown. */
+  /** Remaining capacity (budget - used), 0 if unlimited. */
   memoryAvailableMb: number;
+  /** Disk budget MiB (0 = unlimited). */
+  diskMb: number;
+  diskOverallocate: number;
+  diskUsedMb: number;
+  diskUsableMb: number;
+  /** CPU budget % (0 = unlimited). */
+  cpuLimit: number;
+  cpuOverallocate: number;
+  cpuUsed: number;
+  cpuUsable: number;
+  /** Max web file-manager upload size in MiB. */
+  uploadLimitMb: number;
+  /** Daemon DATA_DIR for server volumes. */
+  daemonBaseDirectory: string;
   /** Published MySQL port on this node. */
   mysqlPort?: number;
   /** SFTP listen port (default 2022). */
   sftpPort: number;
   /** Public SFTP hostname (Cloudflare A record), if configured. */
   sftpHostname: string | null;
+  /** Display alias for SFTP; empty/null = use hostname / FQDN. */
+  sftpAlias: string | null;
+  /** Prefer this host string for SFTP clients. */
+  sftpDisplayHost: string | null;
+  /** When false, excluded from create/import placement. */
+  deployable: boolean;
+  /** When true, non-admins cannot open servers on this node. */
+  maintenanceMode: boolean;
   /**
    * Trusted SSH host-key fingerprint for remote-install (OpenSSH SHA256:…).
    * Null until an admin has trusted a key via the install wizard.
@@ -75,6 +102,18 @@ export interface UpdateNodeRequest {
   daemonPort?: number;
   behindProxy?: boolean;
   memoryMb?: number;
+  memoryOverallocate?: number;
+  diskMb?: number;
+  diskOverallocate?: number;
+  cpuLimit?: number;
+  cpuOverallocate?: number;
+  uploadLimitMb?: number;
+  daemonBaseDirectory?: string;
+  sftpPort?: number;
+  sftpAlias?: string | null;
+  tags?: string[];
+  deployable?: boolean;
+  maintenanceMode?: boolean;
   /** Optional region / location label; empty string clears. */
   location?: string | null;
 }

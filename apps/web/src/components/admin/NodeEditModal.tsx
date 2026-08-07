@@ -15,6 +15,7 @@ import { useI18n } from "../../i18n/react";
 import { copyText, formatGb } from "../../utils";
 import { NodePortPoolPanel } from "../NodePortPoolPanel";
 import { NodeConfigPanel } from "./NodeConfigPanel";
+import { NodeAdvancedPanel } from "./NodeAdvancedPanel";
 import { NodeLiveStats } from "./NodeLiveStats";
 
 function statusVariant(
@@ -63,7 +64,7 @@ export function parseDaemonPublicUrl(raw: string): {
   };
 }
 
-type TabId = "overview" | "settings" | "config" | "allocations";
+type TabId = "overview" | "settings" | "advanced" | "config" | "allocations";
 type SslMode = "http" | "https" | "https-proxy";
 
 function sslModeFromNode(node: DaemonNode): SslMode {
@@ -331,6 +332,12 @@ export function NodeEditModal({
               </Nav.Link>
             </Nav.Item>
             <Nav.Item>
+              <Nav.Link eventKey="advanced">
+                <i className="fa-solid fa-screwdriver-wrench me-1" aria-hidden />
+                {t("admin.nodeTabAdvanced")}
+              </Nav.Link>
+            </Nav.Item>
+            <Nav.Item>
               <Nav.Link eventKey="config">
                 <i className="fa-solid fa-file-code me-1" aria-hidden />
                 {t("admin.nodeTabConfig")}
@@ -446,9 +453,11 @@ export function NodeEditModal({
                     <div className="node-meta-tile">
                       <div className="node-meta-tile__label">SFTP</div>
                       <div className="node-meta-tile__value font-monospace small">
-                        {node.sftpHostname
-                          ? `${node.sftpHostname}:${node.sftpPort}`
-                          : "—"}
+                        {node.sftpDisplayHost
+                          ? `${node.sftpDisplayHost}:${node.sftpPort}`
+                          : node.sftpHostname
+                            ? `${node.sftpHostname}:${node.sftpPort}`
+                            : "—"}
                       </div>
                     </div>
                     <div className="node-meta-tile">
@@ -651,6 +660,23 @@ export function NodeEditModal({
                   )}
                 </section>
               </Form>
+            </Tab.Pane>
+
+            <Tab.Pane eventKey="advanced">
+              <NodeAdvancedPanel
+                node={node}
+                busy={busy}
+                onBusy={onBusy}
+                onError={(msg) => {
+                  setLocalError(msg);
+                  onError(msg);
+                }}
+                onNotice={(msg) => {
+                  setLocalNotice(msg);
+                  onNotice(msg);
+                }}
+                onChanged={onChanged}
+              />
             </Tab.Pane>
 
             <Tab.Pane eventKey="config">

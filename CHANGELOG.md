@@ -3,6 +3,11 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.3.9] — 2026-08-07
+
+### Added
+- Admin → Nodes **Advanced Settings**: UUID, tags, upload limit, daemon base directory, SFTP port/alias, deployable + maintenance mode, memory/disk/CPU limits with overallocate
+
 ## [1.3.8] — 2026-08-07
 
 ### Changed

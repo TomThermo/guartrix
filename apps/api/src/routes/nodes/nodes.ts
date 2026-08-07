@@ -46,13 +46,35 @@ const createSchema = z.object({
   location: locationSchema,
 });
 
+const percentSchema = z.number().int().min(0).max(1000);
+const miBSchema = z.number().int().min(0).max(100_000_000);
+
 const updateSchema = z.object({
   name: z.string().min(1).max(64).optional(),
   fqdn: z.string().min(1).max(255).optional(),
   scheme: z.enum(["http", "https"]).optional(),
   daemonPort: z.number().int().min(1).max(65535).optional(),
   behindProxy: z.boolean().optional(),
-  memoryMb: z.number().int().min(0).optional(),
+  memoryMb: miBSchema.optional(),
+  memoryOverallocate: percentSchema.optional(),
+  diskMb: miBSchema.optional(),
+  diskOverallocate: percentSchema.optional(),
+  cpuLimit: z.number().int().min(0).max(100_000).optional(),
+  cpuOverallocate: percentSchema.optional(),
+  uploadLimitMb: z.number().int().min(1).max(20_480).optional(),
+  daemonBaseDirectory: z.string().min(1).max(255).optional(),
+  sftpPort: z.number().int().min(1).max(65535).optional(),
+  sftpAlias: z
+    .union([z.string().max(255), z.null()])
+    .optional()
+    .transform((v) => {
+      if (v == null) return v;
+      const t = v.trim();
+      return t.length > 0 ? t : null;
+    }),
+  tags: z.array(z.string().min(1).max(32)).max(32).optional(),
+  deployable: z.boolean().optional(),
+  maintenanceMode: z.boolean().optional(),
   location: locationSchema,
 });
 
@@ -80,7 +102,10 @@ export function registerNodeRoutes(app: FastifyInstance): void {
   /** Any logged-in user — used when creating a server (node picker). */
   app.get("/api/nodes", async (request, reply) => {
     if (!(await requireAuth(request, reply))) return;
-    return { nodes: await listNodesWithUsage() };
+    const nodes = await listNodesWithUsage();
+    return {
+      nodes: nodes.filter((n) => n.deployable && !n.maintenanceMode),
+    };
   });
 
   app.get<{
@@ -254,23 +279,34 @@ export function registerNodeRoutes(app: FastifyInstance): void {
         where: { id: request.params.id },
       });
       if (!existing) return reply.status(404).send({ error: "Not found" });
-      const data: {
-        name?: string;
-        fqdn?: string;
-        scheme?: string;
-        daemonPort?: number;
-        behindProxy?: boolean;
-        memoryMb?: number;
-        location?: string | null;
-      } = { ...parsed.data };
+      const data: Record<string, unknown> = { ...parsed.data };
       if (parsed.data.location !== undefined) {
         data.location = parsed.data.location;
+      }
+      if (parsed.data.sftpAlias !== undefined) {
+        data.sftpAlias = parsed.data.sftpAlias;
+      }
+      if (parsed.data.tags !== undefined) {
+        data.tags = parsed.data.tags;
+      }
+      if (parsed.data.daemonBaseDirectory !== undefined) {
+        const dir = parsed.data.daemonBaseDirectory.trim();
+        if (!dir.startsWith("/")) {
+          return reply
+            .status(400)
+            .send({ error: "Daemon base directory must be an absolute path" });
+        }
+        data.daemonBaseDirectory = dir.replace(/\/+$/, "") || "/var/lib/guartrix";
       }
       await prisma.node.update({
         where: { id: request.params.id },
         data,
       });
-      if (parsed.data.name || parsed.data.fqdn) {
+      if (
+        parsed.data.name ||
+        parsed.data.fqdn ||
+        parsed.data.sftpPort !== undefined
+      ) {
         await syncNodeSftpDns(request.params.id);
       }
       // Local daemon bind port comes from env DAEMON_PORT (daemon.env), not from
@@ -480,7 +516,7 @@ export function registerNodeRoutes(app: FastifyInstance): void {
         `DAEMON_NODE_ID=${node.id}`,
         `DAEMON_PORT=${listenPort}`,
         `DAEMON_HOST=0.0.0.0`,
-        `DATA_DIR=/var/lib/guartrix`,
+        `DATA_DIR=${node.daemonBaseDirectory || "/var/lib/guartrix"}`,
         `PUBLIC_HOST=${node.fqdn}`,
         `PANEL_URL=${panelUrl}`,
         `SFTP_PORT=${sftpPort}`,

@@ -554,6 +554,60 @@
   word-break: break-word;
 }
 
+.node-advanced {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  width: 100%;
+}
+
+.node-advanced-id-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.node-advanced-flags {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.node-advanced-flag {
+  min-height: 0;
+  gap: 0.55rem;
+}
+
+.node-advanced-resources {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.node-advanced-resource {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--bh-radius-sm, 0.4rem);
+  background: rgba(0, 0, 0, 0.18);
+  padding: 0.85rem 0.9rem;
+  min-width: 0;
+}
+
+.node-limit-toggle .btn {
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+@media (max-width: 991.98px) {
+  .node-advanced-resources {
+    grid-template-columns: 1fr;
+  }
+
+  .node-advanced-flags,
+  .node-advanced-id-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .node-basic {
   display: flex;
   flex-direction: column;

@@ -272,6 +272,20 @@ export async function requireServerAccess(
     return null;
   }
 
+  if (server.nodeId && user.role !== "ADMIN") {
+    const node = await prisma.node.findUnique({
+      where: { id: server.nodeId },
+      select: { maintenanceMode: true, name: true },
+    });
+    if (node?.maintenanceMode) {
+      await reply.status(503).send({
+        error: `Node "${node.name}" is under maintenance`,
+        code: "NODE_MAINTENANCE",
+      });
+      return null;
+    }
+  }
+
   const allowed = await userCanAccessServer(user, server);
   if (!allowed) {
     await reply.status(404).send({ error: "Not found" });

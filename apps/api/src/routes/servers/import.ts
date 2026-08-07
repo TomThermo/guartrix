@@ -108,7 +108,11 @@ export function registerImportRoutes(app: FastifyInstance): void {
       nodeId = await resolveCreateNodeId(
         user.role === "ADMIN" ? data.nodeId : undefined,
       );
-      await assertNodeCapacity(nodeId, data.memoryMb);
+      await assertNodeCapacity(nodeId, data.memoryMb, {
+        placement: true,
+        diskMb: data.diskMb,
+        cpuLimit: data.cpuLimit,
+      });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       return reply.status(400).send({ error: message });

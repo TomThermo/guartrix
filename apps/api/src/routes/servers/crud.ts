@@ -229,7 +229,11 @@ export function registerServerCrudRoutes(app: FastifyInstance): void {
       nodeId = await resolveCreateNodeId(
         user.role === "ADMIN" ? data.nodeId : undefined,
       );
-      await assertNodeCapacity(nodeId, data.memoryMb);
+      await assertNodeCapacity(nodeId, data.memoryMb, {
+        placement: true,
+        diskMb: data.diskMb,
+        cpuLimit: data.cpuLimit,
+      });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       return reply.status(400).send({ error: message });
@@ -439,7 +443,8 @@ export function registerServerCrudRoutes(app: FastifyInstance): void {
       server,
       "file.sftp",
     );
-    const sftpHost = node?.sftpHostname ?? null;
+    const { nodeSftpDisplayHost } = await import("../../nodes/nodes.js");
+    const sftpHost = node ? nodeSftpDisplayHost(node) : null;
     const sftpPort = node?.sftpPort ?? 2022;
     const sftpEnabled = Boolean(canSftp && sftpHost);
 
@@ -529,7 +534,11 @@ export function registerServerCrudRoutes(app: FastifyInstance): void {
             ? (parsed.data.nodeId ?? source.nodeId)
             : source.nodeId,
         );
-        await assertNodeCapacity(nodeId, memoryMb);
+        await assertNodeCapacity(nodeId, memoryMb, {
+          placement: true,
+          diskMb,
+          cpuLimit: parsed.data.cpuLimit ?? source.cpuLimit,
+        });
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         return reply.status(400).send({ error: message });

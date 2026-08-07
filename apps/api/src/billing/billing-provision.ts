@@ -92,7 +92,7 @@ export async function autoCreateServerForPayment(paymentId: string): Promise<{
 
     const { assertNodeCapacity, resolveCreateNodeId } = await import("../nodes/nodes.js");
     const nodeId = await resolveCreateNodeId(undefined);
-    await assertNodeCapacity(nodeId, plan.defaultMemoryMb);
+    await assertNodeCapacity(nodeId, plan.defaultMemoryMb, { placement: true });
     const type = (
       [
         "VANILLA",

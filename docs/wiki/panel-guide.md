@@ -103,6 +103,7 @@ More: [Panel settings](panel-settings.md)
 ## Admin: Nodes
 
 **Nodes** — local + remote daemon nodes, online status, optional **location/region**, memory, SFTP hostname,
+Basic / Advanced / Configuration tabs, and live host stats.
 rename, **edit daemon URL** (pencil next to `http://…:8081`), Test connection, Install daemon.
 
 ![System / nodes](assets/05-system-nodes.png)

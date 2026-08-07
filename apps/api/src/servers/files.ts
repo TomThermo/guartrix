@@ -91,12 +91,17 @@ export async function saveUpload(
   try {
     await pipeline(stream as never, createWriteStream(tmp));
     const st = await fs.stat(tmp);
-    if (st.size > UPLOAD_MAX_BYTES) {
+    const { node } = await resolveNodeForServer(serverId);
+    const nodeLimitMb =
+      "uploadLimitMb" in node && typeof node.uploadLimitMb === "number"
+        ? Math.max(1, node.uploadLimitMb)
+        : Math.round(UPLOAD_MAX_BYTES / (1024 * 1024));
+    const maxBytes = Math.min(nodeLimitMb * 1024 * 1024, UPLOAD_MAX_BYTES);
+    if (st.size > maxBytes) {
       throw new Error(
-        `File too large (max ${Math.round(UPLOAD_MAX_BYTES / (1024 * 1024))} MB)`,
+        `File too large (max ${Math.round(maxBytes / (1024 * 1024))} MiB)`,
       );
     }
-    const { node } = await resolveNodeForServer(serverId);
     const form = new FormData();
     form.append("file", await openAsBlob(tmp), filename);
     const q = new URLSearchParams({ path: destDir });

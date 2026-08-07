@@ -106,6 +106,9 @@ export async function startServerTransfer(input: StartTransferInput): Promise<Tr
 
   await assertNodeCapacity(input.toNodeId, server.memoryMb, {
     excludeServerId: server.id,
+    placement: true,
+    diskMb: server.diskMb,
+    cpuLimit: server.cpuLimit,
   });
 
   const { primaryAllocationProtocol } = await import("@msm/shared");

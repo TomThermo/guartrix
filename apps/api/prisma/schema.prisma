@@ -45,9 +45,13 @@ enum NodeStatus {
 
 model Node {
   id          String     @id
+  /** Stable public UUID (Pelican-style); separate from short nanoid `id`. */
+  uuid        String     @unique @default(uuid())
   name        String
   /** Optional region / location label shown in the UI (e.g. "eu-west", "Frankfurt"). */
   location    String?
+  /** Free-form tags (JSON string array). */
+  tags        Json       @default("[]")
   /** Hostname or IP used to reach the daemon (no scheme). */
   fqdn        String
   scheme      String     @default("http")
@@ -60,16 +64,37 @@ model Node {
   /** SHA-256 hex of the daemon bearer token. */
   tokenHash   String
   isLocal     Boolean    @default(false)
-  /** Reported / configured capacity in MB (0 = unknown). */
+  /**
+   * Memory allocation budget in MiB (0 = unlimited / unknown).
+   * Combined with memoryOverallocate for placement checks.
+   */
   memoryMb    Int        @default(0)
+  /** Extra % of memoryMb that may be allocated (Pelican-style). */
+  memoryOverallocate Int @default(0)
+  /** Disk allocation budget in MiB (0 = unlimited). */
+  diskMb      Int        @default(0)
+  diskOverallocate Int   @default(0)
+  /** CPU allocation budget as % of host (0 = unlimited). */
+  cpuLimit    Int        @default(0)
+  cpuOverallocate Int    @default(0)
+  /** Max web file-manager upload size in MiB. */
+  uploadLimitMb Int      @default(256)
+  /** Daemon DATA_DIR — where server volumes live. */
+  daemonBaseDirectory String @default("/var/lib/guartrix")
   /** Published MySQL port on this node (daemon-managed container). */
   mysqlPort   Int        @default(3306)
   /** SFTP listen port on this node (embedded ssh2 server). */
   sftpPort    Int        @default(2022)
   /** Public FQDN for SFTP clients (Cloudflare A record). */
   sftpHostname String?
+  /** Display alias for SFTP host; empty = use sftpHostname / FQDN. */
+  sftpAlias   String?
   /** DNS label under CLOUDFLARE_DOMAIN for the SFTP A record. */
   sftpDnsSlug  String?   @unique
+  /** When false, hide from create/import node picker and auto-placement. */
+  deployable  Boolean    @default(true)
+  /** When true, non-admins cannot access servers on this node. */
+  maintenanceMode Boolean @default(false)
   /**
    * OpenSSH-style SHA256 fingerprint of the VPS host key (remote-install TOFU).
    * Format: SHA256:<base64 without padding>. Null until first trusted SSH install.

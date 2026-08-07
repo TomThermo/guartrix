@@ -14,6 +14,8 @@ import { hostPublicIp } from "./host-resources.js";
 
 const DAEMON_ENV_FILE = "daemon.env";
 const DEFAULT_SFTP_PORT = 2022;
+const DEFAULT_UPLOAD_LIMIT_MB = 256;
+const DEFAULT_BASE_DIR = "/var/lib/guartrix";
 
 export function hashDaemonToken(token: string): string {
   return createHash("sha256").update(token, "utf8").digest("hex");
@@ -41,58 +43,157 @@ export function nodePublicUrl(node: {
   return `${node.scheme}://${node.fqdn}:${node.daemonPort}`;
 }
 
-/** Host reserve for OS + panel + MySQL + Docker (~1.5 GB or 15%). */
+/** Parse Node.tags JSON into a string[]. */
+export function parseNodeTags(raw: unknown): string[] {
+  if (Array.isArray(raw)) {
+    return raw
+      .map((t) => (typeof t === "string" ? t.trim() : ""))
+      .filter(Boolean);
+  }
+  if (typeof raw === "string" && raw.trim()) {
+    try {
+      const parsed = JSON.parse(raw) as unknown;
+      if (Array.isArray(parsed)) return parseNodeTags(parsed);
+    } catch {
+      return raw
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean);
+    }
+  }
+  return [];
+}
+
+/** Budget after overallocate % (0 limit = unlimited → 0). */
+export function nodeAllocationBudget(
+  limit: number,
+  overallocatePercent: number,
+): number {
+  if (limit <= 0) return 0;
+  const over = Math.max(0, Math.min(1000, Math.floor(overallocatePercent || 0)));
+  return Math.floor((limit * (100 + over)) / 100);
+}
+
+/** Host string shown to SFTP clients. */
+export function nodeSftpDisplayHost(node: {
+  sftpAlias?: string | null;
+  sftpHostname?: string | null;
+  fqdn: string;
+}): string {
+  const alias = node.sftpAlias?.trim();
+  if (alias) return alias;
+  const host = node.sftpHostname?.trim();
+  if (host) return host;
+  return node.fqdn;
+}
+
+/** @deprecated Prefer nodeAllocationBudget — kept for callers expecting reserve MiB. */
 export function nodeMemoryReserveMb(capacityMb: number): number {
   if (capacityMb <= 0) return 0;
   return Math.max(1536, Math.floor(capacityMb * 0.15));
 }
 
+type SerializeNodeInput = {
+  id: string;
+  uuid?: string | null;
+  name: string;
+  location?: string | null;
+  tags?: unknown;
+  fqdn: string;
+  scheme: string;
+  daemonPort: number;
+  behindProxy?: boolean;
+  isLocal: boolean;
+  memoryMb: number;
+  memoryOverallocate?: number;
+  diskMb?: number;
+  diskOverallocate?: number;
+  cpuLimit?: number;
+  cpuOverallocate?: number;
+  uploadLimitMb?: number;
+  daemonBaseDirectory?: string | null;
+  mysqlPort?: number;
+  sftpPort?: number;
+  sftpHostname?: string | null;
+  sftpAlias?: string | null;
+  deployable?: boolean;
+  maintenanceMode?: boolean;
+  sshHostKeyFingerprint?: string | null;
+  status: NodeStatus;
+  lastSeenAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
 export function serializeNode(
-  node: {
-    id: string;
-    name: string;
-    location?: string | null;
-    fqdn: string;
-    scheme: string;
-    daemonPort: number;
-    behindProxy?: boolean;
-    isLocal: boolean;
-    memoryMb: number;
-    mysqlPort?: number;
-    sftpPort?: number;
-    sftpHostname?: string | null;
-    sshHostKeyFingerprint?: string | null;
-    status: NodeStatus;
-    lastSeenAt: Date | null;
-    createdAt: Date;
-    updatedAt: Date;
-  },
+  node: SerializeNodeInput,
   serverCount = 0,
   memoryUsedMb = 0,
+  diskUsedMb = 0,
+  cpuUsed = 0,
 ): DaemonNode {
-  const capacity = Math.max(0, node.memoryMb);
-  const used = Math.max(0, memoryUsedMb);
-  const reserve = nodeMemoryReserveMb(capacity);
-  const usableCap = capacity > 0 ? Math.max(0, capacity - reserve) : 0;
-  const available = capacity > 0 ? Math.max(0, capacity - used) : 0;
-  const usable = capacity > 0 ? Math.max(0, usableCap - used) : 0;
+  const memoryCap = Math.max(0, node.memoryMb);
+  const memoryOver = Math.max(0, node.memoryOverallocate ?? 0);
+  const memoryBudget = nodeAllocationBudget(memoryCap, memoryOver);
+  const memUsed = Math.max(0, memoryUsedMb);
+  const memoryExtra =
+    memoryCap > 0 ? Math.max(0, memoryBudget - memoryCap) : 0;
+  const memoryAvailable =
+    memoryCap > 0 ? Math.max(0, memoryBudget - memUsed) : 0;
+  const memoryUsable = memoryAvailable;
+
+  const diskCap = Math.max(0, node.diskMb ?? 0);
+  const diskOver = Math.max(0, node.diskOverallocate ?? 0);
+  const diskBudget = nodeAllocationBudget(diskCap, diskOver);
+  const dUsed = Math.max(0, diskUsedMb);
+  const diskUsable = diskCap > 0 ? Math.max(0, diskBudget - dUsed) : 0;
+
+  const cpuCap = Math.max(0, node.cpuLimit ?? 0);
+  const cpuOver = Math.max(0, node.cpuOverallocate ?? 0);
+  const cpuBudget = nodeAllocationBudget(cpuCap, cpuOver);
+  const cUsed = Math.max(0, cpuUsed);
+  const cpuUsable = cpuCap > 0 ? Math.max(0, cpuBudget - cUsed) : 0;
+
+  const displayHost = nodeSftpDisplayHost(node);
+
   return {
     id: node.id,
+    uuid: node.uuid?.trim() || node.id,
     name: node.name,
     location: node.location?.trim() ? node.location.trim() : null,
+    tags: parseNodeTags(node.tags),
     fqdn: node.fqdn,
     scheme: node.scheme,
     daemonPort: node.daemonPort,
     behindProxy: Boolean(node.behindProxy),
     isLocal: node.isLocal,
-    memoryMb: capacity,
-    memoryUsedMb: used,
-    memoryAvailableMb: available,
-    memoryReserveMb: reserve,
-    memoryUsableMb: usable,
+    memoryMb: memoryCap,
+    memoryOverallocate: memoryOver,
+    memoryUsedMb: memUsed,
+    memoryAvailableMb: memoryAvailable,
+    memoryReserveMb: memoryExtra,
+    memoryUsableMb: memoryUsable,
+    diskMb: diskCap,
+    diskOverallocate: diskOver,
+    diskUsedMb: dUsed,
+    diskUsableMb: diskUsable,
+    cpuLimit: cpuCap,
+    cpuOverallocate: cpuOver,
+    cpuUsed: cUsed,
+    cpuUsable,
+    uploadLimitMb: Math.max(
+      1,
+      node.uploadLimitMb ?? DEFAULT_UPLOAD_LIMIT_MB,
+    ),
+    daemonBaseDirectory:
+      node.daemonBaseDirectory?.trim() || DEFAULT_BASE_DIR,
     mysqlPort: node.mysqlPort ?? 3306,
     sftpPort: node.sftpPort ?? DEFAULT_SFTP_PORT,
     sftpHostname: node.sftpHostname ?? null,
+    sftpAlias: node.sftpAlias?.trim() ? node.sftpAlias.trim() : null,
+    sftpDisplayHost: displayHost || null,
+    deployable: node.deployable !== false,
+    maintenanceMode: Boolean(node.maintenanceMode),
     sshHostKeyFingerprint: node.sshHostKeyFingerprint?.trim()
       ? node.sshHostKeyFingerprint.trim()
       : null,
@@ -163,9 +264,7 @@ export async function syncNodeSftpDns(
     });
     if (!dns) return;
 
-    const sftpPort =
-      Number(process.env.SFTP_PORT ?? node.sftpPort ?? DEFAULT_SFTP_PORT) ||
-      DEFAULT_SFTP_PORT;
+    const sftpPort = node.sftpPort || DEFAULT_SFTP_PORT;
 
     if (
       node.sftpHostname !== dns.fqdn ||
@@ -198,51 +297,105 @@ export async function removeNodeSftpDns(nodeId: string): Promise<void> {
   await deleteNodeSftpDns(node.sftpDnsSlug).catch(() => undefined);
 }
 
-/** Load all nodes with allocated RAM (sum of server.memoryMb). */
+/** Load all nodes with allocated RAM / disk / CPU. */
 export async function listNodesWithUsage(): Promise<DaemonNode[]> {
   const nodes = await prisma.node.findMany({
     orderBy: [{ isLocal: "desc" }, { createdAt: "asc" }],
     include: {
       _count: { select: { servers: true } },
-      servers: { select: { memoryMb: true } },
+      servers: { select: { memoryMb: true, diskMb: true, cpuLimit: true } },
     },
   });
   return nodes.map((n) => {
-    const used = n.servers.reduce((sum, s) => sum + s.memoryMb, 0);
-    return serializeNode(n, n._count.servers, used);
+    const memoryUsed = n.servers.reduce((sum, s) => sum + s.memoryMb, 0);
+    const diskUsed = n.servers.reduce((sum, s) => sum + (s.diskMb ?? 0), 0);
+    const cpuUsed = n.servers.reduce((sum, s) => sum + (s.cpuLimit ?? 0), 0);
+    return serializeNode(n, n._count.servers, memoryUsed, diskUsed, cpuUsed);
   });
 }
 
-/** Ensure node exists and has enough free allocated RAM for `memoryMb`. */
+/** Ensure node exists and has enough free allocation budget. */
 export async function assertNodeCapacity(
   nodeId: string,
   memoryMb: number,
-  opts?: { excludeServerId?: string },
+  opts?: {
+    excludeServerId?: string;
+    diskMb?: number;
+    cpuLimit?: number;
+    /** Enforce deployable + not under maintenance (create / transfer). */
+    placement?: boolean;
+  },
 ): Promise<void> {
   const node = await prisma.node.findUnique({
     where: { id: nodeId },
-    include: { servers: { select: { id: true, memoryMb: true } } },
+    include: {
+      servers: {
+        select: { id: true, memoryMb: true, diskMb: true, cpuLimit: true },
+      },
+    },
   });
   if (!node) throw new Error("Node not found");
-  if (node.memoryMb <= 0) {
-    // Capacity unknown — allow create but warn is UI-side; still accept
-    return;
+  if (opts?.placement) {
+    if (node.maintenanceMode) {
+      throw new Error(
+        `Node "${node.name}" is under maintenance — cannot place servers there`,
+      );
+    }
+    if (node.deployable === false) {
+      throw new Error(
+        `Node "${node.name}" is not enabled for deployments`,
+      );
+    }
   }
-  // Reserve headroom for OS + panel + MySQL + Docker overhead (~1.5 GB or 15%)
-  const reserveMb = nodeMemoryReserveMb(node.memoryMb);
-  const usable = Math.max(0, node.memoryMb - reserveMb);
-  const used = node.servers
-    .filter((s) => s.id !== opts?.excludeServerId)
-    .reduce((sum, s) => sum + s.memoryMb, 0);
-  const available = usable - used;
-  if (memoryMb > available) {
-    const needGb = (memoryMb / 1024).toFixed(memoryMb % 1024 === 0 ? 0 : 1);
-    const freeGb = (Math.max(0, available) / 1024).toFixed(
-      available % 1024 === 0 ? 0 : 1,
+
+  const others = node.servers.filter((s) => s.id !== opts?.excludeServerId);
+
+  if (node.memoryMb > 0) {
+    const budget = nodeAllocationBudget(
+      node.memoryMb,
+      node.memoryOverallocate ?? 0,
     );
-    throw new Error(
-      `Not enough RAM on node "${node.name}": need ${needGb} GB, available ${freeGb} GB (host reserve ${(reserveMb / 1024).toFixed(1)} GB)`,
+    const used = others.reduce((sum, s) => sum + s.memoryMb, 0);
+    const available = budget - used;
+    if (memoryMb > available) {
+      const needGb = (memoryMb / 1024).toFixed(memoryMb % 1024 === 0 ? 0 : 1);
+      const freeGb = (Math.max(0, available) / 1024).toFixed(
+        available % 1024 === 0 ? 0 : 1,
+      );
+      throw new Error(
+        `Not enough RAM on node "${node.name}": need ${needGb} GB, available ${freeGb} GB`,
+      );
+    }
+  }
+
+  const wantDisk = opts?.diskMb;
+  if (wantDisk !== undefined && (node.diskMb ?? 0) > 0) {
+    const budget = nodeAllocationBudget(
+      node.diskMb,
+      node.diskOverallocate ?? 0,
     );
+    const used = others.reduce((sum, s) => sum + (s.diskMb ?? 0), 0);
+    const available = budget - used;
+    if (wantDisk > available) {
+      throw new Error(
+        `Not enough disk on node "${node.name}": need ${wantDisk} MiB, available ${Math.max(0, available)} MiB`,
+      );
+    }
+  }
+
+  const wantCpu = opts?.cpuLimit;
+  if (wantCpu !== undefined && (node.cpuLimit ?? 0) > 0) {
+    const budget = nodeAllocationBudget(
+      node.cpuLimit,
+      node.cpuOverallocate ?? 0,
+    );
+    const used = others.reduce((sum, s) => sum + (s.cpuLimit ?? 0), 0);
+    const available = budget - used;
+    if (wantCpu > available) {
+      throw new Error(
+        `Not enough CPU on node "${node.name}": need ${wantCpu}%, available ${Math.max(0, available)}%`,
+      );
+    }
   }
 }
 
@@ -252,9 +405,17 @@ export async function resolveCreateNodeId(
   if (requestedId) {
     const node = await prisma.node.findUnique({ where: { id: requestedId } });
     if (!node) throw new Error("Node not found");
+    if (node.maintenanceMode) {
+      throw new Error(`Node "${node.name}" is under maintenance`);
+    }
+    if (!node.deployable) {
+      throw new Error(`Node "${node.name}" is not enabled for deployments`);
+    }
     return node.id;
   }
-  const local = await prisma.node.findFirst({ where: { isLocal: true } });
+  const local = await prisma.node.findFirst({
+    where: { isLocal: true, deployable: true, maintenanceMode: false },
+  });
   if (!local) throw new Error("No local node configured");
   return local.id;
 }
