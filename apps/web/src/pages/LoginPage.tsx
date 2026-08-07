@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { Alert, Button, Form, Spinner } from "react-bootstrap";
 import { api } from "../api";
@@ -43,6 +43,7 @@ export function LoginPage() {
   const [turnstileSiteKey, setTurnstileSiteKey] = useState<string | null>(null);
   const [turnstileToken, setTurnstileToken] = useState("");
   const [turnstileReset, setTurnstileReset] = useState(0);
+  const totpInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     void api
@@ -58,6 +59,16 @@ export function LoginPage() {
   useEffect(() => {
     if (pendingTwoFactor) setNeedsTwoFactor(true);
   }, [pendingTwoFactor]);
+
+  // autoFocus alone often loses after async login → 2FA transition
+  useEffect(() => {
+    if (!needsTwoFactor) return;
+    const id = window.requestAnimationFrame(() => {
+      totpInputRef.current?.focus({ preventScroll: true });
+      totpInputRef.current?.select();
+    });
+    return () => window.cancelAnimationFrame(id);
+  }, [needsTwoFactor]);
 
   if (authenticated) return <Navigate to="/" replace />;
 
@@ -125,6 +136,7 @@ export function LoginPage() {
           <Form.Group className="mb-3" controlId="totp-code">
             <Form.Label>{t("auth.authCode")}</Form.Label>
             <Form.Control
+              ref={totpInputRef}
               type="text"
               inputMode="numeric"
               autoComplete="one-time-code"

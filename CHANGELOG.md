@@ -3,6 +3,12 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.3.17] — 2026-08-07
+
+### Fixed
+
+- Focus the 2FA code field immediately after password login succeeds.
+
 ## [1.3.16] — 2026-08-07
 
 ### Added
