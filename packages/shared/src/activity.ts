@@ -288,6 +288,11 @@ export const ACTIVITY_ACTIONS: Record<string, ActivityActionMeta> = {
     category: "admin",
     label: "Changed server backup retention",
   },
+  "admin.server-update": {
+    category: "admin",
+    label: "Updated server (admin)",
+    critical: true,
+  },
 
   // Billing / Mollie
   "billing.checkout": { category: "billing", label: "Started a Mollie checkout" },

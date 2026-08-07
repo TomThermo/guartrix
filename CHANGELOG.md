@@ -3,6 +3,13 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.2.6] — 2026-08-07
+
+### Changed
+
+- **Admin → Servers** (was “Server backups”) — searchable table of all servers with edit modal for name, owner, RAM/disk/CPU, suspend, and backup retention; link to full server settings for world/startup/mounts.
+- **Backups tab:** retention block uses theme background (`bg-body-tertiary`) so it follows dark mode.
+
 ## [1.2.5] — 2026-08-07
 
 ### Added

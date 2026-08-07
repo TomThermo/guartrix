@@ -63,6 +63,7 @@ const updateSchema = z.object({
     .nullable()
     .optional(),
   ownerId: z.string().nullable().optional(),
+  suspended: z.boolean().optional(),
 });
 
 
@@ -201,6 +202,16 @@ export function registerServerSettingsRoutes(app: FastifyInstance): void {
           .send({ error: "Only admins can change server CPU limit" });
       }
       if (!assertAdminFullApiKey(request, reply)) return;
+    }
+
+    if (data.suspended !== undefined) {
+      if (access.user.role !== "ADMIN") {
+        return reply.status(403).send({ error: "Only admins can suspend servers" });
+      }
+      if (!assertAdminFullApiKey(request, reply)) return;
+      if (data.suspended === true && processManager.isRunning(server.id)) {
+        await processManager.stop(server.id);
+      }
     }
 
     const portChanging = data.port !== undefined && data.port !== server.port;
@@ -404,6 +415,7 @@ export function registerServerSettingsRoutes(app: FastifyInstance): void {
           ? { extraMounts: extraMountsForPrisma(nextExtraMounts) }
           : {}),
         ownerId: data.ownerId === undefined ? undefined : data.ownerId,
+        suspended: data.suspended,
       },
       include: serverListInclude,
     });

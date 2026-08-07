@@ -350,7 +350,7 @@ export function BackupPanel({
         {encryptionEnabled ? <> {t("backups.helpEncrypted")}</> : null}
       </Alert>
 
-      <div className="border rounded p-3 mb-4 bg-light">
+      <div className="border rounded p-3 mb-4 bg-body-tertiary">
         <h3 className="h6 mb-2">
           <i className="fa-solid fa-layer-group me-2" />
           {t("backups.retentionTitle")}

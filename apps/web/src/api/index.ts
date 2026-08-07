@@ -8,10 +8,10 @@ import { filesApi } from "./files";
 import { backupsApi } from "./backups";
 import { billingApi } from "./billing";
 import { adminSettingsApi } from "./admin-settings";
-import { adminServerBackupsApi } from "./admin-server-backups";
+import { adminServersApi } from "./admin-servers";
 
 export type { PanelSettings, PanelSettingsPatch, ReadinessReport } from "./admin-settings";
-export type { AdminServerBackupsView } from "./admin-server-backups";
+export type { AdminServersView, AdminServerPatch } from "./admin-servers";
 
 export const api = {
   ...authApi,
@@ -23,5 +23,6 @@ export const api = {
   ...backupsApi,
   ...billingApi,
   ...adminSettingsApi,
-  ...adminServerBackupsApi,
+  listAdminServers: adminServersApi.list,
+  updateAdminServer: adminServersApi.update,
 };

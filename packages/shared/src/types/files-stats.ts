@@ -340,6 +340,27 @@ export interface AdminServerBackupRow {
   scheduleMode: BackupScheduleMode;
 }
 
+/** Admin → Servers table row (quotas, owner, suspend, backups). */
+export interface AdminServerRow {
+  id: string;
+  name: string;
+  ownerId: string | null;
+  ownerUsername: string;
+  nodeId: string | null;
+  nodeName: string | null;
+  status: string;
+  type: string;
+  mcVersion: string;
+  port: number;
+  memoryMb: number;
+  diskMb: number;
+  cpuLimit: number;
+  suspended: boolean;
+  keepCount: number;
+  backupCount: number;
+  scheduleMode: BackupScheduleMode;
+}
+
 export interface ServerBackup {
   id: string;
   fileName: string;

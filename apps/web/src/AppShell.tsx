@@ -195,11 +195,11 @@ export function AppShell({ children }: { children: ReactNode }) {
                     </Dropdown.Item>
                     <Dropdown.Item
                       as={Link}
-                      to="/admin/server-backups"
+                      to="/admin/servers"
                       onClick={closeNav}
                     >
-                      <i className="fa-solid fa-layer-group fa-fw me-2 text-secondary" />
-                      {t("nav.serverBackups")}
+                      <i className="fa-solid fa-server fa-fw me-2 text-secondary" />
+                      {t("nav.serverManagement")}
                     </Dropdown.Item>
                     <Dropdown.Item
                       as={Link}

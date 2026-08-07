@@ -190,6 +190,8 @@ export interface UpdateServerRequest {
   extraMounts?: ServerExtraMount[] | null;
   /** Admin only: reassign server ownership */
   ownerId?: string | null;
+  /** Admin only: billing / abuse lockout (stops server when set true) */
+  suspended?: boolean;
 }
 
 export interface CloneServerRequest {

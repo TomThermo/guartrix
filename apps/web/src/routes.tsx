@@ -101,9 +101,9 @@ const AdminLicensePage = lazy(() =>
     default: m.AdminLicensePage,
   })),
 );
-const AdminServerBackupsPage = lazy(() =>
-  import("./pages/AdminServerBackupsPage").then((m) => ({
-    default: m.AdminServerBackupsPage,
+const AdminServersPage = lazy(() =>
+  import("./pages/AdminServersPage").then((m) => ({
+    default: m.AdminServersPage,
   })),
 );
 const StatusLinePage = lazy(() =>
@@ -200,14 +200,18 @@ export function AuthenticatedRoutes({ user }: { user: AuthUser | null }) {
             }
           />
           <Route
-            path="/admin/server-backups"
+            path="/admin/servers"
             element={
               user?.role === "ADMIN" ? (
-                <AdminServerBackupsPage />
+                <AdminServersPage />
               ) : (
                 <Navigate to="/" replace />
               )
             }
+          />
+          <Route
+            path="/admin/server-backups"
+            element={<Navigate to="/admin/servers" replace />}
           />
           <Route
             path="/admin/settings"
