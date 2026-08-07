@@ -66,6 +66,7 @@ const createSchema = z.object({
   gamemode: z.enum(["survival", "creative", "adventure", "spectator"]).optional(),
   difficulty: z.enum(["peaceful", "easy", "normal", "hard"]).optional(),
   worldPreset: z.enum(["DEFAULT", "FLAT", "VOID"]).optional(),
+  keepCount: z.number().int().min(1).max(50).optional(),
   extraMounts: z
     .array(
       z.object({
@@ -92,6 +93,12 @@ const cloneSchema = z.object({
 
 /** CRUD + stats/connect/disk/clone routes (split from servers.ts). */
 export function registerServerCrudRoutes(app: FastifyInstance): void {
+  app.get("/api/servers/create-defaults", async (request, reply) => {
+    const user = await requireWrite(request, reply);
+    if (!user) return;
+    return { defaultBackupKeepCount: config.defaultBackupKeepCount };
+  });
+
   app.get<{ Params: { id: string }; Querystring: { disk?: string } }>(
     "/api/servers/:id/stats",
     async (request, reply) => {
@@ -280,6 +287,11 @@ export function registerServerCrudRoutes(app: FastifyInstance): void {
           err instanceof Error ? err.message : err,
         );
       });
+
+      const { applyInitialBackupRetention } = await import(
+        "../../servers/backup-schedule.js"
+      );
+      await applyInitialBackupRetention(updated.id, data.keepCount);
 
       logActivity({
         action: "server.create",

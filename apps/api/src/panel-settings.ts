@@ -6,6 +6,7 @@
 import fs from "node:fs";
 import fsPromises from "node:fs/promises";
 import path from "node:path";
+import { clampBackupKeepCount } from "@msm/shared";
 import { config } from "./config.js";
 
 const SETTINGS_FILE = "panel-settings.json";
@@ -18,6 +19,7 @@ export type PanelSettingsStored = {
   defaultMaxServers?: number;
   defaultMaxMemoryMb?: number;
   defaultMaxDatabases?: number;
+  defaultBackupKeepCount?: number;
   cloudflareDomain?: string;
   cloudflareZoneId?: string;
   cloudflareApiToken?: string;
@@ -51,6 +53,7 @@ export type PanelSettingsView = {
   defaultMaxServers: number;
   defaultMaxMemoryMb: number;
   defaultMaxDatabases: number;
+  defaultBackupKeepCount: number;
   cloudflareDomain: string;
   cloudflareZoneId: string;
   cloudflareApiTokenSet: boolean;
@@ -183,6 +186,11 @@ export function applyPanelSettings(stored: PanelSettingsStored): void {
       Number(stored.defaultMaxDatabases) || 0,
     );
   }
+  if (stored.defaultBackupKeepCount !== undefined) {
+    config.defaultBackupKeepCount = clampBackupKeepCount(
+      stored.defaultBackupKeepCount,
+    );
+  }
   if (stored.cloudflareDomain !== undefined) {
     config.cloudflare.domain = String(stored.cloudflareDomain)
       .trim()
@@ -263,6 +271,7 @@ export async function getPanelSettingsView(): Promise<PanelSettingsView> {
     defaultMaxServers: config.defaultMaxServers,
     defaultMaxMemoryMb: config.defaultMaxMemoryMb,
     defaultMaxDatabases: config.defaultMaxDatabases,
+    defaultBackupKeepCount: config.defaultBackupKeepCount,
     cloudflareDomain: config.cloudflare.domain,
     cloudflareZoneId: config.cloudflare.zoneId,
     cloudflareApiTokenSet: Boolean(config.cloudflare.apiToken),
@@ -309,6 +318,7 @@ export type PanelSettingsPatch = {
   defaultMaxServers?: number;
   defaultMaxMemoryMb?: number;
   defaultMaxDatabases?: number;
+  defaultBackupKeepCount?: number;
   cloudflareDomain?: string;
   cloudflareZoneId?: string;
   /** Empty / omit = leave unchanged; non-empty = set. */
@@ -384,6 +394,11 @@ export function mergePanelSettingsPatch(
     next.defaultMaxDatabases = asNonNegInt(
       patch.defaultMaxDatabases,
       "defaultMaxDatabases",
+    );
+  }
+  if (patch.defaultBackupKeepCount !== undefined) {
+    next.defaultBackupKeepCount = clampBackupKeepCount(
+      patch.defaultBackupKeepCount,
     );
   }
   if (patch.cloudflareDomain !== undefined) {

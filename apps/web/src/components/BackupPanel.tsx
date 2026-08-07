@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import {
+  BACKUP_KEEP_COUNT_PRESETS,
   BACKUP_UPLOAD_MAX_BYTES,
   type BackupSchedule,
   type BackupScheduleMode,
@@ -364,7 +365,7 @@ export function BackupPanel({
                 onChange={(e) => setKeepCount(Number(e.target.value))}
                 style={{ minWidth: "12rem" }}
               >
-                {[3, 5, 7, 10, 14, 20, 30].map((n) => (
+                {BACKUP_KEEP_COUNT_PRESETS.map((n) => (
                   <option key={n} value={n}>
                     {t("backups.backupsCount", { n })}
                   </option>

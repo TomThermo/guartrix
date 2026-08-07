@@ -49,6 +49,12 @@ export const config = {
   defaultMaxServers: Number(process.env.DEFAULT_MAX_SERVERS ?? 0),
   defaultMaxMemoryMb: Number(process.env.DEFAULT_MAX_MEMORY_MB ?? 0),
   defaultMaxDatabases: Number(process.env.DEFAULT_MAX_DATABASES ?? 0),
+  /** Default backup retention for new servers (1–50). */
+  defaultBackupKeepCount: (() => {
+    const n = Number(process.env.DEFAULT_BACKUP_KEEP_COUNT ?? 7);
+    if (!Number.isFinite(n)) return 7;
+    return Math.min(50, Math.max(1, Math.floor(n)));
+  })(),
   mail: {
     from: process.env.MAIL_FROM?.trim() || "noreply@guartrix.com",
     smtpHost: process.env.SMTP_HOST?.trim() || "",

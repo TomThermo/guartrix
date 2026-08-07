@@ -24,6 +24,7 @@ export const nl: Messages = {
     dashboard: "Dashboard",
     servers: "Servers",
     nodes: "Nodes",
+    serverBackups: "Server back-ups",
     terms: "Voorwaarden",
     privacy: "Privacy",
     version: "Productversie",
@@ -485,6 +486,9 @@ export const nl: Messages = {
     cpuLimit: "CPU-limiet",
     cpuLimitHelp:
       "100% is één CPU-kern. Herstart de server om een nieuwe limiet toe te passen.",
+    backupKeepCount: "Back-upbewaring",
+    backupKeepCountHelp:
+      "Maximaal aantal back-ups voor deze server. Oudere kopieën worden automatisch verwijderd na elke nieuwe back-up.",
     diskHelp:
       "Max opslag voor deze server. Uploads worden geblokkeerd en een draaiende server kan stoppen als deze limiet wordt overschreden.",
     quotaServersLeft: "{count} serverslot over",
@@ -1261,6 +1265,28 @@ export const nl: Messages = {
     importNotice: 'Wereld geïmporteerd in "{levelName}".',
     importFailed: "Wereld importeren mislukt",
   },
+  adminServerBackups: {
+    title: "Server back-uplimieten",
+    subtitle:
+      "Stel per server in hoeveel back-ups bewaard blijven. Geldt voor handmatig, gepland en geüpload.",
+    defaultTitle: "Standaard voor nieuwe servers",
+    defaultHelp:
+      "Vooringevuld op het formulier Nieuwe server. Bestaande servers wijzigen pas als je ze hieronder aanpast.",
+    defaultLabel: "Standaard max back-ups",
+    defaultSaved: "Standaard back-upbewaring opgeslagen.",
+    serversTitle: "Alle servers ({count})",
+    searchPlaceholder: "Zoek op naam, eigenaar of ID…",
+    empty: "Geen servers gevonden.",
+    colServer: "Server",
+    colOwner: "Eigenaar",
+    colStored: "Nu opgeslagen",
+    colMax: "Max bewaard",
+    scheduled: "Gepland",
+    overLimit: "Boven limiet — wordt opgeruimd bij volgende back-up",
+    rowSaved: 'Back-uplimiet opgeslagen voor "{name}".',
+    loadFailed: "Server back-upinstellingen laden mislukt",
+    saveFailed: "Back-upinstellingen opslaan mislukt",
+  },
   adminSettings: {
     title: "Paneelinstellingen",
     subtitle:
@@ -1324,6 +1350,9 @@ export const nl: Messages = {
     defaultMaxServers: "Standaard max servers (nieuwe gebruikers)",
     defaultMaxMemoryMb: "Standaard max geheugen MB",
     defaultMaxDatabases: "Standaard max databases",
+    defaultBackupKeepCount: "Standaard back-upbewaring (nieuwe servers)",
+    defaultBackupKeepCountHelp:
+      "Gebruikt bij server aanmaken tenzij een andere limiet wordt gekozen. Beheer alle servers via Beheer → Server back-ups.",
     cloudflareHeading: "Cloudflare DNS (Minecraft-subdomeinen)",
     cfDomain: "Apex-domein",
     cfZoneId: "Zone-ID",

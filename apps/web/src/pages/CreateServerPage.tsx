@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
-import { canCreateServer, type DaemonNode, type ServerType } from "@msm/shared";
+import { canCreateServer, BACKUP_KEEP_COUNT_PRESETS, type DaemonNode, type ServerType } from "@msm/shared";
 import {
   Button,
   Form,
@@ -39,6 +39,7 @@ export function CreateServerPage() {
   const [memoryMb, setMemoryMb] = useState(2 * 1024);
   const [diskMb, setDiskMb] = useState(10 * 1024);
   const [cpuLimit, setCpuLimit] = useState(200);
+  const [keepCount, setKeepCount] = useState(7);
   const [archive, setArchive] = useState<File | null>(null);
   const [loadingVersions, setLoadingVersions] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -79,6 +80,13 @@ export function CreateServerPage() {
 
   const submitDisabled =
     busy || !mcVersion || !nodeRamOk || !nodeId || !!portError || (mode === "import" && !archive);
+
+  useEffect(() => {
+    void api
+      .getCreateServerDefaults()
+      .then(({ defaultBackupKeepCount }) => setKeepCount(defaultBackupKeepCount))
+      .catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     void api
@@ -235,6 +243,7 @@ export function CreateServerPage() {
           | "spectator",
         difficulty: difficulty as "peaceful" | "easy" | "normal" | "hard",
         worldPreset,
+        keepCount,
       });
       await refreshUser().catch(() => undefined);
       navigate(`/servers/${server.id}`);
@@ -278,6 +287,7 @@ export function CreateServerPage() {
       form.append("memoryMb", String(memoryMb));
       form.append("diskMb", String(diskMb));
       form.append("cpuLimit", String(cpuLimit));
+      form.append("keepCount", String(keepCount));
       if (nodeId) form.append("nodeId", nodeId);
       const server = await api.importServer(form);
       await refreshUser().catch(() => undefined);
@@ -358,6 +368,18 @@ export function CreateServerPage() {
         <Form.Label>{t("createServer.disk")}</Form.Label>
         <MemorySelect valueMb={diskMb} onChangeMb={setDiskMb} required />
         <Form.Text className="text-secondary">{t("createServer.diskHelp")}</Form.Text>
+      </Form.Group>
+
+      <Form.Group className="mb-3" controlId="keepCount">
+        <Form.Label>{t("createServer.backupKeepCount")}</Form.Label>
+        <Form.Select value={keepCount} onChange={(e) => setKeepCount(Number(e.target.value))}>
+          {BACKUP_KEEP_COUNT_PRESETS.map((n) => (
+            <option key={n} value={n}>
+              {t("backups.backupsCount", { n })}
+            </option>
+          ))}
+        </Form.Select>
+        <Form.Text className="text-secondary">{t("createServer.backupKeepCountHelp")}</Form.Text>
       </Form.Group>
 
       <Form.Group className="mb-0" controlId="cpu">

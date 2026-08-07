@@ -163,6 +163,8 @@ export interface CreateServerRequest {
   gamemode?: "survival" | "creative" | "adventure" | "spectator";
   difficulty?: "peaceful" | "easy" | "normal" | "hard";
   worldPreset?: "DEFAULT" | "FLAT" | "VOID";
+  /** Max backups to retain for this server (1–50; panel default when omitted). */
+  keepCount?: number;
   /** Extra host directories bound into the container (max 8). */
   extraMounts?: ServerExtraMount[] | null;
 }

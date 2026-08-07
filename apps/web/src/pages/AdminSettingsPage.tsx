@@ -46,6 +46,7 @@ export function AdminSettingsPage() {
   const [defaultMaxServers, setDefaultMaxServers] = useState(0);
   const [defaultMaxMemoryMb, setDefaultMaxMemoryMb] = useState(0);
   const [defaultMaxDatabases, setDefaultMaxDatabases] = useState(0);
+  const [defaultBackupKeepCount, setDefaultBackupKeepCount] = useState(7);
   const [cloudflareDomain, setCloudflareDomain] = useState("");
   const [cloudflareZoneId, setCloudflareZoneId] = useState("");
   const [cloudflareApiToken, setCloudflareApiToken] = useState("");
@@ -87,6 +88,7 @@ export function AdminSettingsPage() {
     setDefaultMaxServers(s.defaultMaxServers);
     setDefaultMaxMemoryMb(s.defaultMaxMemoryMb);
     setDefaultMaxDatabases(s.defaultMaxDatabases);
+    setDefaultBackupKeepCount(s.defaultBackupKeepCount);
     setCloudflareDomain(s.cloudflareDomain);
     setCloudflareZoneId(s.cloudflareZoneId);
     setCloudflareApiTokenSet(s.cloudflareApiTokenSet);
@@ -173,6 +175,7 @@ export function AdminSettingsPage() {
         defaultMaxServers,
         defaultMaxMemoryMb,
         defaultMaxDatabases,
+        defaultBackupKeepCount,
         cloudflareDomain,
         cloudflareZoneId,
         mailFrom,
@@ -326,6 +329,8 @@ export function AdminSettingsPage() {
                   onDefaultMaxMemoryMbChange={setDefaultMaxMemoryMb}
                   defaultMaxDatabases={defaultMaxDatabases}
                   onDefaultMaxDatabasesChange={setDefaultMaxDatabases}
+                  defaultBackupKeepCount={defaultBackupKeepCount}
+                  onDefaultBackupKeepCountChange={setDefaultBackupKeepCount}
                   cloudflareDomain={cloudflareDomain}
                   onCloudflareDomainChange={setCloudflareDomain}
                   cloudflareZoneId={cloudflareZoneId}

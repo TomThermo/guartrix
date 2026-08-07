@@ -58,6 +58,8 @@ function listServers(opts?: {
 
 const serverCoreApi = {
   listServers,
+  getCreateServerDefaults: () =>
+    request<{ defaultBackupKeepCount: number }>("/api/servers/create-defaults"),
   getServer: (id: string) => request<ServerDetail>(`/api/servers/${id}`),
   createServer: (body: CreateServerRequest) =>
     request<McServer>("/api/servers", {

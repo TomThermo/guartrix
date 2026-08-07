@@ -3,6 +3,14 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.2.5] — 2026-08-07
+
+### Added
+
+- **Admin → Server backups** — list all servers and edit per-server backup retention; set panel default for new servers.
+- **Create server** — choose max backups when provisioning or importing.
+- Panel setting `defaultBackupKeepCount` (+ env `DEFAULT_BACKUP_KEEP_COUNT`).
+
 ## [1.2.4] — 2026-08-07
 
 ### Changed

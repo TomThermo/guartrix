@@ -1,3 +1,4 @@
+import { BACKUP_KEEP_COUNT_PRESETS } from "@msm/shared";
 import { Col, Form, Row } from "react-bootstrap";
 import { useI18n } from "../../i18n/react";
 
@@ -14,6 +15,8 @@ export type GeneralPanelProps = {
   onDefaultMaxMemoryMbChange: (value: number) => void;
   defaultMaxDatabases: number;
   onDefaultMaxDatabasesChange: (value: number) => void;
+  defaultBackupKeepCount: number;
+  onDefaultBackupKeepCountChange: (value: number) => void;
   cloudflareDomain: string;
   onCloudflareDomainChange: (value: string) => void;
   cloudflareZoneId: string;
@@ -38,6 +41,8 @@ export function GeneralPanel({
   onDefaultMaxMemoryMbChange,
   defaultMaxDatabases,
   onDefaultMaxDatabasesChange,
+  defaultBackupKeepCount,
+  onDefaultBackupKeepCountChange,
   cloudflareDomain,
   onCloudflareDomainChange,
   cloudflareZoneId,
@@ -119,6 +124,24 @@ export function GeneralPanel({
               onDefaultMaxDatabasesChange(Number(e.target.value) || 0)
             }
           />
+        </Form.Group>
+      </Col>
+      <Col md={4}>
+        <Form.Group>
+          <Form.Label>{t("adminSettings.defaultBackupKeepCount")}</Form.Label>
+          <Form.Select
+            value={defaultBackupKeepCount}
+            onChange={(e) =>
+              onDefaultBackupKeepCountChange(Number(e.target.value))
+            }
+          >
+            {BACKUP_KEEP_COUNT_PRESETS.map((n) => (
+              <option key={n} value={n}>
+                {t("backups.backupsCount", { n })}
+              </option>
+            ))}
+          </Form.Select>
+          <Form.Text muted>{t("adminSettings.defaultBackupKeepCountHelp")}</Form.Text>
         </Form.Group>
       </Col>
       <Col xs={12}>

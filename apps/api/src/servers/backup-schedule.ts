@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import type { BackupSchedule, BackupScheduleMode } from "@msm/shared";
+import { clampBackupKeepCount } from "@msm/shared";
 import { serverBackupsDir } from "../config.js";
 import { prisma } from "../db.js";
 import {
@@ -169,10 +170,22 @@ export async function writeBackupSchedule(
       throw new Error("cronExpression must be 5 fields (minute hour day month weekday)");
     }
   }
-  next.keepCount = Math.min(50, Math.max(1, Number(next.keepCount) || 7));
+  next.keepCount = clampBackupKeepCount(next.keepCount);
+
+  const retentionOnly =
+    patch.keepCount !== undefined &&
+    patch.mode === undefined &&
+    patch.intervalHours === undefined &&
+    patch.dailyAt === undefined &&
+    patch.cronExpression === undefined &&
+    patch.lastRunAt === undefined &&
+    patch.nextRunAt === undefined;
 
   if (next.mode === "off") {
     next.nextRunAt = null;
+  } else if (retentionOnly) {
+    next.nextRunAt = current.nextRunAt;
+    next.lastRunAt = current.lastRunAt;
   } else if (patch.nextRunAt !== undefined && patch.nextRunAt !== null && !patch.mode && !patch.dailyAt && !patch.intervalHours && !patch.cronExpression && !patch.lastRunAt) {
     // Explicit nextRunAt patch (e.g. failure backoff) — keep as provided.
     next.nextRunAt = patch.nextRunAt;
@@ -224,4 +237,16 @@ export async function listDueBackupScheduleServerIds(
     select: { serverId: true },
   });
   return rows.map((r) => r.serverId);
+}
+
+/** Set initial backup retention when a server is provisioned. */
+export async function applyInitialBackupRetention(
+  serverId: string,
+  keepCount?: number,
+): Promise<BackupSchedule> {
+  const { config } = await import("../config.js");
+  const count = clampBackupKeepCount(
+    keepCount ?? config.defaultBackupKeepCount,
+  );
+  return writeBackupSchedule(serverId, { keepCount: count });
 }

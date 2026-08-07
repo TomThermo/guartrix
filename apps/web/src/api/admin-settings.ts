@@ -7,6 +7,7 @@ export type PanelSettings = {
   defaultMaxServers: number;
   defaultMaxMemoryMb: number;
   defaultMaxDatabases: number;
+  defaultBackupKeepCount: number;
   cloudflareDomain: string;
   cloudflareZoneId: string;
   cloudflareApiTokenSet: boolean;
@@ -54,6 +55,7 @@ export type PanelSettingsPatch = {
   defaultMaxServers?: number;
   defaultMaxMemoryMb?: number;
   defaultMaxDatabases?: number;
+  defaultBackupKeepCount?: number;
   cloudflareDomain?: string;
   cloudflareZoneId?: string;
   cloudflareApiToken?: string;

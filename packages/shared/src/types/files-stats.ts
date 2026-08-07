@@ -315,6 +315,31 @@ export interface BackupSchedule {
   nextRunAt: string | null;
 }
 
+/** Preset options shown in backup retention dropdowns (API allows 1–50). */
+export const BACKUP_KEEP_COUNT_PRESETS = [3, 5, 7, 10, 14, 20, 30] as const;
+
+export const BACKUP_KEEP_COUNT_MIN = 1;
+
+export const BACKUP_KEEP_COUNT_MAX = 50;
+
+export function clampBackupKeepCount(value: unknown, fallback = 7): number {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.min(
+    BACKUP_KEEP_COUNT_MAX,
+    Math.max(BACKUP_KEEP_COUNT_MIN, Math.floor(n)),
+  );
+}
+
+export interface AdminServerBackupRow {
+  id: string;
+  name: string;
+  ownerUsername: string;
+  keepCount: number;
+  backupCount: number;
+  scheduleMode: BackupScheduleMode;
+}
+
 export interface ServerBackup {
   id: string;
   fileName: string;

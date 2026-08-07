@@ -66,6 +66,7 @@ Installer: `--mysql-docker` (default) or `--mysql-external` / `--database-url`.
 | `DEFAULT_MAX_SERVERS` | New-user server quota (default **0**) |
 | `DEFAULT_MAX_MEMORY_MB` | New-user RAM quota (default **0**) |
 | `DEFAULT_MAX_DATABASES` | New-user DB quota (default **0**) |
+| `DEFAULT_BACKUP_KEEP_COUNT` | Default max backups kept for new servers (1–50, default **7**); overridable in Admin → Settings |
 | `MAIL_FROM` | Envelope From for outbound mail |
 | `SMTP_HOST` / `SMTP_PORT` / `SMTP_SECURE` / `SMTP_USER` / `SMTP_PASS` | SMTP relay (when unset, mail goes to `data/mail-outbox/`) |
 | `SMTP_STARTTLS` | Force STARTTLS when not using implicit TLS (`SMTP_SECURE`) |

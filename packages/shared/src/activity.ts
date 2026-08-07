@@ -284,6 +284,10 @@ export const ACTIVITY_ACTIONS: Record<string, ActivityActionMeta> = {
     category: "admin",
     label: "Sent a panel test mail",
   },
+  "admin.server-backup-retention": {
+    category: "admin",
+    label: "Changed server backup retention",
+  },
 
   // Billing / Mollie
   "billing.checkout": { category: "billing", label: "Started a Mollie checkout" },

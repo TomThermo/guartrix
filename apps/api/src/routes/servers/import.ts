@@ -43,6 +43,7 @@ const metaSchema = z.object({
   diskMb: z.coerce.number().int().min(256).max(10_485_760).optional(),
   cpuLimit: z.coerce.number().int().min(0).max(10_000).optional(),
   nodeId: z.string().min(1).optional(),
+  keepCount: z.coerce.number().int().min(1).max(50).optional(),
 });
 
 export function registerImportRoutes(app: FastifyInstance): void {
@@ -259,6 +260,10 @@ export function registerImportRoutes(app: FastifyInstance): void {
           node: nodeId,
         },
       });
+      const { applyInitialBackupRetention } = await import(
+        "../../servers/backup-schedule.js"
+      );
+      await applyInitialBackupRetention(updated.id, data.keepCount);
       const { autoStartProvisionedServer } = await import("../../servers/server-provision.js");
       await autoStartProvisionedServer(updated.id);
       const refreshed = await prisma.server.findUniqueOrThrow({

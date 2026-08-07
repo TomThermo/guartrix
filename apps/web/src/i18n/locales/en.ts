@@ -22,6 +22,7 @@ export const en = {
     dashboard: "Dashboard",
     servers: "Servers",
     nodes: "Nodes",
+    serverBackups: "Server backups",
     terms: "Terms",
     privacy: "Privacy",
     version: "Product version",
@@ -480,6 +481,9 @@ export const en = {
     difficulty: "Difficulty",
     cpuLimit: "CPU limit",
     cpuLimitHelp: "100% equals one CPU core. Restart the server to apply a new limit.",
+    backupKeepCount: "Backup retention",
+    backupKeepCountHelp:
+      "Maximum backups kept for this server. Older copies are removed automatically after each new backup.",
     diskHelp:
       "Max storage for this server. Uploads are blocked and a running server may stop if this limit is exceeded.",
     quotaServersLeft: "{count} server slot left",
@@ -1254,6 +1258,27 @@ export const en = {
     importNotice: 'World imported into "{levelName}".',
     importFailed: "World import failed",
   },
+  adminServerBackups: {
+    title: "Server backup limits",
+    subtitle: "Set how many backups each server may keep. Applies to manual, scheduled, and uploaded backups.",
+    defaultTitle: "Default for new servers",
+    defaultHelp:
+      "Pre-filled on the create-server form. Existing servers are not changed until you edit them below.",
+    defaultLabel: "Default max backups",
+    defaultSaved: "Default backup retention saved.",
+    serversTitle: "All servers ({count})",
+    searchPlaceholder: "Search by name, owner, or ID…",
+    empty: "No servers match your search.",
+    colServer: "Server",
+    colOwner: "Owner",
+    colStored: "Stored now",
+    colMax: "Max kept",
+    scheduled: "Scheduled",
+    overLimit: "Over limit — prunes on next backup",
+    rowSaved: 'Saved backup limit for "{name}".',
+    loadFailed: "Failed to load server backup settings",
+    saveFailed: "Could not save backup settings",
+  },
   adminSettings: {
     title: "Panel settings",
     subtitle:
@@ -1317,6 +1342,9 @@ export const en = {
     defaultMaxServers: "Default max servers (new users)",
     defaultMaxMemoryMb: "Default max memory MB",
     defaultMaxDatabases: "Default max databases",
+    defaultBackupKeepCount: "Default backup retention (new servers)",
+    defaultBackupKeepCountHelp:
+      "Used when creating a server unless a different limit is chosen. Manage all servers under Admin → Server backups.",
     cloudflareHeading: "Cloudflare DNS (Minecraft subdomains)",
     cfDomain: "Apex domain",
     cfZoneId: "Zone ID",
