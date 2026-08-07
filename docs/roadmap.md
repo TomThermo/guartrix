@@ -39,7 +39,9 @@ Last updated: **2026-08-07** · product **v1.2.2**
 
 ### Still open
 
-Optional **P2** (eggs/nests, Redis Cluster/Sentinel). **External pentest execution** and **legal SLA contracts** remain process (attest in Admin → Go-live; see [sla-ops.md](wiki/sla-ops.md) · [pentest-scope.md](wiki/pentest-scope.md)). Webhook, SMTP, and Mollie are **customer setup** after install.
+Optional **P2** (eggs/nests, Redis Cluster/Sentinel). Webhook, SMTP, and Mollie are **customer setup** after install.
+
+**Not a product backlog item for agents:** external pentest execution and counsel-signed SLAs are **operator/customer process only** (templates + Go-live attestations exist; see [sla-ops.md](wiki/sla-ops.md) · [pentest-scope.md](wiki/pentest-scope.md)). Do not treat them as unfinished Guartrix engineering work.
 
 ---
 

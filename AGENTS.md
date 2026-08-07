@@ -11,6 +11,7 @@ This repo ships [`.cursor/environment.json`](.cursor/environment.json) so Cloud 
 - Full operator release (`bash scripts/build-out.sh` → package downloads → `bash build/start.sh`) needs a live operator checkout with real `.env` / license PEM — **not** this cloud VM and **not** production `guartrix.com` unless you are on that host.
 - Do **not** recreate `apps/license-server` here; issuer stays private outside this repo.
 - Do **not** commit `.env`, `data/daemon.env`, private PEMs, `build/`, or `dist-download/`.
+- Do **not** run or “finish” an **external pentest** or a **legal/contractual SLA** in this repo or cloud session — those belong to operators/customers who deploy Guartrix. Agents only keep code hardening + wiki templates / Go-live attestation UI (see `.cursor/rules/no-pentest-sla-agent-work.mdc`).
 
 ### Secrets (dashboard)
 
