@@ -3,6 +3,11 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.3.8] — 2026-08-07
+
+### Changed
+- Admin → Nodes Basic Settings: full-width denser layout with identity grid, connect URL preview tile, and SSL mode cards
+
 ## [1.3.7] — 2026-08-07
 
 ### Changed

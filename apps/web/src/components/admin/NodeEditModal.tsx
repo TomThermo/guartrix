@@ -4,7 +4,6 @@ import {
   Alert,
   Badge,
   Button,
-  ButtonGroup,
   Form,
   Modal,
   Nav,
@@ -474,185 +473,184 @@ export function NodeEditModal({
             </Tab.Pane>
 
             <Tab.Pane eventKey="settings">
-              <section className="admin-inset-card node-basic-settings">
-                <h2 className="admin-section-title mb-3">
-                  <i className="fa-solid fa-sliders" aria-hidden />
-                  {t("admin.nodeTabBasic")}
-                </h2>
-                <Form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    void onSaveSettings();
-                  }}
-                >
-                  <div className="row g-3">
-                    <div className="col-md-6">
-                      <Form.Group>
-                        <Form.Label>
-                          {t("admin.nodeDisplayName")}{" "}
-                          <span className="text-danger">*</span>
-                        </Form.Label>
-                        <Form.Control
-                          value={name}
-                          onChange={(e) => setName(e.target.value)}
-                          maxLength={64}
-                          required
-                        />
-                      </Form.Group>
-                    </div>
-                    <div className="col-md-6">
-                      <Form.Group>
-                        <Form.Label>
-                          {t("admin.nodeConnectPort")}{" "}
-                          <span className="text-danger">*</span>
-                        </Form.Label>
-                        <Form.Control
-                          type="number"
-                          style={{ maxWidth: "10rem" }}
-                          value={daemonPort}
-                          onChange={(e) => setDaemonPort(e.target.value)}
-                          min={1}
-                          max={65535}
-                          required
-                        />
-                        <Form.Text muted>
-                          {sslMode === "https-proxy"
-                            ? t("admin.nodePortHintProxy")
-                            : sslMode === "https"
-                              ? t("admin.nodePortHintHttps")
-                              : t("admin.nodePortHintHttp")}
-                        </Form.Text>
-                      </Form.Group>
-                    </div>
-                    <div className="col-12">
-                      <Form.Group>
-                        <Form.Label>
-                          {t("admin.nodeDomainName")}{" "}
-                          <span className="text-danger">*</span>
-                        </Form.Label>
-                        <Form.Control
-                          className="font-monospace"
-                          value={fqdn}
-                          onChange={(e) => setFqdn(e.target.value)}
-                          placeholder="node.example.com"
-                          required
-                        />
-                        <div className="small mt-1">
-                          {dnsLoading ? (
-                            <span className="text-secondary">
-                              <Spinner
-                                size="sm"
-                                animation="border"
-                                className="me-1"
-                              />
-                              {t("admin.nodeDnsChecking")}
-                            </span>
-                          ) : dnsOk === true && dnsAddresses[0] ? (
-                            <span className="text-success">
-                              <i
-                                className="fa-solid fa-circle-check me-1"
-                                aria-hidden
-                              />
-                              {t("admin.nodeDnsValid", { ip: dnsAddresses[0] })}
-                            </span>
-                          ) : dnsOk === false ? (
-                            <span className="text-warning">
-                              <i
-                                className="fa-solid fa-triangle-exclamation me-1"
-                                aria-hidden
-                              />
-                              {t("admin.nodeDnsInvalid")}
-                            </span>
-                          ) : null}
-                        </div>
-                        {panelSecure && sslMode === "http" && (
-                          <Alert
-                            variant="warning"
-                            className="py-2 small mt-2 mb-0"
-                          >
-                            {t("admin.nodeSslRequiredHint")}
-                          </Alert>
-                        )}
-                      </Form.Group>
-                    </div>
-                    <div className="col-12">
-                      <Form.Group>
-                        <Form.Label>{t("admin.nodeSslMode")}</Form.Label>
-                        <ButtonGroup className="node-ssl-toggle w-100 flex-wrap">
-                          {(
-                            [
-                              ["http", t("admin.nodeSslHttp")],
-                              ["https", t("admin.nodeSslHttps")],
-                              ["https-proxy", t("admin.nodeSslHttpsProxy")],
-                            ] as const
-                          ).map(([mode, label]) => (
-                            <Button
-                              key={mode}
-                              type="button"
-                              variant={
-                                sslMode === mode ? "primary" : "outline-secondary"
-                              }
-                              className="flex-fill"
-                              active={sslMode === mode}
-                              aria-pressed={sslMode === mode}
-                              onClick={() => setSslMode(mode)}
-                            >
-                              {label}
-                            </Button>
-                          ))}
-                        </ButtonGroup>
-                        <Form.Text muted className="d-block mt-2">
-                          {sslMode === "https-proxy"
-                            ? t("admin.nodeSslProxyHint")
-                            : sslMode === "https"
-                              ? t("admin.nodeSslHttpsHint")
-                              : t("admin.nodeSslHttpHint")}
-                        </Form.Text>
-                        {panelSecure && sslMode === "http" && (
-                          <Alert
-                            variant="danger"
-                            className="py-2 small mt-2 mb-0"
-                          >
-                            {t("admin.nodeSslMismatch")}
-                          </Alert>
-                        )}
-                      </Form.Group>
-                    </div>
-                    <div className="col-md-6">
-                      <Form.Group>
-                        <Form.Label>{t("admin.locationLabel")}</Form.Label>
-                        <Form.Control
-                          value={location}
-                          onChange={(e) => setLocation(e.target.value)}
-                          maxLength={64}
-                          placeholder={t("admin.locationPlaceholder")}
-                        />
-                        <Form.Text muted>{t("admin.locationHint")}</Form.Text>
-                      </Form.Group>
-                    </div>
-                    <div className="col-md-6 d-flex align-items-end">
-                      <div className="small text-secondary font-monospace w-100 pb-1">
-                        {t("admin.nodePreviewUrl")}:{" "}
-                        {`${schemeFromSslMode(sslMode)}://${fqdn.trim() || "…"}:${daemonPort || "…"}`}
-                        {sslMode === "https-proxy" ? (
-                          <span className="ms-2 badge text-bg-secondary">
-                            {t("admin.nodeBehindProxyBadge")}
-                          </span>
-                        ) : null}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-3">
-                    <Button type="submit" variant="primary" disabled={busy}>
+              <Form
+                className="node-basic"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void onSaveSettings();
+                }}
+              >
+                <section className="admin-inset-card node-basic__toolbar">
+                  <div className="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <h2 className="admin-section-title mb-0">
+                      <i className="fa-solid fa-sliders" aria-hidden />
+                      {t("admin.nodeTabBasic")}
+                    </h2>
+                    <Button type="submit" size="sm" variant="primary" disabled={busy}>
                       {busy ? (
                         <Spinner size="sm" animation="border" />
                       ) : (
-                        t("common.save")
+                        <>
+                          <i className="fa-solid fa-floppy-disk me-1" aria-hidden />
+                          {t("common.save")}
+                        </>
                       )}
                     </Button>
                   </div>
-                </Form>
-              </section>
+                </section>
+
+                <section className="admin-inset-card">
+                  <h2 className="admin-section-title mb-3">
+                    <i className="fa-solid fa-server" aria-hidden />
+                    {t("admin.nodeInformation")}
+                  </h2>
+                  <div className="node-basic-grid">
+                    <Form.Group className="node-basic-field">
+                      <Form.Label>
+                        {t("admin.nodeDisplayName")}{" "}
+                        <span className="text-danger">*</span>
+                      </Form.Label>
+                      <Form.Control
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        maxLength={64}
+                        required
+                      />
+                    </Form.Group>
+
+                    <Form.Group className="node-basic-field node-basic-field--domain">
+                      <Form.Label>
+                        {t("admin.nodeDomainName")}{" "}
+                        <span className="text-danger">*</span>
+                      </Form.Label>
+                      <Form.Control
+                        className="font-monospace"
+                        value={fqdn}
+                        onChange={(e) => setFqdn(e.target.value)}
+                        placeholder="node.example.com"
+                        required
+                      />
+                      <div className="node-basic-field__meta">
+                        {dnsLoading ? (
+                          <span className="text-secondary">
+                            <Spinner size="sm" animation="border" className="me-1" />
+                            {t("admin.nodeDnsChecking")}
+                          </span>
+                        ) : dnsOk === true && dnsAddresses[0] ? (
+                          <span className="text-success">
+                            <i className="fa-solid fa-circle-check me-1" aria-hidden />
+                            {t("admin.nodeDnsValid", { ip: dnsAddresses[0] })}
+                          </span>
+                        ) : dnsOk === false ? (
+                          <span className="text-warning">
+                            <i
+                              className="fa-solid fa-triangle-exclamation me-1"
+                              aria-hidden
+                            />
+                            {t("admin.nodeDnsInvalid")}
+                          </span>
+                        ) : null}
+                      </div>
+                    </Form.Group>
+
+                    <Form.Group className="node-basic-field node-basic-field--port">
+                      <Form.Label>
+                        {t("admin.nodeConnectPort")}{" "}
+                        <span className="text-danger">*</span>
+                      </Form.Label>
+                      <Form.Control
+                        type="number"
+                        value={daemonPort}
+                        onChange={(e) => setDaemonPort(e.target.value)}
+                        min={1}
+                        max={65535}
+                        required
+                      />
+                      <Form.Text muted>
+                        {sslMode === "https-proxy"
+                          ? t("admin.nodePortHintProxy")
+                          : sslMode === "https"
+                            ? t("admin.nodePortHintHttps")
+                            : t("admin.nodePortHintHttp")}
+                      </Form.Text>
+                    </Form.Group>
+
+                    <Form.Group className="node-basic-field node-basic-field--location">
+                      <Form.Label>{t("admin.locationLabel")}</Form.Label>
+                      <Form.Control
+                        value={location}
+                        onChange={(e) => setLocation(e.target.value)}
+                        maxLength={64}
+                        placeholder={t("admin.locationPlaceholder")}
+                      />
+                      <Form.Text muted>{t("admin.locationHint")}</Form.Text>
+                    </Form.Group>
+
+                    <div className="node-basic-preview">
+                      <div className="node-basic-preview__label">
+                        {t("admin.nodePreviewUrl")}
+                      </div>
+                      <div className="node-basic-preview__value font-monospace">
+                        {`${schemeFromSslMode(sslMode)}://${fqdn.trim() || "…"}:${daemonPort || "…"}`}
+                      </div>
+                      {sslMode === "https-proxy" ? (
+                        <span className="badge text-bg-secondary mt-2">
+                          {t("admin.nodeBehindProxyBadge")}
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                  {panelSecure && sslMode === "http" && (
+                    <Alert variant="warning" className="py-2 small mt-3 mb-0">
+                      {t("admin.nodeSslRequiredHint")}
+                    </Alert>
+                  )}
+                </section>
+
+                <section className="admin-inset-card">
+                  <h2 className="admin-section-title mb-3">
+                    <i className="fa-solid fa-lock" aria-hidden />
+                    {t("admin.nodeSslMode")}
+                  </h2>
+                  <div className="node-ssl-cards" role="group" aria-label={t("admin.nodeSslMode")}>
+                    {(
+                      [
+                        ["http", "fa-lock-open", t("admin.nodeSslHttp"), t("admin.nodeSslHttpHint")],
+                        ["https", "fa-lock", t("admin.nodeSslHttps"), t("admin.nodeSslHttpsHint")],
+                        [
+                          "https-proxy",
+                          "fa-shield-halved",
+                          t("admin.nodeSslHttpsProxy"),
+                          t("admin.nodeSslProxyHint"),
+                        ],
+                      ] as const
+                    ).map(([mode, icon, label, hint]) => (
+                      <button
+                        key={mode}
+                        type="button"
+                        className={
+                          sslMode === mode
+                            ? "node-ssl-card node-ssl-card--active"
+                            : "node-ssl-card"
+                        }
+                        aria-pressed={sslMode === mode}
+                        onClick={() => setSslMode(mode)}
+                      >
+                        <span className="node-ssl-card__icon" aria-hidden>
+                          <i className={`fa-solid ${icon}`} />
+                        </span>
+                        <span className="node-ssl-card__title">{label}</span>
+                        <span className="node-ssl-card__hint">{hint}</span>
+                      </button>
+                    ))}
+                  </div>
+                  {panelSecure && sslMode === "http" && (
+                    <Alert variant="danger" className="py-2 small mt-3 mb-0">
+                      {t("admin.nodeSslMismatch")}
+                    </Alert>
+                  )}
+                </section>
+              </Form>
             </Tab.Pane>
 
             <Tab.Pane eventKey="config">
