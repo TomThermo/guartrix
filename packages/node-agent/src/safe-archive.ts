@@ -13,6 +13,41 @@ export const SAFE_EXTRACT_MAX_BYTES = 8 * 1024 * 1024 * 1024; // 8 GiB
 /** Max number of archive members. */
 export const SAFE_EXTRACT_MAX_FILES = 100_000;
 
+/** Cached: does `tar` accept GNU long options used for safer extract? */
+let gnuTarLongOpts: boolean | undefined;
+
+async function tarSupportsGnuLongOpts(): Promise<boolean> {
+  if (gnuTarLongOpts !== undefined) return gnuTarLongOpts;
+  try {
+    const { stdout, stderr } = await execFileAsync("tar", ["--version"], {
+      maxBuffer: 1024 * 1024,
+    });
+    gnuTarLongOpts = /GNU\s+tar/i.test(`${stdout}\n${stderr}`);
+  } catch {
+    // BusyBox / other: no GNU long options.
+    gnuTarLongOpts = false;
+  }
+  return gnuTarLongOpts;
+}
+
+/** Build portable `tar -x` argv; skip GNU-only flags on BusyBox/etc. */
+export async function tarExtractArgs(archivePath: string, destDir: string): Promise<string[]> {
+  const lower = archivePath.toLowerCase();
+  const args: string[] = [];
+  if (await tarSupportsGnuLongOpts()) {
+    args.push("--no-absolute-filenames", "--no-same-owner", "--no-same-permissions");
+  }
+  if (lower.endsWith(".tar.gz") || lower.endsWith(".tgz")) {
+    args.push("-z");
+  } else if (lower.endsWith(".tar.bz2") || lower.endsWith(".tbz2")) {
+    args.push("-j");
+  } else if (lower.endsWith(".tar.xz") || lower.endsWith(".txz")) {
+    args.push("-J");
+  }
+  args.push("-x", "-f", archivePath, "-C", destDir);
+  return args;
+}
+
 function isUnsafeMemberPath(entry: string): boolean {
   const n = entry.replace(/\\/g, "/").replace(/^\.\/+/, "");
   if (!n || n === ".") return false;
@@ -190,25 +225,8 @@ export async function safeExtractArchive(archivePath: string, destDir: string): 
         }
       }
     } else {
-      const args = [
-        "--no-absolute-filenames",
-        "--no-same-owner",
-        "--no-same-permissions",
-        "-x",
-        "-f",
-        archivePath,
-        "-C",
-        tmp,
-      ];
-      if (lower.endsWith(".tar.gz") || lower.endsWith(".tgz")) {
-        args.splice(0, 0, "-z");
-        // keep -x after -z: tar -z -x -f ...
-        const zIdx = args.indexOf("-z");
-        const xIdx = args.indexOf("-x");
-        if (zIdx >= 0 && xIdx >= 0 && zIdx > xIdx) {
-          // already fine if we spliced at 0
-        }
-      }
+      // Member paths already validated; GNU long-opts when available (BusyBox lacks them).
+      const args = await tarExtractArgs(archivePath, tmp);
       await execFileAsync("tar", args, { maxBuffer: 32 * 1024 * 1024 });
     }
 

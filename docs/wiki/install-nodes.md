@@ -57,6 +57,8 @@ sudo bash /tmp/guartrix-daemon.sh \
 
 With `--panel`, the installer downloads **`/install-daemon-bundle.zip`** (prebuilt daemon — no TypeScript compile on the node). That avoids OOM kills (`exit 137`) on small VPS. Git `--repo` remains an optional fallback only.
 
+After a panel upgrade that changes daemon behaviour (for example safe archive extract on BusyBox `tar`), re-run **Install daemon** / the same install command on the node so it picks up the new `/install-daemon-bundle.zip`. Restarting only the panel is not enough.
+
 Download the script, then run it (do not pipe curl into bash). `NODE_TOKEN`, `NODE_ID`, and the exact command are shown in the panel install modal. The installer writes **`/var/lib/guartrix/daemon.env`**.
 
 Open firewall ports on the node:
