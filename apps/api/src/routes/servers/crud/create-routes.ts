@@ -87,7 +87,7 @@ export function registerServerCreateRoutes(app: FastifyInstance): void {
         ownerId: user.id,
         nodeId,
         ensureSubdomain: true,
-        cleanupOnFailure: true,
+        cleanupOnFailure: false,
         ...(validatedExtraMounts !== undefined ? { extraMounts: validatedExtraMounts } : {}),
       });
 
@@ -104,7 +104,7 @@ export function registerServerCreateRoutes(app: FastifyInstance): void {
           ownerId: user.id,
           nodeId,
           ensureSubdomain: true,
-          cleanupOnFailure: true,
+          cleanupOnFailure: false,
           ...(validatedExtraMounts !== undefined ? { extraMounts: validatedExtraMounts } : {}),
         },
         world: {

@@ -202,7 +202,6 @@ export async function finishPanelCreateInBackground(opts: FinishPanelCreateOpts)
   const { input, world } = opts;
   const id = input.id;
   if (!id) return;
-  const cleanupOnFailure = input.cleanupOnFailure !== false;
   const protocol = primaryAllocationProtocol(input.type);
 
   try {
@@ -322,25 +321,35 @@ export async function finishPanelCreateInBackground(opts: FinishPanelCreateOpts)
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    console.error(`[guartrix] background create failed for ${id}: ${message}`);
+    // Prefer a short operator-facing message (daemon often wraps JSON `{ error: "…" }`).
+    let display = message;
+    try {
+      const nested = JSON.parse(message) as { error?: unknown };
+      if (typeof nested?.error === "string" && nested.error.trim()) display = nested.error.trim();
+    } catch {
+      const m = /"error"\s*:\s*"((?:\\.|[^"\\])*)"/.exec(message);
+      if (m?.[1]) {
+        display = m[1].replace(/\\n/g, "\n").replace(/\\"/g, '"');
+      }
+    }
+    console.error(`[guartrix] background create failed for ${id}: ${display}`);
     await prisma.server
       .update({
         where: { id },
-        data: { status: "ERROR", errorMessage: message },
+        data: { status: "ERROR", errorMessage: display.slice(0, 2000) },
       })
       .catch(() => undefined);
-    if (cleanupOnFailure) {
-      await cleanupFailedProvision(id, input.port, input.nodeId, protocol);
-    }
+    // Keep the ERROR row so the Console page can show the failure (async create UX).
+    // Operators can delete the failed server from the UI.
     if (opts.activity) {
       const { logActivity } = await import("../activity-log.js");
       logActivity({
         action: "server.create",
         user: { id: opts.activity.actorUserId, username: opts.activity.actorUsername },
-        serverId: null,
+        serverId: id,
         serverName: input.name,
         success: false,
-        metadata: { error: message, type: input.type, port: input.port },
+        metadata: { error: display, type: input.type, port: input.port },
       });
     }
   }

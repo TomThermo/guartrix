@@ -100,7 +100,7 @@ async function main() {
   const { ensurePublishedDaemonZip } = await import(
     pathToFileURL(path.join(rootDir, "scripts/prod-web/daemon-bundle.mjs")).href
   );
-  const zipPath = ensurePublishedDaemonZip(rootDir);
+  const zipPath = ensurePublishedDaemonZip(rootDir, { force: true });
   if (!zipPath) {
     throw new Error("Failed to write data/downloads/guartrix-daemon-*.zip (is zip/python3 available?)");
   }

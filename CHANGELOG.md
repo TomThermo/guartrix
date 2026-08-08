@@ -3,6 +3,13 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.12] — 2026-08-08
+
+### Fixed
+- Remote create stuck on BusyBox/`tar`: republish daemon bundle with portable tar extract flags (`packages/node-agent` safe-archive).
+- Failed async create no longer deletes the server row so Console can show `ERROR`.
+- `install-daemon-bundle.zip` selection uses semver-correct zip pick (and can force-republish).
+
 ## [1.4.11] — 2026-08-08
 
 ### Changed

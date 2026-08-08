@@ -25,15 +25,41 @@ export function standaloneDaemonPackageJson(version = "0.0.0") {
   };
 }
 
-/** Newest `guartrix-daemon-*.zip` under data/downloads, if any. */
+/** Newest `guartrix-daemon-*.zip` under data/downloads, if any (semver-aware). */
 export function findPublishedDaemonZip(rootDir) {
   const dir = path.join(rootDir, "data", "downloads");
   if (!fs.existsSync(dir)) return null;
-  const names = fs
-    .readdirSync(dir)
-    .filter((n) => /^guartrix-daemon-.*\.zip$/i.test(n))
-    .sort();
+  const names = fs.readdirSync(dir).filter((n) => /^guartrix-daemon-.*\.zip$/i.test(n));
   if (names.length === 0) return null;
+
+  const parseVer = (name) => {
+    const m = /^guartrix-daemon-(.+)\.zip$/i.exec(name);
+    if (!m) return [];
+    return String(m[1])
+      .split(/[.+-]/)
+      .map((p) => {
+        const n = Number(p);
+        return Number.isFinite(n) ? n : p;
+      });
+  };
+  const cmp = (a, b) => {
+    const av = parseVer(a);
+    const bv = parseVer(b);
+    const len = Math.max(av.length, bv.length);
+    for (let i = 0; i < len; i++) {
+      const x = av[i] ?? 0;
+      const y = bv[i] ?? 0;
+      if (typeof x === "number" && typeof y === "number") {
+        if (x !== y) return x - y;
+      } else {
+        const xs = String(x);
+        const ys = String(y);
+        if (xs !== ys) return xs < ys ? -1 : 1;
+      }
+    }
+    return 0;
+  };
+  names.sort(cmp);
   return path.join(dir, names[names.length - 1]);
 }
 
@@ -127,12 +153,13 @@ export function buildEphemeralDaemonZip(rootDir) {
 
 /**
  * Ensure `data/downloads/guartrix-daemon-<version>.zip` exists (create from dist if needed).
+ * Pass `force: true` to rebuild even when a zip for this version already exists.
  */
-export function ensurePublishedDaemonZip(rootDir) {
+export function ensurePublishedDaemonZip(rootDir, { force = false } = {}) {
   const version = readProductVersion(rootDir);
   const dir = path.join(rootDir, "data", "downloads");
   const dest = path.join(dir, `guartrix-daemon-${version}.zip`);
-  if (fs.existsSync(dest) && fs.statSync(dest).size > 1000) {
+  if (!force && fs.existsSync(dest) && fs.statSync(dest).size > 1000) {
     return dest;
   }
 
