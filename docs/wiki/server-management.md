@@ -25,8 +25,9 @@ The main UI entrypoints are:
 
 1. **Create**
    Choose name, server software family, Minecraft version, memory, disk, port, and **backup retention** (max archives kept; defaults from Admin settings). Admins can also choose the node.
+   After you click create, the panel returns immediately and opens the **Console** tab while status is `CREATING`. Progress lines (`Creating: downloading…`, deploy, start) show in the banner and console until the server boots.
 2. **Import archive**
-   Create a server from an uploaded `.zip` or `.tar.gz` archive (same retention field).
+   Create a server from an uploaded `.zip` or `.tar.gz` archive (same retention field). Same immediate console navigation and progress as create.
 
 World preset, seed, difficulty, gamemode, and initial server properties are part of the provisioning surface. The API work is mostly handled by `routes/servers/crud.ts` and `servers/server-provision.ts`. Retention is written via `applyInitialBackupRetention` — see [Files and backups](files-and-backups.md).
 

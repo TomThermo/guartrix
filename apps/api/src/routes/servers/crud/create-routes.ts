@@ -1,18 +1,15 @@
 import type { FastifyInstance } from "fastify";
 import type { ServerType } from "@msm/shared";
 import { assertAdminFullApiKey, requireWrite } from "../../../auth/auth.js";
-import { logActivity } from "../../../activity-log.js";
-import { config } from "../../../config.js";
-import { prisma } from "../../../db.js";
 import { listVersions } from "../../../providers/jars.js";
-import { applyCreateWorldDefaults } from "../../../servers/server-lifecycle.js";
-import { serverListInclude, toMcServer } from "../../../servers/serialize.js";
+import { toMcServer } from "../../../servers/serialize.js";
 import { createSchema, SERVER_TYPES } from "./schemas.js";
 
 export function registerServerCreateRoutes(app: FastifyInstance): void {
   app.get("/api/servers/create-defaults", async (request, reply) => {
     const user = await requireWrite(request, reply);
     if (!user) return;
+    const { config } = await import("../../../config.js");
     return { defaultBackupKeepCount: config.defaultBackupKeepCount };
   });
 
@@ -76,10 +73,10 @@ export function registerServerCreateRoutes(app: FastifyInstance): void {
     }
 
     try {
-      const { provisionPreparedServer, autoStartProvisionedServer } = await import(
+      const { beginPanelServerCreate, finishPanelCreateInBackground } = await import(
         "../../../servers/server-provision.js"
       );
-      const { server: updated } = await provisionPreparedServer({
+      const { id, server } = await beginPanelServerCreate({
         name: data.name,
         type: data.type as ServerType,
         mcVersion: data.mcVersion,
@@ -94,56 +91,39 @@ export function registerServerCreateRoutes(app: FastifyInstance): void {
         ...(validatedExtraMounts !== undefined ? { extraMounts: validatedExtraMounts } : {}),
       });
 
-      const preset = data.worldPreset ?? "DEFAULT";
-      const levelType = preset === "FLAT" ? "flat" : preset === "VOID" ? "flat" : undefined;
-      const generatorSettings =
-        preset === "VOID"
-          ? JSON.stringify({
-              layers: [{ block: "minecraft:air", height: 1 }],
-              biome: "minecraft:the_void",
-            })
-          : undefined;
-      await applyCreateWorldDefaults(updated.id, {
-        seed: data.seed,
-        gamemode: data.gamemode,
-        difficulty: data.difficulty,
-        levelType,
-        generatorSettings,
-      }).catch((err) => {
-        console.warn(
-          `[guartrix] create world defaults failed for ${updated.id}:`,
-          err instanceof Error ? err.message : err,
-        );
-      });
-
-      const { applyInitialBackupRetention } = await import("../../../servers/backup-schedule.js");
-      await applyInitialBackupRetention(updated.id, data.keepCount);
-
-      logActivity({
-        action: "server.create",
-        request,
-        user,
-        server: updated,
-        metadata: {
-          type: updated.type,
-          mcVersion: updated.mcVersion,
-          port: updated.port,
-          memoryMb: updated.memoryMb,
-          diskMb: updated.diskMb,
-          node: nodeId,
-          worldPreset: preset,
+      void finishPanelCreateInBackground({
+        input: {
+          id,
+          name: data.name,
+          type: data.type as ServerType,
+          mcVersion: data.mcVersion,
+          port: data.port,
+          memoryMb: data.memoryMb,
+          diskMb: data.diskMb,
+          cpuLimit: data.cpuLimit,
+          ownerId: user.id,
+          nodeId,
+          ensureSubdomain: true,
+          cleanupOnFailure: true,
+          ...(validatedExtraMounts !== undefined ? { extraMounts: validatedExtraMounts } : {}),
+        },
+        world: {
+          seed: data.seed,
+          gamemode: data.gamemode,
+          difficulty: data.difficulty,
+          worldPreset: data.worldPreset,
+          keepCount: data.keepCount,
+        },
+        activity: {
+          actorUserId: user.id,
+          actorUsername: user.username,
         },
       });
 
-      await autoStartProvisionedServer(updated.id);
-
-      const refreshed = await prisma.server.findUniqueOrThrow({
-        where: { id: updated.id },
-        include: serverListInclude,
-      });
-      return reply.status(201).send(toMcServer(refreshed));
+      return reply.status(201).send(toMcServer(server));
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
+      const { logActivity } = await import("../../../activity-log.js");
       logActivity({
         action: "server.create",
         request,

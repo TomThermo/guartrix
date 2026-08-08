@@ -3,6 +3,11 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.11] — 2026-08-08
+
+### Changed
+- Panel create/import returns immediately (`CREATING`) and opens the server Console with live install progress instead of blocking on the create page.
+
 ## [1.4.10] — 2026-08-08
 
 ### Fixed

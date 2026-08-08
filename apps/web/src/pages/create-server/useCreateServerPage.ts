@@ -139,7 +139,7 @@ export function useCreateServerPage() {
         keepCount,
       });
       await refreshUser().catch(() => undefined);
-      navigate(`/servers/${server.id}`);
+      navigate(`/servers/${server.id}`, { state: { fromCreate: true } });
     } catch (err) {
       setError(err instanceof Error ? err.message : t("createServer.createFailed"));
     } finally {
@@ -184,7 +184,7 @@ export function useCreateServerPage() {
       if (nodeId) form.append("nodeId", nodeId);
       const server = await api.importServer(form);
       await refreshUser().catch(() => undefined);
-      navigate(`/servers/${server.id}`);
+      navigate(`/servers/${server.id}`, { state: { fromCreate: true } });
     } catch (err) {
       setError(err instanceof Error ? err.message : t("createServer.importFailed"));
     } finally {

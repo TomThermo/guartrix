@@ -342,6 +342,7 @@ export const usingPanelArticles: WikiArticle[] = [
         title: "Lifecycle actions",
         bullets: [
           "Create or import a server from the New server flow (includes backup retention).",
+          "After create/import you land on the Console tab immediately; install progress shows while status is CREATING.",
           "Clone or reinstall from the server header actions.",
           "Move a stopped server to another node when capacity or location changes.",
           "Use start, stop, restart, and kill for day-to-day power control — also available in the server header from any tab.",

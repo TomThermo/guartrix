@@ -33,6 +33,14 @@ export type ProvisionServerInput = {
   extraMounts?: import("@msm/shared").ServerExtraMount[] | null;
 };
 
+export type PanelCreateWorldOpts = {
+  seed?: string;
+  gamemode?: string;
+  difficulty?: string;
+  worldPreset?: string;
+  keepCount?: number;
+};
+
 /** Shared failure cleanup used by create + clone. */
 export async function cleanupFailedProvision(
   serverId: string,
@@ -85,6 +93,16 @@ export async function tryEnsureServerSubdomain(name: string, port: number): Prom
   return maybeEnsureSubdomain(name, port);
 }
 
+/** Progress text shown in the UI/console while status is CREATING. */
+export async function setCreatingProgress(serverId: string, message: string): Promise<void> {
+  await prisma.server
+    .update({
+      where: { id: serverId },
+      data: { status: "CREATING", errorMessage: message },
+    })
+    .catch(() => undefined);
+}
+
 /** Start a freshly provisioned server (create / import / clone). Logs and skips on license errors. */
 export async function autoStartProvisionedServer(serverId: string): Promise<void> {
   const server = await prisma.server.findUnique({ where: { id: serverId } });
@@ -112,6 +130,223 @@ export async function autoStartProvisionedServer(serverId: string): Promise<void
   }
 }
 
+/**
+ * Insert CREATING row + open primary port/allocation so the panel can navigate immediately.
+ * Heavy prepare/start work continues in {@link finishPanelCreateInBackground}.
+ */
+export async function beginPanelServerCreate(input: ProvisionServerInput) {
+  const id = input.id ?? nanoid(12);
+  const diskMb = input.diskMb ?? 10_240;
+  const cpuLimit = input.cpuLimit ?? 0;
+  const protocol = primaryAllocationProtocol(input.type);
+
+  await assertPortAvailable(input.port, input.nodeId, protocol);
+
+  const { extraMountsForPrisma } = await import("./extra-mounts.js");
+
+  await prisma.server.create({
+    data: {
+      id,
+      name: input.name,
+      type: input.type,
+      mcVersion: input.mcVersion,
+      port: input.port,
+      memoryMb: input.memoryMb,
+      diskMb,
+      cpuLimit,
+      status: "CREATING",
+      errorMessage: "Creating: preparing…",
+      startOnBoot: true,
+      ownerId: input.ownerId,
+      nodeId: input.nodeId,
+      ...(input.extraMounts !== undefined
+        ? { extraMounts: extraMountsForPrisma(input.extraMounts) }
+        : {}),
+    },
+  });
+
+  try {
+    await openFirewallPort(input.port, input.nodeId, protocol);
+    await ensurePrimaryAllocation({
+      serverId: id,
+      nodeId: input.nodeId,
+      port: input.port,
+      protocol,
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    await cleanupFailedProvision(id, input.port, input.nodeId, protocol);
+    throw err instanceof Error ? err : new Error(message);
+  }
+
+  const server = await prisma.server.findUniqueOrThrow({
+    where: { id },
+    include: serverListInclude,
+  });
+  return { id, server, protocol };
+}
+
+export type FinishPanelCreateOpts = {
+  input: ProvisionServerInput;
+  world?: PanelCreateWorldOpts;
+  /** Activity log context (panel create). */
+  activity?: {
+    actorUserId: string;
+    actorUsername: string;
+    requestMeta?: Record<string, unknown>;
+  };
+};
+
+/** Complete jar install / world defaults / autostart after a fast 201 response. */
+export async function finishPanelCreateInBackground(opts: FinishPanelCreateOpts): Promise<void> {
+  const { input, world } = opts;
+  const id = input.id;
+  if (!id) return;
+  const cleanupOnFailure = input.cleanupOnFailure !== false;
+  const protocol = primaryAllocationProtocol(input.type);
+
+  try {
+    const node = await prisma.node.findUnique({ where: { id: input.nodeId } });
+    await setCreatingProgress(
+      id,
+      node && !node.isLocal
+        ? "Creating: downloading server files & deploying to node…"
+        : "Creating: downloading server files…",
+    );
+
+    const prepared = await prepareServerOnNode({
+      serverId: id,
+      nodeId: input.nodeId,
+      type: input.type,
+      mcVersion: input.mcVersion,
+      port: input.port,
+    });
+
+    await setCreatingProgress(id, "Creating: applying world settings…");
+
+    if (input.ensureSubdomain) {
+      const subdomain = await maybeEnsureSubdomain(input.name, input.port);
+      await prisma.server.update({
+        where: { id },
+        data: { subdomain },
+      });
+    }
+
+    await prisma.server.update({
+      where: { id },
+      data: {
+        paperBuild: prepared.paperBuild ?? null,
+        fabricLoaderVersion: prepared.fabricLoaderVersion ?? null,
+        forgeVersion: prepared.forgeVersion ?? null,
+      },
+    });
+
+    try {
+      const row = await prisma.server.findUniqueOrThrow({ where: { id } });
+      await daemonSetLimits(id, {
+        diskMb: row.diskMb,
+        cpuLimit: row.cpuLimit,
+      });
+    } catch {
+      // ignore
+    }
+
+    if (world) {
+      const preset = world.worldPreset ?? "DEFAULT";
+      const levelType = preset === "FLAT" ? "flat" : preset === "VOID" ? "flat" : undefined;
+      const generatorSettings =
+        preset === "VOID"
+          ? JSON.stringify({
+              layers: [{ block: "minecraft:air", height: 1 }],
+              biome: "minecraft:the_void",
+            })
+          : undefined;
+      const { applyCreateWorldDefaults } = await import("./server-lifecycle.js");
+      await applyCreateWorldDefaults(id, {
+        seed: world.seed,
+        gamemode: world.gamemode,
+        difficulty: world.difficulty,
+        levelType,
+        generatorSettings,
+      }).catch((err) => {
+        console.warn(
+          `[guartrix] create world defaults failed for ${id}:`,
+          err instanceof Error ? err.message : err,
+        );
+      });
+
+      const { applyInitialBackupRetention } = await import("./backup-schedule.js");
+      await applyInitialBackupRetention(id, world.keepCount);
+    }
+
+    if (opts.activity) {
+      const { logActivity } = await import("../activity-log.js");
+      const updated = await prisma.server.findUniqueOrThrow({
+        where: { id },
+        include: serverListInclude,
+      });
+      logActivity({
+        action: "server.create",
+        user: { id: opts.activity.actorUserId, username: opts.activity.actorUsername },
+        server: updated,
+        metadata: {
+          type: updated.type,
+          mcVersion: updated.mcVersion,
+          port: updated.port,
+          memoryMb: updated.memoryMb,
+          diskMb: updated.diskMb,
+          node: input.nodeId,
+          worldPreset: world?.worldPreset ?? "DEFAULT",
+          ...(opts.activity.requestMeta ?? {}),
+        },
+      });
+    }
+
+    await setCreatingProgress(id, "Creating: starting…");
+    await autoStartProvisionedServer(id);
+    const after = await prisma.server.findUnique({
+      where: { id },
+      select: { status: true, errorMessage: true },
+    });
+    if (!after) return;
+    if (after.status === "CREATING") {
+      await prisma.server.update({
+        where: { id },
+        data: { status: "STOPPED", errorMessage: null },
+      });
+    } else if (after.errorMessage?.startsWith("Creating:")) {
+      await prisma.server.update({
+        where: { id },
+        data: { errorMessage: null },
+      });
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`[guartrix] background create failed for ${id}: ${message}`);
+    await prisma.server
+      .update({
+        where: { id },
+        data: { status: "ERROR", errorMessage: message },
+      })
+      .catch(() => undefined);
+    if (cleanupOnFailure) {
+      await cleanupFailedProvision(id, input.port, input.nodeId, protocol);
+    }
+    if (opts.activity) {
+      const { logActivity } = await import("../activity-log.js");
+      logActivity({
+        action: "server.create",
+        user: { id: opts.activity.actorUserId, username: opts.activity.actorUsername },
+        serverId: null,
+        serverName: input.name,
+        success: false,
+        metadata: { error: message, type: input.type, port: input.port },
+      });
+    }
+  }
+}
+
+/** Synchronous provision (Application API / billing). */
 export async function provisionPreparedServer(input: ProvisionServerInput) {
   const id = input.id ?? nanoid(12);
   const diskMb = input.diskMb ?? 10_240;

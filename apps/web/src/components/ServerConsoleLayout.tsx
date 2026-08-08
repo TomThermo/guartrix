@@ -127,7 +127,9 @@ export function ServerConsoleLayout({
   const allowRestart = canRestart ?? canWrite ?? false;
   const showControls = allowStart || allowStop || allowKill || allowRestart;
   const serverActive = server.status === "RUNNING" || server.status === "STARTING";
-  const isStopped = server.status === "STOPPED";
+  const isStopped = server.status === "STOPPED" || server.status === "ERROR";
+  const isCreating = server.status === "CREATING";
+  const powerBusy = busy || isCreating;
   const [showCharts, setShowCharts] = useState(() => {
     try {
       return localStorage.getItem("guartrix.consoleCharts") === "1";
@@ -290,7 +292,12 @@ export function ServerConsoleLayout({
                   <Button
                     size="sm"
                     variant="success"
-                    disabled={busy || server.status === "RUNNING" || server.status === "STARTING"}
+                    disabled={
+                      powerBusy ||
+                      server.status === "RUNNING" ||
+                      server.status === "STARTING" ||
+                      isCreating
+                    }
                     onClick={onStart}
                   >
                     <i className="fa-solid fa-play me-1" />
@@ -302,7 +309,7 @@ export function ServerConsoleLayout({
                     size="sm"
                     variant="danger"
                     className="server-control-stop"
-                    disabled={busy || isStopped}
+                    disabled={powerBusy || isStopped || isCreating}
                     onClick={onStop}
                   >
                     <i className="fa-solid fa-stop me-1" />
@@ -314,7 +321,7 @@ export function ServerConsoleLayout({
                     size="sm"
                     variant="warning"
                     className="server-control-kill"
-                    disabled={busy || isStopped}
+                    disabled={powerBusy || isStopped || isCreating}
                     title={t("console.killTitle")}
                     onClick={() => onKill?.()}
                   >
@@ -327,7 +334,7 @@ export function ServerConsoleLayout({
                     size="sm"
                     variant="primary"
                     className="server-control-restart"
-                    disabled={busy}
+                    disabled={powerBusy || isCreating}
                     onClick={onRestart}
                   >
                     <i className="fa-solid fa-rotate-right me-1" />

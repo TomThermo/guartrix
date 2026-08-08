@@ -107,7 +107,8 @@ export function ServerDetailHeader({
   onEditIcon?: () => void;
 }) {
   const { t } = useI18n();
-  const isStopped = server.status === "STOPPED";
+  const isStopped = server.status === "STOPPED" || server.status === "ERROR";
+  const isCreating = server.status === "CREATING";
   const showPower =
     canPowerStart || canPowerStop || canPowerKill || canPowerRestart;
   const canEditIcon = Boolean(onEditIcon) && can("settings.update");
@@ -122,6 +123,7 @@ export function ServerDetailHeader({
     .join(" · ");
 
   const showActions = canClone || isAdmin || can("settings.update");
+  const powerBusy = busy || isCreating;
 
   const manageMenu = (
     <>
@@ -241,7 +243,12 @@ export function ServerDetailHeader({
                 {canPowerStart && (
                   <Button
                     variant="success"
-                    disabled={busy || server.status === "RUNNING" || server.status === "STARTING"}
+                    disabled={
+                      powerBusy ||
+                      server.status === "RUNNING" ||
+                      server.status === "STARTING" ||
+                      isCreating
+                    }
                     title={t("common.start")}
                     onClick={onRequestStart}
                   >
@@ -253,7 +260,7 @@ export function ServerDetailHeader({
                   <Button
                     variant="danger"
                     className="server-control-stop"
-                    disabled={busy || isStopped}
+                    disabled={powerBusy || isStopped || isCreating}
                     title={t("common.stop")}
                     onClick={onStop}
                   >
@@ -265,7 +272,7 @@ export function ServerDetailHeader({
                   <Button
                     variant="primary"
                     className="server-control-restart"
-                    disabled={busy}
+                    disabled={powerBusy || isCreating}
                     title={t("common.restart")}
                     onClick={onRestart}
                   >
@@ -277,7 +284,7 @@ export function ServerDetailHeader({
                   <Button
                     variant="warning"
                     className="server-control-kill"
-                    disabled={busy || isStopped}
+                    disabled={powerBusy || isStopped || isCreating}
                     title={t("console.killTitle")}
                     onClick={onKill}
                   >

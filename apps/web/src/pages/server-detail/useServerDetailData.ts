@@ -79,6 +79,44 @@ export function useServerDetailData({
     void load();
   }, [load]);
 
+  // Poll while install/start is in progress so console shows Creating: … progress.
+  useVisibleInterval(
+    () => {
+      void load();
+    },
+    1500,
+    Boolean(server && (server.status === "CREATING" || server.status === "STARTING")),
+  );
+
+  // Mirror CREATING progress into the console panel.
+  useEffect(() => {
+    if (!server || server.status !== "CREATING") return;
+    const msg = server.errorMessage?.trim();
+    if (!msg) return;
+    setConsoleNotices((prev) => {
+      if (prev[prev.length - 1] === msg) return prev;
+      return [...prev.filter((m) => !m.startsWith("Creating:")), msg].slice(-6);
+    });
+  }, [server?.status, server?.errorMessage]);
+
+  useEffect(() => {
+    const state = location.state as { consoleNotice?: string; fromCreate?: boolean } | null;
+    if (state?.fromCreate) {
+      setTab("console");
+      setConsoleNotices((prev) =>
+        prev.includes("Creating: preparing…")
+          ? prev
+          : [...prev, t("serverDetail.creatingStarted")],
+      );
+      navigate(`${location.pathname}${location.search}`, { replace: true, state: null });
+      return;
+    }
+    const msg = state?.consoleNotice?.trim();
+    if (!msg) return;
+    setConsoleNotices((prev) => (prev.includes(msg) ? prev : [...prev.slice(-4), msg]));
+    navigate(`${location.pathname}${location.search}`, { replace: true, state: null });
+  }, [location.state, location.pathname, location.search, navigate, t]);
+
   useEffect(() => {
     const fromUrl = parseTabParam(searchParams.get("tab"));
     setTab(fromUrl ?? "console");
@@ -87,12 +125,13 @@ export function useServerDetailData({
   // If the active tab is not allowed (license/subuser), jump to the first visible one.
   useEffect(() => {
     if (!server) return;
-    const allowed = SERVER_TABS.filter((t) => {
-      if (t.adminOnly && user?.role !== "ADMIN") return false;
-      if (t.id === "addons" && !addonKindFor(server.type)) return false;
-      if (t.id === "engine" && !(server.type === "PAPER" || server.type === "PURPUR")) return false;
+    const allowed = SERVER_TABS.filter((tabDef) => {
+      if (tabDef.adminOnly && user?.role !== "ADMIN") return false;
+      if (tabDef.id === "addons" && !addonKindFor(server.type)) return false;
+      if (tabDef.id === "engine" && !(server.type === "PAPER" || server.type === "PURPUR"))
+        return false;
       if (
-        t.id === "modpacks" &&
+        tabDef.id === "modpacks" &&
         !(
           server.type === "FABRIC" ||
           server.type === "QUILT" ||
@@ -101,10 +140,10 @@ export function useServerDetailData({
         )
       )
         return false;
-      if (!t.anyOf || t.anyOf.length === 0) return true;
-      return t.anyOf.some((p) => hasPermission(perms, p as "control.console"));
+      if (!tabDef.anyOf || tabDef.anyOf.length === 0) return true;
+      return tabDef.anyOf.some((p) => hasPermission(perms, p as "control.console"));
     });
-    if (allowed.some((t) => t.id === tab)) return;
+    if (allowed.some((tabDef) => tabDef.id === tab)) return;
     const fallback = allowed[0]?.id ?? "resources";
     if (fallback !== tab) {
       setTab(fallback);
@@ -118,14 +157,6 @@ export function useServerDetailData({
       );
     }
   }, [server, perms, tab, user?.role, setSearchParams]);
-
-  useEffect(() => {
-    const state = location.state as { consoleNotice?: string } | null;
-    const msg = state?.consoleNotice?.trim();
-    if (!msg) return;
-    setConsoleNotices((prev) => (prev.includes(msg) ? prev : [...prev.slice(-4), msg]));
-    navigate(`${location.pathname}${location.search}`, { replace: true, state: null });
-  }, [location.state, location.pathname, location.search, navigate]);
 
   useEffect(() => {
     void api

@@ -8,6 +8,7 @@ import { ServerDetailSideNav } from "../../components/server-detail/ServerDetail
 import { ServerDetailModals } from "../../components/server-detail/ServerDetailModals";
 import { ServerDetailTabs } from "../../components/server-detail/ServerDetailTabs";
 import { useServerDetailData } from "./useServerDetailData";
+import { useI18n } from "../../i18n/react";
 
 export function ServerDetailPageInner({
   onPlayerAccessChange,
@@ -15,6 +16,7 @@ export function ServerDetailPageInner({
   onPlayerAccessChange: (enabled: boolean) => void;
 }) {
   const d = useServerDetailData({ onPlayerAccessChange });
+  const { t } = useI18n();
   const [showIconModal, setShowIconModal] = useState(false);
 
   if (!d.server && !d.error) {
@@ -137,6 +139,16 @@ export function ServerDetailPageInner({
           {d.notice}
         </Alert>
       )}
+      {server.errorMessage &&
+        server.status === "CREATING" && (
+          <Alert variant="info" className="mb-3">
+            <div className="fw-semibold mb-1">{t("serverDetail.creatingTitle")}</div>
+            <div className="mb-0 d-flex align-items-center gap-2">
+              <Spinner animation="border" size="sm" />
+              <span>{server.errorMessage}</span>
+            </div>
+          </Alert>
+        )}
       {server.errorMessage &&
         server.status === "ERROR" &&
         !/already running/i.test(server.errorMessage) && (
