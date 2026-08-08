@@ -3,6 +3,11 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.18] — 2026-08-08
+
+### Changed
+- Redis `maxRetriesPerRequest` default raised to **50** (override with `REDIS_MAX_RETRIES_PER_REQUEST`).
+
 ## [1.4.17] — 2026-08-08
 
 ### Fixed

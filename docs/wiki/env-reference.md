@@ -84,6 +84,7 @@ Installer: `--mysql-docker` (default) or `--mysql-external` / `--database-url`.
 | `RATE_LIMIT_STORE` | `file` (default) under `data/rate-limits/`; `memory` in-process; `redis` shared (needs `REDIS_URL`) |
 | `SESSION_STORE` | `file` (default, `data/sessions`) or `redis` (needs reachable `REDIS_URL` + optional `ioredis`). If Redis is down at boot, falls back to file (unless `REQUIRE_REDIS_HA`) |
 | `REDIS_URL` | Redis URL for multi-API HA (sessions, rate limits, transfers, scheduler lock, backup busy lock, event bus, **BullMQ**). Client is only used after a successful PING — a dead URL no longer bricks login with `maxRetriesPerRequest` |
+| `REDIS_MAX_RETRIES_PER_REQUEST` | ioredis command retries before failing (default `50`) |
 | `REDIS_ENABLED` | `0` disables Redis even if `REDIS_URL` is set; default on when URL is present |
 | `JOBS_BULLMQ` | `1` (default) use BullMQ when Redis is configured; `0` force in-process scheduler |
 | `JOBS_EMBEDDED` | `1` (default) run BullMQ workers inside the API process; `0` queues only (external worker later) |

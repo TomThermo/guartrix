@@ -132,7 +132,11 @@ export async function getRedis(): Promise<RedisClient | null> {
       const { default: Redis } = await import("ioredis");
       redis = new Redis(url, {
         // Keep command retries modest; connect must succeed before we publish the client.
-        maxRetriesPerRequest: 5,
+        maxRetriesPerRequest: (() => {
+          const raw = (process.env.REDIS_MAX_RETRIES_PER_REQUEST ?? "50").trim();
+          const n = Number.parseInt(raw, 10);
+          return Number.isFinite(n) && n >= 0 ? n : 50;
+        })(),
         enableReadyCheck: true,
         lazyConnect: true,
         connectTimeout: 5_000,
