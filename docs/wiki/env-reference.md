@@ -82,8 +82,8 @@ Installer: `--mysql-docker` (default) or `--mysql-external` / `--database-url`.
 | `API_SESSION_RATE_LIMIT` | Max authenticated session (cookie) `/api` requests per minute **per userId** for non-poll traffic (default **600**; falls back to client IP only if the session has no `userId`) |
 | `API_SESSION_READ_RATE_LIMIT` | Separate budget for dashboard poll GETs (`/api/servers`, `/stats`, `/online`, …) per userId (default **max(1800, 3× API_SESSION_RATE_LIMIT)**) so UI polls do not starve creates/power |
 | `RATE_LIMIT_STORE` | `file` (default) under `data/rate-limits/`; `memory` in-process; `redis` shared (needs `REDIS_URL`) |
-| `SESSION_STORE` | `file` (default, `data/sessions`) or `redis` (needs `REDIS_URL` + optional `ioredis`) |
-| `REDIS_URL` | Redis URL for multi-API HA (sessions, rate limits, transfers, scheduler lock, backup busy lock, event bus, **BullMQ**) |
+| `SESSION_STORE` | `file` (default, `data/sessions`) or `redis` (needs reachable `REDIS_URL` + optional `ioredis`). If Redis is down at boot, falls back to file (unless `REQUIRE_REDIS_HA`) |
+| `REDIS_URL` | Redis URL for multi-API HA (sessions, rate limits, transfers, scheduler lock, backup busy lock, event bus, **BullMQ**). Client is only used after a successful PING — a dead URL no longer bricks login with `maxRetriesPerRequest` |
 | `REDIS_ENABLED` | `0` disables Redis even if `REDIS_URL` is set; default on when URL is present |
 | `JOBS_BULLMQ` | `1` (default) use BullMQ when Redis is configured; `0` force in-process scheduler |
 | `JOBS_EMBEDDED` | `1` (default) run BullMQ workers inside the API process; `0` queues only (external worker later) |

@@ -16,6 +16,7 @@ declare module "ioredis" {
   class Redis extends EventEmitter {
     constructor(url: string, options?: RedisOptions);
     status: string;
+    connect(): Promise<void>;
     get(key: string): Promise<string | null>;
     set(key: string, value: string, ...args: unknown[]): Promise<unknown>;
     del(...keys: string[]): Promise<number>;

@@ -3,6 +3,11 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.17] — 2026-08-08
+
+### Fixed
+- Redis client is only published after a successful PING; with `SESSION_STORE=redis` but no Redis process (typical local multi-node labs), sessions fall back to file instead of login `maxRetriesPerRequest` 500s.
+
 ## [1.4.16] — 2026-08-08
 
 ### Fixed

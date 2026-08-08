@@ -105,21 +105,39 @@ export async function getRedis(): Promise<RedisClient | null> {
   if (!isRedisEnabled()) return null;
   const url = redisUrl();
   if (!url) return null;
-  if (client) return client;
+  if (client) {
+    try {
+      // Avoid handing callers a half-open client (ioredis creates before ready).
+      if (client.status === "ready") {
+        await client.ping();
+        return client;
+      }
+      await client.ping();
+      return client;
+    } catch (err) {
+      lastError = err instanceof Error ? err.message : String(err);
+      try {
+        client.disconnect();
+      } catch {
+        // ignore
+      }
+      client = null;
+    }
+  }
   if (initPromise) return initPromise;
 
   initPromise = (async () => {
+    let redis: RedisClient | null = null;
     try {
       const { default: Redis } = await import("ioredis");
-      const redis = new Redis(url, {
-        // Session/rate-limit commands during a brief restart blip: retry a few times
-        // instead of failing the first login with maxRetriesPerRequest=2.
+      redis = new Redis(url, {
+        // Keep command retries modest; connect must succeed before we publish the client.
         maxRetriesPerRequest: 5,
         enableReadyCheck: true,
-        lazyConnect: false,
+        lazyConnect: true,
         connectTimeout: 5_000,
         retryStrategy(times: number) {
-          if (times > 30) return null;
+          if (times > 20) return null;
           return Math.min(times * 150, 2_000);
         },
       }) as unknown as RedisClient;
@@ -128,19 +146,41 @@ export async function getRedis(): Promise<RedisClient | null> {
         lastError = err instanceof Error ? err.message : String(err);
         console.warn(`[guartrix] Redis error: ${lastError}`);
       });
-      redis.on("connect", () => {
-        lastError = null;
-      });
       redis.on("ready", () => {
         lastError = null;
-        console.info("[guartrix] Redis client ready");
       });
+      redis.on("end", () => {
+        if (client === redis) {
+          client = null;
+          lastError = lastError || "Redis connection ended";
+        }
+      });
+
+      // Wait until actually usable — otherwise SESSION_STORE=redis installs a dead
+      // client and every login blows up with maxRetriesPerRequest (common on local
+      // panels with REDIS_URL set but no Redis process).
+      const connectable = redis as RedisClient & { connect?: () => Promise<void> };
+      if (typeof connectable.connect === "function") {
+        await connectable.connect();
+      }
+      const pong = await redis.ping();
+      if (String(pong).toUpperCase() !== "PONG") {
+        throw new Error(`Redis PING failed (${String(pong)})`);
+      }
+
       client = redis;
-      console.info("[guartrix] Redis client connected");
+      console.info("[guartrix] Redis client ready");
       return client;
     } catch (err) {
       lastError = err instanceof Error ? err.message : String(err);
       console.warn(`[guartrix] Redis unavailable (${lastError}) — falling back to local stores`);
+      if (redis) {
+        try {
+          redis.disconnect();
+        } catch {
+          // ignore
+        }
+      }
       client = null;
       return null;
     } finally {
