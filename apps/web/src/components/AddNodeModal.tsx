@@ -91,10 +91,17 @@ export function AddNodeModal({ existingNode, onClose, onChanged }: Props) {
     };
   }, [existingNode]);
 
+  // Keep the live SSH log pinned to the newest output after each append paints.
   useEffect(() => {
     const el = logRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  }, []);
+    if (!el) return;
+    const snap = () => {
+      el.scrollTop = el.scrollHeight;
+    };
+    snap();
+    const raf = requestAnimationFrame(snap);
+    return () => cancelAnimationFrame(raf);
+  }, [log]);
 
   useEffect(() => {
     return () => {

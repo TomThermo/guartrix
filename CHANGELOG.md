@@ -3,6 +3,11 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.15] — 2026-08-08
+
+### Fixed
+- Add-node SSH live log always auto-scrolls to the latest remote output.
+
 ## [1.4.14] — 2026-08-08
 
 ### Changed
