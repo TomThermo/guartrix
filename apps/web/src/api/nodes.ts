@@ -1,5 +1,5 @@
 import type { PortAllocation } from "@msm/shared";
-import { request, notifyUnauthorized } from "./client";
+import { request, notifyUnauthorized, withCsrfHeaders, refreshCsrfToken } from "./client";
 
 export const nodesApi = {
   listNodes: () => request<{ nodes: import("@msm/shared").DaemonNode[] }>("/api/nodes"),
@@ -94,16 +94,32 @@ export const nodesApi = {
       signal?: AbortSignal;
     },
   ) => {
-    const res = await fetch(`/api/admin/nodes/${id}/remote-install`, {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/x-ndjson",
-      },
-      body: JSON.stringify(body),
-      signal: opts?.signal,
-    });
+    const post = async (csrfRetried: boolean): Promise<Response> => {
+      const res = await fetch(`/api/admin/nodes/${id}/remote-install`, {
+        method: "POST",
+        credentials: "include",
+        headers: withCsrfHeaders({
+          "Content-Type": "application/json",
+          Accept: "application/x-ndjson",
+        }),
+        body: JSON.stringify(body),
+        signal: opts?.signal,
+      });
+      if (
+        !res.ok &&
+        res.status === 403 &&
+        !csrfRetried &&
+        (res.headers.get("content-type") || "").includes("application/json")
+      ) {
+        const data = (await res.clone().json().catch(() => ({}))) as { error?: string };
+        if (typeof data.error === "string" && /csrf token/i.test(data.error)) {
+          if (await refreshCsrfToken()) return post(true);
+        }
+      }
+      return res;
+    };
+
+    const res = await post(false);
     if (!res.ok || !res.body) {
       if (res.status === 401) notifyUnauthorized();
       const data = (await res.json().catch(() => ({}))) as {

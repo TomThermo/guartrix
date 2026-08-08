@@ -58,17 +58,42 @@ export function getCsrfToken(): string | null {
   return csrfToken;
 }
 
+/** Attach session CSRF header for raw `fetch` (multipart / NDJSON) callers. */
+export function withCsrfHeaders(init?: HeadersInit): Headers {
+  const headers = new Headers(init);
+  if (csrfToken && !headers.has("x-csrf-token")) {
+    headers.set("x-csrf-token", csrfToken);
+  }
+  return headers;
+}
+
+/** Refresh CSRF from `/api/auth/me` (cookie session). */
+export async function refreshCsrfToken(): Promise<string | null> {
+  try {
+    const me = await fetch("/api/auth/me", { credentials: "include" });
+    const meData = (await me.json().catch(() => ({}))) as { csrfToken?: string };
+    if (meData.csrfToken) {
+      setCsrfToken(meData.csrfToken);
+      return meData.csrfToken.trim();
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
+function isCsrfErrorMessage(message: string | undefined): boolean {
+  return typeof message === "string" && /csrf token/i.test(message);
+}
+
 const MUTATING = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 export async function request<T>(url: string, init?: RequestInit, csrfRetried = false): Promise<T> {
-  const headers = new Headers(init?.headers);
+  const headers = withCsrfHeaders(init?.headers);
   if (init?.body !== undefined && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
   const method = (init?.method ?? "GET").toUpperCase();
-  if (csrfToken && MUTATING.has(method) && !headers.has("x-csrf-token")) {
-    headers.set("x-csrf-token", csrfToken);
-  }
 
   let res: Response;
   try {
@@ -91,20 +116,10 @@ export async function request<T>(url: string, init?: RequestInit, csrfRetried = 
     res.status === 403 &&
     MUTATING.has(method) &&
     !csrfRetried &&
-    typeof data.error === "string" &&
-    /Missing CSRF token/i.test(data.error)
+    isCsrfErrorMessage(typeof data.error === "string" ? data.error : undefined)
   ) {
-    try {
-      const me = await fetch("/api/auth/me", { credentials: "include" });
-      const meData = (await me.json().catch(() => ({}))) as {
-        csrfToken?: string;
-      };
-      if (meData.csrfToken) {
-        setCsrfToken(meData.csrfToken);
-        return request<T>(url, init, true);
-      }
-    } catch {
-      // fall through to normal error
+    if (await refreshCsrfToken()) {
+      return request<T>(url, init, true);
     }
   }
   if (!res.ok) {

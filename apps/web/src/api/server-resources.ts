@@ -1,5 +1,5 @@
 import type { ServerDatabase, ServerDatabasesResponse } from "@msm/shared";
-import { request } from "./client";
+import { request, withCsrfHeaders } from "./client";
 
 type ProxySetup = {
   supported: boolean;
@@ -48,6 +48,7 @@ export const serverResourcesApi = {
     const res = await fetch(`/api/servers/${id}/resource-pack`, {
       method: "POST",
       credentials: "include",
+      headers: withCsrfHeaders(),
       body: form,
     });
     const data = await res.json().catch(() => ({}));

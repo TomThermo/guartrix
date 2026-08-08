@@ -11,7 +11,7 @@ import type {
   UpdateServerRequest,
   VersionsResponse,
 } from "@msm/shared";
-import { request } from "./client";
+import { request, withCsrfHeaders } from "./client";
 import { serverAllocationsApi } from "./server-allocations";
 import { serverManagementApi } from "./server-management";
 import { serverObservabilityApi } from "./server-observability";
@@ -99,6 +99,7 @@ const serverCoreApi = {
     const res = await fetch("/api/servers/import", {
       method: "POST",
       credentials: "include",
+      headers: withCsrfHeaders(),
       body: form,
     });
     const data = await res.json().catch(() => ({}));

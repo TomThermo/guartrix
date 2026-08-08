@@ -10,7 +10,7 @@ import type {
   McServer,
   ServerBackup,
 } from "@msm/shared";
-import { request, notifyUnauthorized, transferUrl } from "./client";
+import { request, notifyUnauthorized, transferUrl, withCsrfHeaders, getCsrfToken } from "./client";
 
 export const backupsApi = {
   listBackups: (id: string) => request<BackupListResponse>(`/api/servers/${id}/backups`),
@@ -123,6 +123,8 @@ export const backupsApi = {
         xhr.withCredentials = true;
         xhr.timeout = 0;
         xhr.setRequestHeader("Content-Type", "application/octet-stream");
+        const csrf = getCsrfToken();
+        if (csrf) xhr.setRequestHeader("x-csrf-token", csrf);
 
         const onAbort = () => xhr.abort();
         opts?.signal?.addEventListener("abort", onAbort);
@@ -213,6 +215,7 @@ export const backupsApi = {
       void fetch(`/api/servers/${id}/backups/upload/${encodeURIComponent(init.uploadId)}`, {
         method: "DELETE",
         credentials: "include",
+        headers: withCsrfHeaders(),
       }).catch(() => undefined);
       throw err;
     }
@@ -221,6 +224,7 @@ export const backupsApi = {
       void fetch(`/api/servers/${id}/backups/upload/${encodeURIComponent(init.uploadId)}`, {
         method: "DELETE",
         credentials: "include",
+        headers: withCsrfHeaders(),
       }).catch(() => undefined);
       throw new DOMException("Upload aborted", "AbortError");
     }

@@ -1,4 +1,4 @@
-import { request } from "./client";
+import { request, withCsrfHeaders } from "./client";
 
 type EngineSettings = {
   supported: boolean;
@@ -47,6 +47,7 @@ export const serverWorldApi = {
     const res = await fetch(`/api/servers/${id}/world/import`, {
       method: "POST",
       credentials: "include",
+      headers: withCsrfHeaders(),
       body: form,
     });
     const data = await res.json().catch(() => ({}));
@@ -115,6 +116,7 @@ export const serverWorldApi = {
     const res = await fetch(`/api/servers/${id}/icon`, {
       method: "POST",
       credentials: "include",
+      headers: withCsrfHeaders(),
       body,
     });
     const data = await res.json().catch(() => ({}));
