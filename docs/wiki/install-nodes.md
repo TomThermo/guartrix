@@ -23,6 +23,15 @@ SSH credentials are used once and **not stored**. The host-key fingerprint **is*
 
 Remote config lives at **`/var/lib/guartrix/daemon.env`** (not `$INSTALL_DIR/data/daemon.env`). Code under `/opt/guartrix`.
 
+The panel installer publishes **`data/downloads/guartrix-daemon-*.zip`**, served as `/install-daemon-bundle.zip`, so Add-node works without a separate package step. If that URL 404s on an older install, on the panel host run:
+
+```bash
+cd /opt/guartrix   # or your install dir
+sudo apt-get install -y zip unzip   # if missing
+node scripts/bundle-daemon-for-nodes.mjs
+sudo systemctl restart guartrix-web
+```
+
 ![System — nodes](assets/05-system-nodes.png)
 
 ![Add node wizard](assets/06-add-node-modal.png)

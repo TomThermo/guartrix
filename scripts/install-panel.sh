@@ -554,7 +554,7 @@ export DEBIAN_FRONTEND=noninteractive
 
 echo "[guartrix] Installing panel prerequisites…"
 apt-get update -y
-apt-get install -y ca-certificates curl gnupg git openssl ufw python3
+apt-get install -y ca-certificates curl gnupg git openssl ufw python3 zip unzip
 
 # Prefer preseeded Docker/Node (pinned packages) — see docs/wiki/install-nodes.md supply-chain section.
 if ! command -v docker >/dev/null 2>&1; then
@@ -895,8 +895,13 @@ npm install
 npm run db:generate -w @msm/api
 if [[ -f apps/api/src/index.ts ]]; then
   npm run build
+  # Single-file daemon + data/downloads/guartrix-daemon-*.zip for Add-node
+  echo "[guartrix] Publishing daemon install bundle for remote nodes…"
+  node scripts/bundle-daemon-for-nodes.mjs
 elif [[ -f apps/api/dist/index.js && -f apps/web/dist/index.html ]]; then
   echo "[guartrix] Using prebuilt release bundles (no TypeScript sources)"
+  node scripts/bundle-daemon-for-nodes.mjs 2>/dev/null || \
+    echo "[guartrix] WARN: could not refresh daemon install zip — Add-node may need a rebuild" >&2
 else
   echo "[guartrix] ERROR: no sources and no prebuilt dist — cannot continue" >&2
   exit 1

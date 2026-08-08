@@ -52,6 +52,15 @@ if [[ -f "$ROOT/scripts/lib-license-public-key.sh" ]]; then
   guartrix_ensure_license_signing_public_pem "$ROOT" "${DATA_DIR:-$ROOT/data}" || true
 fi
 
+# Publish / refresh daemon zip for Add-node (idempotent; needs apps/daemon/dist).
+if [[ -f "$ROOT/scripts/bundle-daemon-for-nodes.mjs" && -f "$ROOT/apps/daemon/dist/index.js" ]]; then
+  if ! compgen -G "$ROOT/data/downloads/guartrix-daemon-*.zip" >/dev/null; then
+    info "Ensuring daemon install bundle for remote nodes…"
+    node "$ROOT/scripts/bundle-daemon-for-nodes.mjs" >/dev/null 2>&1 || \
+      warn "daemon install bundle missing — run: node scripts/bundle-daemon-for-nodes.mjs"
+  fi
+fi
+
 API_PORT="${API_PORT:-3001}"
 DAEMON_PORT="${DAEMON_PORT:-8081}"
 DAEMON_HOST="${DAEMON_HOST:-127.0.0.1}"

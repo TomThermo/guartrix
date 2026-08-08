@@ -37,7 +37,7 @@ export function findPublishedDaemonZip(rootDir) {
   return path.join(dir, names[names.length - 1]);
 }
 
-function readProductVersion(rootDir) {
+export function readProductVersion(rootDir) {
   try {
     const v = fs.readFileSync(path.join(rootDir, "VERSION"), "utf8").trim().split(/\s/)[0];
     if (v) return v;
@@ -53,9 +53,36 @@ function readProductVersion(rootDir) {
   return "0.0.0";
 }
 
+/** Zip a directory to outZip using `zip` or Python 3 (stdlib zipfile). */
+function zipDirectory(stageDir, outZip) {
+  const withZip = spawnSync("zip", ["-qr", outZip, "."], {
+    cwd: stageDir,
+    encoding: "utf8",
+  });
+  if (withZip.status === 0 && fs.existsSync(outZip)) return true;
+
+  const withPy = spawnSync(
+    "python3",
+    [
+      "-c",
+      `import zipfile, os, sys
+root, out = sys.argv[1], sys.argv[2]
+with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as zf:
+    for dirpath, _, files in os.walk(root):
+        for name in files:
+            full = os.path.join(dirpath, name)
+            zf.write(full, os.path.relpath(full, root))
+`,
+      stageDir,
+      outZip,
+    ],
+    { encoding: "utf8" },
+  );
+  return withPy.status === 0 && fs.existsSync(outZip);
+}
+
 /**
- * Build a temporary standalone daemon zip from live `apps/daemon/dist`
- * (used when no published download zip exists yet).
+ * Build a temporary standalone daemon zip from live `apps/daemon/dist/index.js`.
  */
 export function buildEphemeralDaemonZip(rootDir) {
   const distJs = path.join(rootDir, "apps/daemon/dist/index.js");
@@ -91,19 +118,45 @@ export function buildEphemeralDaemonZip(rootDir) {
   }
 
   const outZip = path.join(tmp, "guartrix-daemon-bundle.zip");
-  const z = spawnSync("zip", ["-qr", outZip, "."], { cwd: stage, encoding: "utf8" });
-  if (z.status !== 0 || !fs.existsSync(outZip)) {
+  if (!zipDirectory(stage, outZip)) {
     fs.rmSync(tmp, { recursive: true, force: true });
     return null;
   }
   return { zipPath: outZip, cleanupDir: tmp };
 }
 
+/**
+ * Ensure `data/downloads/guartrix-daemon-<version>.zip` exists (create from dist if needed).
+ */
+export function ensurePublishedDaemonZip(rootDir) {
+  const version = readProductVersion(rootDir);
+  const dir = path.join(rootDir, "data", "downloads");
+  const dest = path.join(dir, `guartrix-daemon-${version}.zip`);
+  if (fs.existsSync(dest) && fs.statSync(dest).size > 1000) {
+    return dest;
+  }
+
+  const ephemeral = buildEphemeralDaemonZip(rootDir);
+  if (!ephemeral?.zipPath) return findPublishedDaemonZip(rootDir);
+
+  fs.mkdirSync(dir, { recursive: true });
+  fs.copyFileSync(ephemeral.zipPath, dest);
+  if (ephemeral.cleanupDir) {
+    try {
+      fs.rmSync(ephemeral.cleanupDir, { recursive: true, force: true });
+    } catch {
+      /* ignore */
+    }
+  }
+  return dest;
+}
+
 /** Resolve a file path to stream for `/install-daemon-bundle.zip`. */
 export function resolveDaemonBundle(rootDir) {
-  const published = findPublishedDaemonZip(rootDir);
+  const published = ensurePublishedDaemonZip(rootDir);
   if (published) {
     return { zipPath: published, cleanupDir: null };
   }
-  return buildEphemeralDaemonZip(rootDir);
+  const ephemeral = buildEphemeralDaemonZip(rootDir);
+  return ephemeral;
 }

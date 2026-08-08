@@ -244,7 +244,7 @@ Requirements: Node **22+**, Docker with passwordless `sudo docker`, image `eclip
 2. Activate your license under **Admin → License** (if `LICENSE_KEY` was not passed). Until then the [free tier](licensing.md#free-tier-no-valid-license) applies: 1 node, 1 server, 10 GB disk.  
 3. Confirm **Admin → Status** shows the local node **ONLINE** ([Status overview](statusline.md)).  
 4. Optionally harden the host: `bash scripts/install-host-hardening.sh`  
-5. Add remote capacity: [Install nodes](install-nodes.md)
+5. Add remote capacity: [Install nodes](install-nodes.md) — the installer already published `/install-daemon-bundle.zip` for remote daemon installs.
 
 Systemd units (when enabled): `guartrix-api`, `guartrix-web`, `guartrix-daemon` — see [Operations](operations.md).
 

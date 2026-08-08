@@ -21,7 +21,8 @@
     "test:coverage": "vitest run --coverage",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
-    "fa:subset": "node scripts/fa-subset-icons.mjs"
+    "fa:subset": "node scripts/fa-subset-icons.mjs",
+    "bundle:daemon": "node scripts/bundle-daemon-for-nodes.mjs"
   },
   "engines": {
     "node": ">=22"
@@ -34,5 +35,5 @@
     "typescript": "^5.8.2",
     "vitest": "^3.2.7"
   },
-  "version": "1.4.7"
+  "version": "1.4.8"
 }
