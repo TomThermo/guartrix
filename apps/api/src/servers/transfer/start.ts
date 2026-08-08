@@ -28,8 +28,16 @@ export interface StartTransferInput {
  */
 export async function startServerTransfer(input: StartTransferInput): Promise<TransferJobStatus> {
   const existing = getTransferJobInMemory(input.serverId);
+  // Allow retry when a prior attempt never left Validate (BullMQ no-op / interrupted).
   if (existing && !existing.done) {
-    throw new Error("A transfer is already in progress for this server");
+    if (existing.stepIndex === 0 && existing.percent === 0) {
+      existing.done = true;
+      existing.ok = false;
+      existing.error = "Previous move never started — retrying.";
+      void persistTransferJob(existing);
+    } else {
+      throw new Error("A transfer is already in progress for this server");
+    }
   }
 
   const server = await prisma.server.findUnique({
@@ -44,6 +52,18 @@ export async function startServerTransfer(input: StartTransferInput): Promise<Tr
   if (!server.nodeId) throw new Error("Server has no source node");
   if (server.nodeId === input.toNodeId) {
     throw new Error("Server is already on that node");
+  }
+  // Stuck TRANSFERRING with no live job (API restart / BullMQ no-op) — unlock so the user can retry.
+  if (server.status === "TRANSFERRING") {
+    const live = getTransferJobInMemory(server.id);
+    if (!live || live.done || (live.stepIndex === 0 && live.percent === 0)) {
+      await setServerProgress(
+        server.id,
+        "STOPPED",
+        "Previous transfer interrupted — try moving the server again.",
+      );
+      server.status = "STOPPED";
+    }
   }
   if (server.status === "TRANSFERRING" || server.status === "CREATING") {
     throw new Error("Server is busy — wait for the current operation to finish");
@@ -136,22 +156,26 @@ export async function startServerTransfer(input: StartTransferInput): Promise<Tr
     name: server.name,
   };
 
-  const { enqueueTransfer } = await import("../../jobs/queue.js");
-  const queued = await enqueueTransfer(server.id, meta).catch(() => false);
-  if (queued) {
-    // BullMQ worker calls executeQueuedTransfer
-  } else {
-    void runTransfer(job, meta).catch((err) => {
-      logger.error({ err, serverId: server.id }, "transfer unexpected failure");
-    });
-  }
+  // Transfers keep progress in this process (Map + disk/redis snapshot). BullMQ cannot
+  // reconstruct that state across workers / restarts, and a fixed jobId silently no-ops
+  // on retry after a completed job — leaving the UI stuck on Validate 0%. Always run inline.
+  void runTransfer(job, meta).catch((err) => {
+    logger.error({ err, serverId: server.id }, "transfer unexpected failure");
+  });
 
   return getTransferJob(server.id)!;
 }
 
-/** Resume a transfer started via BullMQ. */
+/**
+ * Legacy BullMQ path (pre-1.4.10). Prefer inline `runTransfer` from `startServerTransfer`.
+ * Throws when in-memory job is missing/done so Redis jobs fail visibly instead of no-op completing.
+ */
 export async function executeQueuedTransfer(serverId: string, meta: TransferMeta): Promise<void> {
   const job = getTransferJobInMemory(serverId);
-  if (!job || job.done) return;
+  if (!job || job.done) {
+    throw new Error(
+      `Transfer job for ${serverId} is not runnable in this API process (missing or already finished)`,
+    );
+  }
   await runTransfer(job, meta);
 }

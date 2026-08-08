@@ -669,6 +669,7 @@ export const usingPanelArticles: WikiArticle[] = [
           "Destination pulls the world archive from the source daemon (peer deploy-from).",
           "MySQL prefers peer restore-from; panel SQL temp only if TRANSFER_ALLOW_PANEL_STAGING=1.",
           "Allocations, firewall state, and optional DNS-related behavior are rebound on the destination.",
+          "Transfer runs in the API process; after an API restart an incomplete move is left STOPPED so you can retry (not auto-resumed).",
         ],
       },
       {

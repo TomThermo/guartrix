@@ -85,6 +85,7 @@ function jobFromDisk(raw: unknown): TransferJob | null {
 
 /** Restore incomplete transfer UI state after an API restart (no auto-resume). */
 export async function hydrateTransferJobsFromDisk(): Promise<void> {
+  const interruptedIds = new Set<string>();
   const ingest = (raw: unknown) => {
     const job = jobFromDisk(raw);
     if (!job || jobs.has(job.serverId)) return;
@@ -93,6 +94,7 @@ export async function hydrateTransferJobsFromDisk(): Promise<void> {
         job.error ?? "API restarted during transfer — progress restored; re-run move if needed.";
       job.done = true;
       job.ok = false;
+      interruptedIds.add(job.serverId);
     }
     jobs.set(job.serverId, job);
   };
@@ -116,22 +118,45 @@ export async function hydrateTransferJobsFromDisk(): Promise<void> {
     // Redis optional
   }
 
-  let names: string[] = [];
   try {
-    names = await fs.readdir(transferJobDir());
-  } catch {
-    return;
-  }
-  for (const name of names) {
-    if (!name.endsWith(".json")) continue;
-    try {
-      const raw = JSON.parse(
-        await fs.readFile(path.join(transferJobDir(), name), "utf8"),
-      ) as unknown;
-      ingest(raw);
-    } catch {
-      // ignore corrupt files
+    const names = await fs.readdir(transferJobDir());
+    for (const name of names) {
+      if (!name.endsWith(".json")) continue;
+      try {
+        const raw = JSON.parse(
+          await fs.readFile(path.join(transferJobDir(), name), "utf8"),
+        ) as unknown;
+        ingest(raw);
+      } catch {
+        // ignore corrupt files
+      }
     }
+  } catch {
+    // no transfer dir yet
+  }
+
+  // Unlock servers left TRANSFERRING after restart (including jobs that never left Validate).
+  try {
+    const { prisma } = await import("../db.js");
+    const stuck = await prisma.server.findMany({
+      where: { status: "TRANSFERRING" },
+      select: { id: true },
+    });
+    for (const row of stuck) {
+      interruptedIds.add(row.id);
+    }
+    if (interruptedIds.size > 0) {
+      await prisma.server.updateMany({
+        where: { id: { in: [...interruptedIds] }, status: "TRANSFERRING" },
+        data: {
+          status: "STOPPED",
+          errorMessage:
+            "Transfer interrupted (API restart) — server left stopped; try moving again if needed.",
+        },
+      });
+    }
+  } catch {
+    // DB optional during early boot failures
   }
 }
 

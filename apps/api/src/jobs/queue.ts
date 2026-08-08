@@ -172,17 +172,20 @@ export async function enqueueJob(
   return true;
 }
 
-/** Enqueue a transfer; returns false if caller should run inline. */
+/**
+ * @deprecated Node transfers run inline (in-memory job state). Kept for older callers /
+ * leftover workers — always returns false so callers fall back to `runTransfer`.
+ */
 export async function enqueueTransfer(
-  serverId: string,
-  meta: {
+  _serverId: string,
+  _meta: {
     oldPort: number;
     newPort: number;
     subdomain: string | null;
     name: string;
   },
 ): Promise<boolean> {
-  return enqueueJob("transfers", "transfer", { serverId, meta }, { jobId: `transfer-${serverId}` });
+  return false;
 }
 
 export async function getJobsStatus(): Promise<JobsStatus> {

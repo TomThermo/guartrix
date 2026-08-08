@@ -3,6 +3,11 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.10] — 2026-08-08
+
+### Fixed
+- Node transfer stuck on Validate 0% (`Transfer: starting…`): run moves inline in the API instead of BullMQ (in-memory job + fixed jobId silent no-op). Unlock stuck `TRANSFERRING` servers on restart / retry.
+
 ## [1.4.9] — 2026-08-08
 
 ### Fixed

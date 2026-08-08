@@ -57,4 +57,9 @@ MySQL prefers the same peer path
 (`POST /mysql/databases/restore-from` pulling source `/mysql/databases/dump`).
 Activity log records `server.transfer`.
 
+Transfers run **in the API process** (not via BullMQ). Progress is in-memory with
+a disk/Redis snapshot for UI restore after restart — incomplete moves are **not**
+auto-resumed; the server is left `STOPPED` so you can retry. A move stuck on
+Validate at 0% can be retried from the Move dialog after refreshing.
+
 See also [Install nodes](install-nodes.md) and [Architecture](architecture.md).
