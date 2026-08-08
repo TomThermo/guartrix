@@ -15,6 +15,18 @@ Pick an OS, install dependencies, download the installer, then run it.
 
 Use a **fresh x86_64 VPS** with a public IPv4 address. Avoid OpenVZ if Docker is restricted.
 
+**RAM:** prefer **8 GiB+**. On a **4 GiB** host the panel can run, but `npm run build` (Vite + Monaco) often needs a **2–4 GiB swap file** or the Node process hits *JavaScript heap out of memory*. Create swap before building:
+
+```bash
+sudo fallocate -l 4G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+```
+
+Optional: stop panel units while compiling (`sudo systemctl stop guartrix-api guartrix-web guartrix-daemon`) so more RAM is free, then start again after `bash scripts/start.sh` / `bash build/start.sh`.
+
 ## Dependencies
 
 The installer installs these for you when missing. To prepare the host yourself:

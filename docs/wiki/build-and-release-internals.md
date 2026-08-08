@@ -5,6 +5,17 @@
 
 This page documents the maintainer-facing build, staging, and packaging pipeline behind the simpler [Release builds](release-builds.md) guide.
 
+## Web build memory (Vite + Monaco)
+
+The file editor ships Monaco from npm (no CDN). Rollup walks a large ESM graph; on hosts with **≈4 GiB RAM and no swap**, Node often aborts with *JavaScript heap out of memory* mid-`vite build`.
+
+Mitigations already in tree:
+
+- Web build runs Vite with `--max-old-space-size=3072`
+- `apps/web/vite.config.ts` sets `build.rollupOptions.maxParallelFileOps: 2` and skips compressed-size reporting
+
+Operator hosts that still OOM: add **2–4 GiB swap** (see [Install the panel](install-panel.md)), stop panel services during compile, then rebuild.
+
 ## Build layers
 
 Guartrix has three practical build outputs:

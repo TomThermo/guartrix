@@ -1,12 +1,12 @@
 {
   "name": "@msm/web",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
     "prebuild": "npm run fa:subset --prefix ../..",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && node ./scripts/vite-build.mjs",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview"
   },

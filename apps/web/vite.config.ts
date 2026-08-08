@@ -164,7 +164,11 @@ export default defineConfig(({ mode }) => {
       format: "es",
     },
     build: {
+      // Monaco’s ESM graph is huge; default parallel file ops OOMs ~4 GiB hosts.
+      reportCompressedSize: false,
+      sourcemap: false,
       rollupOptions: {
+        maxParallelFileOps: 2,
         output: {
           manualChunks(id) {
             if (!id.includes("node_modules")) return;

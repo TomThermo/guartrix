@@ -83,7 +83,7 @@ The installer targets **apt-based** Linux (**Docker**, **Node.js 22**, panel **M
 | Debian 12 | Compatible in practice; not the primary test target |
 | Other (RHEL, Fedora, Arch, …) | Not supported by the installer |
 
-Use a clean VPS with a public IPv4 address (x86_64).
+Use a clean VPS with a public IPv4 address (x86_64). Prefer **8 GiB+ RAM**; on **4 GiB** add swap before `npm run build` (Vite + Monaco) — see [Install the panel](docs/wiki/install-panel.md).
 
 ---
 
