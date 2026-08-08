@@ -92,7 +92,7 @@ Never commit rotated secrets. Prefer `ACTIVITY_WEBHOOK_URL` so failed logins and
 Re-check after upgrades:
 
 - File Manager + SFTP resolve paths under the server jail; symlinks and `guartrix-*.json` stay blocked.
-- Zip/tar extract rejects symlink members. Deploy extract uses GNU `tar` long options when available; on BusyBox/other `tar` it falls back to portable flags (member paths are still pre-validated).
+- Zip/tar extract rejects symlink members. Deploy extract uses portable `tar` flags only (no GNU-only long options) so BusyBox nodes work; member paths are still pre-validated.
 - Cookie mutating routes require matching Origin/Referer **and** session `x-csrf-token` when authenticated (Bearer and `/api/public/*` exempt). Missing Origin **and** Referer is rejected unless `CSRF_ALLOW_MISSING_ORIGIN=1`.
 - Public invite peek returns a masked `emailHint` only; full invite email requires a signed-in session.
 - Mollie webhook is rate-limited and only syncs `tr_*` ids that exist in the local Payment table.

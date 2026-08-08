@@ -13,30 +13,14 @@ export const SAFE_EXTRACT_MAX_BYTES = 8 * 1024 * 1024 * 1024; // 8 GiB
 /** Max number of archive members. */
 export const SAFE_EXTRACT_MAX_FILES = 100_000;
 
-/** Cached: does `tar` accept GNU long options used for safer extract? */
-let gnuTarLongOpts: boolean | undefined;
-
-async function tarSupportsGnuLongOpts(): Promise<boolean> {
-  if (gnuTarLongOpts !== undefined) return gnuTarLongOpts;
-  try {
-    const { stdout, stderr } = await execFileAsync("tar", ["--version"], {
-      maxBuffer: 1024 * 1024,
-    });
-    gnuTarLongOpts = /GNU\s+tar/i.test(`${stdout}\n${stderr}`);
-  } catch {
-    // BusyBox / other: no GNU long options.
-    gnuTarLongOpts = false;
-  }
-  return gnuTarLongOpts;
-}
-
-/** Build portable `tar -x` argv; skip GNU-only flags on BusyBox/etc. */
+/**
+ * Build portable `tar -x` argv.
+ * Never use GNU-only long options (`--no-absolute-filenames`, etc.): BusyBox/other
+ * `tar` rejects them, and member paths are already validated before extract.
+ */
 export async function tarExtractArgs(archivePath: string, destDir: string): Promise<string[]> {
   const lower = archivePath.toLowerCase();
   const args: string[] = [];
-  if (await tarSupportsGnuLongOpts()) {
-    args.push("--no-absolute-filenames", "--no-same-owner", "--no-same-permissions");
-  }
   if (lower.endsWith(".tar.gz") || lower.endsWith(".tgz")) {
     args.push("-z");
   } else if (lower.endsWith(".tar.bz2") || lower.endsWith(".tbz2")) {
@@ -225,7 +209,7 @@ export async function safeExtractArchive(archivePath: string, destDir: string): 
         }
       }
     } else {
-      // Member paths already validated; GNU long-opts when available (BusyBox lacks them).
+      // Member paths already validated; portable tar flags only (BusyBox-safe).
       const args = await tarExtractArgs(archivePath, tmp);
       await execFileAsync("tar", args, { maxBuffer: 32 * 1024 * 1024 });
     }

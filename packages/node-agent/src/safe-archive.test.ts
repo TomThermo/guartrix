@@ -2,19 +2,14 @@ import { describe, expect, it } from "vitest";
 import { tarExtractArgs } from "./safe-archive.js";
 
 describe("tarExtractArgs", () => {
-  it("includes -z for .tar.gz and always -x -f -C", async () => {
+  it("uses portable flags only (no GNU long options)", async () => {
     const args = await tarExtractArgs("/tmp/demo.tar.gz", "/tmp/out");
-    expect(args).toContain("-z");
-    expect(args).toContain("-x");
-    expect(args).toContain("-f");
-    expect(args).toContain("/tmp/demo.tar.gz");
-    expect(args).toContain("-C");
-    expect(args).toContain("/tmp/out");
+    expect(args).toEqual(["-z", "-x", "-f", "/tmp/demo.tar.gz", "-C", "/tmp/out"]);
+    expect(args.some((a) => a.startsWith("--"))).toBe(false);
   });
 
   it("omits -z for plain .tar", async () => {
     const args = await tarExtractArgs("/tmp/demo.tar", "/tmp/out");
-    expect(args).not.toContain("-z");
-    expect(args.indexOf("-x")).toBeGreaterThanOrEqual(0);
+    expect(args).toEqual(["-x", "-f", "/tmp/demo.tar", "-C", "/tmp/out"]);
   });
 });

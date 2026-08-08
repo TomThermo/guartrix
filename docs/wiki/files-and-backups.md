@@ -43,7 +43,7 @@ All file access is jailed to the server directory on the node. Important protect
 
 - symlinks are rejected or not followed
 - archives are validated entry by entry before extraction
-- tar extract works on BusyBox nodes (no GNU-only `--no-absolute-filenames` etc.) as well as GNU tar
+- tar extract uses portable flags only (works on BusyBox and GNU tar; paths pre-validated)
 - internal `guartrix-*` control files are blocked from normal user access
 - upload and write paths are checked against disk quotas
 

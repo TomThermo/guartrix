@@ -3,6 +3,11 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.13] — 2026-08-08
+
+### Fixed
+- Always use portable `tar` extract flags only (`-z`/`-x`/`-f`/`-C`, etc.) — never GNU long options such as `--no-absolute-filenames` — so BusyBox/minimal `tar` works on all nodes; archive member paths remain pre-validated in Node.
+
 ## [1.4.12] — 2026-08-08
 
 ### Fixed
