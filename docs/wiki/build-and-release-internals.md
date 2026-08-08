@@ -7,9 +7,11 @@ This page documents the maintainer-facing build, staging, and packaging pipeline
 
 ## Web build memory (Vite + Monaco)
 
-The file editor ships Monaco from npm (no CDN). Rollup walks a large ESM graph; on hosts with **≈4 GiB RAM and no swap**, Node often aborts with *JavaScript heap out of memory* mid-`vite build`.
+The file editor loads Monaco from self-hosted AMD assets under `/monaco/vs` (copied at
+build time from `monaco-editor/min`, with unused TS/CSS/HTML workers pruned). The SPA
+no longer Rollup-bundles the ~4.5 MiB Monaco ESM graph, which also lowers peak build RAM.
 
-Mitigations already in tree:
+Mitigations still in tree:
 
 - Web build runs Vite with `--max-old-space-size=3072`
 - `apps/web/vite.config.ts` sets `build.rollupOptions.maxParallelFileOps: 2` and skips compressed-size reporting

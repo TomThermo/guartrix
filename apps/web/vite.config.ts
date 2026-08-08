@@ -76,6 +76,59 @@ function faSubsetPlugin(): Plugin {
   };
 }
 
+/**
+ * Copy Monaco AMD build into public/ so the editor loads without Vite bundling
+ * the ESM graph (~4.5 MiB chunk + multi‑MiB workers). Drop unused language
+ * services (TS / CSS / HTML) — panel file manager mostly edits json/yaml/props.
+ */
+function monacoAssetsPlugin(): Plugin {
+  const src = path.join(rootDir, "node_modules/monaco-editor/min/vs");
+  const dest = path.join(webDir, "public/monaco/vs");
+
+  function syncMonacoAssets(): void {
+    if (!fs.existsSync(src)) {
+      console.warn("[vite] monaco-editor min/vs missing — skip public/monaco copy");
+      return;
+    }
+    fs.rmSync(dest, { recursive: true, force: true });
+    fs.mkdirSync(path.dirname(dest), { recursive: true });
+    fs.cpSync(src, dest, { recursive: true });
+    for (const lang of ["typescript", "css", "html"]) {
+      fs.rmSync(path.join(dest, "language", lang), { recursive: true, force: true });
+    }
+    // Worker bundles live under assets/ — drop unused language services.
+    const assetsDir = path.join(dest, "assets");
+    if (fs.existsSync(assetsDir)) {
+      for (const name of fs.readdirSync(assetsDir)) {
+        if (/^(ts|css|html)\.worker/i.test(name)) {
+          fs.rmSync(path.join(assetsDir, name), { force: true });
+        }
+      }
+    }
+    // Drop translated NLS packs (English defaults remain in core).
+    fs.rmSync(path.join(dest, "nls"), { recursive: true, force: true });
+    // Optional high-contrast helper (~1.3 MiB) unused by the panel editor.
+    for (const name of fs.readdirSync(dest)) {
+      if (name.startsWith("toggleHighContrast")) {
+        fs.rmSync(path.join(dest, name), { force: true });
+      }
+      if (/^(tsMode|typescript-|cssMode|css-|htmlMode|html-)/i.test(name)) {
+        fs.rmSync(path.join(dest, name), { force: true });
+      }
+    }
+  }
+
+  return {
+    name: "monaco-assets",
+    buildStart() {
+      syncMonacoAssets();
+    },
+    configureServer() {
+      syncMonacoAssets();
+    },
+  };
+}
+
 function readApiPort(): string {
   if (process.env.VITE_API_PORT) return process.env.VITE_API_PORT;
   if (process.env.API_PORT) return process.env.API_PORT;
@@ -152,19 +205,13 @@ export default defineConfig(({ mode }) => {
   const appVersion = readProductVersion();
 
   return {
-    plugins: [react(), backupTransferProxyPlugin(), faSubsetPlugin()],
+    plugins: [react(), backupTransferProxyPlugin(), faSubsetPlugin(), monacoAssetsPlugin()],
     define: {
       "import.meta.env.VITE_API_PORT": JSON.stringify(apiPort),
       "import.meta.env.VITE_APP_VERSION": JSON.stringify(appVersion),
     },
-    optimizeDeps: {
-      include: ["monaco-editor", "@monaco-editor/react"],
-    },
-    worker: {
-      format: "es",
-    },
     build: {
-      // Monaco’s ESM graph is huge; default parallel file ops OOMs ~4 GiB hosts.
+      // Monaco is loaded via AMD from /monaco/vs (not Rollup-bundled).
       reportCompressedSize: false,
       sourcemap: false,
       rollupOptions: {
@@ -172,8 +219,8 @@ export default defineConfig(({ mode }) => {
         output: {
           manualChunks(id) {
             if (!id.includes("node_modules")) return;
-            if (id.includes("monaco-editor") || id.includes("@monaco-editor")) {
-              return "monaco";
+            if (id.includes("@monaco-editor")) {
+              return "monaco-react";
             }
             if (id.includes("react-bootstrap") || id.includes("/bootstrap/")) {
               return "bootstrap";

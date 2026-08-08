@@ -30,18 +30,13 @@ export function monacoLanguageForPath(path: string): string {
     case "xml":
     case "xsd":
       return "xml";
-    case "html":
-    case "htm":
-      return "html";
-    case "css":
-      return "css";
     case "js":
     case "cjs":
     case "mjs":
-      return "javascript";
     case "ts":
     case "tsx":
-      return "typescript";
+      // Basic highlighting only — full TS language service is not shipped (size).
+      return "javascript";
     case "md":
     case "markdown":
       return "markdown";
@@ -58,6 +53,11 @@ export function monacoLanguageForPath(path: string): string {
       return "sql";
     case "py":
       return "python";
+    case "html":
+    case "htm":
+    case "css":
+      // No dedicated HTML/CSS language workers in the trimmed Monaco assets.
+      return "plaintext";
     default:
       return "plaintext";
   }

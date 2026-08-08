@@ -1,33 +1,19 @@
 import { loader } from "@monaco-editor/react";
-import * as monaco from "monaco-editor";
-import editorWorker from "monaco-editor/editor/editor.worker?worker";
-import jsonWorker from "monaco-editor/language/json/json.worker?worker";
-import cssWorker from "monaco-editor/language/css/css.worker?worker";
-import htmlWorker from "monaco-editor/language/html/html.worker?worker";
-import tsWorker from "monaco-editor/language/typescript/ts.worker?worker";
 
 let configured = false;
 
-/** Point Monaco at Vite workers and the local npm package (no CDN). */
+/**
+ * Load Monaco via AMD from self-hosted `/monaco/vs` (copied at Vite build/dev start).
+ * Avoids bundling the ~4–5 MiB ESM graph into the SPA chunk.
+ */
 export function configureMonacoLoader(): void {
   if (configured || typeof window === "undefined") return;
   configured = true;
 
-  self.MonacoEnvironment = {
-    getWorker(_workerId: string, label: string) {
-      if (label === "json") return new jsonWorker();
-      if (label === "css" || label === "scss" || label === "less") {
-        return new cssWorker();
-      }
-      if (label === "html" || label === "handlebars" || label === "razor") {
-        return new htmlWorker();
-      }
-      if (label === "typescript" || label === "javascript") {
-        return new tsWorker();
-      }
-      return new editorWorker();
+  const base = (import.meta.env.BASE_URL || "/").replace(/\/?$/, "/");
+  loader.config({
+    paths: {
+      vs: `${base}monaco/vs`,
     },
-  };
-
-  loader.config({ monaco });
+  });
 }
