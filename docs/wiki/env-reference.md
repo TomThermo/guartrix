@@ -112,7 +112,7 @@ Installer: `--mysql-docker` (default) or `--mysql-external` / `--database-url`.
 | `SKIP_LOCAL_DAEMON` | Panel: `1` = no local daemon / local node (panel-only install; use remote nodes) |
 | `LICENSE_KEY` | Panel license key |
 | `LICENSE_INSTALL_ID` | Optional stable install id (else auto-file in `data/`) |
-| `LICENSE_VERIFY_PUBLIC_KEY` | Ed25519 public key (PEM) to verify signed validate responses; else `data/licenses/signing-public.pem` |
+| `LICENSE_VERIFY_PUBLIC_KEY` | Optional Ed25519 public PEM override; else `data/licenses/signing-public.pem` (auto-seeded from baked-in Guartrix key if missing) |
 | `LICENSE_ALLOW_UNSIGNED` | `1` = accept unsigned validate JSON (insecure; migration only) |
 | `LICENSE_UNREACHABLE_GRACE_MS` | Soft-valid window if license host unreachable (default `43200000` = 12h); also used by daemons for ticket grace |
 | `LICENSE_VALIDATE_INTERVAL_MS` | How often the panel calls `/v1/validate` in the background (default `600000` = 10m) |

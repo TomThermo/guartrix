@@ -3,7 +3,12 @@
  */
 import fs from "node:fs";
 import path from "node:path";
-import { verifyLicenseClaims, type LicenseSignedClaims } from "@msm/shared/license-signing";
+import {
+  GUARTRIX_LICENSE_VERIFY_PUBLIC_KEY_PEM,
+  resolveLicenseVerifyPublicKeyPem,
+  verifyLicenseClaims,
+  type LicenseSignedClaims,
+} from "@msm/shared/license-signing";
 import { freeTierCaps, type DaemonLicenseTicket, type EffectiveLicenseCaps } from "@msm/shared";
 import { daemonConfig } from "./config.js";
 
@@ -20,19 +25,29 @@ const GRACE_MS = Math.max(
   Number(process.env.LICENSE_UNREACHABLE_GRACE_MS ?? 12 * 60 * 60 * 1000),
 );
 
-function publicKeyPem(): string {
-  const fromEnv = process.env.LICENSE_VERIFY_PUBLIC_KEY?.trim();
-  if (fromEnv) {
-    return fromEnv.includes("BEGIN") ? fromEnv : Buffer.from(fromEnv, "base64").toString("utf8");
-  }
-  const file =
+function publicKeyFilePath(): string {
+  return (
     process.env.LICENSE_VERIFY_PUBLIC_KEY_FILE?.trim() ||
-    path.join(daemonConfig.rootDir, "data", "licenses", "signing-public.pem");
+    path.join(daemonConfig.rootDir, "data", "licenses", "signing-public.pem")
+  );
+}
+
+function publicKeyPem(): string {
+  const fromEnv = process.env.LICENSE_VERIFY_PUBLIC_KEY?.trim() || null;
+  const file = publicKeyFilePath();
+  let filePem: string | null = null;
   try {
-    return fs.readFileSync(file, "utf8");
+    filePem = fs.readFileSync(file, "utf8");
   } catch {
-    return "";
+    try {
+      fs.mkdirSync(path.dirname(file), { recursive: true });
+      fs.writeFileSync(file, GUARTRIX_LICENSE_VERIFY_PUBLIC_KEY_PEM, { mode: 0o644 });
+      filePem = GUARTRIX_LICENSE_VERIFY_PUBLIC_KEY_PEM;
+    } catch {
+      filePem = null;
+    }
   }
+  return resolveLicenseVerifyPublicKeyPem({ envPem: fromEnv, filePem });
 }
 
 function isFreshLicensed(claims: LicenseSignedClaims, nowSec: number): boolean {
@@ -69,7 +84,7 @@ export function acceptLicenseTicket(raw: unknown): {
   if (!pub) {
     return {
       ok: false,
-      error: "signing-public.pem (or LICENSE_VERIFY_PUBLIC_KEY) missing on daemon",
+      error: "license verify public key unavailable on daemon",
     };
   }
   if (!verifyLicenseClaims(pub, claims, signature)) {

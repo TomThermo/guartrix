@@ -1,4 +1,3 @@
-import fs from "node:fs/promises";
 import { normalizeLicenseFeatures } from "@msm/shared";
 import type { LicenseSignedClaims } from "@msm/shared/license-signing";
 import { hashLicenseKey, verifyLicenseClaims } from "@msm/shared/license-signing";
@@ -20,7 +19,7 @@ import {
   getLicenseServerUrl,
   lastLicenseOkAt,
   LICENSE_CACHE_MS,
-  LICENSE_PUBLIC_KEY_FILE,
+  ensureLicenseVerifyPublicKeyPem,
   markLicenseOk,
   maskLicenseKey,
   registerLicenseKeyClearedHandler,
@@ -49,15 +48,8 @@ let inFlight: Promise<LicenseState> | null = null;
 
 async function loadVerifyPublicKey(): Promise<string | null> {
   if (cachedPublicKeyPem !== undefined) return cachedPublicKeyPem;
-  const fromEnv = process.env.LICENSE_VERIFY_PUBLIC_KEY?.trim();
-  if (fromEnv) {
-    cachedPublicKeyPem = fromEnv.includes("BEGIN")
-      ? fromEnv
-      : `-----BEGIN PUBLIC KEY-----\n${fromEnv}\n-----END PUBLIC KEY-----\n`;
-    return cachedPublicKeyPem;
-  }
   try {
-    cachedPublicKeyPem = await fs.readFile(LICENSE_PUBLIC_KEY_FILE(), "utf8");
+    cachedPublicKeyPem = await ensureLicenseVerifyPublicKeyPem();
     return cachedPublicKeyPem;
   } catch {
     cachedPublicKeyPem = null;
@@ -274,7 +266,7 @@ async function doValidateLicense(): Promise<LicenseState> {
       if (!allowUnsigned()) {
         let message: string;
         if (!pub) {
-          message = "LICENSE_VERIFY_PUBLIC_KEY (or data/licenses/signing-public.pem) is required";
+          message = "LICENSE_VERIFY_PUBLIC_KEY could not be loaded (unexpected)";
         } else if (looksLikeHtml || res.status === 403) {
           message = `License server at ${base} returned HTTP ${res.status} HTML (often a Cloudflare bot challenge) instead of a signed JSON validate response — ensure the license hostname is DNS-only with a public TLS cert, or disable Bot Fight / WAF challenge for that host`;
         } else if (!data.claims || !data.signature) {

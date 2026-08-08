@@ -1,6 +1,10 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { nanoid } from "nanoid";
+import {
+  GUARTRIX_LICENSE_VERIFY_PUBLIC_KEY_PEM,
+  resolveLicenseVerifyPublicKeyPem,
+} from "@msm/shared/license-signing";
 import { config } from "../config.js";
 
 export type LicensePanelStatus =
@@ -51,6 +55,28 @@ const SERVER_URL_FILE = () => path.join(config.dataDir, "license-server-url");
 const LAST_OK_FILE = () => path.join(config.dataDir, "license-last-ok");
 export const LICENSE_PUBLIC_KEY_FILE = () =>
   path.join(config.dataDir, "licenses", "signing-public.pem");
+
+/**
+ * Ensure `data/licenses/signing-public.pem` exists (writes the baked-in Guartrix
+ * public key when missing). Returns PEM from env, file, or default.
+ */
+export async function ensureLicenseVerifyPublicKeyPem(): Promise<string> {
+  const fromEnv = process.env.LICENSE_VERIFY_PUBLIC_KEY?.trim() || null;
+  let filePem: string | null = null;
+  const file = LICENSE_PUBLIC_KEY_FILE();
+  try {
+    filePem = await fs.readFile(file, "utf8");
+  } catch {
+    try {
+      await fs.mkdir(path.dirname(file), { recursive: true });
+      await fs.writeFile(file, GUARTRIX_LICENSE_VERIFY_PUBLIC_KEY_PEM, { mode: 0o644 });
+      filePem = GUARTRIX_LICENSE_VERIFY_PUBLIC_KEY_PEM;
+    } catch {
+      filePem = null;
+    }
+  }
+  return resolveLicenseVerifyPublicKeyPem({ envPem: fromEnv, filePem });
+}
 
 let cached: LicenseState | null = null;
 let cachedAt = 0;

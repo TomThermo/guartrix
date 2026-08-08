@@ -107,3 +107,9 @@ export function safeEqualString(a: string, b: string): boolean {
   }
   return timingSafeEqual(ba, bb);
 }
+
+export {
+  GUARTRIX_LICENSE_VERIFY_PUBLIC_KEY_PEM,
+  normalizeLicenseVerifyPublicKeyPem,
+  resolveLicenseVerifyPublicKeyPem,
+} from "./license-verify-public-key.js";

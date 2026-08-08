@@ -40,6 +40,7 @@ docker-compose.dev.yml
 license.env
 # Live license config is data/license.env (under data/, already ignored)
 *.pem
+!packages/shared/license-signing-public.pem
 
 # Operator-only license issuer — NEVER in this public panel repo.
 # Lives as a sibling checkout (e.g. ../guartrix-license-server), not under apps/.
