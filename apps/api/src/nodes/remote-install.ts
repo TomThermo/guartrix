@@ -219,9 +219,9 @@ export function runRemoteDaemonInstall(input: RemoteInstallInput): Promise<Remot
         stdout,
         stderr,
         error: hostKeyNeedsTrust
-          ? `SSH host key not trusted yet. Fingerprint: ${observedFp}. Confirm it matches the VPS (ssh-keyscan / ssh) and retry with trust enabled.`
+          ? `Confirm SSH host key fingerprint ${observedFp}, then click “Trust fingerprint & install”.`
           : hostKeyMismatch
-            ? `SSH host key mismatch. Presented: ${observedFp}. Stored key no longer matches — verify the VPS was reinstalled, then retry with “Replace host key”.`
+            ? `SSH host key changed (now ${observedFp}). Only continue after verifying the VPS was rebuilt, then click “Replace key & install”.`
             : msg,
       });
     });
@@ -283,7 +283,8 @@ export function runRemoteDaemonInstall(input: RemoteInstallInput): Promise<Remot
         hostKeyNeedsTrust = true;
         emit?.({
           type: "status",
-          message: "Host key not yet trusted — confirm fingerprint, then retry with Trust host key",
+          message:
+            "Host key shown above — confirm it matches this VPS, then click Trust fingerprint & install",
         });
         return false;
       },

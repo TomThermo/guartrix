@@ -115,9 +115,9 @@ containers after changing the mode. Details:
 
 The Add-node wizard verifies the VPS SSH host key:
 
-1. First connection presents the fingerprint and **rejects** until the admin confirms **Trust host key**.
+1. First connection presents the fingerprint and **pauses** until the admin confirms **Trust fingerprint & install** (expected on first contact; not a hard failure).
 2. The fingerprint is stored on `Node.sshHostKeyFingerprint`.
-3. Later installs must match; after a VPS rebuild, use **Replace host key**.
+3. Later installs must match; after a VPS rebuild, use **Replace key & install**.
 4. Remote install also requires the admin’s **panel password** (step-up) so a stolen cookie session alone cannot root a VPS.
 
 `install-daemon.sh` prefers opening the daemon port **only from the panel IP** (resolved from `PANEL_URL`) when ufw is available.

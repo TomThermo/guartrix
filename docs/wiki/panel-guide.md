@@ -124,7 +124,7 @@ rename, **edit daemon URL** (pencil next to `http://…:8081`), Test connection,
 
 ### Add node wizard
 
-**Add node** → howto → details → SSH install with **live log** → confirm host-key fingerprint → done. Credentials are used once and not stored; the SSH host-key fingerprint is stored for MITM protection.
+**Add node** → howto → details → SSH install with **live log** → confirm host-key fingerprint (**Trust fingerprint & install**) → done. Credentials are used once and not stored; the SSH host-key fingerprint is stored for MITM protection.
 
 ![Add node modal](assets/06-add-node-modal.png)
 

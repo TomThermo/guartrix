@@ -145,9 +145,16 @@ export function AddNodeModal({ existingNode, onClose, onChanged }: Props) {
     }
   }
 
-  async function onRemoteInstall(e: FormEvent) {
+  async function onRemoteInstall(
+    e: FormEvent,
+    overrides?: { trustHostKey?: boolean; replaceHostKey?: boolean },
+  ) {
     e.preventDefault();
     if (!install) return;
+    const useTrust = overrides?.trustHostKey ?? trustHostKey;
+    const useReplace = overrides?.replaceHostKey ?? replaceHostKey;
+    if (overrides?.trustHostKey) setTrustHostKey(true);
+    if (overrides?.replaceHostKey) setReplaceHostKey(true);
     abortRef.current?.abort();
     const ac = new AbortController();
     abortRef.current = ac;
@@ -167,8 +174,10 @@ export function AddNodeModal({ existingNode, onClose, onChanged }: Props) {
           sshPassword: sshPassword || undefined,
           sshPrivateKey: sshKey.trim() || undefined,
           panelPassword,
-          trustHostKey: trustHostKey || undefined,
-          replaceHostKey: replaceHostKey || undefined,
+          trustHostKey: useTrust || undefined,
+          replaceHostKey: useReplace || undefined,
+          expectedHostKeyFingerprint:
+            useTrust || useReplace ? (hostKeyFingerprint ?? undefined) : undefined,
         },
         {
           signal: ac.signal,
@@ -225,8 +234,28 @@ export function AddNodeModal({ existingNode, onClose, onChanged }: Props) {
       if (keyed.hostKeyFingerprint) {
         setHostKeyFingerprint(keyed.hostKeyFingerprint);
       }
-      if (keyed.hostKeyNeedsTrust) setHostKeyNeedsTrust(true);
-      if (keyed.hostKeyMismatch) setHostKeyMismatch(true);
+      if (keyed.hostKeyNeedsTrust) {
+        setHostKeyNeedsTrust(true);
+        setTrustHostKey(true);
+        setError(null);
+        appendLog(
+          `\n▸ ${t("admin.sshHostKeyNeedsTrustLog", {
+            fingerprint: keyed.hostKeyFingerprint ?? "?",
+          })}\n`,
+        );
+        return;
+      }
+      if (keyed.hostKeyMismatch) {
+        setHostKeyMismatch(true);
+        setReplaceHostKey(false);
+        setError(null);
+        appendLog(
+          `\n▸ ${t("admin.sshHostKeyMismatchLog", {
+            fingerprint: keyed.hostKeyFingerprint ?? "?",
+          })}\n`,
+        );
+        return;
+      }
       const message = err instanceof Error ? err.message : String(err);
       setError(message);
       appendLog(`\n✖ ${message}\n`);
@@ -314,6 +343,8 @@ export function AddNodeModal({ existingNode, onClose, onChanged }: Props) {
             log={log}
             logRef={logRef}
             onSubmit={(e) => void onRemoteInstall(e)}
+            onTrustAndContinue={(e) => void onRemoteInstall(e, { trustHostKey: true })}
+            onReplaceAndContinue={(e) => void onRemoteInstall(e, { replaceHostKey: true })}
           />
         )}
 
