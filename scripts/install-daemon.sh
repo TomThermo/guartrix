@@ -121,8 +121,12 @@ else
   exit 1
 fi
 
-mkdir -p "$DATA_DIR/servers" "$DATA_DIR/run" "$DATA_DIR/backups"
+mkdir -p "$DATA_DIR/servers" "$DATA_DIR/run" "$DATA_DIR/backups" "$DATA_DIR/licenses"
 chmod 700 "$DATA_DIR"
+
+# shellcheck source=./lib-license-public-key.sh
+source "${ROOT}/scripts/lib-license-public-key.sh"
+guartrix_ensure_license_signing_public_pem "$ROOT" "$DATA_DIR"
 
 ENV_FILE="$DATA_DIR/daemon.env"
 MYSQL_PASS="$(openssl rand -hex 24)"

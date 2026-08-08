@@ -44,6 +44,14 @@ load_env_file() {
 load_env_file "$ROOT/.env"
 load_env_file "$ROOT/data/daemon.env"
 
+# Ensure license verify PEM exists even on localhost git checkouts (idempotent).
+# shellcheck source=./lib-license-public-key.sh
+if [[ -f "$ROOT/scripts/lib-license-public-key.sh" ]]; then
+  # shellcheck disable=SC1091
+  source "$ROOT/scripts/lib-license-public-key.sh"
+  guartrix_ensure_license_signing_public_pem "$ROOT" "${DATA_DIR:-$ROOT/data}" || true
+fi
+
 API_PORT="${API_PORT:-3001}"
 DAEMON_PORT="${DAEMON_PORT:-8081}"
 DAEMON_HOST="${DAEMON_HOST:-127.0.0.1}"

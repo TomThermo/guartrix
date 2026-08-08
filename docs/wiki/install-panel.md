@@ -27,6 +27,8 @@ echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
 
 Optional: stop panel units while compiling (`sudo systemctl stop guartrix-api guartrix-web guartrix-daemon`) so more RAM is free, then start again after `bash scripts/start.sh` / `bash build/start.sh`.
 
+The installer always seeds `data/licenses/signing-public.pem` (license verify public key) — including **localhost** / LAN installs — so **Admin → License** works without copying keys by hand.
+
 ## Dependencies
 
 The installer installs these for you when missing. To prepare the host yourself:

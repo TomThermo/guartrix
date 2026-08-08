@@ -809,8 +809,13 @@ else
 fi
 
 cd "$INSTALL_DIR"
-mkdir -p data/servers data/backups data/sessions data/logs data/run data/mail-outbox cert
+mkdir -p data/servers data/backups data/sessions data/logs data/run data/mail-outbox data/licenses cert
 chmod 700 data
+
+# Always seed signing-public.pem (localhost / git clone / any host) so Admin → License works.
+# shellcheck source=./lib-license-public-key.sh
+source "${INSTALL_DIR}/scripts/lib-license-public-key.sh"
+guartrix_ensure_license_signing_public_pem "$INSTALL_DIR" "${INSTALL_DIR}/data"
 
 cat > .env <<EOF
 ADMIN_PASSWORD=${ADMIN_PASSWORD}

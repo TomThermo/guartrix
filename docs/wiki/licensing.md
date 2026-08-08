@@ -57,7 +57,7 @@ The **website/panel UI stays online** when a license expires. Admins see a banne
 | `LICENSE_SERVER_URL` | License API base URL (default `https://license.guartrix.com`) |
 | `LICENSE_KEY` | Your `GTRX-…` key |
 | `LICENSE_INSTALL_ID` | Optional stable install id (else auto-file under `data/`) |
-| `LICENSE_VERIFY_PUBLIC_KEY` | Optional PEM override; else `data/licenses/signing-public.pem` (auto-created from the baked-in Guartrix public key on first validate if missing). Daemon uses the same file / baked-in key. |
+| `LICENSE_VERIFY_PUBLIC_KEY` | Optional PEM override; else `data/licenses/signing-public.pem`. The **installer** and `scripts/start.sh` always seed that file (from `packages/shared/license-signing-public.pem` or the baked-in Guartrix public key), including localhost. Daemon uses the same file / baked-in key. |
 | `LICENSE_UNREACHABLE_GRACE_MS` | Soft-valid window if the API is unreachable (default **12h** / `43200000`) |
 | `LICENSE_VALIDATE_INTERVAL_MS` | How often to re-check (default 10 minutes) |
 | `LICENSE_VALIDATE_FAIL_ALERTS` | Activity alert after N consecutive validate failures (default `3`) |
