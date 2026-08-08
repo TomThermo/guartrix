@@ -43,9 +43,10 @@ sudo bash /tmp/guartrix-daemon.sh \
   --fqdn NODE_PUBLIC_IP \
   --port 8081 \
   --sftp-port 2022 \
-  --panel https://YOUR_PANEL \
-  --repo https://github.com/TomThermo/guartrix.git
+  --panel https://YOUR_PANEL
 ```
+
+With `--panel`, the installer downloads **`/install-daemon-bundle.zip`** (prebuilt daemon — no TypeScript compile on the node). That avoids OOM kills (`exit 137`) on small VPS. Git `--repo` remains an optional fallback only.
 
 Download the script, then run it (do not pipe curl into bash). `NODE_TOKEN`, `NODE_ID`, and the exact command are shown in the panel install modal. The installer writes **`/var/lib/guartrix/daemon.env`**.
 
@@ -154,8 +155,8 @@ with Node ≥ 22, the installer **prints a tip and skips** the convenience scrip
 
 ### Additional mitigations
 
-1. Prefer cloning or unpacking a **tagged Guartrix release** (`--repo` + `--branch`) rather
-   than pulling arbitrary `main` on sensitive hosts.
+1. Prefer the panel **prebuilt bundle** (`--panel` → `/install-daemon-bundle.zip`) over
+   compiling from git on the node (tsc often OOMs on ≤2 GiB hosts).
 2. Keep the daemon firewall rule **panel-IP only** (`PANEL_URL` + ufw) so a compromised
    install script still cannot expose the daemon to the world.
 3. If you must use convenience scripts once, pin versions and verify **checksums / signatures**

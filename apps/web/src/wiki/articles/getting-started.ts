@@ -113,7 +113,7 @@ export const gettingStartedArticles: WikiArticle[] = [
           "When docker and node (≥22) are already on PATH, the installer prints a tip and skips unpinned curl|sh convenience scripts.",
         ],
         bullets: [
-          "Prefer a tagged Guartrix release for --repo / --branch.",
+          "Prefer the panel prebuilt daemon bundle (`--panel`) over compiling with `--repo` on small nodes.",
           "Keep the daemon firewall panel-IP only via PANEL_URL + ufw.",
           "If you must use convenience scripts once, pin versions and verify checksums — do not re-run curl|sh on every deploy.",
         ],

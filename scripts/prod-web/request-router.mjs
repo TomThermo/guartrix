@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { resolveDaemonBundle } from "./daemon-bundle.mjs";
 
 /** True for `/api` and `/api/…`, but not `/api-docs` (SPA docs product). */
 export function isPanelApiPath(pathname) {
@@ -58,6 +59,32 @@ export function createRequestRouter(config, proxy, staticFiles, loadDownloadApi)
         "Content-Disposition": `inline; filename="${scriptName}"`,
       });
       res.end(body);
+      return;
+    }
+
+    // Prebuilt daemon zip for remote nodes (avoids `tsc` OOM on small VPS). No download password.
+    if (url === "/install-daemon-bundle.zip") {
+      const resolved = resolveDaemonBundle(rootDir);
+      if (!resolved?.zipPath) {
+        res.statusCode = 404;
+        res.end("Daemon bundle not found — run panel build/package first");
+        return;
+      }
+      const body = fs.readFileSync(resolved.zipPath);
+      res.writeHead(200, {
+        "Content-Type": "application/zip",
+        "Content-Length": body.length,
+        "Cache-Control": "no-store",
+        "Content-Disposition": 'attachment; filename="guartrix-daemon-bundle.zip"',
+      });
+      res.end(body);
+      if (resolved.cleanupDir) {
+        try {
+          fs.rmSync(resolved.cleanupDir, { recursive: true, force: true });
+        } catch {
+          /* ignore */
+        }
+      }
       return;
     }
 

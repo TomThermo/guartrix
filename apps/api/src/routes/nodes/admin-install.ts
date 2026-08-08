@@ -63,7 +63,8 @@ export function registerNodeAdminInstallRoutes(app: FastifyInstance): void {
       daemonPort: listenPort,
       panelUrl,
       sftpPort,
-      repoUrl,
+      // Prefer prebuilt panel bundle; keep repo as optional compile fallback only.
+      repoUrl: undefined,
     });
     const installCommand = `sudo bash -c ${JSON.stringify(curlInstall)}`;
     return {
@@ -77,11 +78,12 @@ export function registerNodeAdminInstallRoutes(app: FastifyInstance): void {
       autoDeployCommand: installCommand,
       curlInstall,
       repoUrl,
+      bundleUrl: `${panelUrl}/install-daemon-bundle.zip`,
       sshHostKeyFingerprint: node.sshHostKeyFingerprint ?? null,
       steps: [
         "Easiest: fill in SSH details below and click “Install via SSH” (panel connects and installs).",
         "First SSH: confirm the host-key fingerprint, then trust it (stored on the node).",
-        "Or SSH to the VPS yourself and run the install command (curl | bash).",
+        "Or SSH to the VPS yourself and run the install command (downloads a prebuilt daemon zip — no TypeScript compile).",
         `Manual: copy daemon.env to ${configPath} on the node, then start the daemon.`,
         `Firewall: daemon ${listenPort}/tcp is restricted to the panel host when possible; keep ${sftpPort}/tcp + game ports open.`,
         "Click “Test connection” in the panel.",

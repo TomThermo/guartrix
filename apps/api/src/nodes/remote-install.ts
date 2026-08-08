@@ -320,21 +320,26 @@ export function buildDaemonInstallScript(opts: {
   daemonPort: number;
   panelUrl: string;
   sftpPort: number;
-  repoUrl: string;
+  repoUrl?: string;
 }): string {
   const scriptUrl = `${opts.panelUrl}/install-daemon.sh`;
+  const bundleUrl = `${opts.panelUrl}/install-daemon-bundle.zip`;
   const args = [
     `--token ${shellQuote(opts.token)}`,
     `--node-id ${shellQuote(opts.nodeId)}`,
     `--fqdn ${shellQuote(opts.fqdn)}`,
     `--port ${opts.daemonPort}`,
     `--panel ${shellQuote(opts.panelUrl)}`,
-    `--repo ${shellQuote(opts.repoUrl)}`,
+    `--bundle-url ${shellQuote(bundleUrl)}`,
     `--sftp-port ${opts.sftpPort}`,
-  ].join(" ");
+  ];
+  // Git clone+tsc is optional fallback only (OOM on small nodes).
+  if (opts.repoUrl?.trim()) {
+    args.push(`--repo ${shellQuote(opts.repoUrl.trim())}`);
+  }
   return [
     `curl -Lo /tmp/guartrix-daemon.sh ${shellQuote(scriptUrl)}`,
-    `bash /tmp/guartrix-daemon.sh ${args}`,
+    `bash /tmp/guartrix-daemon.sh ${args.join(" ")}`,
   ].join(" && ");
 }
 
