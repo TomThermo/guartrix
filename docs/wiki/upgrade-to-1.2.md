@@ -12,7 +12,7 @@ SaaS / SLA **engineering** track on top of the 1.1 scale path:
 - Peer-only node transfer by default (`TRANSFER_ALLOW_PANEL_STAGING=0`)
 - `REQUIRE_REDIS_HA` / `PANEL_HA` for managed multi-API boot gates
 - Owner aggregate rate limit (`API_OWNER_RATE_LIMIT`)
-- Ops scripts: `sla-restore-drill.sh`, `sla-secret-rotation-drill.sh`, thicker `scale-smoke.sh`
+- Ops scripts: `sla-restore-drill.sh`, `sla-secret-rotation-drill.sh`
 
 External pentest execution and counsel-signed SLAs remain **process** — see [sla-ops.md](sla-ops.md) and [pentest-scope.md](pentest-scope.md).
 
@@ -43,7 +43,7 @@ bash scripts/db-migrate.sh
 5. **Rebuild and restart** (operator checkout):
 
 ```bash
-bash scripts/build-out.sh
+# Operator host: rebuild/release staging (local tooling)
 # restore operator-only scripts into build/scripts/ if needed
 bash build/start.sh
 ```
@@ -51,7 +51,7 @@ bash build/start.sh
 6. **Smoke:**
 
 ```bash
-bash scripts/scale-smoke.sh
+# Operator-host readiness smoke
 curl -sf http://127.0.0.1:3001/api/v1/health
 curl -sf http://127.0.0.1:3001/api/ready
 ```

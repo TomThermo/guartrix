@@ -62,7 +62,7 @@ Record date under **Go-live → Last secret rotation drill**.
 ## Capacity review
 
 1. Node count, server count, MySQL size, Redis memory.
-2. Scale smoke: `bash scripts/scale-smoke.sh` when changing hardware.
+2. Scale smoke on the operator host when changing hardware.
 3. See [scaling.md](scaling.md) and [scale roadmap](../scale-100n-1000c-roadmap.md).
 4. Record date under **Go-live → Last capacity review**.
 

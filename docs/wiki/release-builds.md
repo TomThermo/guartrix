@@ -1,5 +1,8 @@
 # Commercial release builds
 
+> **Note:** Release packaging / download-gate scripts live on the operator host only and are not part of the public git tree.
+
+
 For **selling / self-hosted installs**, ship minified bundles — not TypeScript sources.
 
 ## What customers get

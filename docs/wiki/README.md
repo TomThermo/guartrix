@@ -10,7 +10,7 @@ Operator and developer documentation for the Guartrix Minecraft hosting panel.
 **Public wiki:** `/wiki` on the panel web app (left topic menu + search)  
 **API Reference:** `/api-docs` (overview, explorer, Client & Application APIs)  
 **Source:** [github.com/TomThermo/guartrix](https://github.com/TomThermo/guartrix)  
-**Short overview:** [../../README.md](../../README.md) · [Contributing](../../CONTRIBUTING.md)
+**Short overview:** [../../README.md](../../README.md)
 
 ## Start here
 
@@ -107,18 +107,19 @@ Operator and developer documentation for the Guartrix Minecraft hosting panel.
 
 | Script | Role |
 |--------|------|
-| `scripts/start.sh` | Process start + watchdog (operator checkout) |
-| `scripts/build-out.sh` | Stage `build/` release tree |
-| Download packaging script | Customer `/download` zips (operator host only) |
+| `scripts/start.sh` | Process start + watchdog |
 | `scripts/install-panel.sh` / `install-daemon.sh` | Host installers |
 | `scripts/db-migrate.sh` | Prisma migrate deploy |
 | `scripts/monitor.sh` | Watchdog |
-| `scripts/scale-smoke.sh` | Readiness smoke (+ `/api/v1`, metrics token, SaaS env hints) |
+| `scripts/prod-web.mjs` (+ `prod-web/`) | Web edge / reverse proxy |
+| `scripts/backup-panel-db.sh` / `install-panel-backup-cron.sh` | Panel DB backups |
 | `scripts/sla-restore-drill.sh` | Panel DB backup / staging restore drill |
 | `scripts/sla-secret-rotation-drill.sh` | Secret rotation checklist |
 | `scripts/lib.sh` | Shared helpers |
 
-See also [Operations](operations.md) · [Release builds](release-builds.md) · [API surface map](api-surface-map.md) · [Contributing](../../CONTRIBUTING.md).
+Release packaging, screenshot capture, and download-gate scripts stay on the **operator host only** (not in the public git tree).
+
+See also [Operations](operations.md) · [Release builds](release-builds.md) · [API surface map](api-surface-map.md).
 
 ## Screenshot preview
 
@@ -134,20 +135,20 @@ All screenshots live under [`assets/`](assets/) and are embedded in the [Panel g
 
 ### Screenshot refresh (after UI changes)
 
-Re-capture on a running panel (local or operator host):
+Wiki screenshots live under [`assets/`](assets/). Refresh tooling (`ensure-demo-admin`, `capture-wiki-screenshots`) is **operator-host only** (not shipped in the public repo). On the docs host:
 
 ```bash
-node scripts/ensure-demo-admin.mjs   # demo admin, no 2FA / Turnstile for capture
+# Operator machine only — scripts are gitignored on public main
+node scripts/ensure-demo-admin.mjs
 GUARTRIX_BASE_URL=http://127.0.0.1:80 \
 GUARTRIX_USER=demo GUARTRIX_PASS='DemoScreenshots!2026' \
 GUARTRIX_SERVER_ID=… GUARTRIX_DEMO_SERVER_NAME=server1 \
 GUARTRIX_VIEWPORT=1440x900 \
 GUARTRIX_PALETTE=crimson GUARTRIX_THEME=dark \
-GUARTRIX_TOTP_FROM_DB=0 \
   node scripts/capture-wiki-screenshots.mjs
 ```
 
-All assets are captured at a fixed **1440×900** viewport with the **Crimson Graphite** palette (`guartrix.palette=crimson`). The demo admin has 2FA off; the capture script strips leftover 2FA / license banners. `ensure-demo-admin` temporarily disables Turnstile (re-enable under **Admin → Security** after shooting).
+All assets are captured at a fixed **1440×900** viewport with the **Crimson Graphite** palette.
 
 | Asset | Notes |
 |-------|-------|

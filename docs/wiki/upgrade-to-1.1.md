@@ -41,7 +41,7 @@ bash scripts/db-migrate.sh
 5. **Rebuild & restart** (operator source checkout):
 
 ```bash
-bash scripts/build-out.sh
+# Operator host: rebuild/release staging (local tooling)
 # publish customer download zips on the operator host if you serve /download
 bash build/start.sh
 ```
@@ -51,7 +51,7 @@ Customer systemd installs: rebuild/restart units per [operations.md](operations.
 6. **Smoke:**
 
 ```bash
-bash scripts/scale-smoke.sh
+# Operator-host readiness smoke
 curl -sf http://127.0.0.1:3001/api/ready
 curl -sf http://127.0.0.1:8081/ready
 ```

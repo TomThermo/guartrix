@@ -1,5 +1,8 @@
 # Prod-web and downloads
 
+> **Note:** Release packaging / download-gate scripts live on the operator host only and are not part of the public git tree.
+
+
 `scripts/prod-web.mjs` is the production web edge for Guartrix. It serves the built web UI, proxies API and WebSocket traffic, manages HTTP/HTTPS behavior, and can optionally attach the password-protected `/download` experience on the operator host.
 
 ## Main responsibilities

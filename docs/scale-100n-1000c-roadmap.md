@@ -9,7 +9,7 @@ Nodes already scale. This roadmap fixed the **control-plane**. Remaining risk is
 Interactive Cursor canvas (IDE): `.cursor/canvases/scale-100n-1000c-roadmap.canvas.tsx`  
 Open via **Command Palette → Open Canvas** (Cursor 3.1+), or open that file in the tree.
 
-Upgrade notes: [wiki/upgrade-to-1.1.md](wiki/upgrade-to-1.1.md) · Smoke: `bash scripts/scale-smoke.sh`
+Upgrade notes: [wiki/upgrade-to-1.1.md](wiki/upgrade-to-1.1.md) · Smoke: operator-host readiness check
 
 ---
 
@@ -68,6 +68,6 @@ Upgrade notes: [wiki/upgrade-to-1.1.md](wiki/upgrade-to-1.1.md) · Smoke: `bash 
 
 **Must:** batch scheduler/backups, disk-watch niet O(all), gepagineerde lists, gecachte Admin Status.  
 **Should:** stats niet in API-heap, transfers zonder panel-temp (fallback), backup busy, bridges niet N×R, list indexes, read-poll rate budget.  
-**Ops:** retention + sizing docs + `scale-smoke.sh`.
+**Ops:** retention + sizing docs + operator-host smoke.
 
 Zie ook: [Scaling](wiki/scaling.md) · [Upgrade 1.1](wiki/upgrade-to-1.1.md).

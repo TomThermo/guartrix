@@ -183,8 +183,7 @@ For production nodes, **preseed Docker Engine + Node 22** before `install-daemon
 Commercial packages: [Release builds](docs/wiki/release-builds.md) · day-to-day ops: [Operations](docs/wiki/operations.md) · [Security](docs/wiki/security.md) · managed posture: [SLA ops](docs/wiki/sla-ops.md) · [Pentest scope](docs/wiki/pentest-scope.md)
 
 ```bash
-# SaaS / HA smoke (after Redis + panel are up)
-bash scripts/scale-smoke.sh
+# Optional restore drill (after you have a panel DB backup)
 bash scripts/sla-restore-drill.sh --backup-only
 ```
 
@@ -257,7 +256,6 @@ Guide: [Development](docs/wiki/development.md)
 | **APIs** | Panel **`/api-docs`** · **[api-overview.md](docs/wiki/api-overview.md)** · **[api-explorer](docs/wiki/api-explorer.md)** (Try it) · **[api-examples.md](docs/wiki/api-examples.md)** · [client-api.md](docs/wiki/client-api.md) · [application-api.md](docs/wiki/application-api.md) · [OpenAPI](docs/openapi.yaml) |
 | Licensing & releases | [licensing.md](docs/wiki/licensing.md) · [release-builds.md](docs/wiki/release-builds.md) |
 | Security & ops | [security.md](docs/wiki/security.md) · [operations.md](docs/wiki/operations.md) |
-| Contributing | [CONTRIBUTING.md](CONTRIBUTING.md) |
 | Improvement map | [docs/roadmap.md](docs/roadmap.md) — product shipped; customer go-live in install docs |
 
 ---

@@ -11,6 +11,29 @@ build/
 .cursor/
 .github/
 
+# Operator-host / docs / packaging tooling — kept on this machine, not for public clones.
+scripts/build-out.sh
+scripts/esbuild-release.mjs
+scripts/lib-stage-release.sh
+scripts/package-download-bundle.sh
+scripts/package-release.sh
+scripts/prod-web-download.mjs
+scripts/install-daemon-le-cert.sh
+scripts/install-download-le-cert.sh
+scripts/install-license-le-cert.sh
+scripts/capture-wiki-screenshots.mjs
+scripts/ensure-demo-admin.mjs
+scripts/generate-openapi-stubs.mjs
+scripts/check-openapi-coverage.mjs
+scripts/cloud-agent-start.sh
+scripts/cloud-invite-smoke.mjs
+scripts/scale-smoke.sh
+AGENTS.md
+CONTRIBUTING.md
+e2e/
+playwright.config.ts
+docker-compose.dev.yml
+
 # Secrets & local env
 .env
 .env.local

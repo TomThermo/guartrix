@@ -72,7 +72,8 @@ Software control-plane work for this scale shipped in **1.1.0**. Still required:
 | MySQL | Dedicated or well-sized instance; enable `PRISMA_SLOW_MS=200` while tuning |
 | Nodes | Each daemon reachable from the panel (daemon port / firewall) |
 | Redis | **Optional** for a single panel API; **required** for multiple API replicas |
-| Smoke | `bash scripts/scale-smoke.sh` after upgrade |
+| Smoke | Operator-host readiness smoke after upgrade |
+
 
 See [Upgrade to 1.1](upgrade-to-1.1.md).
 

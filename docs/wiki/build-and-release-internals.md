@@ -1,5 +1,8 @@
 # Build and release internals
 
+> **Note:** Release packaging / download-gate scripts live on the operator host only and are not part of the public git tree.
+
+
 This page documents the maintainer-facing build, staging, and packaging pipeline behind the simpler [Release builds](release-builds.md) guide.
 
 ## Build layers
