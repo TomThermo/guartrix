@@ -561,7 +561,7 @@ export const en = {
     modeImport: "Import archive",
     create: "Create server",
     import: "Import server",
-    creating: "Bezig…",
+    creating: "Creating…",
     installing: "Installing (may take a minute)…",
     importBusy: "Importing…",
     chooseArchive: "Choose an archive to import (.zip or .tar.gz)",
