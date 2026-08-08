@@ -1,0 +1,33 @@
+# Local contributor stack (panel MySQL + optional tools).
+# Does NOT run the Guartrix API/web/daemon — use `npm run dev:api` / `dev:web` / `dev:daemon`.
+#
+#   docker compose -f docker-compose.dev.yml up -d
+#   cp .env.example .env   # set DATABASE_URL to the URL below
+#   npm install && npm run db:generate && bash scripts/db-migrate.sh
+#   npm run dev:api & npm run dev:web
+
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: guartrix-dev-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: guartrix_panel
+      MYSQL_USER: guartrix
+      MYSQL_PASSWORD: guartrix
+    ports:
+      - "127.0.0.1:3306:3306"
+    volumes:
+      - guartrix_dev_mysql:/var/lib/mysql
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  guartrix_dev_mysql:

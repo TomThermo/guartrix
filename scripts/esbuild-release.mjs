@@ -1,0 +1,167 @@
+#!/usr/bin/env node
+/**
+ * Production release bundle for Node apps (api / daemon).
+ *
+ * - One minified ESM file per app (like Vite does for web)
+ * - Inlines workspace packages (@msm/shared, @msm/node-agent) from TypeScript source
+ * - Leaves npm deps external (Prisma, ssh2, Fastify, …)
+ * - Optional javascript-obfuscator pass (default on; RELEASE_OBFUSCATE=0 to skip)
+ *
+ * Usage:
+ *   node scripts/esbuild-release.mjs api
+ *   node scripts/esbuild-release.mjs daemon
+ *   node scripts/esbuild-release.mjs all
+ */
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import * as esbuild from "esbuild";
+import JavaScriptObfuscator from "javascript-obfuscator";
+
+const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+
+const WORKSPACE_ALIASES = {
+  "@msm/shared/daemon-jwt": path.join(rootDir, "packages/shared/src/daemon-jwt.ts"),
+  "@msm/shared/license-signing": path.join(rootDir, "packages/shared/src/license-signing.ts"),
+  "@msm/shared/license-ticket": path.join(rootDir, "packages/shared/src/license-ticket.ts"),
+  "@msm/shared": path.join(rootDir, "packages/shared/src/index.ts"),
+  "@msm/node-agent": path.join(rootDir, "packages/node-agent/src/index.ts"),
+};
+
+const APPS = {
+  api: {
+    entry: "apps/api/src/index.ts",
+    outfile: "apps/api/dist/index.js",
+    cleanDir: "apps/api/dist",
+    extraEntries: [],
+  },
+  daemon: {
+    entry: "apps/daemon/src/index.ts",
+    outfile: "apps/daemon/dist/index.js",
+    cleanDir: "apps/daemon/dist",
+    extraEntries: [],
+  },
+};
+
+const obfuscateEnabled =
+  process.env.RELEASE_OBFUSCATE !== "0" && process.env.RELEASE_OBFUSCATE !== "false";
+
+function workspaceBundlePlugin() {
+  return {
+    name: "guartrix-workspace-bundle",
+    setup(build) {
+      build.onResolve({ filter: /.*/ }, (args) => {
+        if (
+          args.path.startsWith("./") ||
+          args.path.startsWith("../") ||
+          path.isAbsolute(args.path)
+        ) {
+          return undefined;
+        }
+
+        // Longest alias wins (@msm/shared/daemon-jwt before @msm/shared)
+        const aliasKey = Object.keys(WORKSPACE_ALIASES)
+          .sort((a, b) => b.length - a.length)
+          .find((key) => args.path === key || args.path.startsWith(`${key}/`));
+        if (aliasKey) {
+          return { path: WORKSPACE_ALIASES[aliasKey] };
+        }
+
+        return { path: args.path, external: true };
+      });
+    },
+  };
+}
+
+/** Conservative Node/ESM settings — avoid selfDefending / renameGlobals. */
+function obfuscateFile(outPath) {
+  const source = fs.readFileSync(outPath, "utf8");
+  const result = JavaScriptObfuscator.obfuscate(source, {
+    compact: true,
+    controlFlowFlattening: true,
+    controlFlowFlatteningThreshold: 0.35,
+    deadCodeInjection: false,
+    debugProtection: false,
+    disableConsoleOutput: false,
+    identifierNamesGenerator: "hexadecimal",
+    renameGlobals: false,
+    selfDefending: false,
+    stringArray: true,
+    stringArrayEncoding: ["base64"],
+    stringArrayThreshold: 0.5,
+    rotateStringArray: true,
+    splitStrings: true,
+    splitStringsChunkLength: 8,
+    transformObjectKeys: false,
+    unicodeEscapeSequence: false,
+    target: "node",
+    // Preserve ESM import/export shape as much as possible
+    ignoreImports: true,
+  });
+  const banner = "// Guartrix release — bundled + minified + obfuscated\n";
+  fs.writeFileSync(outPath, banner + result.getObfuscatedCode(), "utf8");
+}
+
+async function buildOne({ entry, outfile, obfuscate = true }) {
+  const entryPath = path.join(rootDir, entry);
+  const outPath = path.join(rootDir, outfile);
+
+  if (!fs.existsSync(entryPath)) {
+    throw new Error(`Entry not found: ${entryPath}`);
+  }
+
+  const result = await esbuild.build({
+    absWorkingDir: rootDir,
+    entryPoints: [entryPath],
+    outfile: outPath,
+    bundle: true,
+    platform: "node",
+    format: "esm",
+    target: "node22",
+    minify: true,
+    legalComments: "none",
+    sourcemap: false,
+    banner: {
+      js: "// Guartrix release build — bundled + minified\n",
+    },
+    plugins: [workspaceBundlePlugin()],
+    logLevel: "info",
+  });
+
+  if (result.errors.length) {
+    throw new Error(`esbuild failed for ${entry}`);
+  }
+
+  if (obfuscateEnabled && obfuscate !== false) {
+    obfuscateFile(outPath);
+    console.log(`[release] obfuscated ${path.relative(rootDir, outPath)}`);
+  } else if (!obfuscateEnabled) {
+    console.log(
+      `[release] obfuscation skipped (RELEASE_OBFUSCATE=0) for ${path.relative(rootDir, outPath)}`,
+    );
+  }
+
+  const size = fs.statSync(outPath).size;
+  console.log(`[release] ${path.relative(rootDir, outPath)} (${(size / 1024).toFixed(1)} KiB)`);
+}
+
+async function buildApp(name) {
+  const cfg = APPS[name];
+  if (!cfg) throw new Error(`Unknown app: ${name}`);
+
+  const cleanDir = path.join(rootDir, cfg.cleanDir);
+  fs.rmSync(cleanDir, { recursive: true, force: true });
+  fs.mkdirSync(cleanDir, { recursive: true });
+
+  await buildOne({ entry: cfg.entry, outfile: cfg.outfile, obfuscate: true });
+  for (const extra of cfg.extraEntries ?? []) {
+    await buildOne(extra);
+  }
+}
+
+const arg = process.argv[2] ?? "all";
+const names = arg === "all" ? Object.keys(APPS) : [arg];
+
+for (const name of names) {
+  await buildApp(name);
+}

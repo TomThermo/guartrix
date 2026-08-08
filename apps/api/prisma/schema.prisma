@@ -1,0 +1,618 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum ServerType {
+  VANILLA
+  PAPER
+  FABRIC
+  FORGE
+  PURPUR
+  NEOFORGE
+  QUILT
+  BEDROCK
+  BEDROCK_PREVIEW
+  POCKETMINE
+  NUKKIT
+}
+
+enum ServerStatus {
+  STOPPED
+  STARTING
+  RUNNING
+  STOPPING
+  ERROR
+  CREATING
+  TRANSFERRING
+}
+
+enum UserRole {
+  ADMIN
+  OPERATOR
+  VIEWER
+}
+
+enum NodeStatus {
+  ONLINE
+  OFFLINE
+  UNKNOWN
+}
+
+model Node {
+  id          String     @id
+  /** Stable public UUID; separate from short nanoid `id`. */
+  uuid        String     @unique @default(uuid())
+  name        String
+  /** Optional region / location label shown in the UI (e.g. "eu-west", "Frankfurt"). */
+  location    String?
+  /** Free-form tags (JSON string array). */
+  tags        Json       @default("[]")
+  /** Hostname or IP used to reach the daemon (no scheme). */
+  fqdn        String
+  scheme      String     @default("http")
+  daemonPort  Int        @default(8081)
+  /**
+   * Panel reaches the daemon over HTTPS while TLS is terminated at a reverse
+   * proxy (Cloudflare / nginx / Caddy). Daemon itself may speak plain HTTP.
+   */
+  behindProxy Boolean    @default(false)
+  /** SHA-256 hex of the daemon bearer token. */
+  tokenHash   String
+  isLocal     Boolean    @default(false)
+  /**
+   * Memory allocation budget in MiB (0 = unlimited / unknown).
+   * Combined with memoryOverallocate for placement checks.
+   */
+  memoryMb    Int        @default(0)
+  /** Extra % of memoryMb that may be allocated. */
+  memoryOverallocate Int @default(0)
+  /** Disk allocation budget in MiB (0 = unlimited). */
+  diskMb      Int        @default(0)
+  diskOverallocate Int   @default(0)
+  /** CPU allocation budget as % of host (0 = unlimited). */
+  cpuLimit    Int        @default(0)
+  cpuOverallocate Int    @default(0)
+  /** Max web file-manager upload size in MiB. */
+  uploadLimitMb Int      @default(256)
+  /** Daemon DATA_DIR — where server volumes live. */
+  daemonBaseDirectory String @default("/var/lib/guartrix")
+  /** Published MySQL port on this node (daemon-managed container). */
+  mysqlPort   Int        @default(3306)
+  /** SFTP listen port on this node (embedded ssh2 server). */
+  sftpPort    Int        @default(2022)
+  /** Public FQDN for SFTP clients (Cloudflare A record). */
+  sftpHostname String?
+  /** Display alias for SFTP host; empty = use sftpHostname / FQDN. */
+  sftpAlias   String?
+  /** DNS label under CLOUDFLARE_DOMAIN for the SFTP A record. */
+  sftpDnsSlug  String?   @unique
+  /** When false, hide from create/import node picker and auto-placement. */
+  deployable  Boolean    @default(true)
+  /** When true, non-admins cannot access servers on this node. */
+  maintenanceMode Boolean @default(false)
+  /**
+   * OpenSSH-style SHA256 fingerprint of the VPS host key (remote-install TOFU).
+   * Format: SHA256:<base64 without padding>. Null until first trusted SSH install.
+   */
+  sshHostKeyFingerprint String?
+  status      NodeStatus @default(UNKNOWN)
+  lastSeenAt  DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  servers     Server[]
+  databases   Database[]
+  allocations Allocation[]
+}
+
+model Server {
+  id                  String       @id
+  name                String
+  type                ServerType
+  mcVersion           String
+  port                Int
+  memoryMb            Int
+  /** Max server data disk (MB). Enforced on writes / SFTP / running overage. */
+  diskMb              Int          @default(10240)
+  /**
+   * CPU limit as percent of one core (100 = 1.0 CPU → Docker --cpus).
+   * 0 = unlimited.
+   */
+  cpuLimit            Int          @default(0)
+  status              ServerStatus @default(STOPPED)
+  /** Major Java version for Docker image ("8","11","17","21","25"). Legacy absolute paths ignored. */
+  javaPath            String?
+  /** Custom startup command template ({{MEMORY}}, {{JAR}}). Null = default. */
+  startupCommand      String?      @db.Text
+  /** Jar filename to launch (must match /^[\w.-]+\.jar$/i). Null = server.jar. */
+  serverJar           String?
+  fabricLoaderVersion String?
+  forgeVersion        String?
+  paperBuild          Int?
+  errorMessage        String?
+  autoRestart         Boolean      @default(false)
+  startOnBoot         Boolean      @default(false)
+  /**
+   * Set when the user (or API power stop/kill) stops the server.
+   * Cleared on start/restart. startOnBoot skips servers with this flag.
+   */
+  stoppedByUser       Boolean      @default(false)
+  /** Billing/admin suspend — blocks start/restart until cleared. */
+  suspended           Boolean      @default(false)
+  /** Owner Discord webhook for critical alerts (crash/disk/backup). */
+  ownerAlertWebhookUrl String?
+  /** Owner email for critical alerts (optional override). */
+  ownerAlertEmail     String?
+  /** Discord webhook that receives a live status embed. */
+  discordStatusWebhookUrl String?
+  /** Message id of the last status embed (for PATCH edits). */
+  discordStatusMessageId String?
+  discordStatusEnabled Boolean     @default(false)
+  /** Public BlueMap URL when installed (e.g. http://host:8100). */
+  bluemapUrl          String?
+  /** Extra Docker binds: JSON array of { host, container, readOnly? } */
+  extraMounts         Json?
+  ownerId             String?
+  owner               User?        @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  nodeId              String?
+  node                Node?        @relation(fields: [nodeId], references: [id], onDelete: SetNull)
+  /** DNS label under CLOUDFLARE_DOMAIN (e.g. lammers → lammers.guartrix.online). */
+  subdomain           String?      @unique
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+  databases           Database[]
+  subUsers            SubUser[]
+  allocations         Allocation[]
+  activity            ActivityEvent[]
+  moderationEvents    PlayerModerationEvent[]
+  scheduledTasks      ScheduledTask[]
+  backupSchedule      BackupSchedule?
+
+  @@unique([nodeId, port])
+  @@index([ownerId])
+  @@index([nodeId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([ownerId, createdAt])
+}
+
+/**
+ * Timed schedule chains (backup / wait / restart / command).
+ * Schedule timing + steps stay JSON for API compatibility with the former
+ * per-server guartrix-scheduled-tasks.json files.
+ */
+model ScheduledTask {
+  id           String    @id
+  serverId     String
+  server       Server    @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  /** Display label (maps to API `note`; empty when unset). */
+  name         String    @default("")
+  enabled      Boolean   @default(true)
+  /** mode, dailyAt, intervalHours, weekdays, kind, command */
+  scheduleJson Json
+  /** ScheduleStep[] */
+  stepsJson    Json
+  lastRunAt    DateTime?
+  lastError    String?   @db.Text
+  nextRunAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([serverId])
+  @@index([nextRunAt, enabled])
+}
+
+/**
+ * Per-server backup schedule (was data/backups/<id>/schedule.json).
+ * File dual-write remains during migration; due ticks query this table.
+ */
+model BackupSchedule {
+  serverId       String   @id
+  server         Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  /** off | daily | interval | cron */
+  mode           String   @default("off")
+  intervalHours  Int      @default(6)
+  dailyAt        String   @default("03:00")
+  cronExpression String   @default("0 3 * * *")
+  keepCount      Int      @default(7)
+  lastRunAt      DateTime?
+  nextRunAt      DateTime?
+  updatedAt      DateTime @updatedAt
+
+  @@index([nextRunAt, mode])
+}
+
+/** Kick/ban/op/whitelist actions for the in-panel player history. */
+model PlayerModerationEvent {
+  id         String   @id
+  serverId   String
+  server     Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  playerName String
+  uuid       String?
+  action     String
+  reason     String?
+  actorUserId String?
+  createdAt  DateTime @default(now())
+
+  @@index([serverId, playerName])
+  @@index([serverId, createdAt])
+}
+
+/**
+ * IP:port inventory on a node.
+ * Primary allocation mirrors Server.port; extras are additional published ports.
+ */
+model Allocation {
+  id        String   @id
+  nodeId    String
+  node      Node     @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  /** Bind / display IP (0.0.0.0 = any). */
+  ip        String   @default("0.0.0.0")
+  port      Int
+  /** tcp | udp */
+  protocol  String   @default("tcp")
+  notes     String?
+  serverId  String?
+  server    Server?  @relation(fields: [serverId], references: [id], onDelete: SetNull)
+  /** True for the main game port (synced with Server.port). */
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([nodeId, port, protocol])
+  @@index([serverId])
+  @@index([nodeId])
+}
+
+/**
+ * Panel audit trail: who did what, on which server, from where.
+ * Rows outlive their server/user (relations go null, snapshots stay readable).
+ */
+model ActivityEvent {
+  id         String   @id
+  /** Dot-namespaced action key, e.g. "server.start" or "file.delete". */
+  action     String
+  /** Coarse bucket used by the UI filters (server, power, file, auth, admin, …). */
+  category   String   @default("server")
+  serverId   String?
+  server     Server?  @relation(fields: [serverId], references: [id], onDelete: SetNull)
+  /** Server name at the time of the event. */
+  serverName String?
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  /** Username at the time of the event, or "system"/"scheduler" for automation. */
+  actorName  String   @default("system")
+  /** Client IP (request.ip, so only trusted when TRUST_PROXY matches the setup). */
+  actorIp    String?
+  /** False for denied/failed attempts. */
+  success    Boolean  @default(true)
+  /** JSON object with action-specific details (secrets stripped). */
+  metadata   String?  @db.Text
+  createdAt  DateTime @default(now())
+
+  @@index([serverId, createdAt])
+  @@index([userId, createdAt])
+  @@index([category, createdAt])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model User {
+  id           String   @id
+  username     String   @unique
+  /** Optional email used for subuser invites (case-insensitive unique). */
+  email        String?  @unique
+  /** False until the user confirms their email (self-serve register). */
+  emailVerified Boolean @default(false)
+  /** Optional display / billing name (not login username). */
+  displayName  String?
+  /** ISO 3166-1 alpha-2 for phone dialling (e.g. NL). */
+  phoneCountry String?  @db.VarChar(2)
+  /** National significant number digits (no country code). */
+  phoneNational String?
+  /** Normalized E.164 (+31612345678) when phone is set. */
+  phoneE164    String?
+  addressLine1 String?
+  addressLine2 String?
+  addressCity  String?
+  addressPostalCode String?
+  /** ISO 3166-1 alpha-2 for postal address. */
+  addressCountry String? @db.VarChar(2)
+  /** Set when user confirms a geocoded address suggestion. */
+  addressLat   Float?
+  addressLon   Float?
+  addressVerifiedAt DateTime?
+  passwordHash String
+  role         UserRole @default(OPERATOR)
+  /** Max owned servers; null = unlimited (admins always unlimited). */
+  maxServers   Int?
+  /** Total RAM pool (MB) across owned servers; null = unlimited. */
+  maxMemoryMb  Int?
+  /** Max MySQL databases across owned servers; null = unlimited. */
+  maxDatabases Int?
+  /** Base32 TOTP secret; set on setup, only trusted once totpEnabled. */
+  totpSecret   String?
+  totpEnabled  Boolean  @default(false)
+  /** JSON array of sha256-hashed one-time recovery codes. */
+  totpRecoveryCodes String? @db.Text
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  servers      Server[]
+  subUsers     SubUser[]
+  passwordResets PasswordResetToken[]
+  emailVerifications EmailVerificationToken[]
+  activity     ActivityEvent[]
+  apiKeys      ApiKey[]
+  payments     Payment[]
+  appPasswords AppPassword[]
+  pushSubscriptions PushSubscription[]
+  /** Mollie customer id (`cst_…`) for recurring billing. */
+  mollieCustomerId String?
+  billingSubscriptions BillingSubscription[]
+}
+
+/**
+ * Browser Web Push subscription (opt-in crash/disk alerts on mobile/desktop).
+ * endpointHash (sha256 hex) is unique; endpoint may be longer than MySQL index limits.
+ */
+model PushSubscription {
+  id           String   @id
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint     String   @db.Text
+  endpointHash String   @unique @db.VarChar(64)
+  p256dh       String   @db.Text
+  auth         String   @db.Text
+  /** Optional user-agent / device label for the Account UI. */
+  userAgent    String?  @db.VarChar(512)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId])
+}
+
+/**
+ * Personal Client API key. Plaintext is shown once at create; only sha256 is stored.
+ * Scopes reuse server permission strings; optional serverIds limits which servers.
+ */
+model ApiKey {
+  id          String    @id
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /** Short label shown in the UI, e.g. "CI deploy". */
+  name        String
+  /** First characters of the token for identification (e.g. gt_a1b2c3d4). */
+  prefix      String
+  tokenHash   String    @unique
+  /** JSON array of ServerPermission strings, or ["*"]. */
+  permissions String    @db.Text
+  /** JSON array of server ids, or null = every server the user can access. */
+  serverIds   String?   @db.Text
+  /** JSON array of panel admin scopes (ADMIN users only), or null = server routes only. */
+  adminScopes String?   @db.Text
+  lastUsedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  /** Soft-revoke; row kept for audit. */
+  revokedAt   DateTime?
+
+  @@index([userId])
+  @@index([prefix])
+}
+
+/** One-time password reset token (hash stored, plaintext only emailed). */
+model PasswordResetToken {
+  id        String   @id
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+/** One-time email verification token. */
+model EmailVerificationToken {
+  id        String   @id
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+/** Co-user invited to manage a specific server with fine-grained permissions. */
+model SubUser {
+  id          String   @id
+  serverId    String
+  server      Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  /** Invite email (always stored lowercased). */
+  email       String
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  /** JSON array of permission strings. */
+  permissions String   @default("[]")
+  /** sha256 of opaque invite token (null once accepted / expired). */
+  inviteTokenHash String? @unique
+  inviteExpiresAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([serverId, email])
+  @@index([userId])
+  @@index([email])
+}
+
+/** MySQL database provisioned on the server's node. */
+model Database {
+  id        String   @id
+  serverId  String
+  server    Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  nodeId    String
+  node      Node     @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  /** MySQL schema name. */
+  name      String
+  username  String
+  password  String
+  /** Host clients should connect to (usually node public IP / PUBLIC_HOST). */
+  host      String
+  port      Int      @default(3306)
+  /** MySQL user host pattern (default %). */
+  remote    String   @default("%")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([nodeId, name])
+  @@index([serverId])
+}
+
+/**
+ * Machine Application API key (admin / billing integrations).
+ * Prefix `gta_`. Plaintext shown once; only sha256 stored.
+ */
+model ApplicationApiKey {
+  id          String    @id
+  /** Short label, e.g. "Whmcs sync". */
+  name        String
+  prefix      String
+  tokenHash   String    @unique
+  /** JSON array of application scopes, or ["*"]. */
+  scopes      String    @db.Text
+  /** Optional note for operators. */
+  note        String?
+  lastUsedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  revokedAt   DateTime?
+
+  @@index([prefix])
+}
+
+/**
+ * Sellable plan / quota preset. Used by Mollie checkout and Application API.
+ * Amounts are EUR cents (Mollie).
+ */
+model PlanTemplate {
+  id            String   @id
+  /** Stable slug for API / checkout, e.g. "starter-4gb". */
+  slug          String   @unique
+  name          String
+  description   String?  @db.Text
+  /** Price in cents (EUR). 0 = free / invite-only grant. */
+  priceCents    Int      @default(0)
+  currency      String   @default("EUR")
+  maxServers    Int      @default(1)
+  maxMemoryMb   Int      @default(4096)
+  maxDatabases  Int      @default(3)
+  /** Defaults suggested when auto-creating a server after payment (optional). */
+  defaultMemoryMb Int    @default(4096)
+  defaultDiskMb   Int    @default(10240)
+  /** When true, provisionPaidPayment creates a server with plan defaults. */
+  autoCreateServer Boolean @default(false)
+  /** VANILLA | PAPER | … used when autoCreateServer is true. */
+  defaultServerType String @default("PAPER")
+  defaultMcVersion  String @default("1.21.1")
+  /**
+   * Mollie subscription interval when set (e.g. "1 month", "1 year").
+   * Null = one-off payment only.
+   */
+  recurringInterval String?
+  enabled       Boolean  @default(true)
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  payments      Payment[]
+  subscriptions BillingSubscription[]
+}
+
+enum PaymentStatus {
+  OPEN
+  PENDING
+  PAID
+  FAILED
+  CANCELED
+  EXPIRED
+}
+
+/**
+ * Mollie (or manual) payment tied to a plan grant for a user.
+ */
+model Payment {
+  id              String        @id
+  /** Mollie payment id, e.g. tr_…. Unique when set. */
+  mollieId        String?       @unique
+  userId          String
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId          String?
+  plan            PlanTemplate? @relation(fields: [planId], references: [id], onDelete: SetNull)
+  status          PaymentStatus @default(OPEN)
+  amountCents     Int
+  currency        String        @default("EUR")
+  description     String
+  /** Checkout URL returned by Mollie (for the customer). */
+  checkoutUrl     String?       @db.Text
+  /** True after quotas were applied (idempotent). */
+  provisioned     Boolean       @default(false)
+  provisionedAt   DateTime?
+  metadata        String?       @db.Text
+  /** Local billing subscription this payment belongs to (first + renewals). */
+  subscriptionId  String?
+  subscription    BillingSubscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([status])
+  @@index([subscriptionId])
+}
+
+/**
+ * Mollie recurring subscription tied to a user + plan.
+ */
+model BillingSubscription {
+  id                   String    @id
+  userId               String
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId               String?
+  plan                 PlanTemplate? @relation(fields: [planId], references: [id], onDelete: SetNull)
+  /** Mollie subscription id `sub_…`. */
+  mollieSubscriptionId String?   @unique
+  /** Snapshot of interval, e.g. "1 month". */
+  interval             String
+  amountCents          Int
+  currency             String    @default("EUR")
+  /** pending | active | canceled | suspended | completed */
+  status               String    @default("pending")
+  metadata             String?   @db.Text
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  canceledAt           DateTime?
+  payments             Payment[]
+
+  @@index([userId])
+  @@index([status])
+}
+
+/**
+ * SFTP app password (panel password still works). Plaintext shown once; sha256 stored.
+ */
+model AppPassword {
+  id         String    @id
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name       String
+  prefix     String
+  tokenHash  String    @unique
+  lastUsedAt DateTime?
+  createdAt  DateTime  @default(now())
+  revokedAt  DateTime?
+
+  @@index([userId])
+}

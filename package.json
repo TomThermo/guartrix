@@ -1,0 +1,50 @@
+{
+  "name": "minecraft-server-manager",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev:api & npm run dev:web; wait",
+    "dev:api": "npm run dev -w @msm/api",
+    "dev:web": "npm run dev -w @msm/web",
+    "dev:daemon": "npm run dev -w @msm/daemon",
+    "build": "npm run build -w @msm/shared && npm run build -w @msm/node-agent && npm run build -w @msm/daemon && npm run build -w @msm/api && npm run build -w @msm/web",
+    "build:release": "node scripts/esbuild-release.mjs all && npm run build -w @msm/web",
+    "build:out": "bash scripts/build-out.sh",
+    "start:build": "bash build/start.sh",
+    "package:release": "bash scripts/package-release.sh",
+    "package:download": "bash scripts/package-download-bundle.sh",
+    "db:generate": "npm run db:generate -w @msm/api",
+    "db:migrate": "npm run db:migrate -w @msm/api",
+    "db:push": "npm run db:push -w @msm/api",
+    "start": "npm run start -w @msm/api",
+    "start:prod": "node scripts/start-prod.mjs",
+    "start:sh": "bash scripts/start.sh",
+    "prod": "npm run build && npm run start:prod",
+    "prod:release": "npm run build:release && npm run start:prod",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "check:openapi": "node scripts/check-openapi-coverage.mjs",
+    "fa:subset": "node scripts/fa-subset-icons.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.0.6",
+    "@playwright/test": "^1.62.1",
+    "@vitest/coverage-v8": "^3.2.7",
+    "esbuild": "^0.25.0",
+    "javascript-obfuscator": "^4.2.2",
+    "playwright": "^1.55.0",
+    "typescript": "^5.8.2",
+    "vitest": "^3.2.7"
+  },
+  "version": "1.4.0"
+}

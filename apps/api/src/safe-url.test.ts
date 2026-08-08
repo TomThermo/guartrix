@@ -1,0 +1,320 @@
+import { describe, expect, it } from "vitest";
+import {
+  assertSafeBrowserUrl,
+  assertSafeDownloadUrl,
+  assertSafeOutboundUrl,
+  assertSafeWebhookUrl,
+  DISCORD_WEBHOOK_HOST_SUFFIXES,
+  DOWNLOAD_HOST_SUFFIXES,
+  fetchPinned,
+  fetchSafeDownload,
+  fetchSafeOutbound,
+  fetchSafeWebhook,
+  isBlockedIp,
+  resolveSafeDownloadUrl,
+  resolveSafeOutboundUrl,
+  resolveSafeWebhookUrl,
+} from "./safe-url.js";
+import http from "node:http";
+import type { AddressInfo } from "node:net";
+
+describe("isBlockedIp", () => {
+  it("blocks empty / invalid input", () => {
+    expect(isBlockedIp("")).toBe(true);
+    expect(isBlockedIp("   ")).toBe(true);
+    expect(isBlockedIp("not-an-ip")).toBe(true);
+  });
+
+  it("blocks private and special IPv4 ranges", () => {
+    expect(isBlockedIp("0.0.0.0")).toBe(true);
+    expect(isBlockedIp("10.0.0.1")).toBe(true);
+    expect(isBlockedIp("127.0.0.1")).toBe(true);
+    expect(isBlockedIp("169.254.169.254")).toBe(true);
+    expect(isBlockedIp("172.16.0.1")).toBe(true);
+    expect(isBlockedIp("172.31.255.255")).toBe(true);
+    expect(isBlockedIp("192.168.1.1")).toBe(true);
+    expect(isBlockedIp("100.64.0.1")).toBe(true);
+    expect(isBlockedIp("100.127.0.1")).toBe(true);
+    expect(isBlockedIp("224.0.0.1")).toBe(true);
+    expect(isBlockedIp("255.255.255.255")).toBe(true);
+  });
+
+  it("allows public IPv4 addresses", () => {
+    expect(isBlockedIp("1.1.1.1")).toBe(false);
+    expect(isBlockedIp("8.8.8.8")).toBe(false);
+    expect(isBlockedIp("93.184.216.34")).toBe(false);
+    expect(isBlockedIp("172.15.0.1")).toBe(false);
+    expect(isBlockedIp("172.32.0.1")).toBe(false);
+    expect(isBlockedIp("100.63.0.1")).toBe(false);
+    expect(isBlockedIp("100.128.0.1")).toBe(false);
+  });
+
+  it("blocks loopback, ULA, and link-local IPv6", () => {
+    expect(isBlockedIp("::")).toBe(true);
+    expect(isBlockedIp("::1")).toBe(true);
+    expect(isBlockedIp("fc00::1")).toBe(true);
+    expect(isBlockedIp("fd12:3456:789a::1")).toBe(true);
+    expect(isBlockedIp("fe80::1")).toBe(true);
+  });
+
+  it("blocks IPv4-mapped private addresses", () => {
+    expect(isBlockedIp("::ffff:127.0.0.1")).toBe(true);
+    expect(isBlockedIp("::ffff:10.0.0.1")).toBe(true);
+    expect(isBlockedIp("::ffff:192.168.0.1")).toBe(true);
+  });
+
+  it("allows public IPv6 and mapped public IPv4", () => {
+    expect(isBlockedIp("2001:4860:4860::8888")).toBe(false);
+    expect(isBlockedIp("::ffff:1.1.1.1")).toBe(false);
+  });
+});
+
+describe("assertSafeOutboundUrl", () => {
+  it("rejects empty, invalid, and non-https URLs", async () => {
+    await expect(assertSafeOutboundUrl("")).rejects.toThrow(/required/i);
+    await expect(assertSafeOutboundUrl("not a url")).rejects.toThrow(/invalid/i);
+    await expect(
+      assertSafeOutboundUrl("http://example.com", { resolveDns: false }),
+    ).rejects.toThrow(/HTTPS/i);
+    await expect(
+      assertSafeOutboundUrl("ftp://example.com", {
+        httpsOnly: false,
+        resolveDns: false,
+      }),
+    ).rejects.toThrow(/HTTP\(S\)/i);
+  });
+
+  it("rejects credentials and local hosts", async () => {
+    await expect(
+      assertSafeOutboundUrl("https://user:pass@example.com/hook", {
+        resolveDns: false,
+      }),
+    ).rejects.toThrow(/credentials/i);
+    await expect(
+      assertSafeOutboundUrl("https://localhost/hook", { resolveDns: false }),
+    ).rejects.toThrow(/not allowed/i);
+    await expect(
+      assertSafeOutboundUrl("https://metadata.google.internal/", {
+        resolveDns: false,
+      }),
+    ).rejects.toThrow(/not allowed/i);
+    await expect(
+      assertSafeOutboundUrl("https://127.0.0.1/", { resolveDns: false }),
+    ).rejects.toThrow(/not allowed/i);
+    await expect(
+      assertSafeOutboundUrl("https://192.168.1.10/x", { resolveDns: false }),
+    ).rejects.toThrow(/not allowed/i);
+    await expect(
+      assertSafeOutboundUrl("https://foo.localhost/x", { resolveDns: false }),
+    ).rejects.toThrow(/not allowed/i);
+  });
+
+  it("enforces allowlisted host suffixes", async () => {
+    await expect(
+      assertSafeOutboundUrl("https://evil.example/path", {
+        resolveDns: false,
+        allowedHostSuffixes: ["discord.com"],
+      }),
+    ).rejects.toThrow(/allowlist/i);
+    await expect(
+      assertSafeOutboundUrl("https://cdn.discord.com/api/webhooks/1/a", {
+        resolveDns: false,
+        allowedHostSuffixes: ["discord.com"],
+      }),
+    ).resolves.toMatch(/^https:\/\/cdn\.discord\.com\//);
+  });
+
+  it("returns normalized href for a public IP host without DNS", async () => {
+    const href = await assertSafeOutboundUrl("https://1.1.1.1/path", {
+      resolveDns: false,
+    });
+    expect(href).toBe("https://1.1.1.1/path");
+  });
+
+  it("allows http when httpsOnly is false", async () => {
+    const href = await assertSafeOutboundUrl("http://1.1.1.1/x", {
+      httpsOnly: false,
+      resolveDns: false,
+    });
+    expect(href).toBe("http://1.1.1.1/x");
+  });
+});
+
+describe("resolveSafeOutboundUrl (DNS pin addresses)", () => {
+  it("returns pinned addresses for literal public IPs", async () => {
+    const resolved = await resolveSafeOutboundUrl("https://1.1.1.1/path", {
+      resolveDns: true,
+    });
+    expect(resolved.href).toBe("https://1.1.1.1/path");
+    expect(resolved.addresses).toEqual([{ address: "1.1.1.1", family: 4 }]);
+  });
+
+  it("rejects private literal IPs even with resolveDns", async () => {
+    await expect(
+      resolveSafeOutboundUrl("https://127.0.0.1/", { resolveDns: true }),
+    ).rejects.toThrow(/not allowed/i);
+    await expect(resolveSafeOutboundUrl("https://10.0.0.1/", { resolveDns: true })).rejects.toThrow(
+      /not allowed/i,
+    );
+  });
+});
+
+describe("webhook + download helpers", () => {
+  it("exports allowlists", () => {
+    expect(DISCORD_WEBHOOK_HOST_SUFFIXES).toContain("discord.com");
+    expect(DOWNLOAD_HOST_SUFFIXES).toContain("modrinth.com");
+  });
+
+  it("validates Discord webhook paths and allows non-Discord HTTPS", async () => {
+    await expect(assertSafeWebhookUrl("https://discord.com/api/webhooks/1/token")).resolves.toMatch(
+      /discord\.com/,
+    );
+    await expect(assertSafeWebhookUrl("https://discord.com/not-a-webhook")).rejects.toThrow(
+      /webhook URL path/i,
+    );
+    await expect(
+      resolveSafeWebhookUrl("https://discordapp.com/api/webhooks/9/abc-def"),
+    ).resolves.toMatchObject({ hostname: "discordapp.com" });
+    await expect(assertSafeWebhookUrl("https://1.1.1.1/hooks/x")).resolves.toBe(
+      "https://1.1.1.1/hooks/x",
+    );
+  });
+
+  it("enforces download host allowlist", async () => {
+    await expect(assertSafeDownloadUrl("https://evil.example/mod.jar")).rejects.toThrow(
+      /allowlist/i,
+    );
+    await expect(resolveSafeDownloadUrl("https://evil.example/mod.jar")).rejects.toThrow(
+      /allowlist/i,
+    );
+    const href = await assertSafeOutboundUrl("https://cdn.modrinth.com/data/x", {
+      resolveDns: false,
+      allowedHostSuffixes: DOWNLOAD_HOST_SUFFIXES,
+    });
+    expect(href).toContain("modrinth.com");
+  });
+});
+
+describe("fetchPinned", () => {
+  it("connects to the pinned address (not the URL hostname DNS)", async () => {
+    const server = http.createServer((_req, res) => {
+      res.writeHead(200, { "Content-Type": "text/plain" });
+      res.end("pinned-ok");
+    });
+    await new Promise<void>((resolve) => {
+      server.listen(0, "127.0.0.1", () => resolve());
+    });
+    const { port } = server.address() as AddressInfo;
+    try {
+      const res = await fetchPinned(
+        {
+          href: `http://cdn.example.test:${port}/file`,
+          hostname: "cdn.example.test",
+          addresses: [{ address: "127.0.0.1", family: 4 }],
+        },
+        { method: "GET" },
+      );
+      expect(res.status).toBe(200);
+      expect(await res.text()).toBe("pinned-ok");
+    } finally {
+      await new Promise<void>((resolve, reject) => {
+        server.close((err) => (err ? reject(err) : resolve()));
+      });
+    }
+  });
+
+  it("rejects when no addresses were validated", async () => {
+    await expect(
+      fetchPinned({
+        href: "https://example.com/",
+        hostname: "example.com",
+        addresses: [],
+      }),
+    ).rejects.toThrow(/no validated addresses/i);
+  });
+
+  it("accepts Headers, array headers, string body, and Uint8Array body", async () => {
+    const bodies: Buffer[] = [];
+    const server = http.createServer((req, res) => {
+      const chunks: Buffer[] = [];
+      req.on("data", (c) => chunks.push(c as Buffer));
+      req.on("end", () => {
+        bodies.push(Buffer.concat(chunks));
+        res.writeHead(200);
+        res.end("ok");
+      });
+    });
+    await new Promise<void>((resolve) => {
+      server.listen(0, "127.0.0.1", () => resolve());
+    });
+    const { port } = server.address() as AddressInfo;
+    const target = {
+      href: `http://pin.test:${port}/`,
+      hostname: "pin.test",
+      addresses: [{ address: "127.0.0.1" as const, family: 4 as const }],
+    };
+    try {
+      await fetchPinned(target, {
+        method: "POST",
+        headers: new Headers({ "x-a": "1" }),
+        body: "hello",
+      });
+      await fetchPinned(target, {
+        method: "POST",
+        headers: [["x-b", "2"]],
+        body: Buffer.from("buf"),
+      });
+      await fetchPinned(target, {
+        method: "POST",
+        headers: { "x-c": "3" },
+        body: new Uint8Array([1, 2, 3]),
+      });
+      expect(bodies.length).toBe(3);
+      await expect(
+        fetchPinned(target, {
+          method: "POST",
+          body: { not: "supported" } as unknown as BodyInit,
+        }),
+      ).rejects.toThrow(/Unsupported request body/i);
+    } finally {
+      await new Promise<void>((resolve, reject) => {
+        server.close((err) => (err ? reject(err) : resolve()));
+      });
+    }
+  });
+
+  it("rejects immediately when AbortSignal is already aborted", async () => {
+    const target = {
+      href: "http://pin.test:9/",
+      hostname: "pin.test",
+      addresses: [{ address: "127.0.0.1" as const, family: 4 as const }],
+    };
+    const pre = AbortSignal.abort();
+    await expect(fetchPinned(target, { signal: pre })).rejects.toMatchObject({
+      name: "AbortError",
+    });
+  });
+});
+
+describe("fetchSafeOutbound / download / webhook rejection paths", () => {
+  it("rejects unsafe targets before connect", async () => {
+    await expect(fetchSafeOutbound("https://127.0.0.1/", {}, { httpsOnly: false })).rejects.toThrow(
+      /not allowed/i,
+    );
+    await expect(fetchSafeWebhook("https://discord.com/bad-path")).rejects.toThrow(
+      /webhook URL path/i,
+    );
+    await expect(fetchSafeDownload("https://evil.example/x")).rejects.toThrow(/allowlist/i);
+  });
+});
+
+describe("assertSafeBrowserUrl", () => {
+  it("allows http(s) public hosts and rejects locals", () => {
+    expect(assertSafeBrowserUrl("https://example.com/page")).toBe("https://example.com/page");
+    expect(assertSafeBrowserUrl("http://1.1.1.1/")).toBe("http://1.1.1.1/");
+    expect(() => assertSafeBrowserUrl("javascript:alert(1)")).toThrow(/HTTP\(S\)/i);
+    expect(() => assertSafeBrowserUrl("https://localhost/")).toThrow(/not allowed/i);
+    expect(() => assertSafeBrowserUrl("not a url")).toThrow(/Invalid URL/i);
+    expect(() => assertSafeBrowserUrl("https://user:pass@example.com/")).toThrow(/credentials/i);
+  });
+});

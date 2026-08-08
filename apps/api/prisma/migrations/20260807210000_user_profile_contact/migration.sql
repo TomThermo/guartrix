@@ -1,0 +1,14 @@
+-- AlterTable
+ALTER TABLE `User`
+  ADD COLUMN `displayName` VARCHAR(191) NULL,
+  ADD COLUMN `phoneCountry` VARCHAR(2) NULL,
+  ADD COLUMN `phoneNational` VARCHAR(191) NULL,
+  ADD COLUMN `phoneE164` VARCHAR(191) NULL,
+  ADD COLUMN `addressLine1` VARCHAR(191) NULL,
+  ADD COLUMN `addressLine2` VARCHAR(191) NULL,
+  ADD COLUMN `addressCity` VARCHAR(191) NULL,
+  ADD COLUMN `addressPostalCode` VARCHAR(191) NULL,
+  ADD COLUMN `addressCountry` VARCHAR(2) NULL,
+  ADD COLUMN `addressLat` DOUBLE NULL,
+  ADD COLUMN `addressLon` DOUBLE NULL,
+  ADD COLUMN `addressVerifiedAt` DATETIME(3) NULL;
