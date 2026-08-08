@@ -32,10 +32,15 @@ export async function tarExtractArgs(archivePath: string, destDir: string): Prom
   return args;
 }
 
-function isUnsafeMemberPath(entry: string): boolean {
-  const n = entry.replace(/\\/g, "/").replace(/^\.\/+/, "");
+/**
+ * True when an archive member path could escape the extract root or is otherwise unsafe.
+ * Directory members from `tar -tf` often end with `/` (e.g. `./config/`) — that is safe.
+ */
+export function isUnsafeMemberPath(entry: string): boolean {
+  const raw = entry.replace(/\\/g, "/");
+  if (raw.startsWith("/") || /^[a-zA-Z]:/.test(raw)) return true;
+  const n = raw.replace(/^\.\/+/, "").replace(/\/+$/, "");
   if (!n || n === ".") return false;
-  if (n.startsWith("/") || /^[a-zA-Z]:/.test(n)) return true;
   if (n.split("/").some((p) => p === ".." || p === "")) return true;
   if (n.includes("\0")) return true;
   return false;

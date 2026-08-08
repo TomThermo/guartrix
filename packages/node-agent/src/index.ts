@@ -152,6 +152,8 @@ export {
 
 export {
   safeExtractArchive,
+  isUnsafeMemberPath,
+  tarExtractArgs,
   SAFE_EXTRACT_MAX_BYTES,
   SAFE_EXTRACT_MAX_FILES,
 } from "./safe-archive.js";

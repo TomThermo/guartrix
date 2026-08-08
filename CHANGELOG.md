@@ -3,6 +3,11 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.19] — 2026-08-08
+
+### Fixed
+- Node transfer peer deploy rejected normal directory members like `./config/` as unsafe (trailing `/` in tar listings).
+
 ## [1.4.18] — 2026-08-08
 
 ### Changed
