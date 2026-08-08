@@ -74,6 +74,20 @@ export async function buildApp(sessionStore: PanelSessionStore): Promise<Fastify
           },
   });
 
+  // Redis session/rate-limit blips (ioredis maxRetries) → clear 503, not opaque 500.
+  app.setErrorHandler((err, request, reply) => {
+    const message = err instanceof Error ? err.message : String(err);
+    if (/maxRetriesPerRequest|ECONNREFUSED.*6379|Redis/i.test(message)) {
+      request.log.warn({ err }, "redis-backed store unavailable");
+      return reply.code(503).send({
+        statusCode: 503,
+        error: "Service Unavailable",
+        message: "Session store temporarily unavailable. Wait a few seconds and try again.",
+      });
+    }
+    return reply.send(err);
+  });
+
   app.addContentTypeParser("application/json", { parseAs: "string" }, (_req, body, done) => {
     if (!body || body === "") {
       done(null, {});

@@ -9,6 +9,8 @@ declare module "ioredis" {
     maxRetriesPerRequest?: number | null;
     enableReadyCheck?: boolean;
     lazyConnect?: boolean;
+    connectTimeout?: number;
+    retryStrategy?: (times: number) => number | void | null;
   }
 
   class Redis extends EventEmitter {

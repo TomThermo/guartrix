@@ -112,9 +112,16 @@ export async function getRedis(): Promise<RedisClient | null> {
     try {
       const { default: Redis } = await import("ioredis");
       const redis = new Redis(url, {
-        maxRetriesPerRequest: 2,
+        // Session/rate-limit commands during a brief restart blip: retry a few times
+        // instead of failing the first login with maxRetriesPerRequest=2.
+        maxRetriesPerRequest: 5,
         enableReadyCheck: true,
         lazyConnect: false,
+        connectTimeout: 5_000,
+        retryStrategy(times: number) {
+          if (times > 30) return null;
+          return Math.min(times * 150, 2_000);
+        },
       }) as unknown as RedisClient;
       redis.on("error", (...args: unknown[]) => {
         const err = args[0];
@@ -123,6 +130,10 @@ export async function getRedis(): Promise<RedisClient | null> {
       });
       redis.on("connect", () => {
         lastError = null;
+      });
+      redis.on("ready", () => {
+        lastError = null;
+        console.info("[guartrix] Redis client ready");
       });
       client = redis;
       console.info("[guartrix] Redis client connected");

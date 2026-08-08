@@ -3,6 +3,11 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.16] — 2026-08-08
+
+### Fixed
+- Redis session blips during panel restart no longer brick login with opaque `maxRetriesPerRequest` 500s (more retries + clearer 503).
+
 ## [1.4.15] — 2026-08-08
 
 ### Fixed
