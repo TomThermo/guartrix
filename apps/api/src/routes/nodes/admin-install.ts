@@ -2,15 +2,15 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { logActivity } from "../../activity-log.js";
 import { requireAdmin, verifyAccountPassword } from "../../auth/auth.js";
-import { prisma } from "../../db.js";
 import { daemonTestNode } from "../../nodes/daemon-client.js";
-import { serializeNodeWithUsage } from "./serialize.js";
+import { serializeNodeWithUsage } from "../../services/nodes-list-serialize.js";
+import { findNode, updateNode } from "../../repositories/nodes.js";
 
 export function registerNodeAdminInstallRoutes(app: FastifyInstance): void {
   /** multi-node install snippet for a remote node (token + env + commands). */
   app.get<{ Params: { id: string } }>("/api/admin/nodes/:id/install", async (request, reply) => {
     if (!(await requireAdmin(request, reply, "nodes.write"))) return;
-    const node = await prisma.node.findUnique({
+    const node = await findNode({
       where: { id: request.params.id },
     });
     if (!node) return reply.status(404).send({ error: "Not found" });
@@ -98,7 +98,7 @@ export function registerNodeAdminInstallRoutes(app: FastifyInstance): void {
     async (request, reply) => {
       const admin = await requireAdmin(request, reply, "nodes.write");
       if (!admin) return;
-      const node = await prisma.node.findUnique({
+      const node = await findNode({
         where: { id: request.params.id },
       });
       if (!node) return reply.status(404).send({ error: "Not found" });
@@ -160,7 +160,7 @@ export function registerNodeAdminInstallRoutes(app: FastifyInstance): void {
       const persistTrustedKey = async (fp: string | undefined) => {
         if (!fp) return;
         if (node.sshHostKeyFingerprint === fp) return;
-        await prisma.node.update({
+        await updateNode({
           where: { id: node.id },
           data: { sshHostKeyFingerprint: fp },
         });

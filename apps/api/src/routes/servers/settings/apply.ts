@@ -3,7 +3,6 @@ import type { ServerType } from "@guartrix/shared";
 import { isBdsServerType } from "@guartrix/shared";
 import { logActivity } from "../../../activity-log.js";
 import { config } from "../../../config.js";
-import { prisma } from "../../../db.js";
 import { errorMessage } from "../../../http-error.js";
 import {
   changeFirewallPort,
@@ -18,9 +17,10 @@ import {
   serverListInclude,
   toServerDetail,
 } from "../../../servers/serialize.js";
-import { patchNeedsStartup } from "./guards.js";
+import { patchNeedsStartup } from "../../../services/server-settings-guards.js";
 import type { ServerSettingsPatch } from "./schemas.js";
 import type { NormalizedSettingsFields } from "./validate.js";
+import { updateServer } from "../../../repositories/servers.js";
 
 type Access = NonNullable<
   Awaited<ReturnType<typeof import("../../../auth/auth.js").requireServerAccess>>
@@ -47,7 +47,7 @@ export async function applyServerSettingsPatch(
 
   const { extraMountsForPrisma } = await import("../../../servers/extra-mounts.js");
 
-  const updated = await prisma.server.update({
+  const updated = await updateServer({
     where: { id: server.id },
     data: {
       name: data.name,
@@ -109,7 +109,7 @@ export async function applyServerSettingsPatch(
         });
       }
     } catch (err) {
-      await prisma.server.update({
+      await updateServer({
         where: { id: server.id },
         data: { port: server.port },
       });

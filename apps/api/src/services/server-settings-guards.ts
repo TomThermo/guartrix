@@ -1,12 +1,12 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { hasPermission } from "@guartrix/shared";
-import { assertAdminFullApiKey } from "../../../auth/auth.js";
-import { prisma } from "../../../db.js";
-import { errorMessage } from "../../../http-error.js";
-import { processManager } from "../../../servers/process-manager.js";
-import type { ServerSettingsPatch } from "./schemas.js";
+import { assertAdminFullApiKey } from "../auth/auth.js";
+import { errorMessage } from "../http-error.js";
+import { processManager } from "../servers/process-manager.js";
+import type { ServerSettingsPatch } from "../routes/servers/settings/schemas.js";
+import { findUser } from "../repositories/users.js";
 
-type Access = Awaited<ReturnType<typeof import("../../../auth/auth.js").requireServerAccess>>;
+type Access = Awaited<ReturnType<typeof import("../auth/auth.js").requireServerAccess>>;
 
 /** Returns true if the request may continue; otherwise a reply was already sent. */
 export async function assertSettingsPatchAccess(
@@ -60,14 +60,14 @@ export async function assertSettingsPatchAccess(
     }
     if (!assertAdminFullApiKey(request, reply)) return false;
     if (data.ownerId !== null) {
-      const owner = await prisma.user.findUnique({ where: { id: data.ownerId } });
+      const owner = await findUser({ where: { id: data.ownerId } });
       if (!owner) {
         await reply.status(400).send({ error: "Owner user not found" });
         return false;
       }
       if (data.ownerId !== server.ownerId) {
         try {
-          const { assertCanAllocateMemory } = await import("../../../billing/quotas.js");
+          const { assertCanAllocateMemory } = await import("../billing/quotas.js");
           await assertCanAllocateMemory(owner, data.memoryMb ?? server.memoryMb, {
             extraServer: true,
           });
@@ -90,10 +90,10 @@ export async function assertSettingsPatchAccess(
       const owner =
         ownerId === access.user.id
           ? access.user
-          : await prisma.user.findUnique({ where: { id: ownerId } });
+          : await findUser({ where: { id: ownerId } });
       if (owner) {
         try {
-          const { assertCanAllocateMemory } = await import("../../../billing/quotas.js");
+          const { assertCanAllocateMemory } = await import("../billing/quotas.js");
           await assertCanAllocateMemory(owner, data.memoryMb, {
             excludeServerId: server.id,
             diskMb: data.diskMb ?? server.diskMb,
@@ -107,7 +107,7 @@ export async function assertSettingsPatchAccess(
 
     if (server.nodeId) {
       try {
-        const { assertNodeCapacity } = await import("../../../nodes/nodes.js");
+        const { assertNodeCapacity } = await import("../nodes/nodes.js");
         await assertNodeCapacity(server.nodeId, data.memoryMb, {
           excludeServerId: server.id,
         });
@@ -125,7 +125,7 @@ export async function assertSettingsPatchAccess(
     }
     if (!assertAdminFullApiKey(request, reply)) return false;
     try {
-      const { assertLicenseDiskQuota } = await import("../../../license/license.js");
+      const { assertLicenseDiskQuota } = await import("../license/license.js");
       await assertLicenseDiskQuota(data.diskMb);
     } catch (err) {
       await reply.status(403).send({ error: errorMessage(err) });

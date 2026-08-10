@@ -21,12 +21,19 @@
     "./license-ticket": {
       "types": "./dist/license-ticket.d.ts",
       "import": "./dist/license-ticket.js"
+    },
+    "./schemas/servers": {
+      "types": "./dist/schemas/servers.d.ts",
+      "import": "./dist/schemas/servers.js"
     }
   },
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "zod": "^3.24.2"
   },
   "devDependencies": {
     "typescript": "^5.8.2"

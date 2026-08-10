@@ -4,11 +4,12 @@ import type { FastifyInstance } from "fastify";
 import type { AdminStatusResponse, StatusContainer, StatusNode } from "@guartrix/shared";
 import { requireAdmin } from "../../auth/auth.js";
 import { config } from "../../config.js";
-import { prisma } from "../../db.js";
 import { daemonGetStatus } from "../../nodes/daemon-client.js";
 import { nodePublicUrl } from "../../nodes/nodes.js";
 import { getPanelVersionStatus } from "../../license/license.js";
 import { getProductVersion } from "../../product-version.js";
+import { findManyNodes, updateNode } from "../../repositories/nodes.js";
+import { findManyServers } from "../../repositories/servers.js";
 
 function readPidFile(name: string): number | null {
   try {
@@ -108,10 +109,10 @@ export function registerStatusRoutes(app: FastifyInstance): void {
     }
 
     const [nodes, servers] = await Promise.all([
-      prisma.node.findMany({
+      findManyNodes({
         orderBy: [{ isLocal: "desc" }, { createdAt: "asc" }],
       }),
-      prisma.server.findMany({
+      findManyServers({
         select: {
           id: true,
           name: true,
@@ -136,7 +137,7 @@ export function registerStatusRoutes(app: FastifyInstance): void {
       const nodeServers = serversByNode.get(node.id) ?? [];
       try {
         const snapshot = await daemonGetStatus(node.id);
-        await prisma.node.update({
+        await updateNode({
           where: { id: node.id },
           data: { status: "ONLINE", lastSeenAt: new Date() },
         });
@@ -183,7 +184,7 @@ export function registerStatusRoutes(app: FastifyInstance): void {
           containers: mergeNodeContainers(fromDocker, nodeServers),
         };
       } catch (err) {
-        await prisma.node.update({
+        await updateNode({
           where: { id: node.id },
           data: { status: "OFFLINE" },
         });

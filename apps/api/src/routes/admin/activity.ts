@@ -1,5 +1,4 @@
 import type { FastifyInstance } from "fastify";
-import type { Prisma } from "@prisma/client";
 import { z } from "zod";
 import {
   ACTIVITY_CATEGORIES,
@@ -9,7 +8,7 @@ import {
 } from "@guartrix/shared";
 import { requireAdmin, requireServerAccess } from "../../auth/auth.js";
 import { activityRetentionDays, toActivityRecord } from "../../activity-log.js";
-import { prisma } from "../../db.js";
+import { type ActivityEventWhereInput, countActivityEvents, findManyActivityEvents } from "../../repositories/activity-events.js";
 
 const querySchema = z.object({
   offset: z.coerce.number().int().min(0).max(100_000).optional().default(0),
@@ -32,8 +31,8 @@ type ActivityQueryInput = z.infer<typeof querySchema>;
 function buildWhere(
   query: ActivityQueryInput,
   scope: { serverId?: string; serverIds?: string[] },
-): Prisma.ActivityEventWhereInput {
-  const where: Prisma.ActivityEventWhereInput = {};
+): ActivityEventWhereInput {
+  const where: ActivityEventWhereInput = {};
 
   if (scope.serverId) {
     where.serverId = scope.serverId;
@@ -62,17 +61,17 @@ function buildWhere(
 }
 
 async function page(
-  where: Prisma.ActivityEventWhereInput,
+  where: ActivityEventWhereInput,
   query: ActivityQueryInput,
 ): Promise<ActivityListResponse> {
   const [rows, total] = await Promise.all([
-    prisma.activityEvent.findMany({
+    findManyActivityEvents({
       where,
       orderBy: { createdAt: "desc" },
       skip: query.offset,
       take: query.limit,
     }),
-    prisma.activityEvent.count({ where }),
+    countActivityEvents({ where }),
   ]);
   return {
     events: rows.map(toActivityRecord),

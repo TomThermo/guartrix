@@ -13,7 +13,6 @@ import {
   requireWrite,
   getSessionUser,
 } from "../../auth/auth.js";
-import { prisma } from "../../db.js";
 import { closeFirewallPort, openFirewallPort } from "../../nodes/firewall.js";
 import { processManager } from "../../servers/process-manager.js";
 import { prepareServerFiles } from "../../providers/jars.js";
@@ -21,6 +20,7 @@ import { updateServerProperties } from "../../servers/properties.js";
 import { safeExtractArchive } from "@guartrix/node-agent";
 import { syncLocalDirToNode, wipeServerEverywhere } from "../../servers/server-files.js";
 import { serverListInclude, toMcServer } from "../../servers/serialize.js";
+import { createServer, deleteServer, findServer, findServerOrThrow, updateServer } from "../../repositories/servers.js";
 
 const SERVER_TYPES = [
   "VANILLA",
@@ -115,7 +115,7 @@ async function finishImportInBackground(opts: {
     await syncLocalDirToNode(id, nodeId, dir);
     await updateServerProperties(id, {}, port);
 
-    const updated = await prisma.server.update({
+    const updated = await updateServer({
       where: { id },
       data: {
         paperBuild,
@@ -140,17 +140,17 @@ async function finishImportInBackground(opts: {
     await applyInitialBackupRetention(updated.id, opts.keepCount);
     await setCreatingProgress(id, "Creating: starting…");
     await autoStartProvisionedServer(updated.id);
-    const after = await prisma.server.findUnique({
+    const after = await findServer({
       where: { id },
       select: { status: true, errorMessage: true },
     });
     if (after?.status === "CREATING") {
-      await prisma.server.update({
+      await updateServer({
         where: { id },
         data: { status: "STOPPED", errorMessage: null },
       });
     } else if (after?.errorMessage?.startsWith("Creating:")) {
-      await prisma.server.update({
+      await updateServer({
         where: { id },
         data: { errorMessage: null },
       });
@@ -158,14 +158,12 @@ async function finishImportInBackground(opts: {
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error(`[guartrix] background import failed for ${id}: ${message}`);
-    await prisma.server
-      .update({
-        where: { id },
-        data: { status: "ERROR", errorMessage: message },
-      })
-      .catch(() => undefined);
+    await updateServer({
+      where: { id },
+      data: { status: "ERROR", errorMessage: message },
+    }).catch(() => undefined);
     await wipeServerEverywhere(id).catch(() => undefined);
-    await prisma.server.delete({ where: { id } }).catch(() => undefined);
+    await deleteServer({ where: { id } }).catch(() => undefined);
     await closeFirewallPort(port, nodeId, protocol).catch(() => undefined);
   } finally {
     await fs.rm(dir, { recursive: true, force: true }).catch(() => undefined);
@@ -274,7 +272,7 @@ export function registerImportRoutes(app: FastifyInstance): void {
     const tmp = path.join(dir, `import-upload${ext}`);
 
     try {
-      await prisma.server.create({
+      await createServer({
         data: {
           id,
           name: data.name,
@@ -303,13 +301,13 @@ export function registerImportRoutes(app: FastifyInstance): void {
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       await wipeServerEverywhere(id).catch(() => undefined);
-      await prisma.server.delete({ where: { id } }).catch(() => undefined);
+      await deleteServer({ where: { id } }).catch(() => undefined);
       await closeFirewallPort(data.port, nodeId, protocol).catch(() => undefined);
       await fs.rm(dir, { recursive: true, force: true }).catch(() => undefined);
       return reply.status(500).send({ error: message });
     }
 
-    const server = await prisma.server.findUniqueOrThrow({
+    const server = await findServerOrThrow({
       where: { id },
       include: serverListInclude,
     });

@@ -1,8 +1,8 @@
 import type { FastifyInstance } from "fastify";
 import { requireAdmin } from "../../auth/auth.js";
 import { logActivity } from "../../activity-log.js";
-import { prisma } from "../../db.js";
 import { sendMail, isSmtpConfigured } from "../../mail.js";
+import { findUser } from "../../repositories/users.js";
 import {
   applyPanelSettings,
   getPanelSettingsView,
@@ -94,7 +94,7 @@ export function registerAdminSettingsRoutes(app: FastifyInstance): void {
   app.post("/api/admin/settings/test-mail", async (request, reply) => {
     const user = await requireAdmin(request, reply, "settings.write");
     if (!user) return;
-    const row = await prisma.user.findUnique({
+    const row = await findUser({
       where: { id: user.id },
       select: { email: true },
     });

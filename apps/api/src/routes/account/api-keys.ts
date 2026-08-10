@@ -10,7 +10,7 @@ import { logActivity } from "../../activity-log.js";
 import { generateApiKeyToken, toApiKeyRecord } from "../../auth/api-keys.js";
 import { requireSessionAuth } from "../../auth/auth.js";
 import { assertSameOrigin } from "../../auth/csrf.js";
-import { prisma } from "../../db.js";
+import { countApiKeys, createApiKey, findFirstApiKey, findManyApiKeys, updateApiKey } from "../../repositories/account.js";
 
 const createSchema = z.object({
   name: z.string().trim().min(1).max(64),
@@ -24,7 +24,7 @@ export function registerApiKeyRoutes(app: FastifyInstance): void {
     const user = await requireSessionAuth(request, reply);
     if (!user) return;
 
-    const rows = await prisma.apiKey.findMany({
+    const rows = await findManyApiKeys({
       where: { userId: user.id },
       orderBy: { createdAt: "desc" },
     });
@@ -93,7 +93,7 @@ export function registerApiKeyRoutes(app: FastifyInstance): void {
       serverIds = [...new Set(parsed.data.serverIds)];
     }
 
-    const active = await prisma.apiKey.count({
+    const active = await countApiKeys({
       where: { userId: user.id, revokedAt: null },
     });
     if (active >= API_KEY_MAX_PER_USER) {
@@ -103,7 +103,7 @@ export function registerApiKeyRoutes(app: FastifyInstance): void {
     }
 
     const { token, prefix, tokenHash } = generateApiKeyToken();
-    const row = await prisma.apiKey.create({
+    const row = await createApiKey({
       data: {
         id: nanoid(12),
         userId: user.id,
@@ -141,7 +141,7 @@ export function registerApiKeyRoutes(app: FastifyInstance): void {
     const user = await requireSessionAuth(request, reply);
     if (!user) return;
 
-    const row = await prisma.apiKey.findFirst({
+    const row = await findFirstApiKey({
       where: { id: request.params.id, userId: user.id },
     });
     if (!row) {
@@ -151,7 +151,7 @@ export function registerApiKeyRoutes(app: FastifyInstance): void {
       return reply.status(400).send({ error: "API key is already revoked" });
     }
 
-    const updated = await prisma.apiKey.update({
+    const updated = await updateApiKey({
       where: { id: row.id },
       data: { revokedAt: new Date() },
     });

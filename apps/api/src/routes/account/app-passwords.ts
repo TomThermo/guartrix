@@ -6,7 +6,7 @@ import type { AuthUser } from "@guartrix/shared";
 import { logActivity } from "../../activity-log.js";
 import { requireAuth, verifyAccountPassword } from "../../auth/auth.js";
 import { assertSameOrigin } from "../../auth/csrf.js";
-import { prisma } from "../../db.js";
+import { countAppPasswords, createAppPassword, findAppPassword, findFirstAppPassword, findManyAppPasswords, updateAppPassword } from "../../repositories/account.js";
 
 const APP_PASSWORD_MAX = 10;
 const TOKEN_PREFIX = "gtap_";
@@ -36,11 +36,11 @@ export function verifyAppPasswordToken(password: string, tokenHash: string): boo
 export async function verifyUserAppPassword(userId: string, password: string): Promise<boolean> {
   if (!password.startsWith(TOKEN_PREFIX)) return false;
   const tokenHash = hashToken(password);
-  const row = await prisma.appPassword.findUnique({ where: { tokenHash } });
+  const row = await findAppPassword({ where: { tokenHash } });
   if (!row || row.userId !== userId || row.revokedAt) return false;
-  void prisma.appPassword
-    .update({ where: { id: row.id }, data: { lastUsedAt: new Date() } })
-    .catch(() => undefined);
+  void updateAppPassword({ where: { id: row.id }, data: { lastUsedAt: new Date() } }).catch(
+    () => undefined,
+  );
   return true;
 }
 
@@ -79,7 +79,7 @@ export function registerAppPasswordRoutes(app: FastifyInstance): void {
   app.get("/api/account/app-passwords", async (request, reply) => {
     const user = await requireAppPasswordUser(request, reply);
     if (!user) return;
-    const rows = await prisma.appPassword.findMany({
+    const rows = await findManyAppPasswords({
       where: { userId: user.id },
       orderBy: { createdAt: "desc" },
     });
@@ -115,7 +115,7 @@ export function registerAppPasswordRoutes(app: FastifyInstance): void {
       }
     }
 
-    const active = await prisma.appPassword.count({
+    const active = await countAppPasswords({
       where: { userId: user.id, revokedAt: null },
     });
     if (active >= APP_PASSWORD_MAX) {
@@ -125,7 +125,7 @@ export function registerAppPasswordRoutes(app: FastifyInstance): void {
     }
 
     const { token, prefix, tokenHash } = generateToken();
-    const row = await prisma.appPassword.create({
+    const row = await createAppPassword({
       data: {
         id: nanoid(12),
         userId: user.id,
@@ -171,14 +171,14 @@ export function registerAppPasswordRoutes(app: FastifyInstance): void {
         }
       }
 
-      const row = await prisma.appPassword.findFirst({
+      const row = await findFirstAppPassword({
         where: { id: request.params.id, userId: user.id },
       });
       if (!row) return reply.status(404).send({ error: "Not found" });
       if (row.revokedAt) {
         return reply.status(400).send({ error: "Already revoked" });
       }
-      const updated = await prisma.appPassword.update({
+      const updated = await updateAppPassword({
         where: { id: row.id },
         data: { revokedAt: new Date() },
       });

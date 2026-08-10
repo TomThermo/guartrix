@@ -12,9 +12,10 @@ import {
 } from "../../auth/auth.js";
 import { assertSameOrigin } from "../../auth/csrf.js";
 import { destroySessionsForUser } from "../../auth/session-store.js";
-import { prisma } from "../../db.js";
 import { sendMail } from "../../mail.js";
 import { checkLoginRate, clearLoginRate } from "./session.js";
+import { createPasswordResetToken, deleteManyPasswordResetTokens, findPasswordResetToken } from "../../repositories/auth.js";
+import { updateUser } from "../../repositories/users.js";
 
 const forgotPasswordSchema = z.object({
   email: z.string().trim().email().max(254),
@@ -44,10 +45,10 @@ export function registerSessionPasswordRoutes(app: FastifyInstance): void {
     const user = await findUserByEmailInsensitive(parsed.data.email);
     if (!user?.email) return okBody;
 
-    await prisma.passwordResetToken.deleteMany({ where: { userId: user.id } });
+    await deleteManyPasswordResetTokens({ where: { userId: user.id } });
 
     const rawToken = randomBytes(32).toString("hex");
-    await prisma.passwordResetToken.create({
+    await createPasswordResetToken({
       data: {
         id: nanoid(12),
         userId: user.id,
@@ -92,7 +93,7 @@ export function registerSessionPasswordRoutes(app: FastifyInstance): void {
     }
 
     const tokenHash = hashResetToken(parsed.data.token);
-    const row = await prisma.passwordResetToken.findUnique({
+    const row = await findPasswordResetToken({
       where: { tokenHash },
       include: { user: true },
     });
@@ -100,11 +101,11 @@ export function registerSessionPasswordRoutes(app: FastifyInstance): void {
       return reply.status(400).send({ error: "Reset link is invalid or expired" });
     }
 
-    await prisma.user.update({
+    await updateUser({
       where: { id: row.userId },
       data: { passwordHash: hashPassword(parsed.data.password) },
     });
-    await prisma.passwordResetToken.deleteMany({
+    await deleteManyPasswordResetTokens({
       where: { userId: row.userId },
     });
     await destroySessionsForUser(row.userId);

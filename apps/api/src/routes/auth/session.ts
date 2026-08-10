@@ -13,7 +13,6 @@ import {
 import { config } from "../../config.js";
 import { assertSameOrigin, ensureSessionCsrfToken } from "../../auth/csrf.js";
 import { assertTurnstileToken, turnstilePublicConfig } from "../../auth/turnstile.js";
-import { prisma } from "../../db.js";
 import { isSmtpConfigured } from "../../mail.js";
 import {
   PASSWORD_MAX_LENGTH,
@@ -25,6 +24,7 @@ import { linkPendingSubUsers } from "../../servers/server-access.js";
 import { consumeRecoveryCode, verifyTotp } from "../../auth/totp.js";
 import { registerSessionPasswordRoutes } from "./session-password.js";
 import { registerSessionRegisterRoutes } from "./session-register.js";
+import { findUser, updateUser } from "../../repositories/users.js";
 
 const LOGIN_RATE_WINDOW_MS = 15 * 60_000;
 const LOGIN_RATE_MAX = 20;
@@ -118,7 +118,7 @@ export function registerAuthRoutes(app: FastifyInstance): void {
     }
 
     if (needsRehash(user.passwordHash)) {
-      await prisma.user.update({
+      await updateUser({
         where: { id: user.id },
         data: { passwordHash: hashPassword(password) },
       });
@@ -192,7 +192,7 @@ export function registerAuthRoutes(app: FastifyInstance): void {
     if (!pendingUserId) {
       return reply.status(401).send({ error: "Sign in with your password first" });
     }
-    const user = await prisma.user.findUnique({ where: { id: pendingUserId } });
+    const user = await findUser({ where: { id: pendingUserId } });
     if (!user || !user.totpEnabled || !user.totpSecret) {
       await request.session.destroy().catch(() => undefined);
       return reply.status(401).send({ error: "Sign in with your password first" });
@@ -217,7 +217,7 @@ export function registerAuthRoutes(app: FastifyInstance): void {
         return reply.status(401).send({ error: "Invalid two-factor code" });
       }
       usedRecovery = true;
-      await prisma.user.update({
+      await updateUser({
         where: { id: user.id },
         data: { totpRecoveryCodes: JSON.stringify(remaining) },
       });

@@ -1,9 +1,10 @@
 import type { FastifyInstance } from "fastify";
 import { config } from "../../config.js";
-import { prisma } from "../../db.js";
 import { processManager } from "../../servers/process-manager.js";
 import { readServerProperties } from "../../servers/properties.js";
-import { requireApplicationServer } from "./server-access.js";
+import { requireApplicationServer } from "../../services/application-server-access.js";
+import { findFirstNode, findNode } from "../../repositories/nodes.js";
+import { findUser } from "../../repositories/users.js";
 
 /** Application API connect / SFTP meta (`servers.read` — support tooling). */
 export function registerApplicationServerConnectRoutes(app: FastifyInstance): void {
@@ -35,13 +36,13 @@ export function registerApplicationServerConnectRoutes(app: FastifyInstance): vo
       }
 
       const node = server.nodeId
-        ? await prisma.node.findUnique({ where: { id: server.nodeId } })
-        : await prisma.node.findFirst({ where: { isLocal: true } });
+        ? await findNode({ where: { id: server.nodeId } })
+        : await findFirstNode({ where: { isLocal: true } });
 
       if (!server.ownerId) {
         return reply.status(400).send({ error: "Server has no owner" });
       }
-      const owner = await prisma.user.findUnique({
+      const owner = await findUser({
         where: { id: server.ownerId },
         select: { username: true },
       });

@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { logActivity } from "../../activity-log.js";
 import { createBackup, deleteBackup, listBackups, restoreBackup } from "../../servers/backups.js";
-import { requireApplicationServer } from "./server-access.js";
+import { requireApplicationServer } from "../../services/application-server-access.js";
 
 /** Application API backup mirrors (`servers.backups`). */
 export function registerApplicationServerBackupsRoutes(app: FastifyInstance): void {

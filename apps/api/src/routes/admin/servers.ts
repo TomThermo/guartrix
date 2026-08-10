@@ -4,12 +4,13 @@ import { clampBackupKeepCount } from "@guartrix/shared";
 import { requireAdmin } from "../../auth/auth.js";
 import { logActivity } from "../../activity-log.js";
 import { config } from "../../config.js";
-import { prisma } from "../../db.js";
 import { errorMessage } from "../../http-error.js";
 import { listBackups } from "../../servers/backups.js";
 import { readBackupSchedule, writeBackupSchedule } from "../../servers/backup-schedule.js";
 import { processManager } from "../../servers/process-manager.js";
 import { daemonSetLimits } from "../../nodes/daemon-client.js";
+import { findManyServers, findServer, updateServer } from "../../repositories/servers.js";
+import { findUser } from "../../repositories/users.js";
 
 const patchSchema = z.object({
   name: z.string().trim().min(1).max(64).optional(),
@@ -95,7 +96,7 @@ export function registerAdminServerRoutes(app: FastifyInstance): void {
   app.get("/api/admin/servers", async (request, reply) => {
     if (!(await requireAdmin(request, reply, "settings.read"))) return;
 
-    const rows = await prisma.server.findMany({
+    const rows = await findManyServers({
       orderBy: { name: "asc" },
       select: serverSelect,
     });
@@ -112,7 +113,7 @@ export function registerAdminServerRoutes(app: FastifyInstance): void {
   app.get("/api/admin/server-backups", async (request, reply) => {
     if (!(await requireAdmin(request, reply, "settings.read"))) return;
 
-    const rows = await prisma.server.findMany({
+    const rows = await findManyServers({
       orderBy: { name: "asc" },
       select: serverSelect,
     });
@@ -143,7 +144,7 @@ export function registerAdminServerRoutes(app: FastifyInstance): void {
         return reply.status(400).send({ error: parsed.error.flatten() });
       }
 
-      const existing = await prisma.server.findUnique({
+      const existing = await findServer({
         where: { id: request.params.serverId },
         select: serverSelect,
       });
@@ -155,13 +156,13 @@ export function registerAdminServerRoutes(app: FastifyInstance): void {
       const nextOwnerId = data.ownerId !== undefined ? data.ownerId : existing.ownerId;
 
       if (data.ownerId !== undefined && data.ownerId !== null) {
-        const owner = await prisma.user.findUnique({ where: { id: data.ownerId } });
+        const owner = await findUser({ where: { id: data.ownerId } });
         if (!owner) return reply.status(400).send({ error: "Owner user not found" });
       }
 
       if (data.memoryMb !== undefined && data.memoryMb !== existing.memoryMb) {
         if (nextOwnerId) {
-          const owner = await prisma.user.findUnique({ where: { id: nextOwnerId } });
+          const owner = await findUser({ where: { id: nextOwnerId } });
           if (owner) {
             try {
               const { assertCanAllocateMemory } = await import("../../billing/quotas.js");
@@ -199,7 +200,7 @@ export function registerAdminServerRoutes(app: FastifyInstance): void {
         await processManager.stop(existing.id);
       }
 
-      const updated = await prisma.server.update({
+      const updated = await updateServer({
         where: { id: existing.id },
         data: {
           ...(data.name != null ? { name: data.name } : {}),
@@ -258,7 +259,7 @@ export function registerAdminServerRoutes(app: FastifyInstance): void {
         return reply.status(400).send({ error: parsed.error.flatten() });
       }
 
-      const existing = await prisma.server.findUnique({
+      const existing = await findServer({
         where: { id: request.params.serverId },
         select: { id: true, name: true },
       });

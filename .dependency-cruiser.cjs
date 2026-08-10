@@ -19,8 +19,8 @@ module.exports = {
     {
       name: "routes-no-prisma",
       comment:
-        "Prefer routes → services → prisma. Many routes still use Prisma; warn until cleaned up.",
-      severity: "warn",
+        "Routes must not import Prisma or db directly — use repositories/ or services/.",
+      severity: "error",
       from: { path: "^apps/api/src/routes/" },
       to: {
         path: "(^|/)((infra/)?db(\\.(js|ts))?|@prisma/client)(/|$)",

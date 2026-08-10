@@ -72,6 +72,10 @@ Defines how short-lived daemon JWTs are signed and verified, including claim exp
 
 These are smaller shared policy or formatting helpers that still affect externally visible behavior (including markdown/UI link host allowlists shared with API SSRF checks).
 
+### Server API contracts (Zod)
+
+`schemas/servers.ts` — power, file, create, and clone request schemas shared by Client and Application routes. Exported from `@guartrix/shared` (and `@guartrix/shared/schemas/servers`). OpenAPI `components.schemas` sync via `npm run sync:openapi-schemas`.
+
 ### Daemon ↔ panel events
 
 `types/daemon-events.ts` — typed multiplexed daemon `/events` WebSocket payloads (`status`, `players`, `output`, `stats`, `hello`, `error`) plus `PanelBusPayload` for Redis fan-out between API replicas. Parse with `parseDaemonEventMessage()` on the bridge ingress.

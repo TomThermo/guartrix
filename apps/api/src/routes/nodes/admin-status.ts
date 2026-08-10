@@ -1,7 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { logActivity } from "../../activity-log.js";
 import { requireAdmin } from "../../auth/auth.js";
-import { prisma } from "../../db.js";
 import { daemonGetStatus, daemonTestNode, setNodeToken } from "../../nodes/daemon-client.js";
 import {
   generateDaemonToken,
@@ -10,20 +9,21 @@ import {
   syncNodeSftpDns,
   writeLocalDaemonEnvIfLocal,
 } from "../../nodes/nodes.js";
-import { serializeNodeWithUsage } from "./serialize.js";
+import { serializeNodeWithUsage } from "../../services/nodes-list-serialize.js";
+import { findNode, updateNode } from "../../repositories/nodes.js";
 
 export function registerNodeAdminStatusRoutes(app: FastifyInstance): void {
   /** Live host snapshot for one node (Overview modal polling). */
   app.get<{ Params: { id: string } }>("/api/admin/nodes/:id/status", async (request, reply) => {
     if (!(await requireAdmin(request, reply, "nodes.read"))) return;
-    const existing = await prisma.node.findUnique({
+    const existing = await findNode({
       where: { id: request.params.id },
     });
     if (!existing) return reply.status(404).send({ error: "Not found" });
     const publicUrl = nodePublicUrl(existing);
     try {
       const snapshot = await daemonGetStatus(existing.id);
-      await prisma.node.update({
+      await updateNode({
         where: { id: existing.id },
         data: {
           status: "ONLINE",
@@ -66,7 +66,7 @@ export function registerNodeAdminStatusRoutes(app: FastifyInstance): void {
         generatedAt: new Date().toISOString(),
       };
     } catch (err) {
-      await prisma.node.update({
+      await updateNode({
         where: { id: existing.id },
         data: { status: "OFFLINE" },
       });
@@ -84,7 +84,7 @@ export function registerNodeAdminStatusRoutes(app: FastifyInstance): void {
 
   app.post<{ Params: { id: string } }>("/api/admin/nodes/:id/test", async (request, reply) => {
     if (!(await requireAdmin(request, reply, "nodes.write"))) return;
-    const existing = await prisma.node.findUnique({
+    const existing = await findNode({
       where: { id: request.params.id },
     });
     if (!existing) return reply.status(404).send({ error: "Not found" });
@@ -103,12 +103,12 @@ export function registerNodeAdminStatusRoutes(app: FastifyInstance): void {
     async (request, reply) => {
       const admin = await requireAdmin(request, reply, "nodes.write");
       if (!admin) return;
-      const existing = await prisma.node.findUnique({
+      const existing = await findNode({
         where: { id: request.params.id },
       });
       if (!existing) return reply.status(404).send({ error: "Not found" });
       const token = generateDaemonToken();
-      const node = await prisma.node.update({
+      const node = await updateNode({
         where: { id: existing.id },
         data: { tokenHash: hashDaemonToken(token) },
       });

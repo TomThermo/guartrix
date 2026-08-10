@@ -24,8 +24,15 @@ import {
   userRoleSchema,
 } from "../../auth/user-quotas.js";
 import { destroySessionsForUser } from "../../auth/session-store.js";
-import { prisma } from "../../db.js";
 import { sendZodError } from "../../http-error.js";
+import { updateManyServers } from "../../repositories/servers.js";
+import {
+  createUser,
+  deleteUser,
+  findManyUsers,
+  findUser,
+  updateUser,
+} from "../../repositories/users.js";
 import {
   hostNodeName,
   hostPublicIp,
@@ -56,7 +63,7 @@ const updateUserSchema = z.object({
 export function registerPanelUserRoutes(app: FastifyInstance): void {
   app.get("/api/users", async (request, reply) => {
     if (!(await requireAdmin(request, reply, "users.read"))) return;
-    const users = await prisma.user.findMany({
+    const users = await findManyUsers({
       orderBy: { createdAt: "asc" },
       include: {
         servers: {
@@ -118,7 +125,7 @@ export function registerPanelUserRoutes(app: FastifyInstance): void {
       PANEL_CREATE_QUOTA_DEFAULTS,
     );
 
-    const user = await prisma.user.create({
+    const user = await createUser({
       data: {
         id: nanoid(12),
         username: parsed.data.username,
@@ -148,7 +155,7 @@ export function registerPanelUserRoutes(app: FastifyInstance): void {
     if (!admin) return;
     const parsed = updateUserSchema.safeParse(request.body);
     if (!parsed.success) return sendZodError(reply, parsed);
-    const existing = await prisma.user.findUnique({ where: { id: request.params.id } });
+    const existing = await findUser({ where: { id: request.params.id } });
     if (!existing) return reply.status(404).send({ error: "User not found" });
 
     const data: {
@@ -186,7 +193,7 @@ export function registerPanelUserRoutes(app: FastifyInstance): void {
     }
 
     try {
-      const user = await prisma.user.update({
+      const user = await updateUser({
         where: { id: request.params.id },
         data,
         include: {
@@ -247,17 +254,17 @@ export function registerPanelUserRoutes(app: FastifyInstance): void {
     if (me.id === request.params.id) {
       return reply.status(400).send({ error: "Cannot delete your own account" });
     }
-    const target = await prisma.user.findUnique({ where: { id: request.params.id } });
+    const target = await findUser({ where: { id: request.params.id } });
     if (!target) return reply.status(404).send({ error: "User not found" });
     const lastAdmin = await assertNotLastAdmin({ role: target.role as UserRole });
     if (!lastAdmin.ok) {
       return reply.status(400).send({ error: lastAdmin.error });
     }
-    await prisma.server.updateMany({
+    await updateManyServers({
       where: { ownerId: target.id },
       data: { ownerId: me.id },
     });
-    await prisma.user.delete({ where: { id: request.params.id } });
+    await deleteUser({ where: { id: request.params.id } });
     logActivity({
       action: "user.delete",
       request,

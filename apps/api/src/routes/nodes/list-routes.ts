@@ -5,7 +5,7 @@ import { requireAdmin, requireAuth } from "../../auth/auth.js";
 import { config } from "../../config.js";
 import { listNodesWithUsage } from "../../nodes/nodes.js";
 import { serverTypeSchema } from "./schemas.js";
-import { resolveListedNode } from "./serialize.js";
+import { resolveListedNode } from "../../services/nodes-list-serialize.js";
 
 export function registerNodeListRoutes(app: FastifyInstance): void {
   /** Any logged-in user — used when creating a server (node picker). */

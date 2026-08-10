@@ -3,7 +3,7 @@ import { z } from "zod";
 import { logActivity } from "../../activity-log.js";
 import { getSessionUser, requireAuth, verifyAccountPassword } from "../../auth/auth.js";
 import { assertSameOrigin } from "../../auth/csrf.js";
-import { prisma } from "../../db.js";
+import { findUser, updateUser } from "../../repositories/users.js";
 import {
   generateRecoveryCodes,
   generateTotpSecret,
@@ -77,7 +77,7 @@ export function registerTwoFactorRoutes(app: FastifyInstance): void {
   app.get("/api/auth/2fa", async (request, reply) => {
     const user = await requireAuth(request, reply);
     if (!user) return;
-    const row = await prisma.user.findUnique({ where: { id: user.id } });
+    const row = await findUser({ where: { id: user.id } });
     if (!row) return reply.status(401).send({ error: "Unauthorized" });
     const recoveryLeft = row.totpRecoveryCodes
       ? (() => {
@@ -102,14 +102,14 @@ export function registerTwoFactorRoutes(app: FastifyInstance): void {
     if (originErr) return reply.status(403).send({ error: originErr });
     const user = await requireAuth(request, reply);
     if (!user) return;
-    const row = await prisma.user.findUnique({ where: { id: user.id } });
+    const row = await findUser({ where: { id: user.id } });
     if (!row) return reply.status(401).send({ error: "Unauthorized" });
     if (row.totpEnabled) {
       return reply.status(400).send({ error: "Two-factor authentication is already enabled" });
     }
 
     const secret = generateTotpSecret();
-    await prisma.user.update({
+    await updateUser({
       where: { id: row.id },
       data: {
         totpSecret: sealTotpSecret(secret),
@@ -136,7 +136,7 @@ export function registerTwoFactorRoutes(app: FastifyInstance): void {
       return reply.status(400).send({ error: "A 6-digit authenticator code is required" });
     }
 
-    const row = await prisma.user.findUnique({ where: { id: user.id } });
+    const row = await findUser({ where: { id: user.id } });
     if (!row) return reply.status(401).send({ error: "Unauthorized" });
     if (row.totpEnabled) {
       return reply.status(400).send({ error: "Two-factor authentication is already enabled" });
@@ -151,7 +151,7 @@ export function registerTwoFactorRoutes(app: FastifyInstance): void {
     }
 
     const recovery = generateRecoveryCodes(8);
-    await prisma.user.update({
+    await updateUser({
       where: { id: row.id },
       data: {
         totpEnabled: true,
@@ -176,7 +176,7 @@ export function registerTwoFactorRoutes(app: FastifyInstance): void {
         return reply.status(400).send({ error: "Password and authenticator code are required" });
       }
 
-      const row = await prisma.user.findUnique({ where: { id: user.id } });
+      const row = await findUser({ where: { id: user.id } });
       if (!row) return reply.status(401).send({ error: "Unauthorized" });
       if (!row.totpEnabled || !row.totpSecret) {
         return reply.status(400).send({ error: "Two-factor authentication is not enabled" });
@@ -194,7 +194,7 @@ export function registerTwoFactorRoutes(app: FastifyInstance): void {
         return reply.status(401).send({ error: "Invalid authenticator code" });
       }
 
-      await prisma.user.update({
+      await updateUser({
         where: { id: row.id },
         data: {
           totpSecret: null,
@@ -213,12 +213,12 @@ export function registerTwoFactorRoutes(app: FastifyInstance): void {
     if (originErr) return reply.status(403).send({ error: originErr });
     const user = await requireAuth(request, reply);
     if (!user) return;
-    const row = await prisma.user.findUnique({ where: { id: user.id } });
+    const row = await findUser({ where: { id: user.id } });
     if (!row) return reply.status(401).send({ error: "Unauthorized" });
     if (row.totpEnabled) {
       return reply.status(400).send({ error: "Two-factor authentication is already enabled" });
     }
-    await prisma.user.update({
+    await updateUser({
       where: { id: row.id },
       data: { totpSecret: null, totpRecoveryCodes: null },
     });
@@ -237,7 +237,7 @@ export function registerTwoFactorRoutes(app: FastifyInstance): void {
         return reply.status(400).send({ error: "Password and authenticator code are required" });
       }
 
-      const row = await prisma.user.findUnique({ where: { id: user.id } });
+      const row = await findUser({ where: { id: user.id } });
       if (!row) return reply.status(401).send({ error: "Unauthorized" });
       if (!row.totpEnabled || !row.totpSecret) {
         return reply.status(400).send({ error: "Two-factor authentication is not enabled" });
@@ -250,7 +250,7 @@ export function registerTwoFactorRoutes(app: FastifyInstance): void {
       }
 
       const recovery = generateRecoveryCodes(8);
-      await prisma.user.update({
+      await updateUser({
         where: { id: row.id },
         data: { totpRecoveryCodes: JSON.stringify(recovery.hashes) },
       });

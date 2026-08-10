@@ -6,14 +6,14 @@ import { generateApplicationToken, toApplicationKeyRecord } from "../../auth/app
 import { requireAdmin } from "../../auth/auth.js";
 import { assertSameOrigin } from "../../auth/csrf.js";
 import { logActivity } from "../../activity-log.js";
-import { prisma } from "../../db.js";
+import { countApplicationApiKeys, createApplicationApiKey, findApplicationApiKey, findManyApplicationApiKeys, updateApplicationApiKey } from "../../repositories/application.js";
 
 /** Admin session routes for managing Application API keys. */
 export function registerApplicationKeyAdminRoutes(app: FastifyInstance): void {
   app.get("/api/admin/application-keys", async (request, reply) => {
     const user = await requireAdmin(request, reply);
     if (!user) return;
-    const rows = await prisma.applicationApiKey.findMany({
+    const rows = await findManyApplicationApiKeys({
       orderBy: { createdAt: "desc" },
     });
     return {
@@ -45,7 +45,7 @@ export function registerApplicationKeyAdminRoutes(app: FastifyInstance): void {
       });
     }
 
-    const active = await prisma.applicationApiKey.count({
+    const active = await countApplicationApiKeys({
       where: { revokedAt: null },
     });
     if (active >= APPLICATION_API_KEY_MAX) {
@@ -55,7 +55,7 @@ export function registerApplicationKeyAdminRoutes(app: FastifyInstance): void {
     }
 
     const { token, prefix, tokenHash } = generateApplicationToken();
-    const row = await prisma.applicationApiKey.create({
+    const row = await createApplicationApiKey({
       data: {
         id: nanoid(12),
         name: parsed.data.name,
@@ -87,14 +87,14 @@ export function registerApplicationKeyAdminRoutes(app: FastifyInstance): void {
       const user = await requireAdmin(request, reply);
       if (!user) return;
 
-      const row = await prisma.applicationApiKey.findUnique({
+      const row = await findApplicationApiKey({
         where: { id: request.params.id },
       });
       if (!row) return reply.status(404).send({ error: "Key not found" });
       if (row.revokedAt) {
         return reply.status(400).send({ error: "Already revoked" });
       }
-      const updated = await prisma.applicationApiKey.update({
+      const updated = await updateApplicationApiKey({
         where: { id: row.id },
         data: { revokedAt: new Date() },
       });

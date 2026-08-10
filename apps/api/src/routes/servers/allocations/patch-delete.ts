@@ -4,10 +4,16 @@ import { logActivity } from "../../../activity-log.js";
 import { requireServerAccess } from "../../../auth/auth.js";
 import { ensureUdpCompanion, serializeAllocation } from "../../../servers/allocations.js";
 import { changeFirewallPort, closeFirewallPort } from "../../../nodes/firewall.js";
-import { prisma } from "../../../db.js";
 import { processManager } from "../../../servers/process-manager.js";
 import { updateServerProperties } from "../../../servers/properties.js";
 import { patchSchema } from "./schemas.js";
+import {
+  findFirstAllocation,
+  promotePrimaryAllocationTransaction,
+  updateAllocation,
+  updateManyAllocations,
+} from "../../../repositories/allocations.js";
+import { updateServer } from "../../../repositories/servers.js";
 
 export function registerAllocationPatchDeleteRoutes(app: FastifyInstance): void {
   app.patch<{ Params: { id: string; allocId: string } }>(
@@ -22,7 +28,7 @@ export function registerAllocationPatchDeleteRoutes(app: FastifyInstance): void 
         return reply.status(400).send({ error: parsed.error.flatten() });
       }
 
-      const row = await prisma.allocation.findFirst({
+      const row = await findFirstAllocation({
         where: { id: request.params.allocId, serverId: access.server.id },
       });
       if (!row) {
@@ -54,33 +60,20 @@ export function registerAllocationPatchDeleteRoutes(app: FastifyInstance): void 
         const oldPort = access.server.port;
         const newPort = row.port;
 
-        await prisma.$transaction([
-          prisma.allocation.updateMany({
-            where: { serverId: access.server.id, isPrimary: true },
-            data: { isPrimary: false },
-          }),
-          prisma.allocation.update({
-            where: { id: row.id },
-            data: { isPrimary: true },
-          }),
-          prisma.server.update({
-            where: { id: access.server.id },
-            data: { port: newPort },
-          }),
-        ]);
+        await promotePrimaryAllocationTransaction(access.server.id, row.id, newPort);
         await updateServerProperties(access.server.id, {}, newPort);
         try {
           await changeFirewallPort(oldPort, newPort, access.server.nodeId, primaryProtocol);
         } catch (err) {
-          await prisma.server.update({
+          await updateServer({
             where: { id: access.server.id },
             data: { port: oldPort },
           });
-          await prisma.allocation.updateMany({
+          await updateManyAllocations({
             where: { serverId: access.server.id },
             data: { isPrimary: false },
           });
-          await prisma.allocation.updateMany({
+          await updateManyAllocations({
             where: {
               serverId: access.server.id,
               port: oldPort,
@@ -120,7 +113,7 @@ export function registerAllocationPatchDeleteRoutes(app: FastifyInstance): void 
         });
       }
 
-      const updated = await prisma.allocation.update({
+      const updated = await updateAllocation({
         where: { id: row.id },
         data: {
           notes: parsed.data.notes === undefined ? undefined : parsed.data.notes,
@@ -139,7 +132,7 @@ export function registerAllocationPatchDeleteRoutes(app: FastifyInstance): void 
       });
       if (!access) return;
 
-      const row = await prisma.allocation.findFirst({
+      const row = await findFirstAllocation({
         where: { id: request.params.allocId, serverId: access.server.id },
       });
       if (!row) {
@@ -151,7 +144,7 @@ export function registerAllocationPatchDeleteRoutes(app: FastifyInstance): void 
         });
       }
 
-      await prisma.allocation.update({
+      await updateAllocation({
         where: { id: row.id },
         data: { serverId: null, isPrimary: false },
       });

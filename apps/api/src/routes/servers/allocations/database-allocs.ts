@@ -2,8 +2,9 @@ import type { FastifyInstance } from "fastify";
 import { logActivity } from "../../../activity-log.js";
 import { requireAdmin } from "../../../auth/auth.js";
 import { createNodeAllocationRange, serializeAllocation } from "../../../servers/allocations.js";
-import { prisma } from "../../../db.js";
 import { createRangeSchema } from "./schemas.js";
+import { deleteAllocation, findFirstAllocation, findManyAllocations } from "../../../repositories/allocations.js";
+import { findNode } from "../../../repositories/nodes.js";
 
 /** Admin node allocation pool (list / create range / delete free). */
 export function registerAllocationDatabaseRoutes(app: FastifyInstance): void {
@@ -11,13 +12,13 @@ export function registerAllocationDatabaseRoutes(app: FastifyInstance): void {
     "/api/admin/nodes/:id/allocations",
     async (request, reply) => {
       if (!(await requireAdmin(request, reply))) return;
-      const node = await prisma.node.findUnique({
+      const node = await findNode({
         where: { id: request.params.id },
       });
       if (!node) {
         return reply.status(404).send({ error: "Node not found" });
       }
-      const rows = await prisma.allocation.findMany({
+      const rows = await findManyAllocations({
         where: { nodeId: node.id },
         include: { server: { select: { name: true } } },
         orderBy: [{ port: "asc" }, { protocol: "asc" }],
@@ -35,7 +36,7 @@ export function registerAllocationDatabaseRoutes(app: FastifyInstance): void {
     async (request, reply) => {
       const admin = await requireAdmin(request, reply);
       if (!admin) return;
-      const node = await prisma.node.findUnique({
+      const node = await findNode({
         where: { id: request.params.id },
       });
       if (!node) {
@@ -60,7 +61,7 @@ export function registerAllocationDatabaseRoutes(app: FastifyInstance): void {
         ip: parsed.data.ip,
         notes: parsed.data.notes,
       });
-      const rows = await prisma.allocation.findMany({
+      const rows = await findManyAllocations({
         where: { nodeId: node.id },
         include: { server: { select: { name: true } } },
         orderBy: [{ port: "asc" }, { protocol: "asc" }],
@@ -89,7 +90,7 @@ export function registerAllocationDatabaseRoutes(app: FastifyInstance): void {
     async (request, reply) => {
       const admin = await requireAdmin(request, reply);
       if (!admin) return;
-      const row = await prisma.allocation.findFirst({
+      const row = await findFirstAllocation({
         where: { id: request.params.allocId, nodeId: request.params.id },
       });
       if (!row) {
@@ -98,7 +99,7 @@ export function registerAllocationDatabaseRoutes(app: FastifyInstance): void {
       if (row.serverId) {
         return reply.status(400).send({ error: "Unassign the allocation from its server first" });
       }
-      await prisma.allocation.delete({ where: { id: row.id } });
+      await deleteAllocation({ where: { id: row.id } });
       logActivity({
         action: "allocation.pool-delete",
         request,

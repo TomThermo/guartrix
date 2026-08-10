@@ -5,7 +5,7 @@ import { logActivity } from "../../activity-log.js";
 import { serverDir } from "../../config.js";
 import { installAddon, listInstalledAddons, uninstallAddon } from "../../servers/addons.js";
 import { fixDataOwnership } from "../../servers/process-manager.js";
-import { requireApplicationServer } from "./server-access.js";
+import { requireApplicationServer } from "../../services/application-server-access.js";
 
 /** Application API addon mirrors (`servers.addons`). */
 export function registerApplicationServerAddonsRoutes(app: FastifyInstance): void {

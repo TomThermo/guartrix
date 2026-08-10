@@ -12,7 +12,6 @@ import type { MolliePayment } from "../../billing/mollie.js";
 import { syncMolliePayment } from "../../billing/billing-mollie-sync.js";
 import { requireAuth, requireSessionAuth } from "../../auth/auth.js";
 import { assertSameOrigin } from "../../auth/csrf.js";
-import { prisma } from "../../db.js";
 import { getRateLimitStore } from "../../rate-limit-store.js";
 import { errorMessage, sendZodError } from "../../http-error.js";
 import {
@@ -23,6 +22,18 @@ import {
   mollieCreatePayment,
   mollieTestMode,
 } from "../../billing/mollie.js";
+import {
+  createBillingSubscription,
+  createPayment,
+  findBillingSubscription,
+  findFirstBillingSubscription,
+  findManyBillingSubscriptions,
+  findManyPayments,
+  findManyPlanTemplates,
+  findPayment,
+  findPlanTemplate,
+} from "../../repositories/billing.js";
+import { findUser, updateUser } from "../../repositories/users.js";
 import {
   MOLLIE_WEBHOOK_MAX,
   MOLLIE_WEBHOOK_WINDOW_MS,
@@ -46,7 +57,7 @@ export function registerBillingUserRoutes(app: FastifyInstance): void {
   app.get("/api/billing/plans", async (request, reply) => {
     const user = await requireAuth(request, reply);
     if (!user) return;
-    const rows = await prisma.planTemplate.findMany({
+    const rows = await findManyPlanTemplates({
       where: { enabled: true },
       orderBy: [{ sortOrder: "asc" }, { priceCents: "asc" }],
     });
@@ -57,7 +68,7 @@ export function registerBillingUserRoutes(app: FastifyInstance): void {
   app.get("/api/billing/payments", async (request, reply) => {
     const user = await requireSessionAuth(request, reply);
     if (!user) return;
-    const rows = await prisma.payment.findMany({
+    const rows = await findManyPayments({
       where: { userId: user.id },
       include: { plan: true, user: { select: { username: true } } },
       orderBy: { createdAt: "desc" },
@@ -70,7 +81,7 @@ export function registerBillingUserRoutes(app: FastifyInstance): void {
   app.get("/api/billing/subscriptions", async (request, reply) => {
     const user = await requireSessionAuth(request, reply);
     if (!user) return;
-    const rows = await prisma.billingSubscription.findMany({
+    const rows = await findManyBillingSubscriptions({
       where: { userId: user.id },
       include: { plan: true },
       orderBy: { createdAt: "desc" },
@@ -86,7 +97,7 @@ export function registerBillingUserRoutes(app: FastifyInstance): void {
       if (originErr) return reply.status(403).send({ error: originErr });
       const user = await requireSessionAuth(request, reply);
       if (!user) return;
-      const row = await prisma.billingSubscription.findFirst({
+      const row = await findFirstBillingSubscription({
         where: {
           id: request.params.id,
           ...(user.role === "ADMIN" ? {} : { userId: user.id }),
@@ -94,7 +105,7 @@ export function registerBillingUserRoutes(app: FastifyInstance): void {
       });
       if (!row) return reply.status(404).send({ error: "Subscription not found" });
       if (row.status === "canceled") {
-        const full = await prisma.billingSubscription.findUnique({
+        const full = await findBillingSubscription({
           where: { id: row.id },
           include: { plan: true },
         });
@@ -134,7 +145,7 @@ export function registerBillingUserRoutes(app: FastifyInstance): void {
       return sendZodError(reply, parsed);
     }
 
-    const plan = await prisma.planTemplate.findUnique({
+    const plan = await findPlanTemplate({
       where: { slug: parsed.data.planSlug },
     });
     if (!plan || !plan.enabled) {
@@ -153,7 +164,7 @@ export function registerBillingUserRoutes(app: FastifyInstance): void {
 
     if (plan.recurringInterval) {
       try {
-        const dbUser = await prisma.user.findUnique({ where: { id: user.id } });
+        const dbUser = await findUser({ where: { id: user.id } });
         customerId = dbUser?.mollieCustomerId ?? null;
         if (!customerId) {
           const customer = await mollieCreateCustomer({
@@ -162,12 +173,12 @@ export function registerBillingUserRoutes(app: FastifyInstance): void {
             metadata: { userId: user.id },
           });
           customerId = customer.id;
-          await prisma.user.update({
+          await updateUser({
             where: { id: user.id },
             data: { mollieCustomerId: customerId },
           });
         }
-        const sub = await prisma.billingSubscription.create({
+        const sub = await createBillingSubscription({
           data: {
             id: nanoid(12),
             userId: user.id,
@@ -217,7 +228,7 @@ export function registerBillingUserRoutes(app: FastifyInstance): void {
       return reply.status(502).send({ error: "Mollie did not return a checkout URL" });
     }
 
-    const row = await prisma.payment.create({
+    const row = await createPayment({
       data: {
         id: paymentId,
         mollieId: mollie.id,
@@ -263,7 +274,7 @@ export function registerBillingUserRoutes(app: FastifyInstance): void {
     const user = await requireSessionAuth(request, reply);
     if (!user) return;
 
-    const row = await prisma.payment.findFirst({
+    const row = await findPayment({
       where: {
         id: request.params.id,
         ...(user.role === "ADMIN" ? {} : { userId: user.id }),
@@ -325,7 +336,7 @@ export function registerBillingUserRoutes(app: FastifyInstance): void {
     }
 
     // Only sync ids we created — ignore probes without calling Mollie.
-    const known = await prisma.payment.findFirst({
+    const known = await findPayment({
       where: { mollieId },
       select: { id: true },
     });

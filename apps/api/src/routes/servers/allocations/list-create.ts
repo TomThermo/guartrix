@@ -1,4 +1,3 @@
-import type { Prisma } from "@prisma/client";
 import type { FastifyInstance } from "fastify";
 import { nanoid } from "nanoid";
 import { hasPermission } from "@guartrix/shared";
@@ -10,9 +9,10 @@ import {
   serializeAllocation,
 } from "../../../servers/allocations.js";
 import { openFirewallPort } from "../../../nodes/firewall.js";
-import { prisma } from "../../../db.js";
 import { processManager } from "../../../servers/process-manager.js";
 import { assignSchema } from "./schemas.js";
+import { type AllocationWithServerName, createAllocation, findAllocation, findManyAllocations, updateAllocation } from "../../../repositories/allocations.js";
+import { findFirstServer } from "../../../repositories/servers.js";
 
 export function registerAllocationListCreateRoutes(app: FastifyInstance): void {
   app.get<{ Params: { id: string } }>("/api/servers/:id/allocations", async (request, reply) => {
@@ -29,7 +29,7 @@ export function registerAllocationListCreateRoutes(app: FastifyInstance): void {
       }).catch(() => undefined);
     }
 
-    const rows = await prisma.allocation.findMany({
+    const rows = await findManyAllocations({
       where: { serverId: access.server.id },
       include: { server: { select: { name: true } } },
       orderBy: [{ isPrimary: "desc" }, { port: "asc" }],
@@ -38,7 +38,7 @@ export function registerAllocationListCreateRoutes(app: FastifyInstance): void {
     const canCreate = hasPermission(access.permissions, "allocation.create");
     const free =
       canCreate && access.server.nodeId
-        ? await prisma.allocation.findMany({
+        ? await findManyAllocations({
             where: { nodeId: access.server.nodeId, serverId: null },
             include: { server: { select: { name: true } } },
             orderBy: { port: "asc" },
@@ -66,9 +66,9 @@ export function registerAllocationListCreateRoutes(app: FastifyInstance): void {
     }
     const nodeId = access.server.nodeId;
 
-    let row: Prisma.AllocationGetPayload<{ include: { server: { select: { name: true } } } }>;
+    let row: AllocationWithServerName;
     if (parsed.data.allocationId) {
-      const found = await prisma.allocation.findUnique({
+      const found = await findAllocation({
         where: { id: parsed.data.allocationId },
       });
       if (!found || found.nodeId !== nodeId) {
@@ -77,7 +77,7 @@ export function registerAllocationListCreateRoutes(app: FastifyInstance): void {
       if (found.serverId) {
         return reply.status(409).send({ error: "Allocation is already assigned" });
       }
-      row = await prisma.allocation.update({
+      row = await updateAllocation({
         where: { id: found.id },
         data: {
           serverId: access.server.id,
@@ -89,7 +89,7 @@ export function registerAllocationListCreateRoutes(app: FastifyInstance): void {
     } else {
       const port = parsed.data.port!;
       const protocol = parsed.data.protocol;
-      const existing = await prisma.allocation.findUnique({
+      const existing = await findAllocation({
         where: {
           nodeId_port_protocol: { nodeId, port, protocol },
         },
@@ -98,7 +98,7 @@ export function registerAllocationListCreateRoutes(app: FastifyInstance): void {
         return reply.status(409).send({ error: `Port ${port}/${protocol} is already allocated` });
       }
       if (protocol === "tcp") {
-        const serverClash = await prisma.server.findFirst({
+        const serverClash = await findFirstServer({
           where: {
             nodeId,
             port,
@@ -117,7 +117,7 @@ export function registerAllocationListCreateRoutes(app: FastifyInstance): void {
       }
 
       if (existing) {
-        row = await prisma.allocation.update({
+        row = await updateAllocation({
           where: { id: existing.id },
           data: {
             serverId: access.server.id,
@@ -127,7 +127,7 @@ export function registerAllocationListCreateRoutes(app: FastifyInstance): void {
           include: { server: { select: { name: true } } },
         });
       } else {
-        row = await prisma.allocation.create({
+        row = await createAllocation({
           data: {
             id: nanoid(12),
             nodeId,

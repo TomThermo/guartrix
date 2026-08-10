@@ -2,7 +2,6 @@ import type { FastifyInstance } from "fastify";
 import { nanoid } from "nanoid";
 import { logActivity } from "../../activity-log.js";
 import { requireAdmin } from "../../auth/auth.js";
-import { prisma } from "../../db.js";
 import { clearNodeToken, setNodeToken } from "../../nodes/daemon-client.js";
 import {
   generateDaemonToken,
@@ -11,7 +10,8 @@ import {
   syncNodeSftpDns,
 } from "../../nodes/nodes.js";
 import { createSchema, updateSchema } from "./schemas.js";
-import { serializeNodeWithUsage } from "./serialize.js";
+import { serializeNodeWithUsage } from "../../services/nodes-list-serialize.js";
+import { createNode, deleteNode, findNode, updateNode } from "../../repositories/nodes.js";
 
 export function registerNodeAdminCrudRoutes(app: FastifyInstance): void {
   app.post("/api/admin/nodes", async (request, reply) => {
@@ -38,7 +38,7 @@ export function registerNodeAdminCrudRoutes(app: FastifyInstance): void {
     const token = generateDaemonToken();
     const sftpPort = Number(process.env.SFTP_PORT ?? 2022) || 2022;
     const location = parsed.data.location ?? null;
-    const node = await prisma.node.create({
+    const node = await createNode({
       data: {
         id: nanoid(12),
         name: parsed.data.name,
@@ -80,7 +80,7 @@ export function registerNodeAdminCrudRoutes(app: FastifyInstance): void {
     if (!parsed.success) {
       return reply.status(400).send({ error: parsed.error.flatten() });
     }
-    const existing = await prisma.node.findUnique({
+    const existing = await findNode({
       where: { id: request.params.id },
     });
     if (!existing) return reply.status(404).send({ error: "Not found" });
@@ -101,7 +101,7 @@ export function registerNodeAdminCrudRoutes(app: FastifyInstance): void {
       }
       data.daemonBaseDirectory = dir.replace(/\/+$/, "") || "/var/lib/guartrix";
     }
-    await prisma.node.update({
+    await updateNode({
       where: { id: request.params.id },
       data,
     });
@@ -122,7 +122,7 @@ export function registerNodeAdminCrudRoutes(app: FastifyInstance): void {
   app.delete<{ Params: { id: string } }>("/api/admin/nodes/:id", async (request, reply) => {
     const admin = await requireAdmin(request, reply, "nodes.write");
     if (!admin) return;
-    const existing = await prisma.node.findUnique({
+    const existing = await findNode({
       where: { id: request.params.id },
       include: { _count: { select: { servers: true } } },
     });
@@ -134,7 +134,7 @@ export function registerNodeAdminCrudRoutes(app: FastifyInstance): void {
       return reply.status(400).send({ error: "Node still has servers assigned" });
     }
     await removeNodeSftpDns(request.params.id);
-    await prisma.node.delete({ where: { id: request.params.id } });
+    await deleteNode({ where: { id: request.params.id } });
     clearNodeToken(request.params.id);
     logActivity({
       action: "node.delete",

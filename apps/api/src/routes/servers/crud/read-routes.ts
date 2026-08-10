@@ -2,13 +2,14 @@ import type { FastifyInstance } from "fastify";
 import { requireServerAccess } from "../../../auth/auth.js";
 import { userHasServerPermission } from "../../../servers/server-access.js";
 import { config } from "../../../config.js";
-import { prisma } from "../../../db.js";
 import { readPlayers } from "../../../servers/players.js";
 import { getOnlinePlayers } from "../../../servers/online-players.js";
 import { processManager } from "../../../servers/process-manager.js";
 import { readServerProperties } from "../../../servers/properties.js";
 import { serverListInclude, toServerDetail } from "../../../servers/serialize.js";
 import { collectServerStats } from "../../../servers/stats.js";
+import { findFirstNode, findNode } from "../../../repositories/nodes.js";
+import { findServerOrThrow, updateServer } from "../../../repositories/servers.js";
 
 export function registerServerReadRoutes(app: FastifyInstance): void {
   app.get<{ Params: { id: string }; Querystring: { disk?: string } }>(
@@ -56,7 +57,7 @@ export function registerServerReadRoutes(app: FastifyInstance): void {
   app.get<{ Params: { id: string } }>("/api/servers/:id", async (request, reply) => {
     const access = await requireServerAccess(request, reply, request.params.id);
     if (!access) return;
-    let server = await prisma.server.findUniqueOrThrow({
+    let server = await findServerOrThrow({
       where: { id: access.server.id },
       include: serverListInclude,
     });
@@ -66,7 +67,7 @@ export function registerServerReadRoutes(app: FastifyInstance): void {
         processManager.isRunning(server.id) || (await processManager.refreshRunning(server.id));
       if (up) {
         processManager.applyStatus(server.id, "RUNNING", null);
-        server = await prisma.server.update({
+        server = await updateServer({
           where: { id: server.id },
           data: { status: "RUNNING", errorMessage: null },
           include: serverListInclude,
@@ -107,8 +108,8 @@ export function registerServerReadRoutes(app: FastifyInstance): void {
     }
 
     const node = server.nodeId
-      ? await prisma.node.findUnique({ where: { id: server.nodeId } })
-      : await prisma.node.findFirst({ where: { isLocal: true } });
+      ? await findNode({ where: { id: server.nodeId } })
+      : await findFirstNode({ where: { isLocal: true } });
 
     const canSftp = await userHasServerPermission(access.user, server, "file.sftp");
     const { nodeSftpDisplayHost } = await import("../../../nodes/nodes.js");

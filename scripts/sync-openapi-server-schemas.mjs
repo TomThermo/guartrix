@@ -10,7 +10,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const schemaPath = path.join(root, "apps/api/src/schemas/servers.ts");
+const schemaPath = path.join(root, "packages/shared/src/schemas/servers.ts");
 const openapiPath = path.join(root, "docs/openapi.yaml");
 const checkOnly = process.argv.includes("--check");
 

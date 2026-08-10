@@ -21,3 +21,4 @@ export * from "./world-seed-urls.js";
 export * from "./bedrock-players.js";
 export * from "./countries.js";
 export * from "./safe-url.js";
+export * from "./schemas/servers.js";

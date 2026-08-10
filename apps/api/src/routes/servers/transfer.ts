@@ -1,8 +1,8 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { assertAdminFullApiKey, requireServerAccess } from "../../auth/auth.js";
-import { prisma } from "../../db.js";
 import { serverListInclude, toMcServer } from "../../servers/serialize.js";
+import { findServerOrThrow } from "../../repositories/servers.js";
 
 const transferSchema = z.object({
   nodeId: z.string().min(1),
@@ -37,7 +37,7 @@ export function registerServerTransferRoutes(app: FastifyInstance): void {
           startAfter: parsed.data.startAfter,
           actor: access.user,
         });
-        const updated = await prisma.server.findUniqueOrThrow({
+        const updated = await findServerOrThrow({
           where: { id: access.server.id },
           include: serverListInclude,
         });
@@ -63,7 +63,7 @@ export function registerServerTransferRoutes(app: FastifyInstance): void {
       return {
         transfer: null,
         server: toMcServer(
-          await prisma.server.findUniqueOrThrow({
+          await findServerOrThrow({
             where: { id: access.server.id },
             include: serverListInclude,
           }),
@@ -73,7 +73,7 @@ export function registerServerTransferRoutes(app: FastifyInstance): void {
     return {
       transfer: job,
       server: toMcServer(
-        await prisma.server.findUniqueOrThrow({
+        await findServerOrThrow({
           where: { id: access.server.id },
           include: serverListInclude,
         }),

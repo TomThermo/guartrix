@@ -2,9 +2,17 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { requireApplication } from "../../auth/application-auth.js";
 import { logActivity } from "../../activity-log.js";
-import { prisma } from "../../db.js";
 import { serverListInclude, toMcServer } from "../../servers/serialize.js";
 import { performServerPower } from "../../servers/power-actions.js";
+import {
+  countServers,
+  deleteServer,
+  findManyServers,
+  findServer,
+  findServerOrThrow,
+  updateServer,
+} from "../../repositories/servers.js";
+import { findUser } from "../../repositories/users.js";
 import {
   createServerApplicationSchema,
   powerSignalSchema,
@@ -25,13 +33,13 @@ export function registerApplicationServerCoreRoutes(app: FastifyInstance): void 
       Math.floor(Number.isFinite(Number(q.offset)) ? Number(q.offset) : 0),
     );
     const [rows, total] = await Promise.all([
-      prisma.server.findMany({
+      findManyServers({
         include: serverListInclude,
         orderBy: { createdAt: "desc" },
         take: limit,
         skip: offset,
       }),
-      prisma.server.count(),
+      countServers(),
     ]);
     void reply.header("x-total-count", String(total));
     return { servers: rows.map(toMcServer), total, limit, offset };
@@ -45,7 +53,7 @@ export function registerApplicationServerCoreRoutes(app: FastifyInstance): void 
       return reply.status(400).send({ error: parsed.error.flatten() });
     }
     const data = parsed.data;
-    const owner = await prisma.user.findUnique({ where: { id: data.ownerId } });
+    const owner = await findUser({ where: { id: data.ownerId } });
     if (!owner) return reply.status(404).send({ error: "Owner not found" });
 
     try {
@@ -95,7 +103,7 @@ export function registerApplicationServerCoreRoutes(app: FastifyInstance): void 
 
       await autoStartProvisionedServer(id);
 
-      const refreshed = await prisma.server.findUniqueOrThrow({
+      const refreshed = await findServerOrThrow({
         where: { id },
         include: serverListInclude,
       });
@@ -123,7 +131,7 @@ export function registerApplicationServerCoreRoutes(app: FastifyInstance): void 
 
   app.get<{ Params: { id: string } }>("/api/application/servers/:id", async (request, reply) => {
     if (!(await requireApplication(request, reply, "servers.read"))) return;
-    const row = await prisma.server.findUnique({
+    const row = await findServer({
       where: { id: request.params.id },
       include: serverListInclude,
     });
@@ -147,13 +155,13 @@ export function registerApplicationServerCoreRoutes(app: FastifyInstance): void 
     if (!parsed.success) {
       return reply.status(400).send({ error: parsed.error.flatten() });
     }
-    const existing = await prisma.server.findUnique({
+    const existing = await findServer({
       where: { id: request.params.id },
     });
     if (!existing) return reply.status(404).send({ error: "Server not found" });
 
     if (parsed.data.ownerId) {
-      const owner = await prisma.user.findUnique({
+      const owner = await findUser({
         where: { id: parsed.data.ownerId },
       });
       if (!owner) return reply.status(404).send({ error: "Owner not found" });
@@ -166,7 +174,7 @@ export function registerApplicationServerCoreRoutes(app: FastifyInstance): void 
       }
     }
 
-    const updated = await prisma.server.update({
+    const updated = await updateServer({
       where: { id: existing.id },
       data: {
         ...(parsed.data.name != null ? { name: parsed.data.name } : {}),
@@ -203,7 +211,7 @@ export function registerApplicationServerCoreRoutes(app: FastifyInstance): void 
       if (!parsed.success) {
         return reply.status(400).send({ error: parsed.error.flatten() });
       }
-      const existing = await prisma.server.findUnique({
+      const existing = await findServer({
         where: { id: request.params.id },
       });
       if (!existing) return reply.status(404).send({ error: "Server not found" });
@@ -226,7 +234,7 @@ export function registerApplicationServerCoreRoutes(app: FastifyInstance): void 
   app.delete<{ Params: { id: string } }>("/api/application/servers/:id", async (request, reply) => {
     const ctx = await requireApplication(request, reply, "servers.delete");
     if (!ctx) return;
-    const server = await prisma.server.findUnique({
+    const server = await findServer({
       where: { id: request.params.id },
     });
     if (!server) return reply.status(404).send({ error: "Server not found" });
@@ -250,7 +258,7 @@ export function registerApplicationServerCoreRoutes(app: FastifyInstance): void 
     await destroyServerDatabases(server.id).catch(() => undefined);
     await wipeServerEverywhere(server.id).catch(() => undefined);
     await releaseServerAllocations(server.id).catch(() => undefined);
-    await prisma.server.delete({ where: { id: server.id } });
+    await deleteServer({ where: { id: server.id } });
 
     logActivity({
       action: "server.delete",

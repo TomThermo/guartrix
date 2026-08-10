@@ -3,6 +3,11 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.24] — 2026-08-10
+
+### Changed
+- Server Zod contracts moved to `@guartrix/shared/schemas/servers`; routes↛prisma enforced (repositories layer); wiki article TS mirrors stripped (markdown-only metadata).
+
 ## [1.4.23] — 2026-08-10
 
 ### Changed

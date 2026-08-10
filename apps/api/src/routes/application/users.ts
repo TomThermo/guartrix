@@ -15,9 +15,9 @@ import {
   userRoleSchema,
 } from "../../auth/user-quotas.js";
 import { logActivity } from "../../activity-log.js";
-import { prisma } from "../../db.js";
 import { sendZodError } from "../../http-error.js";
 import { toAppUser } from "./helpers.js";
+import { countUsers, createUser, deleteUser, findManyUsers, findUser, updateUser } from "../../repositories/users.js";
 
 /** Minting/promoting ADMIN needs a full Application key (`*`), not users.write alone. */
 function canAssignAdminRole(scopes: readonly string[]): boolean {
@@ -56,12 +56,12 @@ export function registerApplicationUserRoutes(app: FastifyInstance): void {
       Math.floor(Number.isFinite(Number(q.offset)) ? Number(q.offset) : 0),
     );
     const [rows, total] = await Promise.all([
-      prisma.user.findMany({
+      findManyUsers({
         orderBy: { createdAt: "desc" },
         take: limit,
         skip: offset,
       }),
-      prisma.user.count(),
+      countUsers(),
     ]);
     void reply.header("x-total-count", String(total));
     return { users: rows.map(toAppUser), total, limit, offset };
@@ -69,7 +69,7 @@ export function registerApplicationUserRoutes(app: FastifyInstance): void {
 
   app.get<{ Params: { id: string } }>("/api/application/users/:id", async (request, reply) => {
     if (!(await requireApplication(request, reply, "users.read"))) return;
-    const user = await prisma.user.findUnique({
+    const user = await findUser({
       where: { id: request.params.id },
     });
     if (!user) return reply.status(404).send({ error: "User not found" });
@@ -101,7 +101,7 @@ export function registerApplicationUserRoutes(app: FastifyInstance): void {
       },
       APPLICATION_CREATE_QUOTA_DEFAULTS,
     );
-    const user = await prisma.user.create({
+    const user = await createUser({
       data: {
         id: nanoid(12),
         username: parsed.data.username,
@@ -132,7 +132,7 @@ export function registerApplicationUserRoutes(app: FastifyInstance): void {
     if (!ctx) return;
     const parsed = updateUserSchema.safeParse(request.body);
     if (!parsed.success) return sendZodError(reply, parsed);
-    const existing = await prisma.user.findUnique({
+    const existing = await findUser({
       where: { id: request.params.id },
     });
     if (!existing) return reply.status(404).send({ error: "User not found" });
@@ -169,7 +169,7 @@ export function registerApplicationUserRoutes(app: FastifyInstance): void {
       return reply.status(400).send({ error: roleResult.error });
     }
 
-    const user = await prisma.user.update({
+    const user = await updateUser({
       where: { id: existing.id },
       data,
     });
@@ -192,7 +192,7 @@ export function registerApplicationUserRoutes(app: FastifyInstance): void {
   app.delete<{ Params: { id: string } }>("/api/application/users/:id", async (request, reply) => {
     const ctx = await requireApplication(request, reply, "users.delete");
     if (!ctx) return;
-    const existing = await prisma.user.findUnique({
+    const existing = await findUser({
       where: { id: request.params.id },
     });
     if (!existing) return reply.status(404).send({ error: "User not found" });
@@ -202,7 +202,7 @@ export function registerApplicationUserRoutes(app: FastifyInstance): void {
     if (!lastAdmin.ok) {
       return reply.status(400).send({ error: lastAdmin.error });
     }
-    await prisma.user.delete({ where: { id: existing.id } });
+    await deleteUser({ where: { id: existing.id } });
     logActivity({
       action: "user.delete",
       actor: `app:${ctx.prefix}`,

@@ -13,8 +13,8 @@ import {
   readBackupSchedule,
   restoreBackup,
 } from "../../servers/backups.js";
-import { prisma } from "../../db.js";
 import { parseRange } from "./backups-helpers.js";
+import { findServerOrThrow } from "../../repositories/servers.js";
 
 /** List / create / download / delete / restore backup routes. */
 export function registerBackupCrudRoutes(app: FastifyInstance): void {
@@ -201,7 +201,7 @@ export function registerBackupCrudRoutes(app: FastifyInstance): void {
         await openFirewallPort(server.port, server.nodeId, primaryAllocationProtocol(server.type));
         await startServerIfLicensed(server.id);
       }
-      const updated = await prisma.server.findUniqueOrThrow({
+      const updated = await findServerOrThrow({
         where: { id: server.id },
         include: (await import("../../servers/serialize.js")).serverListInclude,
       });

@@ -16,7 +16,7 @@ import {
   fileRenameSchema,
   fileWriteSchema,
 } from "../../schemas/servers.js";
-import { requireApplicationServer } from "./server-access.js";
+import { requireApplicationServer } from "../../services/application-server-access.js";
 
 /** Application API file manager mirrors (`servers.files`). */
 export function registerApplicationServerFilesRoutes(app: FastifyInstance): void {

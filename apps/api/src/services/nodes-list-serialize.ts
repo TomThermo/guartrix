@@ -1,5 +1,5 @@
-import { prisma } from "../../db.js";
-import { listNodesWithUsage } from "../../nodes/nodes.js";
+import { listNodesWithUsage } from "../nodes/nodes.js";
+import { findNode } from "../repositories/nodes.js";
 
 export async function serializeNodeWithUsage(nodeId: string) {
   const nodes = await listNodesWithUsage();
@@ -9,7 +9,7 @@ export async function serializeNodeWithUsage(nodeId: string) {
 }
 
 export async function resolveListedNode(nodeId: string) {
-  const node = await prisma.node.findUnique({ where: { id: nodeId } });
+  const node = await findNode({ where: { id: nodeId } });
   if (!node) return null;
   return node;
 }

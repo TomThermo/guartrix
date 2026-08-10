@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { requireApplication } from "../../auth/application-auth.js";
-import { prisma } from "../../db.js";
+import { countActivityEvents, findManyActivityEvents } from "../../repositories/activity-events.js";
 
 export function registerApplicationActivityRoutes(app: FastifyInstance): void {
   app.get("/api/application/activity", async (request, reply) => {
@@ -31,8 +31,8 @@ export function registerApplicationActivityRoutes(app: FastifyInstance): void {
       where.OR = [{ action: { contains: term } }, { actorName: { contains: term } }];
     }
     const [total, rows] = await Promise.all([
-      prisma.activityEvent.count({ where }),
-      prisma.activityEvent.findMany({
+      countActivityEvents({ where }),
+      findManyActivityEvents({
         where,
         orderBy: { createdAt: "desc" },
         skip: offset,

@@ -8,7 +8,6 @@ import {
   verifyAccountPassword,
 } from "../../../auth/auth.js";
 import { logActivity } from "../../../activity-log.js";
-import { prisma } from "../../../db.js";
 import { destroyServerDatabases } from "../databases.js";
 import { openFirewallPort } from "../../../nodes/firewall.js";
 import { processManager } from "../../../servers/process-manager.js";
@@ -19,6 +18,8 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { cloneSchema } from "./schemas.js";
+import { findNode } from "../../../repositories/nodes.js";
+import { createServer, deleteServer, findServerOrThrow, updateServer } from "../../../repositories/servers.js";
 
 export function registerServerDeleteCloneRoutes(app: FastifyInstance): void {
   app.delete<{ Params: { id: string }; Body: { password?: string } }>(
@@ -57,7 +58,7 @@ export function registerServerDeleteCloneRoutes(app: FastifyInstance): void {
       await destroyServerDatabases(server.id).catch(() => undefined);
       await wipeServerEverywhere(server.id).catch(() => undefined);
       await releaseServerAllocations(server.id).catch(() => undefined);
-      await prisma.server.delete({ where: { id: server.id } });
+      await deleteServer({ where: { id: server.id } });
       logActivity({
         action: "server.delete",
         request,
@@ -140,12 +141,12 @@ export function registerServerDeleteCloneRoutes(app: FastifyInstance): void {
       }
 
       const id = nanoid(12);
-      const destNode = await prisma.node.findUnique({ where: { id: nodeId } });
+      const destNode = await findNode({ where: { id: nodeId } });
       if (!destNode) {
         return reply.status(400).send({ error: "Node not found" });
       }
 
-      await prisma.server.create({
+      await createServer({
         data: {
           id,
           name: parsed.data.name,
@@ -202,7 +203,7 @@ export function registerServerDeleteCloneRoutes(app: FastifyInstance): void {
 
         const subdomain = await tryEnsureServerSubdomain(parsed.data.name, parsed.data.port);
 
-        const updated = await prisma.server.update({
+        const updated = await updateServer({
           where: { id },
           data: { status: "STOPPED", errorMessage: null, subdomain },
           include: serverListInclude,
@@ -220,7 +221,7 @@ export function registerServerDeleteCloneRoutes(app: FastifyInstance): void {
           },
         });
         await autoStartProvisionedServer(updated.id);
-        const refreshed = await prisma.server.findUniqueOrThrow({
+        const refreshed = await findServerOrThrow({
           where: { id: updated.id },
           include: serverListInclude,
         });

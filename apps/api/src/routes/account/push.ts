@@ -4,8 +4,8 @@ import { nanoid } from "nanoid";
 import { z } from "zod";
 import { requireAuth } from "../../auth/auth.js";
 import { assertSameOrigin } from "../../auth/csrf.js";
-import { prisma } from "../../db.js";
 import { getVapidPublicKey, isWebPushConfigured } from "../../web-push.js";
+import { countPushSubscriptions, createPushSubscription, deleteManyPushSubscriptions, findManyPushSubscriptions, findPushSubscription, updatePushSubscription } from "../../repositories/account.js";
 
 function endpointHash(endpoint: string): string {
   return createHash("sha256").update(endpoint).digest("hex");
@@ -33,7 +33,7 @@ export function registerAccountPushRoutes(app: FastifyInstance): void {
     if (!user) return;
 
     const publicKey = getVapidPublicKey();
-    const count = await prisma.pushSubscription.count({
+    const count = await countPushSubscriptions({
       where: { userId: user.id },
     });
     return {
@@ -47,7 +47,7 @@ export function registerAccountPushRoutes(app: FastifyInstance): void {
     const user = await requireAuth(request, reply);
     if (!user) return;
 
-    const rows = await prisma.pushSubscription.findMany({
+    const rows = await findManyPushSubscriptions({
       where: { userId: user.id },
       orderBy: { createdAt: "desc" },
       select: {
@@ -92,11 +92,11 @@ export function registerAccountPushRoutes(app: FastifyInstance): void {
         : null);
 
     const hash = endpointHash(parsed.data.endpoint);
-    const existing = await prisma.pushSubscription.findUnique({
+    const existing = await findPushSubscription({
       where: { endpointHash: hash },
     });
     if (existing && existing.userId !== user.id) {
-      await prisma.pushSubscription.update({
+      await updatePushSubscription({
         where: { id: existing.id },
         data: {
           userId: user.id,
@@ -107,7 +107,7 @@ export function registerAccountPushRoutes(app: FastifyInstance): void {
         },
       });
     } else if (existing) {
-      await prisma.pushSubscription.update({
+      await updatePushSubscription({
         where: { id: existing.id },
         data: {
           endpoint: parsed.data.endpoint,
@@ -117,7 +117,7 @@ export function registerAccountPushRoutes(app: FastifyInstance): void {
         },
       });
     } else {
-      await prisma.pushSubscription.create({
+      await createPushSubscription({
         data: {
           id: nanoid(12),
           userId: user.id,
@@ -144,7 +144,7 @@ export function registerAccountPushRoutes(app: FastifyInstance): void {
       return reply.status(400).send({ error: "Invalid endpoint" });
     }
 
-    await prisma.pushSubscription.deleteMany({
+    await deleteManyPushSubscriptions({
       where: {
         userId: user.id,
         endpointHash: endpointHash(parsed.data.endpoint),
@@ -159,7 +159,7 @@ export function registerAccountPushRoutes(app: FastifyInstance): void {
     const user = await requireAuth(request, reply);
     if (!user) return;
 
-    const result = await prisma.pushSubscription.deleteMany({
+    const result = await deleteManyPushSubscriptions({
       where: { userId: user.id },
     });
     return { ok: true, deleted: result.count };

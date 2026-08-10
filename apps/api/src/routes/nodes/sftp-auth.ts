@@ -3,7 +3,6 @@ import { z } from "zod";
 import { hasPermission } from "@guartrix/shared";
 import { logActivity } from "../../activity-log.js";
 import { TIMING_DUMMY_HASH, verifyPassword } from "../../auth/auth.js";
-import { prisma } from "../../db.js";
 import { findNodeByDaemonToken } from "../../nodes/nodes.js";
 import { getNodeToken } from "../../nodes/daemon-client.js";
 import {
@@ -14,6 +13,9 @@ import {
 import { verifyUserAppPassword } from "../account/app-passwords.js";
 import { getServerPermissions } from "../../servers/server-access.js";
 import { getRateLimitStore } from "../../rate-limit-store.js";
+import { findNode } from "../../repositories/nodes.js";
+import { findServer } from "../../repositories/servers.js";
+import { findUser, findUserByUsernameInsensitive } from "../../repositories/users.js";
 
 const authBodySchema = z.object({
   username: z.string().min(1).max(64),
@@ -56,7 +58,7 @@ async function resolveDaemonNodeFromBearer(token: string) {
       nodeId: nid,
     });
     if (!claims) return null;
-    return prisma.node.findUnique({ where: { id: nid } });
+    return findNode({ where: { id: nid } });
   }
   if (!daemonJwtLegacyBearerEnabled()) return null;
   console.warn(
@@ -93,23 +95,17 @@ export function registerSftpAuthRoutes(app: FastifyInstance): void {
       return reply.status(429).send({ ok: false, error: "Too many attempts" });
     }
 
-    const server = await prisma.server.findUnique({
+    const server = await findServer({
       where: { id: serverId },
     });
     if (!server || server.nodeId !== node.id) {
       return reply.status(401).send({ ok: false, error: "Unauthorized" });
     }
 
-    const user = await prisma.$queryRaw<
-      Array<{ id: string; username: string; passwordHash: string; role: string }>
-    >`
-      SELECT id, username, passwordHash, role FROM User
-      WHERE LOWER(username) = LOWER(${username})
-      LIMIT 1
-    `.then(async (rows) => {
+    const user = await findUserByUsernameInsensitive(username).then(async (rows) => {
       const id = rows[0]?.id;
       if (!id) return null;
-      return prisma.user.findUnique({ where: { id } });
+      return findUser({ where: { id } });
     });
 
     // Always scrypt-verify (dummy hash when user missing) to reduce timing leaks.

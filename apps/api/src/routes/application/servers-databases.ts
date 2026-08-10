@@ -5,7 +5,7 @@ import {
   listServerDatabasesBasic,
   rotateServerDatabasePassword,
 } from "../../services/server-databases.js";
-import { requireApplicationServer } from "./server-access.js";
+import { requireApplicationServer } from "../../services/application-server-access.js";
 
 /** Application API database mirrors (`servers.databases`). */
 export function registerApplicationServerDatabasesRoutes(app: FastifyInstance): void {

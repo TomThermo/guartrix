@@ -1,5 +1,4 @@
 import { randomBytes } from "node:crypto";
-import type { User } from "@prisma/client";
 import type { FastifyInstance } from "fastify";
 import { nanoid } from "nanoid";
 import { z } from "zod";
@@ -18,10 +17,11 @@ import { assertSameOrigin, ensureSessionCsrfToken } from "../../auth/csrf.js";
 import { assertTurnstileToken } from "../../auth/turnstile.js";
 import { configQuotaDefaults, usernameSchema } from "../../auth/user-quotas.js";
 import { config } from "../../config.js";
-import { prisma } from "../../db.js";
 import { isSmtpConfigured, sendMail } from "../../mail.js";
 import { linkPendingSubUsers } from "../../servers/server-access.js";
 import { checkLoginRate, clearLoginRate } from "./session.js";
+import { createEmailVerificationToken, deleteManyEmailVerificationTokens, findEmailVerificationToken } from "../../repositories/auth.js";
+import { type User, createUser, updateUser } from "../../repositories/users.js";
 
 const registerSchema = z.object({
   username: usernameSchema,
@@ -78,7 +78,7 @@ export function registerSessionRegisterRoutes(app: FastifyInstance): void {
 
     let user: User;
     try {
-      user = await prisma.user.create({
+      user = await createUser({
         data: {
           id: nanoid(12),
           username,
@@ -95,7 +95,7 @@ export function registerSessionRegisterRoutes(app: FastifyInstance): void {
 
     // Email verification required before pending subuser invites are linked.
     const rawToken = randomBytes(32).toString("hex");
-    await prisma.emailVerificationToken.create({
+    await createEmailVerificationToken({
       data: {
         id: nanoid(12),
         userId: user.id,
@@ -170,7 +170,7 @@ export function registerSessionRegisterRoutes(app: FastifyInstance): void {
       return reply.status(400).send({ error: "Invalid verification link" });
     }
 
-    const row = await prisma.emailVerificationToken.findUnique({
+    const row = await findEmailVerificationToken({
       where: { tokenHash: hashResetToken(token) },
       include: { user: true },
     });
@@ -178,11 +178,11 @@ export function registerSessionRegisterRoutes(app: FastifyInstance): void {
       return reply.status(400).send({ error: "Verification link is invalid or expired" });
     }
 
-    await prisma.user.update({
+    await updateUser({
       where: { id: row.userId },
       data: { emailVerified: true },
     });
-    await prisma.emailVerificationToken.deleteMany({
+    await deleteManyEmailVerificationTokens({
       where: { userId: row.userId },
     });
     await linkPendingSubUsers(row.userId, row.user.email);

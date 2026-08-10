@@ -1,9 +1,10 @@
 import type { FastifyInstance } from "fastify";
 import { getSessionUser, isAuthenticated } from "../../auth/auth.js";
-import { prisma } from "../../db.js";
 import { hashInviteToken } from "../../servers/server-access.js";
 import { logActivity } from "../../activity-log.js";
 import { canAcceptInvite } from "./invites-policy.js";
+import { findFirstSubUser, updateSubUser } from "../../repositories/auth.js";
+import { findUser } from "../../repositories/users.js";
 
 /** Public invite peek: never leak the full invite email without a session. */
 function maskEmail(email: string): string {
@@ -22,7 +23,7 @@ export function registerInviteRoutes(app: FastifyInstance): void {
     if (!raw || raw.length < 16) {
       return reply.status(404).send({ error: "Invite not found" });
     }
-    const row = await prisma.subUser.findFirst({
+    const row = await findFirstSubUser({
       where: {
         inviteTokenHash: hashInviteToken(raw),
         inviteExpiresAt: { gt: new Date() },
@@ -69,7 +70,7 @@ export function registerInviteRoutes(app: FastifyInstance): void {
     const raw = request.params.token?.trim();
     if (!raw) return reply.status(404).send({ error: "Invite not found" });
 
-    const row = await prisma.subUser.findFirst({
+    const row = await findFirstSubUser({
       where: {
         inviteTokenHash: hashInviteToken(raw),
         inviteExpiresAt: { gt: new Date() },
@@ -80,7 +81,7 @@ export function registerInviteRoutes(app: FastifyInstance): void {
       return reply.status(404).send({ error: "Invite not found or expired" });
     }
 
-    const dbUser = await prisma.user.findUnique({ where: { id: user.id } });
+    const dbUser = await findUser({ where: { id: user.id } });
     const gate = canAcceptInvite({
       sessionEmail: dbUser?.email,
       emailVerified: dbUser?.emailVerified,
@@ -100,7 +101,7 @@ export function registerInviteRoutes(app: FastifyInstance): void {
       });
     }
 
-    await prisma.subUser.update({
+    await updateSubUser({
       where: { id: row.id },
       data: {
         userId: user.id,
