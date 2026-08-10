@@ -3,6 +3,11 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.43] — 2026-08-10
+
+### Added
+- Admin Mail template Preview: **Light / Dark** toggle (Outlook-style dark-mode approximation).
+
 ## [1.4.42] — 2026-08-10
 
 ### Fixed

@@ -1837,6 +1837,11 @@ export const en = {
     mailTemplatesPreview: "Preview",
     mailTemplatesPreviewLabel: "Preview",
     mailTemplatesPreviewEmpty: "Click Preview to render this template.",
+    mailTemplatesPreviewTheme: "Preview theme",
+    mailTemplatesPreviewLight: "Light",
+    mailTemplatesPreviewDark: "Dark",
+    mailTemplatesPreviewThemeHelp:
+      "Dark approximates Outlook / dark-mode mail clients (not identical to every client).",
     mailTemplatesResetOne: "Reset",
     mailTemplatesResetAll: "Reset all",
     mailTemplatesResetAllConfirm:

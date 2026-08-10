@@ -18,6 +18,18 @@ const TEMPLATE_LABELS: Record<MailTemplateId, string> = {
 
 type EditTarget = "layout" | MailTemplateId;
 type EditorPane = "html" | "text" | "preview";
+type PreviewTheme = "light" | "dark";
+
+const PREVIEW_THEME_KEY = "guartrix.mailTemplatePreviewTheme";
+
+function readStoredPreviewTheme(): PreviewTheme {
+  try {
+    const raw = localStorage.getItem(PREVIEW_THEME_KEY);
+    return raw === "dark" ? "dark" : "light";
+  } catch {
+    return "light";
+  }
+}
 
 export function MailTemplatesEditor({
   busy,
@@ -40,6 +52,7 @@ export function MailTemplatesEditor({
   const [text, setText] = useState("");
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [previewSubject, setPreviewSubject] = useState<string | null>(null);
+  const [previewTheme, setPreviewTheme] = useState<PreviewTheme>(() => readStoredPreviewTheme());
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -171,6 +184,15 @@ export function MailTemplatesEditor({
     setPane(next);
   }
 
+  function onPreviewThemeChange(next: PreviewTheme) {
+    setPreviewTheme(next);
+    try {
+      localStorage.setItem(PREVIEW_THEME_KEY, next);
+    } catch {
+      /* ignore */
+    }
+  }
+
   const customBadge =
     target === "layout"
       ? view?.layoutHtmlCustom || view?.layoutTxtCustom
@@ -293,16 +315,55 @@ export function MailTemplatesEditor({
           />
         ) : null}
         {pane === "preview" ? (
-          <div className="mail-template-editor__preview">
-            {previewSubject ? (
-              <div className="mail-template-editor__preview-subject">{previewSubject}</div>
-            ) : null}
-            {previewHtml ? (
+          <div
+            className={`mail-template-editor__preview mail-template-editor__preview--${previewTheme}`}
+          >
+            <div className="mail-template-editor__preview-bar">
+              <div className="mail-template-editor__preview-subject">
+                {previewSubject ?? t("adminSettings.mailTemplatesPreview")}
+              </div>
               <div
-                className="mail-template-editor__preview-body"
-                // Preview of operator-owned HTML templates (admin-only).
-                dangerouslySetInnerHTML={{ __html: previewHtml }}
-              />
+                className="mail-template-editor__theme-toggle"
+                role="group"
+                aria-label={t("adminSettings.mailTemplatesPreviewTheme")}
+              >
+                <button
+                  type="button"
+                  className={
+                    previewTheme === "light"
+                      ? "mail-template-editor__theme-btn is-active"
+                      : "mail-template-editor__theme-btn"
+                  }
+                  disabled={busy || loading}
+                  onClick={() => onPreviewThemeChange("light")}
+                >
+                  {t("adminSettings.mailTemplatesPreviewLight")}
+                </button>
+                <button
+                  type="button"
+                  className={
+                    previewTheme === "dark"
+                      ? "mail-template-editor__theme-btn is-active"
+                      : "mail-template-editor__theme-btn"
+                  }
+                  disabled={busy || loading}
+                  onClick={() => onPreviewThemeChange("dark")}
+                >
+                  {t("adminSettings.mailTemplatesPreviewDark")}
+                </button>
+              </div>
+            </div>
+            <p className="mail-template-editor__preview-hint mb-0">
+              {t("adminSettings.mailTemplatesPreviewThemeHelp")}
+            </p>
+            {previewHtml ? (
+              <div className="mail-template-editor__preview-body">
+                <div
+                  className="mail-template-editor__preview-mail"
+                  // Preview of operator-owned HTML templates (admin-only).
+                  dangerouslySetInnerHTML={{ __html: previewHtml }}
+                />
+              </div>
             ) : (
               <div className="mail-template-editor__preview-empty">{t("adminSettings.mailTemplatesPreviewEmpty")}</div>
             )}

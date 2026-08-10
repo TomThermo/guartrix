@@ -1852,6 +1852,11 @@ export const nl: Messages = {
     mailTemplatesPreview: "Voorbeeld",
     mailTemplatesPreviewLabel: "Voorbeeld",
     mailTemplatesPreviewEmpty: "Klik Voorbeeld om deze template te renderen.",
+    mailTemplatesPreviewTheme: "Voorbeeldthema",
+    mailTemplatesPreviewLight: "Light",
+    mailTemplatesPreviewDark: "Dark",
+    mailTemplatesPreviewThemeHelp:
+      "Dark benadert Outlook / dark-mode mailclients (niet exact gelijk aan elke client).",
     mailTemplatesResetOne: "Reset",
     mailTemplatesResetAll: "Alles resetten",
     mailTemplatesResetAllConfirm:
