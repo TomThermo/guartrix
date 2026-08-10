@@ -58,7 +58,11 @@ export function applyTemplate(
 
 function brandingVars(): MailTemplateVars {
   const panelUrl = config.publicBaseUrl.replace(/\/$/, "");
-  const logoUrl = config.appLogo?.trim() || "";
+  const logoRaw = config.appLogo?.trim() || "";
+  let logoUrl = logoRaw;
+  if (logoRaw && !/^https?:\/\//i.test(logoRaw)) {
+    logoUrl = `${panelUrl}${logoRaw.startsWith("/") ? "" : "/"}${logoRaw}`;
+  }
   const fromRaw = config.mail.from.trim() || "noreply@guartrix.com";
   const fromAddress = fromRaw.includes("<")
     ? (fromRaw.match(/<([^>]+)>/)?.[1] ?? fromRaw)

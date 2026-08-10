@@ -27,7 +27,7 @@ Without SMTP configured, outbound mail is written to `data/mail-outbox/`.
 
 ### Mail templates
 
-All panel emails are rendered as **multipart/alternative** (HTML + plain text) from files under `apps/api/src/mail-templates/` via `renderMail()` in `apps/api/src/infra/mail-templates.ts`. Content is embedded into the API release bundle (`node scripts/generate-mail-templates.mjs` runs during `esbuild-release`). Operators can override subject/HTML/text and the shared layout under **Admin → Settings → Mail → Mail templates**; overrides live in `data/mail-templates.json` (gitignored). Shared branding still comes from panel settings (`appName`, `appLogo`, `publicBaseUrl`, `mailFrom`). Template IDs: `verify-email`, `password-reset`, `invite-set-password`, `invite-server`, `alert`, `test-mail`.
+All panel emails are rendered as **multipart/alternative** (HTML + plain text) from files under `apps/api/src/mail-templates/` via `renderMail()` in `apps/api/src/infra/mail-templates.ts`. Content is embedded into the API release bundle (`node scripts/generate-mail-templates.mjs` runs during `esbuild-release`). Operators can override subject/HTML/text and the shared layout under **Admin → Settings → Mail → Mail templates** (Monaco editor + Light/Dark preview); overrides live in `data/mail-templates.json` (gitignored). Upload or set the shared logo there (`appLogo` / `data/branding/`, served at `/api/public/branding/logo`); relative logo paths are absolutized against `publicBaseUrl` for mail clients. Shared branding also uses `appName`, `publicBaseUrl`, `mailFrom`. Template IDs: `verify-email`, `password-reset`, `invite-set-password`, `invite-server`, `alert`, `test-mail`.
 
 ### Activity webhook
 

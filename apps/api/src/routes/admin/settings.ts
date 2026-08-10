@@ -11,6 +11,13 @@ import {
   type MailTemplateId,
   type MailTemplatesPatch,
 } from "../../mail.js";
+import {
+  deleteBrandingLogo,
+  hasBrandingLogoFile,
+  isManagedBrandingLogoUrl,
+  readBrandingLogo,
+  saveBrandingLogo,
+} from "../../infra/branding-logo.js";
 import { findUser } from "../../services/users.js";
 import {
   applyPanelSettings,
@@ -27,9 +34,24 @@ import {
 export function registerAdminSettingsRoutes(app: FastifyInstance): void {
   app.get("/api/public/branding", async () => getPublicBranding());
 
+  app.get("/api/public/branding/logo", async (_request, reply) => {
+    const logo = await readBrandingLogo();
+    if (!logo) {
+      return reply.status(404).send({ error: "No branding logo uploaded" });
+    }
+    return reply
+      .header("Content-Type", logo.mime)
+      .header("Cache-Control", "public, max-age=86400")
+      .header("ETag", `W/"branding-logo-${logo.mtimeMs}-${logo.buffer.length}"`)
+      .send(logo.buffer);
+  });
+
   app.get("/api/admin/settings", async (request, reply) => {
     if (!(await requireAdmin(request, reply, "settings.read"))) return;
-    return getPanelSettingsView();
+    return {
+      ...(await getPanelSettingsView()),
+      brandingLogoUploaded: hasBrandingLogoFile(),
+    };
   });
 
   app.put<{ Body: PanelSettingsPatch }>("/api/admin/settings", async (request, reply) => {
@@ -58,8 +80,80 @@ export function registerAdminSettingsRoutes(app: FastifyInstance): void {
 
       return {
         ...(await getPanelSettingsView()),
+        brandingLogoUploaded: hasBrandingLogoFile(),
         restartRequired,
         envChanged,
+      };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return reply.status(400).send({ error: message });
+    }
+  });
+
+  app.post("/api/admin/settings/branding/logo", async (request, reply) => {
+    const user = await requireAdmin(request, reply, "settings.write");
+    if (!user) return;
+    const file = await request.file();
+    if (!file) return reply.status(400).send({ error: "No image uploaded" });
+
+    const chunks: Buffer[] = [];
+    for await (const chunk of file.file) {
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    }
+    const buffer = Buffer.concat(chunks);
+
+    try {
+      const saved = await saveBrandingLogo({
+        buffer,
+        filename: file.filename || "logo.png",
+        mimeType: file.mimetype || "",
+      });
+      const current = await readStoredSettings();
+      const next = mergePanelSettingsPatch(current, { appLogo: saved.appLogo });
+      await writeStoredSettings(next);
+      applyPanelSettings(next);
+      logActivity({
+        action: "admin.settings.branding-logo",
+        request,
+        user,
+        success: true,
+        metadata: { action: "uploaded", ext: saved.ext, bytes: saved.bytes },
+      });
+      return {
+        ok: true,
+        appLogo: saved.appLogo,
+        brandingLogoUploaded: true,
+      };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return reply.status(400).send({ error: message });
+    }
+  });
+
+  app.delete("/api/admin/settings/branding/logo", async (request, reply) => {
+    const user = await requireAdmin(request, reply, "settings.write");
+    if (!user) return;
+    try {
+      const removed = await deleteBrandingLogo();
+      const current = await readStoredSettings();
+      let appLogo = config.appLogo;
+      if (isManagedBrandingLogoUrl(appLogo) || isManagedBrandingLogoUrl(current.appLogo ?? "")) {
+        const next = mergePanelSettingsPatch(current, { appLogo: "" });
+        await writeStoredSettings(next);
+        applyPanelSettings(next);
+        appLogo = "";
+      }
+      logActivity({
+        action: "admin.settings.branding-logo",
+        request,
+        user,
+        success: true,
+        metadata: { action: "deleted", removed },
+      });
+      return {
+        ok: true,
+        appLogo,
+        brandingLogoUploaded: hasBrandingLogoFile(),
       };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

@@ -1,4 +1,4 @@
-import { request } from "./client";
+import { request, withCsrfHeaders, ApiError, refreshCsrfToken } from "./client";
 
 export type PanelSettings = {
   publicHost: string;
@@ -50,6 +50,7 @@ export type PanelSettings = {
   restartRequiredKeys: string[];
   restartRequired?: boolean;
   envChanged?: string[];
+  brandingLogoUploaded?: boolean;
   slaRestoreDrillAt: string | null;
   slaIncidentRunbookAck: boolean;
   slaPentestAck: boolean;
@@ -205,6 +206,43 @@ export const adminSettingsApi = {
         method: "POST",
         body: JSON.stringify({ id, ...draft }),
       },
+    ),
+  uploadBrandingLogo: async (file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    const run = async () => {
+      const res = await fetch("/api/admin/settings/branding/logo", {
+        method: "POST",
+        credentials: "include",
+        headers: withCsrfHeaders(),
+        body: form,
+      });
+      const data = await res.json().catch(() => ({}));
+      return { res, data };
+    };
+    let { res, data } = await run();
+    if (
+      !res.ok &&
+      res.status === 403 &&
+      typeof data.error === "string" &&
+      /csrf token/i.test(data.error)
+    ) {
+      if (await refreshCsrfToken()) {
+        ({ res, data } = await run());
+      }
+    }
+    if (!res.ok) {
+      throw new ApiError(
+        typeof data.error === "string" ? data.error : res.statusText,
+        res.status,
+      );
+    }
+    return data as { ok: boolean; appLogo: string; brandingLogoUploaded: boolean };
+  },
+  deleteBrandingLogo: () =>
+    request<{ ok: boolean; appLogo: string; brandingLogoUploaded: boolean }>(
+      "/api/admin/settings/branding/logo",
+      { method: "DELETE" },
     ),
   testPanelRedis: () =>
     request<{

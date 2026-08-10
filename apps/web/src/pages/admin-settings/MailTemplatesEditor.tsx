@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Badge, Button, Form, Nav, Spinner } from "react-bootstrap";
 import {
   adminSettingsApi,
@@ -6,6 +6,7 @@ import {
   type MailTemplatesAdminView,
 } from "../../api/admin-settings";
 import { useI18n } from "../../i18n/react";
+import { MailCodeEditor } from "./MailCodeEditor";
 
 const TEMPLATE_LABELS: Record<MailTemplateId, string> = {
   "verify-email": "Verify email",
@@ -31,6 +32,10 @@ function readStoredPreviewTheme(): PreviewTheme {
   }
 }
 
+function notifyBrandingChanged(): void {
+  window.dispatchEvent(new Event("guartrix:branding-changed"));
+}
+
 export function MailTemplatesEditor({
   busy,
   onBusy,
@@ -43,6 +48,7 @@ export function MailTemplatesEditor({
   onError: (msg: string | null) => void;
 }) {
   const { t } = useI18n();
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<MailTemplatesAdminView | null>(null);
   const [target, setTarget] = useState<EditTarget>("test-mail");
@@ -53,13 +59,22 @@ export function MailTemplatesEditor({
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [previewSubject, setPreviewSubject] = useState<string | null>(null);
   const [previewTheme, setPreviewTheme] = useState<PreviewTheme>(() => readStoredPreviewTheme());
+  const [appLogo, setAppLogo] = useState("");
+  const [logoUrlDraft, setLogoUrlDraft] = useState("");
+  const [brandingLogoUploaded, setBrandingLogoUploaded] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     onError(null);
     try {
-      const data = await adminSettingsApi.getMailTemplates();
+      const [data, settings] = await Promise.all([
+        adminSettingsApi.getMailTemplates(),
+        adminSettingsApi.getPanelSettings(),
+      ]);
       setView(data);
+      setAppLogo(settings.appLogo || "");
+      setLogoUrlDraft(settings.appLogo || "");
+      setBrandingLogoUploaded(Boolean(settings.brandingLogoUploaded));
       return data;
     } catch (err) {
       onError(err instanceof Error ? err.message : t("adminSettings.mailTemplatesLoadFailed"));
@@ -193,6 +208,64 @@ export function MailTemplatesEditor({
     }
   }
 
+  async function onUploadLogo(file: File | null) {
+    if (!file) return;
+    onBusy(true);
+    onError(null);
+    onNotice(null);
+    try {
+      const result = await adminSettingsApi.uploadBrandingLogo(file);
+      setAppLogo(result.appLogo);
+      setLogoUrlDraft(result.appLogo);
+      setBrandingLogoUploaded(result.brandingLogoUploaded);
+      notifyBrandingChanged();
+      onNotice(t("adminSettings.mailLogoUploaded"));
+    } catch (err) {
+      onError(err instanceof Error ? err.message : t("adminSettings.mailLogoUploadFailed"));
+    } finally {
+      onBusy(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
+  async function onSaveLogoUrl() {
+    onBusy(true);
+    onError(null);
+    onNotice(null);
+    try {
+      const settings = await adminSettingsApi.updatePanelSettings({
+        appLogo: logoUrlDraft.trim(),
+      });
+      setAppLogo(settings.appLogo || "");
+      setLogoUrlDraft(settings.appLogo || "");
+      setBrandingLogoUploaded(Boolean(settings.brandingLogoUploaded));
+      notifyBrandingChanged();
+      onNotice(t("adminSettings.mailLogoSaved"));
+    } catch (err) {
+      onError(err instanceof Error ? err.message : t("adminSettings.mailLogoSaveFailed"));
+    } finally {
+      onBusy(false);
+    }
+  }
+
+  async function onDeleteLogo() {
+    onBusy(true);
+    onError(null);
+    onNotice(null);
+    try {
+      const result = await adminSettingsApi.deleteBrandingLogo();
+      setAppLogo(result.appLogo || "");
+      setLogoUrlDraft(result.appLogo || "");
+      setBrandingLogoUploaded(result.brandingLogoUploaded);
+      notifyBrandingChanged();
+      onNotice(t("adminSettings.mailLogoDeleted"));
+    } catch (err) {
+      onError(err instanceof Error ? err.message : t("adminSettings.mailLogoDeleteFailed"));
+    } finally {
+      onBusy(false);
+    }
+  }
+
   const customBadge =
     target === "layout"
       ? view?.layoutHtmlCustom || view?.layoutTxtCustom
@@ -201,6 +274,7 @@ export function MailTemplatesEditor({
         view?.templates[target]?.custom.text;
 
   const disabled = busy || loading || !view;
+  const editorPath = `mail-template/${target}.${pane === "text" ? "txt" : "html"}`;
 
   return (
     <div className="mail-template-editor">
@@ -211,6 +285,69 @@ export function MailTemplatesEditor({
           {loading ? <Spinner size="sm" /> : null}
         </div>
         <p className="mail-template-editor__help mb-0">{t("adminSettings.mailTemplatesHelp")}</p>
+      </div>
+
+      <div className="mail-template-editor__logo">
+        <div className="mail-template-editor__logo-preview">
+          {appLogo ? (
+            <img src={appLogo} alt="" className="mail-template-editor__logo-img" />
+          ) : (
+            <span className="mail-template-editor__logo-empty">{t("adminSettings.mailLogoEmpty")}</span>
+          )}
+        </div>
+        <div className="mail-template-editor__logo-controls">
+          <div className="mail-template-editor__label">{t("adminSettings.mailLogoHeading")}</div>
+          <p className="mail-template-editor__help mb-2">{t("adminSettings.mailLogoHelp")}</p>
+          <div className="mail-template-editor__logo-actions">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/gif,image/webp,.png,.jpg,.jpeg,.gif,.webp"
+              className="d-none"
+              onChange={(e) => void onUploadLogo(e.target.files?.[0] ?? null)}
+            />
+            <Button
+              type="button"
+              variant="outline-secondary"
+              size="sm"
+              disabled={busy || loading}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {t("adminSettings.mailLogoUpload")}
+            </Button>
+            <Button
+              type="button"
+              variant="outline-secondary"
+              size="sm"
+              disabled={busy || loading || (!brandingLogoUploaded && !appLogo)}
+              onClick={() => void onDeleteLogo()}
+            >
+              {t("adminSettings.mailLogoRemove")}
+            </Button>
+          </div>
+          <label className="mail-template-editor__field mb-0 mt-2">
+            <span className="mail-template-editor__label">{t("adminSettings.mailLogoUrl")}</span>
+            <div className="mail-template-editor__logo-url-row">
+              <input
+                className="mail-template-editor__input"
+                value={logoUrlDraft}
+                disabled={busy || loading}
+                onChange={(e) => setLogoUrlDraft(e.target.value)}
+                placeholder="https://… or /logo.png"
+                spellCheck={false}
+              />
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                disabled={busy || loading || logoUrlDraft.trim() === appLogo.trim()}
+                onClick={() => void onSaveLogoUrl()}
+              >
+                {t("adminSettings.mailLogoSaveUrl")}
+              </Button>
+            </div>
+          </label>
+        </div>
       </div>
 
       <div className="mail-template-editor__toolbar">
@@ -291,27 +428,23 @@ export function MailTemplatesEditor({
 
       <div className="mail-template-editor__pane">
         {pane === "html" ? (
-          <textarea
-            className="mail-template-editor__code"
+          <MailCodeEditor
+            path={editorPath}
+            language="html"
             value={html}
             disabled={busy || loading}
-            onChange={(e) => setHtml(e.target.value)}
-            spellCheck={false}
-            wrap="off"
-            placeholder={t("adminSettings.mailTemplatesPasteHtml")}
-            aria-label={t("adminSettings.mailTemplatesHtml")}
+            onChange={setHtml}
+            onSave={() => void onSave()}
           />
         ) : null}
         {pane === "text" ? (
-          <textarea
-            className="mail-template-editor__code"
+          <MailCodeEditor
+            path={editorPath}
+            language="plaintext"
             value={text}
             disabled={busy || loading}
-            onChange={(e) => setText(e.target.value)}
-            spellCheck={false}
-            wrap="off"
-            placeholder={t("adminSettings.mailTemplatesPasteText")}
-            aria-label={t("adminSettings.mailTemplatesText")}
+            onChange={setText}
+            onSave={() => void onSave()}
           />
         ) : null}
         {pane === "preview" ? (

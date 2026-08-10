@@ -3,6 +3,14 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.44] — 2026-08-10
+
+### Added
+- Admin Mail template editor: **Monaco** code editor for HTML/text; **logo upload** / URL / remove (`data/branding/`, `/api/public/branding/logo`).
+
+### Fixed
+- Mail `{{logoUrl}}` absolutizes relative `appLogo` paths against `publicBaseUrl` for Outlook and other clients.
+
 ## [1.4.43] — 2026-08-10
 
 ### Added
