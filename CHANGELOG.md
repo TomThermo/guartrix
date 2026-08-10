@@ -3,6 +3,13 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.32] — 2026-08-10
+
+### Added
+- W3-E5+ service tests: servers-create, billing-checkout, servers-transfer.
+- k6 load-test template for operator staging (`scripts/load-test-k6-template.js`).
+- Wave 3 operator checklists (SLA drills, pentest prep).
+
 ## [1.4.31] — 2026-08-10
 
 ### Added

@@ -4,7 +4,7 @@ Operator process + optionele test-diepte **na** afgeronde [wave 2+](enterprise-c
 
 **Enige repo-uitzondering:** load/stress test (geen realistische infra in dev/CI).
 
-Last updated: **2026-08-10** · product **v1.4.31**
+Last updated: **2026-08-10** · product **v1.4.32**
 
 ---
 
@@ -14,8 +14,8 @@ Last updated: **2026-08-10** · product **v1.4.31**
 |----|------|--------|
 | W3-E7 | SLA drills + Go-live attestations | ⬜ operator |
 | W3-E8 | External pentest | ⬜ operator |
-| W3-E5+ | Extra service-layer unit tests | ⬜ optional |
-| W3-X1 | Load/stress test | **blocked** |
+| W3-E5+ | Extra service-layer unit tests | ✅ v1.4.32 |
+| W3-X1 | Load/stress test template | ✅ k6 template (operator runs) |
 
 **Reeds shipped in wave 2+ (niet herhalen hier):** E5 coverage CI, E6 Playwright CI, E2c services — zie [wave 2+](enterprise-code-wave2.md).
 
@@ -25,36 +25,47 @@ Canvas: **enterprise-code-wave3** in Cursor.
 
 ## W3-E7 — SLA (operator)
 
-- [sla-ops.md](sla-ops.md) — incident, restore, secrets, capacity
-- Admin → Settings → Go-live — attestations invullen
-- Scripts: `scripts/sla-restore-drill.sh`, `scripts/sla-secret-rotation-drill.sh`
-- Log voorbeeld: [sla-drill-log.example.md](sla-drill-log.example.md)
+**Checklist:**
 
-**Done when:** operator heeft drills gedraaid en attestations ingevuld (geen agent-taak).
+1. `bash scripts/sla-restore-drill.sh --backup-only` op **staging**
+2. `bash scripts/sla-secret-rotation-drill.sh` (dry-run waar mogelijk)
+3. Admin → Settings → Go-live — attestations invullen
+4. Log in [sla-drill-log.example.md](sla-drill-log.example.md)
+
+Wiki: [sla-ops.md](sla-ops.md) · scripts onder `scripts/sla-*.sh`
 
 ---
 
 ## W3-E8 — Pentest (operator)
 
-- Scope: [pentest-scope.md](pentest-scope.md)
-- Externe partij op staging/productie; findings → issues + wiki updates
+**Checklist:**
 
-**Done when:** rapport + remediations door operator/customer afgehandeld.
+1. Scope afstemmen: [pentest-scope.md](pentest-scope.md)
+2. Staging URL + test accounts aan leverancier
+3. Bevindingen → GitHub issues + wiki security pagina
+4. Go-live attestation “pentest scheduled or done” invullen
 
----
-
-## W3-E5+ — Service tests (optional engineering)
-
-Wave 2+ E5 dekt CI coverage op security/pure helpers. Optioneel uitbreiden:
-
-- `servers-create`, `servers-lifecycle`, `billing-checkout` service tests
-- Geen CI-gate verplicht — verhoogt vertrouwen in E2c use-cases
+**Done when:** extern rapport + remediations door operator/customer afgehandeld.
 
 ---
 
-## W3-X1 — Stress test (blocked)
+## W3-E5+ — Service tests ✅ v1.4.32
 
-Geen multi-node load sim in repo-CI. Optioneel: `scripts/load-test-k6-template.js` voor operator staging.
+- `services/servers-create.test.ts` — quota, node, port, success path
+- `services/billing-checkout.test.ts` — Mollie gates + checkout URL
+- `services/servers-transfer.test.ts` — initiate + idle view
+
+---
+
+## W3-X1 — Stress test (operator)
+
+Repo-CI blijft geblokkeerd. Operator template:
+
+```bash
+K6_BASE_URL=https://staging.example.com k6 run scripts/load-test-k6-template.js
+```
+
+Zie `scripts/load-test-k6-template.js` (health + login page load smoke).
 
 ---
 
@@ -64,6 +75,7 @@ Geen multi-node load sim in repo-CI. Optioneel: `scripts/load-test-k6-template.j
 |---------|------|
 | v1.4.28 | E2c: servers-create, lifecycle, import |
 | v1.4.30 | E2c+: settings-apply, transfer, nodes-admin |
-| v1.4.31 | E5 test:coverage CI, E6 Playwright CI |
+| v1.4.31 | E5 coverage CI, E6 Playwright CI |
+| v1.4.32 | W3-E5+ service tests, k6 load template, operator checklists |
 
 Detail: [enterprise-code-wave2.md](enterprise-code-wave2.md).
