@@ -2,17 +2,19 @@ import type { FastifyInstance } from "fastify";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import type { UserRole } from "@guartrix/shared";
+import {
+  applicationQuotaLimitSchema,
+  userRoleSchema,
+} from "@guartrix/shared/schemas/auth";
 import { requireApplication } from "../../auth/application-auth.js";
 import { findUserByUsernameInsensitive, hashPassword, passwordSchema } from "../../auth/auth.js";
 import { destroySessionsForUser } from "../../auth/session-store.js";
 import {
   APPLICATION_CREATE_QUOTA_DEFAULTS,
-  applicationQuotaLimitSchema,
   applyRoleChangeQuotas,
   assertNotLastAdmin,
   configQuotaDefaults,
   quotasForCreate,
-  userRoleSchema,
 } from "../../auth/user-quotas.js";
 import { logActivity } from "../../activity-log.js";
 import { sendZodError } from "../../http-error.js";

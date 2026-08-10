@@ -1,5 +1,10 @@
 import type { FastifyInstance } from "fastify";
 import type { UserRole } from "@guartrix/shared";
+import {
+  quotaLimitSchema,
+  usernameSchema,
+  userRoleSchema,
+} from "@guartrix/shared/schemas/auth";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import { logActivity } from "../../activity-log.js";
@@ -18,10 +23,8 @@ import {
   configQuotaDefaults,
   memoryQuotaSchema,
   PANEL_CREATE_QUOTA_DEFAULTS,
-  quotaLimitSchema,
   quotasForCreate,
-  usernameSchema,
-  userRoleSchema,
+  memoryQuotaSchema,
 } from "../../auth/user-quotas.js";
 import { destroySessionsForUser } from "../../auth/session-store.js";
 import { sendZodError } from "../../http-error.js";

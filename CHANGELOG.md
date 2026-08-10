@@ -3,6 +3,11 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.29] — 2026-08-10
+
+### Fixed
+- Release bundle crash (`ReferenceError: vI is not defined`) — import Zod role schemas from shared source; safer esbuild minify for re-exports.
+
 ## [1.4.28] — 2026-08-10
 
 ### Added
