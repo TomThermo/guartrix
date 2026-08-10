@@ -1,4 +1,4 @@
-# Enterprise code gates + unit tests
+# Enterprise code gates + unit tests + e2e smoke
 name: CI
 
 on:
@@ -6,6 +6,21 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+
+env:
+  CI_PANEL_ENV: >-
+    DATABASE_URL=mysql://guartrix:guartrix@127.0.0.1:3306/guartrix_panel
+    ADMIN_PASSWORD=changeme
+    SESSION_SECRET=ci-session-secret-xxxxxxxxxxxx
+    ALLOW_INSECURE_DEFAULTS=1
+    HTTPS_ENABLED=false
+    SESSION_SECURE=false
+    WEB_PORT=8080
+    API_PORT=3001
+    PUBLIC_HOST=127.0.0.1
+    PUBLIC_BASE_URL=http://127.0.0.1:8080
+    REDIS_ENABLED=0
+    NO_MONITOR=1
 
 jobs:
   enterprise:
@@ -40,5 +55,88 @@ jobs:
       - name: Install
         run: npm ci
 
-      - name: Unit tests
-        run: npm test
+      - name: Unit tests + coverage floors
+        run: npm run test:coverage
+
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    needs: test
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: guartrix_panel
+          MYSQL_USER: guartrix
+          MYSQL_PASSWORD: guartrix
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=24
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Build panel
+        env:
+          DATABASE_URL: mysql://guartrix:guartrix@127.0.0.1:3306/guartrix_panel
+          ADMIN_PASSWORD: changeme
+          SESSION_SECRET: ci-session-secret-xxxxxxxxxxxx
+          ALLOW_INSECURE_DEFAULTS: "1"
+          HTTPS_ENABLED: "false"
+          SESSION_SECURE: "false"
+          WEB_PORT: "8080"
+          PUBLIC_HOST: 127.0.0.1
+          PUBLIC_BASE_URL: http://127.0.0.1:8080
+          REDIS_ENABLED: "0"
+        run: |
+          npm run db:generate
+          bash scripts/db-migrate.sh
+          npm run build
+
+      - name: Start panel
+        env:
+          DATABASE_URL: mysql://guartrix:guartrix@127.0.0.1:3306/guartrix_panel
+          ADMIN_PASSWORD: changeme
+          SESSION_SECRET: ci-session-secret-xxxxxxxxxxxx
+          ALLOW_INSECURE_DEFAULTS: "1"
+          HTTPS_ENABLED: "false"
+          SESSION_SECURE: "false"
+          WEB_PORT: "8080"
+          PUBLIC_HOST: 127.0.0.1
+          PUBLIC_BASE_URL: http://127.0.0.1:8080
+          REDIS_ENABLED: "0"
+          NO_MONITOR: "1"
+        run: |
+          bash scripts/start.sh &
+          bash scripts/wait-panel-health.sh 120
+
+      - name: Playwright smoke
+        env:
+          E2E_BASE_URL: http://127.0.0.1:8080
+          E2E_LOGIN: "1"
+          E2E_USER: admin
+          E2E_PASSWORD: changeme
+        run: npx playwright test --config e2e/playwright.config.ts
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces
+          path: e2e/test-results/
+          if-no-files-found: ignore

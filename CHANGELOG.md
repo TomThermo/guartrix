@@ -3,6 +3,12 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.31] — 2026-08-10
+
+### Added
+- W3-E5: CI runs `npm run test:coverage` with Vitest floors.
+- W3-E6: Playwright e2e job in CI (MySQL + panel boot), `e2e/smoke.spec.ts`, staging workflow, `scripts/e2e-ci.sh`.
+
 ## [1.4.30] — 2026-08-10
 
 ### Added

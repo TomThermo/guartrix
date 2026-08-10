@@ -82,8 +82,26 @@ Unit tests use [Vitest](https://vitest.dev/) at the repo root (`apps/api` + `pac
 npm test              # Vitest once (includes locale parity en↔nl)
 npm run test:coverage # Vitest + coverage floor on included modules
 npm run test:watch    # Vitest watch mode
+npm run test:e2e      # Playwright (needs running panel; see below)
 npm run lint          # Biome check (formatter + lint)
 ```
+
+**Playwright e2e** (`e2e/`):
+
+```bash
+# Against live panel on this host (login page only unless E2E_LOGIN=1):
+E2E_BASE_URL=http://127.0.0.1:80 npm run test:e2e
+
+# Full CI-style stack (MySQL compose → migrate → build → start → smoke):
+bash scripts/e2e-ci.sh
+
+# Authenticated smoke (fresh CI DB, no Turnstile/2FA):
+E2E_BASE_URL=http://127.0.0.1:8080 E2E_LOGIN=1 E2E_PASSWORD=changeme npm run test:e2e
+```
+
+Staging workflow: `.github/workflows/e2e-staging.yml` (set repo var `E2E_STAGING_ENABLED=1` + secrets `E2E_BASE_URL`, `E2E_PASSWORD`).
+
+**CI:** `.github/workflows/ci.yml` — `check:enterprise`, `test:coverage`, Playwright e2e job (MySQL service + panel boot).
 
 Coverage floors on the included set in `vitest.config.ts` (auth helpers, `safe-url`, server-access, shared permissions/bytes/seed-map/license-ticket/`safe-url`, file-manager path helpers): **lines/statements ≥95%**, **functions ≥90%**. Unit tests live under `apps/api`, `apps/web`, and `packages/*/src/**/*.test.ts`. Locale catalogs are compared by `apps/web/src/i18n/locale-parity.test.ts`.
 
@@ -130,10 +148,11 @@ Wave 1 (enterprise-split P0–P2, v1.4.22–24) finished feature folders, reposi
 
 ```bash
 npm run check:enterprise   # structuur + typecheck (CI)
-npm test                   # lokaal; CI-integratie = E5 op roadmap
+npm run test:coverage      # Vitest + floors (CI)
+npm run test:e2e           # Playwright (see Tests above)
 ```
 
-- **CI:** `.github/workflows/ci.yml` — uitbreiden met vitest (E5) en Playwright (E6)
+- **CI:** `.github/workflows/ci.yml` — enterprise gates, coverage, Playwright e2e
 - **Layers:** `routes → services → repositories → prisma` — routes↛repositories is **error**
 - **Contracts:** Zod in `packages/shared/src/schemas/`
 

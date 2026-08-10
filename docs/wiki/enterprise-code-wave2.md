@@ -16,8 +16,8 @@ Last updated: **2026-08-10** · product **v1.4.30**
 | E2 | Services layer | ✅ passthrough v1.4.26 · **E2c complete v1.4.30** |
 | E3 | Zod + OpenAPI sync | ✅ v1.4.27 |
 | E4 | UI size-budget cleanup | ✅ v1.4.27 |
-| E5 | Vitest + coverage in CI | 🔄 CI job added — wave 3 |
-| E6 | Playwright e2e in CI | ⬜ wave 3 |
+| E5 | Vitest + coverage in CI | ✅ v1.4.31 |
+| E6 | Playwright e2e in CI | ✅ v1.4.31 |
 | E7 | SLA drills + Go-live attestations (operator) | ⬜ wave 3 |
 | E8 | External pentest (operator) | ⬜ wave 3 |
 

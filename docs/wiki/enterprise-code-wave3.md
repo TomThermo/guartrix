@@ -12,8 +12,8 @@ Last updated: **2026-08-10** · product **v1.4.30**
 
 | ID | Item | Status |
 |----|------|--------|
-| W3-E5 | Vitest + coverage in CI | 🔄 CI job added |
-| W3-E6 | Playwright e2e staging | ⬜ |
+| W3-E5 | Vitest + coverage in CI | ✅ |
+| W3-E6 | Playwright e2e staging | ✅ CI job + staging workflow |
 | W3-E7 | SLA drills + Go-live attestations | ⬜ |
 | W3-E8 | External pentest (operator) | ⬜ |
 | W3-E2c+ | Overige fat routes → services | ✅ v1.4.30 |

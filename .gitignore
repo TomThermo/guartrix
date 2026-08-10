@@ -32,8 +32,8 @@ scripts/cloud-invite-smoke.mjs
 scripts/scale-smoke.sh
 AGENTS.md
 CONTRIBUTING.md
-e2e/
-playwright.config.ts
+e2e/test-results/
+playwright-report/
 docker-compose.dev.yml
 
 # Secrets & local env
