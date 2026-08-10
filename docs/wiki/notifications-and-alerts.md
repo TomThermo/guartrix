@@ -17,11 +17,17 @@ Used for:
 Main anchors:
 
 - `apps/api/src/infra/mail.ts`
-- `apps/api/src/routes/auth.ts`
-- `apps/api/src/routes/invites.ts`
-- `apps/api/src/routes/admin-settings.ts`
+- `apps/api/src/infra/mail-templates.ts`
+- `apps/api/src/mail-templates/`
+- `apps/api/src/routes/auth/`
+- `apps/api/src/services/subusers.ts`
+- `apps/api/src/routes/admin/settings.ts`
 
 Without SMTP configured, outbound mail is written to `data/mail-outbox/`.
+
+### Mail templates
+
+All panel emails are rendered as **multipart/alternative** (HTML + plain text) from files under `apps/api/src/mail-templates/` via `renderMail()` in `apps/api/src/infra/mail-templates.ts`. Content is embedded into the API release bundle (`node scripts/generate-mail-templates.mjs` runs during `esbuild-release`). Shared layout uses branding from panel settings (`appName`, `appLogo`, `publicBaseUrl`, `mailFrom`). Template IDs: `verify-email`, `password-reset`, `invite-set-password`, `invite-server`, `alert`, `test-mail`. Admin → Mail → **Test mail server** sends the branded `test-mail` template.
 
 ### Activity webhook
 

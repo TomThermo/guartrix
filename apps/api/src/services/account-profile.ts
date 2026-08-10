@@ -24,7 +24,7 @@ import {
 } from "../auth/auth.js";
 import { verifyTotp } from "../auth/totp.js";
 import { prisma } from "../db.js";
-import { sendMail } from "../mail.js";
+import { sendMail, renderMail } from "../mail.js";
 import { ServiceError } from "./errors.js";
 
 export { profilePatchSchema, type ProfilePatchInput };
@@ -297,17 +297,16 @@ export async function updateAccountProfile(opts: {
       },
     });
     const verifyUrl = `${panelBaseUrl()}/verify-email?token=${encodeURIComponent(rawToken)}`;
+    const mail = renderMail("verify-email", {
+      username: updated.username,
+      actionUrl: verifyUrl,
+      expiresIn: "48 hours",
+    });
     await sendMail({
       to: nextEmail,
-      subject: "Verify your Guartrix email",
-      text: [
-        `Hi ${updated.username},`,
-        "",
-        "Confirm your new email address for Guartrix:",
-        verifyUrl,
-        "",
-        "This link expires in 48 hours.",
-      ].join("\n"),
+      subject: mail.subject,
+      text: mail.text,
+      html: mail.html,
     });
   }
 

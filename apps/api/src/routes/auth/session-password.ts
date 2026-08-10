@@ -12,7 +12,7 @@ import {
 } from "../../auth/auth.js";
 import { assertSameOrigin } from "../../auth/csrf.js";
 import { destroySessionsForUser } from "../../auth/session-store.js";
-import { sendMail } from "../../mail.js";
+import { sendMail, renderMail } from "../../mail.js";
 import { checkLoginRate, clearLoginRate } from "./session.js";
 import { createPasswordResetToken, deleteManyPasswordResetTokens, findPasswordResetToken } from "../../services/auth-tokens.js";
 import { updateUser } from "../../services/users.js";
@@ -58,18 +58,16 @@ export function registerSessionPasswordRoutes(app: FastifyInstance): void {
     });
 
     const resetUrl = `${panelBaseUrl()}/reset-password?token=${encodeURIComponent(rawToken)}`;
+    const mail = renderMail("password-reset", {
+      username: user.username,
+      actionUrl: resetUrl,
+      expiresIn: "1 hour",
+    });
     await sendMail({
       to: user.email,
-      subject: "Reset your Guartrix password",
-      text: [
-        `Hi ${user.username},`,
-        "",
-        "We received a request to reset your Guartrix panel password.",
-        `Open this link within 1 hour:`,
-        resetUrl,
-        "",
-        "If you did not request this, you can ignore this email.",
-      ].join("\n"),
+      subject: mail.subject,
+      text: mail.text,
+      html: mail.html,
     });
 
     logActivity({ action: "auth.password-reset-request", request, user });

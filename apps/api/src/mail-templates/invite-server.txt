@@ -1,0 +1,8 @@
+Hi{{#username}} {{username}}{{/username}},
+
+{{inviterName}} invited you to manage "{{serverName}}" on {{appName}}.
+Accept the invite (sign in with this email):
+
+{{actionUrl}}
+
+This link expires in {{expiresIn}}.

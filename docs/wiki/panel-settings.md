@@ -19,7 +19,7 @@ Overrides live in **`data/panel-settings.json`** (mode `0600`). Values merge on 
 |-----|----------|
 | Go-live | Live readiness checks (`GET /api/admin/readiness`), job queue status, SLA operator attestations |
 | General | App name / logo / favicon, public host / base URL, registration, default quotas, Cloudflare DNS |
-| Mail | `MAIL_FROM`, SMTP host/port/TLS/user/password, **Test mail server** (587 STARTTLS or 465 SMTPS) |
+| Mail | `MAIL_FROM`, SMTP host/port/TLS/user/password, **Test mail server** (587 STARTTLS or 465 SMTPS). Outbound mail uses branded HTML + plain-text templates (`apps/api/src/mail-templates/`) with `appName` / logo / panel URL |
 | Alerts | Activity webhook, alert email, muted action keys |
 | Backup | Default backup retention (new servers), offsite hook command — per-server keep counts under **Admin → Servers** |
 | Misc | Debug banner, unit prefix (MB vs MiB), navigation preference, display width |

@@ -2,7 +2,7 @@ import type { ActivityEventRecord } from "@guartrix/shared";
 import { activityDetail } from "@guartrix/shared";
 import { config } from "./config.js";
 import { prisma } from "./db.js";
-import { sendMail } from "./mail.js";
+import { sendMail, renderMail } from "./mail.js";
 import { sendWebPushToUsers } from "./web-push.js";
 
 /**
@@ -154,10 +154,15 @@ export async function notifyCriticalActivity(event: ActivityEventRecord): Promis
   );
   for (const to of emails) {
     try {
+      const mail = renderMail("alert", {
+        eventTitle: eventTitle(event),
+        eventBody: eventLines(event).join("\n"),
+      });
       await sendMail({
         to,
-        subject: `[Guartrix] ${eventTitle(event)}`,
-        text: eventLines(event).join("\n"),
+        subject: mail.subject,
+        text: mail.text,
+        html: mail.html,
       });
     } catch (err) {
       console.warn(

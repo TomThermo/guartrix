@@ -16,6 +16,52 @@ export function isSmtpConfigured(): boolean {
   return Boolean(config.mail.smtpHost);
 }
 
+function fromHeaderValue(): string {
+  const fromRaw = config.mail.from.trim() || "noreply@guartrix.com";
+  if (fromRaw.includes("<")) return fromRaw;
+  const name = (config.appName || "Guartrix").replace(/"/g, "");
+  return `"${name}" <${fromRaw}>`;
+}
+
+function buildMimeMessage(msg: MailMessage): string {
+  const now = new Date();
+  const host = config.mail.smtpHost || "localhost";
+  const messageId = `<${now.getTime()}.${Math.random().toString(36).slice(2, 10)}@${host}>`;
+  const headers = [
+    `From: ${fromHeaderValue()}`,
+    `To: ${msg.to}`,
+    `Subject: ${msg.subject}`,
+    `Date: ${now.toUTCString()}`,
+    `Message-ID: ${messageId}`,
+    "MIME-Version: 1.0",
+  ];
+
+  const textBody = msg.text.replace(/\r?\n/g, "\r\n");
+  if (!msg.html?.trim()) {
+    return [...headers, "Content-Type: text/plain; charset=utf-8", "", textBody, ""].join("\r\n");
+  }
+
+  const boundary = `guartrix_${now.getTime().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+  const htmlBody = msg.html.replace(/\r?\n/g, "\r\n");
+  return [
+    ...headers,
+    `Content-Type: multipart/alternative; boundary="${boundary}"`,
+    "",
+    `--${boundary}`,
+    "Content-Type: text/plain; charset=utf-8",
+    "Content-Transfer-Encoding: 8bit",
+    "",
+    textBody,
+    `--${boundary}`,
+    "Content-Type: text/html; charset=utf-8",
+    "Content-Transfer-Encoding: 8bit",
+    "",
+    htmlBody,
+    `--${boundary}--`,
+    "",
+  ].join("\r\n");
+}
+
 /**
  * Deliver panel mail. Always writes a copy under data/mail-outbox/.
  * When SMTP_HOST is set, also tries to send via SMTP (465 SMTPS or 587 STARTTLS).
@@ -28,18 +74,8 @@ export async function sendMail(
   const stamp = new Date().toISOString().replace(/[:.]/g, "-");
   const safeTo = msg.to.replace(/[^a-zA-Z0-9._@+-]/g, "_").slice(0, 64);
   const outboxPath = path.join(outboxDir, `${stamp}_${safeTo}.eml`);
-  const body = [
-    `To: ${msg.to}`,
-    `From: ${config.mail.from}`,
-    `Subject: ${msg.subject}`,
-    `Date: ${new Date().toUTCString()}`,
-    "MIME-Version: 1.0",
-    "Content-Type: text/plain; charset=utf-8",
-    "",
-    msg.text,
-    "",
-  ].join("\r\n");
-  await fs.writeFile(outboxPath, body, { mode: 0o600 });
+  const mime = buildMimeMessage(msg);
+  await fs.writeFile(outboxPath, mime, { mode: 0o600 });
 
   if (!config.mail.smtpHost) {
     console.info(`[guartrix] Mail outbox (no SMTP): ${outboxPath}`);
@@ -85,7 +121,6 @@ async function smtpSend(msg: MailMessage): Promise<void> {
     const lines = buffer.split(/\r?\n/);
     let end = -1;
     for (let i = 0; i < lines.length - 1; i++) {
-      // Final SMTP line is "NNN " (space), continued lines are "NNN-"
       if (/^\d{3} /.test(lines[i]!)) {
         end = i;
         break;
@@ -160,31 +195,23 @@ async function smtpSend(msg: MailMessage): Promise<void> {
       await expect("235");
     }
 
-    write(`MAIL FROM:<${config.mail.from}>`);
+    const fromRaw = config.mail.from.trim() || "noreply@guartrix.com";
+    const fromEnvelope = fromRaw.includes("<")
+      ? (fromRaw.match(/<([^>]+)>/)?.[1] ?? fromRaw)
+      : fromRaw;
+    write(`MAIL FROM:<${fromEnvelope}>`);
     await expect("250");
     write(`RCPT TO:<${msg.to}>`);
     await expect("250");
     write("DATA");
     await expect("354");
-    const now = new Date();
-    const messageId = `<${now.getTime()}.${Math.random().toString(36).slice(2, 10)}@${host || "guartrix.com"}>`;
-    const fromRaw = config.mail.from.trim();
-    const fromHeader = fromRaw.includes("<")
-      ? fromRaw
-      : `"Guartrix" <${fromRaw}>`;
-    const payload = [
-      `From: ${fromHeader}`,
-      `To: ${msg.to}`,
-      `Subject: ${msg.subject}`,
-      `Date: ${now.toUTCString()}`,
-      `Message-ID: ${messageId}`,
-      "MIME-Version: 1.0",
-      "Content-Type: text/plain; charset=utf-8",
-      "",
-      msg.text.replace(/\r?\n/g, "\r\n"),
-      ".",
-    ].join("\r\n");
-    write(payload);
+    // Dot-stuff lines that begin with "." (RFC 5321)
+    const mime = buildMimeMessage(msg);
+    const stuffed = mime
+      .split(/\r?\n/)
+      .map((line) => (line.startsWith(".") ? `.${line}` : line))
+      .join("\r\n");
+    write(`${stuffed}\r\n.`);
     await expect("250");
     write("QUIT");
   } finally {

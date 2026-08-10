@@ -1,0 +1,7 @@
+Hi {{username}},
+
+Confirm your email to finish setting up your {{appName}} account:
+
+{{actionUrl}}
+
+This link expires in {{expiresIn}}.

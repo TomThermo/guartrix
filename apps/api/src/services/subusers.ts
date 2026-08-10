@@ -16,7 +16,7 @@ import {
 import { logActivity } from "../activity-log.js";
 import { config } from "../config.js";
 import { prisma } from "../db.js";
-import { sendMail } from "../mail.js";
+import { sendMail, renderMail } from "../mail.js";
 import {
   hashInviteToken,
   isServerOwner,
@@ -185,18 +185,17 @@ export async function createServerSubUser(opts: {
       },
     });
     const resetUrl = `${panelBaseUrl()}/reset-password?token=${encodeURIComponent(rawToken)}`;
+    const setPassMail = renderMail("invite-set-password", {
+      username,
+      inviterName: access.user.username,
+      actionUrl: resetUrl,
+      expiresIn: "7 days",
+    });
     await sendMail({
       to: email,
-      subject: "You've been invited to Guartrix — set your password",
-      text: [
-        `Hi ${username},`,
-        "",
-        `${access.user.username} invited you to a Minecraft server on Guartrix.`,
-        "A panel account was created for you. Set your password within 7 days:",
-        resetUrl,
-        "",
-        "If you did not expect this invite, you can ignore this email.",
-      ].join("\n"),
+      subject: setPassMail.subject,
+      text: setPassMail.text,
+      html: setPassMail.html,
     });
   }
 
@@ -216,26 +215,31 @@ export async function createServerSubUser(opts: {
 
   const url = inviteUrl(invite.raw);
   if (!accountCreated) {
+    const inviteMail = renderMail("invite-server", {
+      inviterName: access.user.username,
+      serverName: access.server.name,
+      actionUrl: url,
+      expiresIn: "7 days",
+    });
     await sendMail({
       to: email,
-      subject: `You've been invited to ${access.server.name} on Guartrix`,
-      text: [
-        `Hi,`,
-        "",
-        `${access.user.username} invited you to manage “${access.server.name}” on Guartrix.`,
-        "Accept the invite (sign in with this email):",
-        url,
-        "",
-        "This link expires in 7 days.",
-      ].join("\n"),
+      subject: inviteMail.subject,
+      text: inviteMail.text,
+      html: inviteMail.html,
     }).catch(() => undefined);
   } else {
+    const inviteMail = renderMail("invite-server", {
+      username: user.username,
+      inviterName: access.user.username,
+      serverName: access.server.name,
+      actionUrl: url,
+      expiresIn: "7 days",
+    });
     await sendMail({
       to: email,
-      subject: `Server invite: ${access.server.name}`,
-      text: [`After setting your password, open this invite link to confirm access:`, url].join(
-        "\n",
-      ),
+      subject: inviteMail.subject,
+      text: inviteMail.text,
+      html: inviteMail.html,
     }).catch(() => undefined);
   }
 
@@ -278,15 +282,17 @@ export async function resendSubUserInvite(opts: {
     include: { user: { select: { username: true } } },
   });
   const url = inviteUrl(invite.raw);
+  const inviteMail = renderMail("invite-server", {
+    inviterName: access.user.username,
+    serverName: access.server.name,
+    actionUrl: url,
+    expiresIn: "7 days",
+  });
   await sendMail({
     to: row.email,
-    subject: `Invite to ${access.server.name} on Guartrix`,
-    text: [
-      `${access.user.username} sent you an invite link for “${access.server.name}”.`,
-      url,
-      "",
-      "Sign in with this email to accept. Expires in 7 days.",
-    ].join("\n"),
+    subject: inviteMail.subject,
+    text: inviteMail.text,
+    html: inviteMail.html,
   }).catch(() => undefined);
 
   return {

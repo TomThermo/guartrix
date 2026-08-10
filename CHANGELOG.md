@@ -3,10 +3,20 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.38] — 2026-08-10
+
+### Added
+- Branded HTML + plain-text mail templates (`apps/api/src/mail-templates/`) for verify, password reset, invites, alerts, and Admin test mail; SMTP sends multipart/alternative.
+
 ## [1.4.37] — 2026-08-10
 
 ### Changed
 - Outbound SMTP From header uses display name `Guartrix <address>` for better client reputation.
+
+## [1.4.38] — 2026-08-10
+
+### Added
+- Branded HTML + plain-text mail templates (`apps/api/src/mail-templates/`) for verify, password reset, invites, alerts, and Admin test mail; SMTP sends multipart/alternative.
 
 ## [1.4.37] — 2026-08-10
 

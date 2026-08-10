@@ -17,7 +17,7 @@ import { assertSameOrigin, ensureSessionCsrfToken } from "../../auth/csrf.js";
 import { assertTurnstileToken } from "../../auth/turnstile.js";
 import { configQuotaDefaults, usernameSchema } from "../../auth/user-quotas.js";
 import { config } from "../../config.js";
-import { isSmtpConfigured, sendMail } from "../../mail.js";
+import { isSmtpConfigured, sendMail, renderMail } from "../../mail.js";
 import { linkPendingSubUsers } from "../../servers/server-access.js";
 import { checkLoginRate, clearLoginRate } from "./session.js";
 import { createEmailVerificationToken, deleteManyEmailVerificationTokens, findEmailVerificationToken } from "../../services/auth-tokens.js";
@@ -104,17 +104,16 @@ export function registerSessionRegisterRoutes(app: FastifyInstance): void {
       },
     });
     const verifyUrl = `${panelBaseUrl()}/verify-email?token=${encodeURIComponent(rawToken)}`;
+    const mail = renderMail("verify-email", {
+      username,
+      actionUrl: verifyUrl,
+      expiresIn: "48 hours",
+    });
     await sendMail({
       to: emailNorm,
-      subject: "Verify your Guartrix email",
-      text: [
-        `Hi ${username},`,
-        "",
-        "Confirm your email to finish setting up your Guartrix account:",
-        verifyUrl,
-        "",
-        "This link expires in 48 hours.",
-      ].join("\n"),
+      subject: mail.subject,
+      text: mail.text,
+      html: mail.html,
     });
 
     await clearLoginRate(request);

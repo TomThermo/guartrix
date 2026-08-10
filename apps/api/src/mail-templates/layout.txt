@@ -1,0 +1,9 @@
+{{appName}}
+{{panelUrl}}
+
+{{content}}
+
+--
+Sent by {{appName}}
+{{panelUrl}}
+From {{fromAddress}}

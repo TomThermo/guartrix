@@ -1,0 +1,7 @@
+Hello,
+
+This is a test message from your {{appName}} panel.
+If you received this, outbound SMTP is working with the branded mail template.
+
+Sent at {{sentAt}}
+SMTP: {{smtpHost}}:{{smtpPort}}
