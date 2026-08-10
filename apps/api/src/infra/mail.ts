@@ -166,10 +166,14 @@ async function smtpSend(msg: MailMessage): Promise<void> {
     await expect("250");
     write("DATA");
     await expect("354");
+    const now = new Date();
+    const messageId = `<${now.getTime()}.${Math.random().toString(36).slice(2, 10)}@${host || "guartrix.com"}>`;
     const payload = [
       `From: ${config.mail.from}`,
       `To: ${msg.to}`,
       `Subject: ${msg.subject}`,
+      `Date: ${now.toUTCString()}`,
+      `Message-ID: ${messageId}`,
       "MIME-Version: 1.0",
       "Content-Type: text/plain; charset=utf-8",
       "",

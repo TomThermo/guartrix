@@ -3,6 +3,11 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.36] — 2026-08-10
+
+### Fixed
+- SMTP messages include Date + Message-ID (Outlook delivery); mailserver Amavis disabled so outbound is not bounced as BAD-HEADER.
+
 ## [1.4.35] — 2026-08-10
 
 ### Fixed
