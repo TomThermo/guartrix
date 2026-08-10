@@ -3,6 +3,16 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.37] — 2026-08-10
+
+### Changed
+- Outbound SMTP From header uses display name `Guartrix <address>` for better client reputation.
+
+## [1.4.37] — 2026-08-10
+
+### Changed
+- Outbound SMTP From header uses display name `Guartrix <address>` for better client reputation.
+
 ## [1.4.36] — 2026-08-10
 
 ### Fixed

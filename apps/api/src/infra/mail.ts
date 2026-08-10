@@ -168,8 +168,12 @@ async function smtpSend(msg: MailMessage): Promise<void> {
     await expect("354");
     const now = new Date();
     const messageId = `<${now.getTime()}.${Math.random().toString(36).slice(2, 10)}@${host || "guartrix.com"}>`;
+    const fromRaw = config.mail.from.trim();
+    const fromHeader = fromRaw.includes("<")
+      ? fromRaw
+      : `"Guartrix" <${fromRaw}>`;
     const payload = [
-      `From: ${config.mail.from}`,
+      `From: ${fromHeader}`,
       `To: ${msg.to}`,
       `Subject: ${msg.subject}`,
       `Date: ${now.toUTCString()}`,
