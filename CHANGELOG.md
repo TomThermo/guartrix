@@ -3,6 +3,12 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.41] — 2026-08-10
+
+### Changed
+- Admin Mail template editor: flat full-width paste panes (HTML / text / preview tabs) with straight borders.
+- Default mail templates: flatter layout with square edges and clearer divider lines.
+
 ## [1.4.40] — 2026-08-10
 
 ### Fixed

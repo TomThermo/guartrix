@@ -1,4 +1,12 @@
-<p style="margin:0 0 16px;font-size:16px;line-height:1.5;">Hello,</p>
-<p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#334155;">This is a test message from your {{appName}} panel. If you received this, outbound SMTP is working with the branded mail template.</p>
-<p style="margin:0 0 8px;font-size:13px;color:#64748b;">Sent at {{sentAt}}</p>
-<p style="margin:0;font-size:13px;color:#64748b;">SMTP: {{smtpHost}}:{{smtpPort}}</p>
+<p style="margin:0 0 14px;font-size:16px;line-height:1.45;color:#111827;">Hello,</p>
+<p style="margin:0 0 18px;font-size:15px;line-height:1.55;color:#374151;">This is a test message from your {{appName}} panel. If you received this, outbound SMTP is working with the branded mail template.</p>
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #d7dde5;">
+  <tr>
+    <td style="padding:10px 12px;border-bottom:1px solid #d7dde5;font-size:12px;color:#6b7280;width:88px;">Sent</td>
+    <td style="padding:10px 12px;border-bottom:1px solid #d7dde5;font-size:13px;color:#111827;">{{sentAt}}</td>
+  </tr>
+  <tr>
+    <td style="padding:10px 12px;font-size:12px;color:#6b7280;">SMTP</td>
+    <td style="padding:10px 12px;font-size:13px;color:#111827;">{{smtpHost}}:{{smtpPort}}</td>
+  </tr>
+</table>

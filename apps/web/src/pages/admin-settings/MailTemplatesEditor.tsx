@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Badge, Button, Col, Form, Row, Spinner } from "react-bootstrap";
+import { Badge, Button, Form, Nav, Spinner } from "react-bootstrap";
 import {
   adminSettingsApi,
   type MailTemplateId,
@@ -17,6 +17,7 @@ const TEMPLATE_LABELS: Record<MailTemplateId, string> = {
 };
 
 type EditTarget = "layout" | MailTemplateId;
+type EditorPane = "html" | "text" | "preview";
 
 export function MailTemplatesEditor({
   busy,
@@ -33,6 +34,7 @@ export function MailTemplatesEditor({
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<MailTemplatesAdminView | null>(null);
   const [target, setTarget] = useState<EditTarget>("test-mail");
+  const [pane, setPane] = useState<EditorPane>("html");
   const [subject, setSubject] = useState("");
   const [html, setHtml] = useState("");
   const [text, setText] = useState("");
@@ -72,10 +74,10 @@ export function MailTemplatesEditor({
     setText(row.text);
   }, [view, target]);
 
-  // Clear preview only when switching templates — not when view reloads after save/preview.
   useEffect(() => {
     setPreviewHtml(null);
     setPreviewSubject(null);
+    setPane("html");
   }, [target]);
 
   async function onSave() {
@@ -145,7 +147,6 @@ export function MailTemplatesEditor({
     onBusy(true);
     onError(null);
     try {
-      // Preview unsaved editor contents (does not write overrides).
       const preview = await adminSettingsApi.previewMailTemplate(target, {
         subject,
         html,
@@ -153,11 +154,21 @@ export function MailTemplatesEditor({
       });
       setPreviewSubject(preview.subject);
       setPreviewHtml(preview.html);
+      setPane("preview");
     } catch (err) {
       onError(err instanceof Error ? err.message : t("adminSettings.mailTemplatesPreviewFailed"));
     } finally {
       onBusy(false);
     }
+  }
+
+  async function onSelectPane(next: EditorPane) {
+    if (next === "preview") {
+      if (target === "layout") return;
+      await onPreview();
+      return;
+    }
+    setPane(next);
   }
 
   const customBadge =
@@ -167,119 +178,137 @@ export function MailTemplatesEditor({
         view?.templates[target]?.custom.html ||
         view?.templates[target]?.custom.text;
 
-  return (
-    <div className="mt-4 pt-3 border-top">
-      <div className="d-flex flex-wrap align-items-center gap-2 mb-2">
-        <h3 className="h6 mb-0">{t("adminSettings.mailTemplatesHeading")}</h3>
-        {customBadge ? <Badge bg="info">{t("adminSettings.mailTemplatesCustom")}</Badge> : null}
-        {loading ? <Spinner size="sm" /> : null}
-      </div>
-      <p className="small text-secondary mb-3">{t("adminSettings.mailTemplatesHelp")}</p>
+  const disabled = busy || loading || !view;
 
-      <Row className="g-3">
-        <Col md={4}>
-          <Form.Group>
-            <Form.Label>{t("adminSettings.mailTemplatesSelect")}</Form.Label>
-            <Form.Select
-              value={target}
-              disabled={busy || loading || !view}
-              onChange={(e) => setTarget(e.target.value as EditTarget)}
-            >
-              <option value="layout">{t("adminSettings.mailTemplatesLayout")}</option>
-              {(view?.ids ?? Object.keys(TEMPLATE_LABELS)).map((id) => (
-                <option key={id} value={id}>
-                  {TEMPLATE_LABELS[id as MailTemplateId] ?? id}
-                </option>
-              ))}
-            </Form.Select>
-          </Form.Group>
-        </Col>
-        <Col md={8} className="d-flex flex-wrap align-items-end gap-2">
-          <Button type="button" variant="primary" disabled={busy || loading || !view} onClick={() => void onSave()}>
+  return (
+    <div className="mail-template-editor">
+      <div className="mail-template-editor__head">
+        <div className="mail-template-editor__title">
+          <h3 className="h6 mb-0">{t("adminSettings.mailTemplatesHeading")}</h3>
+          {customBadge ? <Badge bg="secondary">{t("adminSettings.mailTemplatesCustom")}</Badge> : null}
+          {loading ? <Spinner size="sm" /> : null}
+        </div>
+        <p className="mail-template-editor__help mb-0">{t("adminSettings.mailTemplatesHelp")}</p>
+      </div>
+
+      <div className="mail-template-editor__toolbar">
+        <Form.Select
+          className="mail-template-editor__select"
+          value={target}
+          disabled={disabled}
+          onChange={(e) => setTarget(e.target.value as EditTarget)}
+          aria-label={t("adminSettings.mailTemplatesSelect")}
+        >
+          <option value="layout">{t("adminSettings.mailTemplatesLayout")}</option>
+          {(view?.ids ?? Object.keys(TEMPLATE_LABELS)).map((id) => (
+            <option key={id} value={id}>
+              {TEMPLATE_LABELS[id as MailTemplateId] ?? id}
+            </option>
+          ))}
+        </Form.Select>
+        <div className="mail-template-editor__actions">
+          <Button type="button" variant="primary" size="sm" disabled={disabled} onClick={() => void onSave()}>
             {t("adminSettings.mailTemplatesSave")}
           </Button>
           <Button
             type="button"
             variant="outline-secondary"
-            disabled={busy || loading || !view || target === "layout"}
+            size="sm"
+            disabled={disabled || target === "layout"}
             onClick={() => void onPreview()}
           >
             {t("adminSettings.mailTemplatesPreview")}
           </Button>
-          <Button type="button" variant="outline-warning" disabled={busy || loading || !view} onClick={() => void onReset()}>
+          <Button type="button" variant="outline-secondary" size="sm" disabled={disabled} onClick={() => void onReset()}>
             {t("adminSettings.mailTemplatesResetOne")}
           </Button>
-          <Button type="button" variant="outline-danger" disabled={busy || loading || !view} onClick={() => void onResetAll()}>
+          <Button type="button" variant="outline-secondary" size="sm" disabled={disabled} onClick={() => void onResetAll()}>
             {t("adminSettings.mailTemplatesResetAll")}
           </Button>
-        </Col>
+        </div>
+      </div>
 
-        {target !== "layout" && (
-          <Col xs={12}>
-            <Form.Group>
-              <Form.Label>{t("adminSettings.mailTemplatesSubject")}</Form.Label>
-              <Form.Control
-                value={subject}
-                disabled={busy || loading}
-                onChange={(e) => setSubject(e.target.value)}
-                spellCheck={false}
-              />
-            </Form.Group>
-          </Col>
-        )}
+      {target !== "layout" ? (
+        <label className="mail-template-editor__field">
+          <span className="mail-template-editor__label">{t("adminSettings.mailTemplatesSubject")}</span>
+          <input
+            className="mail-template-editor__input"
+            value={subject}
+            disabled={busy || loading}
+            onChange={(e) => setSubject(e.target.value)}
+            spellCheck={false}
+          />
+        </label>
+      ) : null}
 
-        <Col md={6}>
-          <Form.Group>
-            <Form.Label>
-              {target === "layout"
-                ? t("adminSettings.mailTemplatesLayoutHtml")
-                : t("adminSettings.mailTemplatesHtml")}
-            </Form.Label>
-            <Form.Control
-              as="textarea"
-              rows={14}
-              className="font-monospace small"
-              value={html}
-              disabled={busy || loading}
-              onChange={(e) => setHtml(e.target.value)}
-              spellCheck={false}
-            />
-          </Form.Group>
-        </Col>
-        <Col md={6}>
-          <Form.Group>
-            <Form.Label>
-              {target === "layout"
-                ? t("adminSettings.mailTemplatesLayoutText")
-                : t("adminSettings.mailTemplatesText")}
-            </Form.Label>
-            <Form.Control
-              as="textarea"
-              rows={14}
-              className="font-monospace small"
-              value={text}
-              disabled={busy || loading}
-              onChange={(e) => setText(e.target.value)}
-              spellCheck={false}
-            />
-          </Form.Group>
-        </Col>
+      <Nav variant="tabs" className="mail-template-editor__tabs">
+        <Nav.Item>
+          <Nav.Link active={pane === "html"} disabled={busy || loading} onClick={() => void onSelectPane("html")}>
+            {target === "layout"
+              ? t("adminSettings.mailTemplatesLayoutHtml")
+              : t("adminSettings.mailTemplatesHtml")}
+          </Nav.Link>
+        </Nav.Item>
+        <Nav.Item>
+          <Nav.Link active={pane === "text"} disabled={busy || loading} onClick={() => void onSelectPane("text")}>
+            {target === "layout"
+              ? t("adminSettings.mailTemplatesLayoutText")
+              : t("adminSettings.mailTemplatesText")}
+          </Nav.Link>
+        </Nav.Item>
+        <Nav.Item>
+          <Nav.Link
+            active={pane === "preview"}
+            disabled={busy || loading || target === "layout"}
+            onClick={() => void onSelectPane("preview")}
+          >
+            {t("adminSettings.mailTemplatesPreview")}
+          </Nav.Link>
+        </Nav.Item>
+      </Nav>
 
-        {previewHtml ? (
-          <Col xs={12}>
-            <div className="small text-secondary mb-1">
-              {t("adminSettings.mailTemplatesPreviewLabel")}
-              {previewSubject ? `: ${previewSubject}` : ""}
-            </div>
-            <div
-              className="border rounded bg-white p-2"
-              style={{ maxHeight: 420, overflow: "auto" }}
-              // Preview of operator-owned HTML templates (admin-only).
-              dangerouslySetInnerHTML={{ __html: previewHtml }}
-            />
-          </Col>
+      <div className="mail-template-editor__pane">
+        {pane === "html" ? (
+          <textarea
+            className="mail-template-editor__code"
+            value={html}
+            disabled={busy || loading}
+            onChange={(e) => setHtml(e.target.value)}
+            spellCheck={false}
+            wrap="off"
+            placeholder={t("adminSettings.mailTemplatesPasteHtml")}
+            aria-label={t("adminSettings.mailTemplatesHtml")}
+          />
         ) : null}
-      </Row>
+        {pane === "text" ? (
+          <textarea
+            className="mail-template-editor__code"
+            value={text}
+            disabled={busy || loading}
+            onChange={(e) => setText(e.target.value)}
+            spellCheck={false}
+            wrap="off"
+            placeholder={t("adminSettings.mailTemplatesPasteText")}
+            aria-label={t("adminSettings.mailTemplatesText")}
+          />
+        ) : null}
+        {pane === "preview" ? (
+          <div className="mail-template-editor__preview">
+            {previewSubject ? (
+              <div className="mail-template-editor__preview-subject">{previewSubject}</div>
+            ) : null}
+            {previewHtml ? (
+              <div
+                className="mail-template-editor__preview-body"
+                // Preview of operator-owned HTML templates (admin-only).
+                dangerouslySetInnerHTML={{ __html: previewHtml }}
+              />
+            ) : (
+              <div className="mail-template-editor__preview-empty">{t("adminSettings.mailTemplatesPreviewEmpty")}</div>
+            )}
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }
