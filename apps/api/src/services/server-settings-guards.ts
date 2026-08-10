@@ -3,7 +3,7 @@ import { hasPermission } from "@guartrix/shared";
 import { assertAdminFullApiKey } from "../auth/auth.js";
 import { errorMessage } from "../http-error.js";
 import { processManager } from "../servers/process-manager.js";
-import type { ServerSettingsPatch } from "../routes/servers/settings/schemas.js";
+import type { ServerSettingsPatch } from "../schemas/server-settings.js";
 import { findUser } from "../repositories/users.js";
 
 type Access = Awaited<ReturnType<typeof import("../auth/auth.js").requireServerAccess>>;

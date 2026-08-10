@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { requireServerAccess } from "../../auth/auth.js";
 import { sendZodError } from "../../http-error.js";
-import { applyServerSettingsPatch } from "./settings/apply.js";
+import { applyServerSettingsPatch } from "../../services/server-settings-apply.js";
 import { assertSettingsPatchAccess } from "../../services/server-settings-guards.js";
 import { updateSchema } from "./settings/schemas.js";
 import { validateAndNormalizeSettingsPatch } from "./settings/validate.js";

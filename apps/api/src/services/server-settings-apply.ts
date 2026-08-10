@@ -1,30 +1,41 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import type { ServerType } from "@guartrix/shared";
-import { isBdsServerType } from "@guartrix/shared";
-import { logActivity } from "../../../activity-log.js";
-import { config } from "../../../config.js";
-import { errorMessage } from "../../../http-error.js";
+import { isBdsServerType, type ServerExtraMount } from "@guartrix/shared";
+import { primaryAllocationProtocol } from "@guartrix/shared";
+import { logActivity } from "../activity-log.js";
+import { config } from "../config.js";
+import { errorMessage } from "../http-error.js";
 import {
   changeFirewallPort,
   closeFirewallPort,
   openFirewallPort,
-} from "../../../nodes/firewall.js";
-import { readPlayers } from "../../../servers/players.js";
-import { processManager } from "../../../servers/process-manager.js";
-import { readServerProperties, updateServerProperties } from "../../../servers/properties.js";
+} from "../nodes/firewall.js";
+import { readPlayers } from "../servers/players.js";
+import { processManager } from "../servers/process-manager.js";
+import { readServerProperties } from "../servers/properties.js";
 import {
   invalidateServerListFsMeta,
   serverListInclude,
   toServerDetail,
-} from "../../../servers/serialize.js";
-import { patchNeedsStartup } from "../../../services/server-settings-guards.js";
-import type { ServerSettingsPatch } from "./schemas.js";
-import type { NormalizedSettingsFields } from "./validate.js";
-import { updateServer } from "../../../services/servers.js";
+} from "../servers/serialize.js";
+import type { ServerSettingsPatch } from "../schemas/server-settings.js";
+import { patchNeedsStartup } from "./server-settings-guards.js";
+import { updateServer } from "./servers.js";
 
 type Access = NonNullable<
-  Awaited<ReturnType<typeof import("../../../auth/auth.js").requireServerAccess>>
+  Awaited<ReturnType<typeof import("../auth/auth.js").requireServerAccess>>
 >;
+
+export type NormalizedSettingsFields = {
+  portChanging: boolean;
+  portProtocol: ReturnType<typeof primaryAllocationProtocol>;
+  nextJavaPath: string | null | undefined;
+  nextServerJar: string | null | undefined;
+  ownerAlertWebhookUrl: string | null | undefined;
+  discordStatusWebhookUrl: string | null | undefined;
+  bluemapUrl: string | null | undefined;
+  nextExtraMounts: ServerExtraMount[] | null | undefined;
+};
 
 export async function applyServerSettingsPatch(
   request: FastifyRequest,
@@ -45,7 +56,7 @@ export async function applyServerSettingsPatch(
     nextExtraMounts,
   } = fields;
 
-  const { extraMountsForPrisma } = await import("../../../servers/extra-mounts.js");
+  const { extraMountsForPrisma } = await import("../servers/extra-mounts.js");
 
   const updated = await updateServer({
     where: { id: server.id },
@@ -86,7 +97,7 @@ export async function applyServerSettingsPatch(
 
   if (data.diskMb !== undefined || data.cpuLimit !== undefined) {
     try {
-      const { daemonSetLimits } = await import("../../../nodes/daemon-client.js");
+      const { daemonSetLimits } = await import("../nodes/daemon-client.js");
       await daemonSetLimits(server.id, {
         diskMb: updated.diskMb,
         cpuLimit: updated.cpuLimit,
@@ -100,7 +111,7 @@ export async function applyServerSettingsPatch(
     try {
       await changeFirewallPort(server.port, data.port!, server.nodeId, portProtocol);
       if (server.nodeId) {
-        const { ensurePrimaryAllocation } = await import("../../../servers/allocations.js");
+        const { ensurePrimaryAllocation } = await import("../servers/allocations.js");
         await ensurePrimaryAllocation({
           serverId: server.id,
           nodeId: server.nodeId,
@@ -113,11 +124,12 @@ export async function applyServerSettingsPatch(
         where: { id: server.id },
         data: { port: server.port },
       });
+      const { updateServerProperties } = await import("../servers/properties.js");
       await updateServerProperties(server.id, {}, server.port);
       await closeFirewallPort(data.port!, server.nodeId, portProtocol).catch(() => undefined);
       await openFirewallPort(server.port, server.nodeId, portProtocol).catch(() => undefined);
       if (server.nodeId) {
-        const { ensurePrimaryAllocation } = await import("../../../servers/allocations.js");
+        const { ensurePrimaryAllocation } = await import("../servers/allocations.js");
         await ensurePrimaryAllocation({
           serverId: server.id,
           nodeId: server.nodeId,
@@ -131,10 +143,10 @@ export async function applyServerSettingsPatch(
     if (updated.subdomain) {
       try {
         const { ensureServerSubdomain, cloudflareConfigured } = await import(
-          "../../../nodes/cloudflare-dns.js"
+          "../nodes/cloudflare-dns.js"
         );
         if (cloudflareConfigured()) {
-          const { hostPublicIp } = await import("../../../nodes/host-resources.js");
+          const { hostPublicIp } = await import("../nodes/host-resources.js");
           const ipv4 = /^\d{1,3}(\.\d{1,3}){3}$/.test(config.publicHost)
             ? config.publicHost
             : hostPublicIp();
@@ -215,7 +227,6 @@ export async function applyServerSettingsPatch(
   const properties = await readServerProperties(updated.id);
   const players = await readPlayers(updated.id);
 
-  // Live whitelist toggle when server is running
   if (data.properties?.["white-list"] !== undefined && processManager.isRunning(updated.id)) {
     const on = data.properties["white-list"] === "true";
     const isBds = isBdsServerType(updated.type as ServerType);

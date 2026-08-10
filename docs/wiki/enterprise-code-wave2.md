@@ -4,7 +4,7 @@ Living roadmap for enterprise hardening after the completed [enterprise-split](d
 
 **Enige uitzondering:** load/stress test (geen realistische infra in dev/CI om zinvol te draaien). Al het andere — unit tests, e2e, services-diepte, SLA-drills, pentest-voorbereiding — hoort op de backlog.
 
-Last updated: **2026-08-10** · product **v1.4.27**
+Last updated: **2026-08-10** · product **v1.4.30**
 
 ---
 
@@ -13,7 +13,7 @@ Last updated: **2026-08-10** · product **v1.4.27**
 | ID | Item | Status |
 |----|------|--------|
 | E1 | CI + `check:enterprise` + routes↛repos **error** | ✅ v1.4.26 |
-| E2 | Services layer | ✅ passthrough v1.4.26 · **E2c servers v1.4.28** |
+| E2 | Services layer | ✅ passthrough v1.4.26 · **E2c complete v1.4.30** |
 | E3 | Zod + OpenAPI sync | ✅ v1.4.27 |
 | E4 | UI size-budget cleanup | ✅ v1.4.27 |
 | E5 | Vitest + coverage in CI | 🔄 CI job added — wave 3 |
@@ -50,9 +50,9 @@ GitHub Actions: [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) — ui
 routes/ → services/ → repositories/ → prisma
 ```
 
-**Done (v1.4.25–26):** domain passthrough modules; alle routes importieren `services/`; dep-cruiser **error** op routes↛repositories.
+**Done (v1.4.25–30):** domain passthrough modules; alle routes importieren `services/`; dep-cruiser **error** op routes↛repositories.
 
-**Open — E2c:** orchestratie uit dikke routes (`routes/servers/**`, checkout, import, transfer) naar echte use-cases in `services/`.
+**E2c shipped:** server create/clone/delete/import (v1.4.28), settings apply, transfer, nodes admin CRUD/install/status (v1.4.30).
 
 ---
 

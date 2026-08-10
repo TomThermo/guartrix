@@ -10,7 +10,8 @@ import {
 import { errorMessage } from "../../../http-error.js";
 import { processManager } from "../../../servers/process-manager.js";
 import { updateServerProperties } from "../../../servers/properties.js";
-import type { ServerSettingsPatch } from "./schemas.js";
+import type { ServerSettingsPatch } from "../../../schemas/server-settings.js";
+import type { NormalizedSettingsFields } from "../../../services/server-settings-apply.js";
 
 type ServerRow = {
   id: string;
@@ -23,16 +24,7 @@ type ServerRow = {
   status: string;
 };
 
-export type NormalizedSettingsFields = {
-  portChanging: boolean;
-  portProtocol: ReturnType<typeof primaryAllocationProtocol>;
-  nextJavaPath: string | null | undefined;
-  nextServerJar: string | null | undefined;
-  ownerAlertWebhookUrl: string | null | undefined;
-  discordStatusWebhookUrl: string | null | undefined;
-  bluemapUrl: string | null | undefined;
-  nextExtraMounts: import("@guartrix/shared").ServerExtraMount[] | null | undefined;
-};
+export type { NormalizedSettingsFields };
 
 /** Validate port/startup/jar/URLs and apply property file updates. Returns null if reply sent. */
 export async function validateAndNormalizeSettingsPatch(

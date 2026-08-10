@@ -3,6 +3,14 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.30] — 2026-08-10
+
+### Added
+- E2c+ services: server-settings-apply, servers-transfer, nodes-admin; server-settings Zod schema.
+
+### Changed
+- Settings apply, transfer, and nodes admin routes thinned to HTTP/auth shells.
+
 ## [1.4.29] — 2026-08-10
 
 ### Fixed

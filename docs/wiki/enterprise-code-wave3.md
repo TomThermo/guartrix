@@ -4,7 +4,7 @@ Volgende fase na [wave 2+](enterprise-code-wave2.md) (structuur, contracts, UI b
 
 **Enige uitzondering:** load/stress test (geen realistische infra in dev/CI).
 
-Last updated: **2026-08-10** · product **v1.4.28**
+Last updated: **2026-08-10** · product **v1.4.30**
 
 ---
 
@@ -16,7 +16,7 @@ Last updated: **2026-08-10** · product **v1.4.28**
 | W3-E6 | Playwright e2e staging | ⬜ |
 | W3-E7 | SLA drills + Go-live attestations | ⬜ |
 | W3-E8 | External pentest (operator) | ⬜ |
-| W3-E2c+ | Overige fat routes → services | ⬜ transfer, settings, nodes admin |
+| W3-E2c+ | Overige fat routes → services | ✅ v1.4.30 |
 | W3-X1 | Load/stress test | **blocked** |
 
 Canvas: **enterprise-code-wave3** in Cursor.
@@ -53,15 +53,12 @@ Canvas: **enterprise-code-wave3** in Cursor.
 
 ---
 
-## W3-E2c+ — Services (rest)
+## W3-E2c+ — Services (shipped v1.4.30)
 
-Nog orchestratie in routes:
-
-- `routes/servers/transfer.ts`
-- `routes/servers/settings/apply.ts`
-- `routes/nodes/admin-*.ts`
-
-Patroon: `services/servers-*`, `services/nodes-admin.ts`.
+- `services/server-settings-apply.ts` — PATCH server settings orchestration
+- `services/servers-transfer.ts` — node transfer start/status
+- `services/nodes-admin.ts` — admin node CRUD, install bundle, remote install, status, token rotate
+- `schemas/server-settings.ts` — settings Zod contract
 
 ---
 

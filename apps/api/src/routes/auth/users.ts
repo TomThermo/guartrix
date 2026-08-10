@@ -24,7 +24,6 @@ import {
   memoryQuotaSchema,
   PANEL_CREATE_QUOTA_DEFAULTS,
   quotasForCreate,
-  memoryQuotaSchema,
 } from "../../auth/user-quotas.js";
 import { destroySessionsForUser } from "../../auth/session-store.js";
 import { sendZodError } from "../../http-error.js";

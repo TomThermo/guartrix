@@ -1,8 +1,10 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { assertAdminFullApiKey, requireServerAccess } from "../../auth/auth.js";
-import { serverListInclude, toMcServer } from "../../servers/serialize.js";
-import { findServerOrThrow } from "../../services/servers.js";
+import {
+  getServerTransferView,
+  initiateServerTransfer,
+} from "../../services/servers-transfer.js";
 
 const transferSchema = z.object({
   nodeId: z.string().min(1),
@@ -29,22 +31,14 @@ export function registerServerTransferRoutes(app: FastifyInstance): void {
       }
 
       try {
-        const { startServerTransfer, getTransferJob } = await import("../../servers/transfer.js");
-        const job = await startServerTransfer({
+        const body = await initiateServerTransfer({
           serverId: access.server.id,
           toNodeId: parsed.data.nodeId,
           port: parsed.data.port,
           startAfter: parsed.data.startAfter,
           actor: access.user,
         });
-        const updated = await findServerOrThrow({
-          where: { id: access.server.id },
-          include: serverListInclude,
-        });
-        return reply.status(202).send({
-          server: toMcServer(updated),
-          transfer: job ?? getTransferJob(access.server.id),
-        });
+        return reply.status(202).send(body);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         return reply.status(400).send({ error: message });
@@ -57,27 +51,6 @@ export function registerServerTransferRoutes(app: FastifyInstance): void {
       ownerOnly: true,
     });
     if (!access) return;
-    const { getTransferJob } = await import("../../servers/transfer.js");
-    const job = getTransferJob(access.server.id);
-    if (!job) {
-      return {
-        transfer: null,
-        server: toMcServer(
-          await findServerOrThrow({
-            where: { id: access.server.id },
-            include: serverListInclude,
-          }),
-        ),
-      };
-    }
-    return {
-      transfer: job,
-      server: toMcServer(
-        await findServerOrThrow({
-          where: { id: access.server.id },
-          include: serverListInclude,
-        }),
-      ),
-    };
+    return getServerTransferView(access.server.id);
   });
 }
