@@ -2,7 +2,7 @@ import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { nanoid } from "nanoid";
 import { z } from "zod";
-import type { AuthUser } from "@msm/shared";
+import type { AuthUser } from "@guartrix/shared";
 import { logActivity } from "../../activity-log.js";
 import { requireAuth, verifyAccountPassword } from "../../auth/auth.js";
 import { assertSameOrigin } from "../../auth/csrf.js";

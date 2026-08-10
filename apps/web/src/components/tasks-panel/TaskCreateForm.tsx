@@ -1,5 +1,5 @@
 import type { FormEvent } from "react";
-import type { ScheduleStepKind } from "@msm/shared";
+import type { ScheduleStepKind } from "@guartrix/shared";
 import { Button, Form, Stack } from "react-bootstrap";
 import { useI18n } from "../../i18n/react";
 import { ScheduleFields } from "../ScheduleFields";

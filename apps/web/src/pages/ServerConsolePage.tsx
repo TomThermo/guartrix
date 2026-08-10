@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import type { ServerDetail, ServerStatus } from "@msm/shared";
-import { hasPermission, type ServerPermission } from "@msm/shared";
+import type { ServerDetail, ServerStatus } from "@guartrix/shared";
+import { hasPermission, type ServerPermission } from "@guartrix/shared";
 import { Alert, Badge, Button, Spinner, Stack } from "react-bootstrap";
 import { api, ApiError } from "../api";
 import { useAuth } from "../auth";

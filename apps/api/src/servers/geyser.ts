@@ -1,4 +1,4 @@
-import type { ServerType } from "@msm/shared";
+import type { ServerType } from "@guartrix/shared";
 import { installAddon } from "./addons.js";
 import { ensureUdpCompanion } from "./allocations.js";
 import { createBackup } from "./backups.js";

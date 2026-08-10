@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { clampBackupKeepCount } from "@msm/shared";
+import { clampBackupKeepCount } from "@guartrix/shared";
 import { requireAdmin } from "../../auth/auth.js";
 import { logActivity } from "../../activity-log.js";
 import { config } from "../../config.js";
@@ -37,11 +37,11 @@ async function loadAdminServerRow(row: {
   cpuLimit: number;
   suspended: boolean;
   backupSchedule: { keepCount: number; mode: string } | null;
-}): Promise<import("@msm/shared").AdminServerRow> {
+}): Promise<import("@guartrix/shared").AdminServerRow> {
   const schedule = row.backupSchedule
     ? {
         keepCount: row.backupSchedule.keepCount,
-        mode: row.backupSchedule.mode as import("@msm/shared").BackupScheduleMode,
+        mode: row.backupSchedule.mode as import("@guartrix/shared").BackupScheduleMode,
       }
     : await readBackupSchedule(row.id);
   let backupCount = 0;

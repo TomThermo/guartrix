@@ -1,6 +1,6 @@
 {
-  "name": "@msm/daemon",
-  "version": "1.4.21",
+  "name": "@guartrix/daemon",
+  "version": "1.4.22",
   "private": true,
   "type": "module",
   "scripts": {
@@ -13,8 +13,8 @@
   "dependencies": {
     "@fastify/multipart": "^10.1.0",
     "@fastify/websocket": "^11.0.2",
-    "@msm/node-agent": "*",
-    "@msm/shared": "*",
+    "@guartrix/node-agent": "*",
+    "@guartrix/shared": "*",
     "@sentry/node": "^10.69.0",
     "dotenv": "^16.4.7",
     "fastify": "^5.2.1",

@@ -1,4 +1,4 @@
-import type { AddonVersionInfo, ServerType } from "@msm/shared";
+import type { AddonVersionInfo, ServerType } from "@guartrix/shared";
 
 /** Modrinth requires a descriptive UA; keep requests from hanging the panel. */
 export const MODRINTH_TIMEOUT_MS = 12_000;

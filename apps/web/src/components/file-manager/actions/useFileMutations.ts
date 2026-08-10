@@ -1,5 +1,5 @@
 import type { Dispatch, FormEvent, RefObject, SetStateAction } from "react";
-import type { FileEntry } from "@msm/shared";
+import type { FileEntry } from "@guartrix/shared";
 import { api } from "../../../api";
 import { canViewFileContents, shouldDownloadInsteadOfEdit } from "../file-permissions";
 import { joinPath, parentPath } from "../paths";

@@ -1,5 +1,5 @@
-import type { ServerType } from "@msm/shared";
-import { defaultGamePortForType, primaryAllocationProtocol } from "@msm/shared";
+import type { ServerType } from "@guartrix/shared";
+import { defaultGamePortForType, primaryAllocationProtocol } from "@guartrix/shared";
 import { prisma } from "../db.js";
 import { processManager } from "./process-manager.js";
 

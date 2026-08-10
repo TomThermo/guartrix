@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import type { AuthUser, UserRole } from "@msm/shared";
-import { roleLabel } from "@msm/shared";
+import type { AuthUser, UserRole } from "@guartrix/shared";
+import { roleLabel } from "@guartrix/shared";
 import { api } from "../../api";
 import { useAuth } from "../../auth";
 import { useI18n } from "../../i18n/react";

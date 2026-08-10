@@ -1,5 +1,5 @@
 import type { ChildProcessWithoutNullStreams } from "node:child_process";
-import type { ServerType } from "@msm/shared";
+import type { ServerType } from "@guartrix/shared";
 
 export interface DaemonPortPublish {
   port: number;

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import type { ConnectInfo, ServerDetail, ServerStatus, SystemInfo } from "@msm/shared";
-import { addonKindFor, canCreateServer, hasPermission } from "@msm/shared";
+import type { ConnectInfo, ServerDetail, ServerStatus, SystemInfo } from "@guartrix/shared";
+import { addonKindFor, canCreateServer, hasPermission } from "@guartrix/shared";
 import { api, ApiError } from "../../api";
 import { useAuth } from "../../auth";
 import { useI18n } from "../../i18n/react";

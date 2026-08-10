@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import fsp from "node:fs/promises";
 import type { FastifyInstance } from "fastify";
-import { BACKUP_TRANSFER_CHUNK_BYTES, BACKUP_UPLOAD_MAX_BYTES } from "@msm/shared";
+import { BACKUP_TRANSFER_CHUNK_BYTES, BACKUP_UPLOAD_MAX_BYTES } from "@guartrix/shared";
 import { logActivity } from "../../activity-log.js";
 import { requireServerAccess } from "../../auth/auth.js";
 import {
@@ -196,7 +196,7 @@ export function registerBackupCrudRoutes(app: FastifyInstance): void {
       });
       if (request.body?.startAfter) {
         const { openFirewallPort } = await import("../../nodes/firewall.js");
-        const { primaryAllocationProtocol } = await import("@msm/shared");
+        const { primaryAllocationProtocol } = await import("@guartrix/shared");
         const { startServerIfLicensed } = await import("../../license/license.js");
         await openFirewallPort(server.port, server.nodeId, primaryAllocationProtocol(server.type));
         await startServerIfLicensed(server.id);

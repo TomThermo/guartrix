@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import type { ServerType } from "@msm/shared";
+import type { ServerType } from "@guartrix/shared";
 import { daemonDeployFromDir, daemonWipeServer } from "../nodes/daemon-client.js";
 import { serverDir } from "../config.js";
 import { prisma } from "../db.js";

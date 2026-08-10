@@ -84,7 +84,7 @@ npm run test:watch    # Vitest watch mode
 npm run lint          # Biome check (formatter + lint)
 ```
 
-Coverage floors on the included set in `vitest.config.ts` (auth helpers, `safe-url`, server-access, shared permissions/bytes/seed-map/license-ticket, file-manager path helpers): **lines/statements ≥95%**, **functions ≥90%**. Unit tests live under `apps/api`, `apps/web`, and `packages/*/src/**/*.test.ts`. Locale catalogs are compared by `apps/web/src/i18n/locale-parity.test.ts`.
+Coverage floors on the included set in `vitest.config.ts` (auth helpers, `safe-url`, server-access, shared permissions/bytes/seed-map/license-ticket/`safe-url`, file-manager path helpers): **lines/statements ≥95%**, **functions ≥90%**. Unit tests live under `apps/api`, `apps/web`, and `packages/*/src/**/*.test.ts`. Locale catalogs are compared by `apps/web/src/i18n/locale-parity.test.ts`.
 
 Health probes: `/api/health` (liveness) vs `/api/ready` (DB + local daemon). Daemon: `/health` vs `/ready` (Docker). Watchdog checks both.
 
@@ -104,7 +104,7 @@ UI chrome across pages, server tabs/panels, and modals is keyed in both locale f
 
 ## Workspace tips
 
-- Shared types: `packages/shared` — rebuild when changing exports (`npm run build -w @msm/shared`).
+- Shared types: `packages/shared` — rebuild when changing exports (`npm run build -w @guartrix/shared`).
 - Daemon logic lives in `packages/node-agent`; `apps/daemon` is the process entrypoint.
 - Docs: update [README](../../README.md) and this wiki when behaviour users rely on changes.
 - OpenAPI: keep [`docs/openapi.yaml`](../openapi.yaml) `info.version` in sync with the product version in root `package.json` / `VERSION` on each release bump.

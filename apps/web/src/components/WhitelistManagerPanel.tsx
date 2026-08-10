@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
-import type { PlayersResponse, ServerDetail, ServerProperties } from "@msm/shared";
-import { isBdsServerType } from "@msm/shared";
+import type { PlayersResponse, ServerDetail, ServerProperties } from "@guartrix/shared";
+import { isBdsServerType } from "@guartrix/shared";
 import { Button, Form } from "react-bootstrap";
 import { api } from "../api";
 import { useI18n } from "../i18n/react";

@@ -1,4 +1,4 @@
-import type { AuthUser, UserRole } from "@msm/shared";
+import type { AuthUser, UserRole } from "@guartrix/shared";
 import { displayQuotasForRole } from "../../auth/user-quotas.js";
 
 export function toAppUser(user: {

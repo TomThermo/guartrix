@@ -8,7 +8,7 @@ import type {
   AddonSyncResult,
   InstalledAddonUpdate,
   ServerType,
-} from "@msm/shared";
+} from "@guartrix/shared";
 import { request } from "./client";
 
 export const addonsApi = {

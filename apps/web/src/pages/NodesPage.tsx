@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import type { DaemonNode } from "@msm/shared";
+import type { DaemonNode } from "@guartrix/shared";
 import { Alert, Badge, Button, Table } from "react-bootstrap";
 import { api } from "../api";
 import { useI18n } from "../i18n/react";
@@ -121,7 +121,7 @@ function NodeRow({ node, onOpen }: { node: DaemonNode; onOpen: (node: DaemonNode
   );
 }
 
-export function SystemSettingsPage() {
+export function NodesPage() {
   const { t } = useI18n();
   const [nodes, setNodes] = useState<DaemonNode[]>([]);
   const [loading, setLoading] = useState(true);

@@ -1,4 +1,4 @@
-import type { ServerStats } from "@msm/shared";
+import type { ServerStats } from "@guartrix/shared";
 import { daemonStats } from "../nodes/daemon-client.js";
 import { processManager } from "./process-manager.js";
 

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { BACKUP_UPLOAD_MAX_BYTES } from "@msm/shared";
+import { BACKUP_UPLOAD_MAX_BYTES } from "@guartrix/shared";
 
 export const scheduleSchema = z.object({
   mode: z.enum(["off", "interval", "daily", "cron"]),

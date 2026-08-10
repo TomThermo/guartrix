@@ -5,7 +5,7 @@
  * Functions operate on a `StatusHost` — the slice of ProcessManager state and
  * helpers they need — rather than a concrete class.
  */
-import type { ServerStats, ServerStatus } from "@msm/shared";
+import type { ServerStats, ServerStatus } from "@guartrix/shared";
 import { invalidateDiskUsage } from "./disk-usage.js";
 import { resourceMonitor } from "./resource-monitor.js";
 import type { DaemonServerConfig, ManagedProcess } from "./process-types.js";

@@ -4,7 +4,7 @@ import path from "node:path";
 import { spawn } from "node:child_process";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import type { ConsoleMessage } from "@msm/shared";
+import type { ConsoleMessage } from "@guartrix/shared";
 import {
   createMysqlDatabase,
   deleteMysqlDatabase,
@@ -15,7 +15,7 @@ import {
   getContainerLogs,
   getMysqlStatus,
   MYSQL_CONTAINER,
-} from "@msm/node-agent";
+} from "@guartrix/node-agent";
 import { isDaemonAuthorized } from "../auth.js";
 import { sendJson } from "../ws-utils.js";
 

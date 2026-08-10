@@ -1,5 +1,5 @@
-import type { OpEntry, PlayersResponse } from "@msm/shared";
-import { bdsConsoleGamertagArg, isBdsServerType, validateBedrockGamertag } from "@msm/shared";
+import type { OpEntry, PlayersResponse } from "@guartrix/shared";
+import { bdsConsoleGamertagArg, isBdsServerType, validateBedrockGamertag } from "@guartrix/shared";
 import { processManager } from "../process-manager.js";
 import { readBans } from "./bans.js";
 import {

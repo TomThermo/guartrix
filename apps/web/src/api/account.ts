@@ -6,18 +6,18 @@ import type {
   ApplicationApiKeyRecord,
   SystemInfo,
   UpdateUserRequest,
-} from "@msm/shared";
+} from "@guartrix/shared";
 import { request, notifyUnauthorized, activityQueryString } from "./client";
 
 export const accountApi = {
-  listApiKeys: () => request<import("@msm/shared").ApiKeyListResponse>("/api/account/api-keys"),
-  createApiKey: (body: import("@msm/shared").ApiKeyCreateRequest) =>
-    request<import("@msm/shared").ApiKeyCreateResponse>("/api/account/api-keys", {
+  listApiKeys: () => request<import("@guartrix/shared").ApiKeyListResponse>("/api/account/api-keys"),
+  createApiKey: (body: import("@guartrix/shared").ApiKeyCreateRequest) =>
+    request<import("@guartrix/shared").ApiKeyCreateResponse>("/api/account/api-keys", {
       method: "POST",
       body: JSON.stringify(body),
     }),
   revokeApiKey: (id: string) =>
-    request<{ key: import("@msm/shared").ApiKeyRecord }>(`/api/account/api-keys/${id}`, {
+    request<{ key: import("@guartrix/shared").ApiKeyRecord }>(`/api/account/api-keys/${id}`, {
       method: "DELETE",
     }),
   exportAccountData: async () => {
@@ -77,10 +77,10 @@ export const accountApi = {
       method: "DELETE",
     }),
   getAccountProfile: () =>
-    request<{ profile: import("@msm/shared").AccountProfile }>("/api/account/profile"),
-  updateAccountProfile: (body: import("@msm/shared").UpdateAccountProfileRequest) =>
+    request<{ profile: import("@guartrix/shared").AccountProfile }>("/api/account/profile"),
+  updateAccountProfile: (body: import("@guartrix/shared").UpdateAccountProfileRequest) =>
     request<{
-      profile: import("@msm/shared").AccountProfile;
+      profile: import("@guartrix/shared").AccountProfile;
       emailVerificationSent?: boolean;
     }>("/api/account/profile", {
       method: "PATCH",
@@ -89,7 +89,7 @@ export const accountApi = {
   suggestAddress: (q: string, country?: string) => {
     const params = new URLSearchParams({ q });
     if (country) params.set("country", country);
-    return request<{ suggestions: import("@msm/shared").AddressSuggestItem[] }>(
+    return request<{ suggestions: import("@guartrix/shared").AddressSuggestItem[] }>(
       `/api/account/address-suggest?${params}`,
     );
   },
@@ -102,7 +102,7 @@ export const accountApi = {
       code?: string;
     }>(`/api/account/email-available?${params}`);
   },
-  changeAccountPassword: (body: import("@msm/shared").ChangeAccountPasswordRequest) =>
+  changeAccountPassword: (body: import("@guartrix/shared").ChangeAccountPasswordRequest) =>
     request<{ ok: boolean }>("/api/account/password", {
       method: "POST",
       body: JSON.stringify(body),
@@ -206,7 +206,7 @@ export const accountApi = {
       expiresAt: string | null;
     }>("/api/admin/license/status"),
   getAdminVersion: () =>
-    request<import("@msm/shared").PanelVersionStatus & { productVersion: string }>(
+    request<import("@guartrix/shared").PanelVersionStatus & { productVersion: string }>(
       "/api/admin/version",
     ),
   /** Any logged-in user — sanitized license status for banners. */
@@ -342,7 +342,7 @@ export const accountApi = {
         nodeCount?: number;
       };
     }>("/api/admin/license/revalidate", { method: "POST", body: "{}" }),
-  getAdminStatus: () => request<import("@msm/shared").AdminStatusResponse>("/api/admin/status"),
+  getAdminStatus: () => request<import("@guartrix/shared").AdminStatusResponse>("/api/admin/status"),
   listAdminActivity: (query: ActivityQuery = {}) =>
     request<ActivityListResponse>(`/api/admin/activity${activityQueryString(query)}`),
 };

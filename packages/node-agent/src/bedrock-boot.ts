@@ -1,7 +1,7 @@
 import fsp from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { BEDROCK_CONTAINER_DNS, parseBdsAllowlistJson, serializeBdsAllowlist } from "@msm/shared";
+import { BEDROCK_CONTAINER_DNS, parseBdsAllowlistJson, serializeBdsAllowlist } from "@guartrix/shared";
 import { docker } from "./docker.js";
 
 export const BEDROCK_RUNTIME_IMAGE = "guartrix/bedrock-runtime:22.04";

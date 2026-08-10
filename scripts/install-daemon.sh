@@ -113,8 +113,8 @@ const fs = require("fs");
 const p = process.argv[1];
 const pkg = JSON.parse(fs.readFileSync(p, "utf8"));
 pkg.dependencies = pkg.dependencies || {};
-delete pkg.dependencies["@msm/shared"];
-delete pkg.dependencies["@msm/node-agent"];
+delete pkg.dependencies["@guartrix/shared"];
+delete pkg.dependencies["@guartrix/node-agent"];
 delete pkg.devDependencies;
 pkg.dependencies.ssh2 = pkg.dependencies.ssh2 || "^1.16.0";
 pkg.scripts = { start: "node dist/index.js" };
@@ -217,9 +217,9 @@ elif [[ -f apps/daemon/src/index.ts ]]; then
   fi
   export NODE_OPTIONS="${NODE_OPTIONS:+$NODE_OPTIONS }--max-old-space-size=2048"
   npm install
-  npm run build -w @msm/shared
-  npm run build -w @msm/node-agent
-  if ! npm run build -w @msm/daemon; then
+  npm run build -w @guartrix/shared
+  npm run build -w @guartrix/node-agent
+  if ! npm run build -w @guartrix/daemon; then
     echo "ERROR: daemon TypeScript build failed (often OOM / exit 137)." >&2
     echo "Re-run with --panel <panel-url> so the installer downloads a prebuilt bundle." >&2
     exit 1

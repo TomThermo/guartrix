@@ -10,7 +10,7 @@ import type {
   TransferServerRequest,
   UpdateServerRequest,
   VersionsResponse,
-} from "@msm/shared";
+} from "@guartrix/shared";
 import { request, withCsrfHeaders } from "./client";
 import { serverAllocationsApi } from "./server-allocations";
 import { serverManagementApi } from "./server-management";

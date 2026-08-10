@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { TransferJobStatus } from "@msm/shared";
+import type { TransferJobStatus } from "@guartrix/shared";
 import { config } from "../config.js";
 
 export const TRANSFER_STEPS = [

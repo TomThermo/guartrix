@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import type { PanelVersionStatus } from "@msm/shared";
+import type { PanelVersionStatus } from "@guartrix/shared";
 import { Badge, Col, Row } from "react-bootstrap";
 import { api } from "../../api";
 import { AdminPageShell } from "../../components/admin/AdminPageShell";

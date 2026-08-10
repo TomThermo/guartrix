@@ -8,7 +8,7 @@ import {
   type AuthUser,
   type CreateSubUserResponse,
   type ServerSubUser,
-} from "@msm/shared";
+} from "@guartrix/shared";
 import { logActivity } from "../activity-log.js";
 import { config } from "../config.js";
 import { prisma } from "../db.js";

@@ -1,5 +1,5 @@
 import WebSocket from "ws";
-import type { NodeStatus, ServerStatus, ServerStats } from "@msm/shared";
+import type { NodeStatus, ServerStatus, ServerStats } from "@guartrix/shared";
 import { recordActivity } from "../activity-log.js";
 import { daemonWsAuthorization, daemonWsUrl, getNodeToken } from "./daemon-client.js";
 import { prisma } from "../db.js";
@@ -325,7 +325,7 @@ async function connectBridge(bridge: Bridge): Promise<void> {
         players?: string[];
         line?: string;
         stream?: "stdout" | "stderr";
-        stats?: import("@msm/shared").ServerStats;
+        stats?: import("@guartrix/shared").ServerStats;
       };
       if (!msg.type || !msg.serverId) return;
       if (msg.type === "status" && msg.status) {

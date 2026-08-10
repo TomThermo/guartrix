@@ -1,7 +1,7 @@
-import type { OnlinePlayer, OnlinePlayersResponse } from "@msm/shared";
+import type { OnlinePlayer, OnlinePlayersResponse } from "@guartrix/shared";
 import { prisma } from "../db.js";
 import { pingMinecraftServer } from "../mc-ping.js";
-import { listPlayerHistory, touchOnlinePlayers } from "@msm/node-agent";
+import { listPlayerHistory, touchOnlinePlayers } from "@guartrix/node-agent";
 import { processManager } from "./process-manager.js";
 
 function emptyOnline(partial?: Partial<OnlinePlayersResponse>): OnlinePlayersResponse {

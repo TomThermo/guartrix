@@ -4,7 +4,7 @@ import type {
   LogContentResponse,
   LogFileInfo,
   ServerStats,
-} from "@msm/shared";
+} from "@guartrix/shared";
 import { activityQueryString, request } from "./client";
 
 export const serverObservabilityApi = {

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { ConnectInfo, McServer, ServerStats, ServerStatus, SystemInfo } from "@msm/shared";
+import type { ConnectInfo, McServer, ServerStats, ServerStatus, SystemInfo } from "@guartrix/shared";
 import { Button, Col, Row } from "react-bootstrap";
 import { api } from "../../api";
 import { useI18n } from "../../i18n/react";

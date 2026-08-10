@@ -4,7 +4,7 @@ import { ensurePrimaryAllocation } from "./ensure.js";
 import { readServerProperties, updateServerProperties } from "../properties.js";
 
 export async function migratePrimaryAllocations(): Promise<number> {
-  const { primaryAllocationProtocol } = await import("@msm/shared");
+  const { primaryAllocationProtocol } = await import("@guartrix/shared");
   const servers = await prisma.server.findMany({
     where: { nodeId: { not: null } },
     select: { id: true, nodeId: true, port: true, type: true },
@@ -55,7 +55,7 @@ export async function migrateBdsBootProperties(): Promise<number> {
 
 /** Fix Bedrock servers whose primary allocation or firewall still use TCP. */
 export async function migrateBedrockAllocationProtocols(): Promise<number> {
-  const { primaryAllocationProtocol } = await import("@msm/shared");
+  const { primaryAllocationProtocol } = await import("@guartrix/shared");
   const servers = await prisma.server.findMany({
     where: {
       nodeId: { not: null },

@@ -1,4 +1,4 @@
-import type { ScheduleStep, ScheduleStepKind } from "@msm/shared";
+import type { ScheduleStep, ScheduleStepKind } from "@guartrix/shared";
 
 export type DraftStep = {
   key: string;

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { DaemonNode, NodeTestResult } from "@msm/shared";
+import type { DaemonNode, NodeTestResult } from "@guartrix/shared";
 import { Alert, Badge, Button, Modal, Nav, Tab } from "react-bootstrap";
 import { api } from "../../../api";
 import { useI18n } from "../../../i18n/react";

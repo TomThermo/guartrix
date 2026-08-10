@@ -1,4 +1,4 @@
-import type { BansResponse, OnlinePlayersResponse, PlayersResponse } from "@msm/shared";
+import type { BansResponse, OnlinePlayersResponse, PlayersResponse } from "@guartrix/shared";
 import { request } from "./client";
 
 export const serverPlayersApi = {
@@ -23,7 +23,7 @@ export const serverPlayersApi = {
     ),
   listPlayerModeration: (id: string, player?: string) => {
     const q = player ? `?player=${encodeURIComponent(player)}` : "";
-    return request<{ events: import("@msm/shared").PlayerModerationEvent[] }>(
+    return request<{ events: import("@guartrix/shared").PlayerModerationEvent[] }>(
       `/api/servers/${id}/players/moderation${q}`,
     );
   },

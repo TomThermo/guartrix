@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { AdminStatusResponse } from "@msm/shared";
+import type { AdminStatusResponse } from "@guartrix/shared";
 import { api } from "../../api";
 
 export const STATUS_REFRESH_MS = 30_000;

@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import type { DiskUsageBreakdown, ServerStats } from "@msm/shared";
+import type { DiskUsageBreakdown, ServerStats } from "@guartrix/shared";
 import { Card, Col, ProgressBar, Row } from "react-bootstrap";
 import { api } from "../api";
 import { useVisibleInterval } from "../hooks/useVisibleInterval";

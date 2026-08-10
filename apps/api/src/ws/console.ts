@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import type { ConsoleCommand, ConsoleMessage } from "@msm/shared";
+import type { ConsoleCommand, ConsoleMessage } from "@guartrix/shared";
 import { logActivity } from "../activity-log.js";
 import { getSessionUser, isAuthenticated } from "../auth/auth.js";
 import { processManager } from "../servers/process-manager.js";
@@ -88,7 +88,7 @@ export function registerConsoleWs(app: FastifyInstance): void {
         }
       };
 
-      const onStats = (id: string, stats: import("@msm/shared").ServerStats) => {
+      const onStats = (id: string, stats: import("@guartrix/shared").ServerStats) => {
         if (id !== serverId) return;
         const msg: ConsoleMessage = { type: "stats", stats };
         try {

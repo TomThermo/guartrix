@@ -1,4 +1,4 @@
-import type { PlayerEntry, ServerType } from "@msm/shared";
+import type { PlayerEntry, ServerType } from "@guartrix/shared";
 import {
   parseBdsAllowlistJson,
   parseBdsPermissionsJson,
@@ -6,7 +6,7 @@ import {
   serializeBdsPermissions,
   type BdsAllowlistEntry,
   type BdsPermissionEntry,
-} from "@msm/shared";
+} from "@guartrix/shared";
 import { daemonReadFile, daemonWriteFile } from "../../nodes/daemon-client.js";
 import { prisma } from "../../db.js";
 import { processManager } from "../process-manager.js";

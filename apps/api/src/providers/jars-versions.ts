@@ -1,4 +1,4 @@
-import type { ServerType } from "@msm/shared";
+import type { ServerType } from "@guartrix/shared";
 import { fetchJson } from "./jars-http.js";
 
 export interface MojangManifest {

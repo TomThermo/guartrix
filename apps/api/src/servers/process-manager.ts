@@ -1,6 +1,6 @@
 import { EventEmitter } from "node:events";
-import type { ServerStats, ServerStatus, ServerType } from "@msm/shared";
-import type { DaemonServerConfig } from "@msm/node-agent";
+import type { ServerStats, ServerStatus, ServerType } from "@guartrix/shared";
+import type { DaemonServerConfig } from "@guartrix/node-agent";
 import {
   daemonChown,
   daemonCommand,

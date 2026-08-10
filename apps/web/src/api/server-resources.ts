@@ -1,4 +1,4 @@
-import type { ServerDatabase, ServerDatabasesResponse } from "@msm/shared";
+import type { ServerDatabase, ServerDatabasesResponse } from "@guartrix/shared";
 import { request, withCsrfHeaders } from "./client";
 
 type ProxySetup = {

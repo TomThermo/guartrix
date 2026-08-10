@@ -1,6 +1,6 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
-import type { ServerType } from "@msm/shared";
-import { isBdsServerType } from "@msm/shared";
+import type { ServerType } from "@guartrix/shared";
+import { isBdsServerType } from "@guartrix/shared";
 import { logActivity } from "../../../activity-log.js";
 import { config } from "../../../config.js";
 import { prisma } from "../../../db.js";

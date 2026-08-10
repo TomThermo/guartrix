@@ -1,7 +1,7 @@
 import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { Spinner } from "react-bootstrap";
-import type { AuthUser } from "@msm/shared";
+import type { AuthUser } from "@guartrix/shared";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { PageFallback } from "./AppShell";
 
@@ -85,9 +85,9 @@ const AdminApiKeysPage = lazy(() =>
     default: m.AdminApiKeysPage,
   })),
 );
-const SystemSettingsPage = lazy(() =>
-  import("./pages/SystemSettingsPage").then((m) => ({
-    default: m.SystemSettingsPage,
+const NodesPage = lazy(() =>
+  import("./pages/NodesPage").then((m) => ({
+    default: m.NodesPage,
   })),
 );
 const AdminSettingsPage = lazy(() =>
@@ -198,7 +198,7 @@ export function AuthenticatedRoutes({ user }: { user: AuthUser | null }) {
             <Route path="server-backups" element={<Navigate to="/admin/servers" replace />} />
             <Route path="settings" element={<AdminSettingsPage />} />
             <Route path="security" element={<AdminSecurityPage />} />
-            <Route path="nodes" element={<SystemSettingsPage />} />
+            <Route path="nodes" element={<NodesPage />} />
             <Route path="system" element={<Navigate to="/admin/nodes" replace />} />
             <Route path="license" element={<AdminLicensePage />} />
             <Route path="activity" element={<AdminActivityPage />} />

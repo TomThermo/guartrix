@@ -40,7 +40,7 @@ RATE_LIMIT_STORE=redis
 SCHEDULER_LOCK_TTL_MS=15000
 ```
 
-Requires optional dependency `ioredis` (`npm i ioredis -w @msm/api` — already an optionalDependency).
+Requires optional dependency `ioredis` (`npm i ioredis -w @guartrix/api` — already an optionalDependency).
 
 When Redis is connected, the panel uses it for:
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Alert, Button, Card, Spinner } from "react-bootstrap";
 import { Link } from "react-router-dom";
-import type { ConnectInfo } from "@msm/shared";
+import type { ConnectInfo } from "@guartrix/shared";
 import { api } from "../api";
 import { useI18n } from "../i18n/react";
 import { copyText } from "../utils";

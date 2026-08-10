@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
-import type { AddonSortIndex, McServer } from "@msm/shared";
-import { addonKindFor } from "@msm/shared";
+import type { AddonSortIndex, McServer } from "@guartrix/shared";
+import { addonKindFor } from "@guartrix/shared";
 import { Alert } from "react-bootstrap";
 import { api } from "../../api";
 import { useI18n } from "../../i18n/react";

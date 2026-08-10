@@ -4,7 +4,7 @@ import { nanoid } from "nanoid";
 import {
   GUARTRIX_LICENSE_VERIFY_PUBLIC_KEY_PEM,
   resolveLicenseVerifyPublicKeyPem,
-} from "@msm/shared/license-signing";
+} from "@guartrix/shared/license-signing";
 import { config } from "../config.js";
 
 export type LicensePanelStatus =

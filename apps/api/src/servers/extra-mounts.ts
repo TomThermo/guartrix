@@ -1,5 +1,5 @@
 import path from "node:path";
-import type { ServerExtraMount } from "@msm/shared";
+import type { ServerExtraMount } from "@guartrix/shared";
 import { Prisma, type Prisma as PrismaNS } from "@prisma/client";
 
 export const MAX_EXTRA_MOUNTS = 8;

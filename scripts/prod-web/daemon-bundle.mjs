@@ -6,7 +6,7 @@ import { spawnSync } from "node:child_process";
 /** Strip workspace packages; keep runtime deps needed by the release daemon bundle. */
 export function standaloneDaemonPackageJson(version = "0.0.0") {
   return {
-    name: "@msm/daemon",
+    name: "@guartrix/daemon",
     version,
     private: true,
     type: "module",

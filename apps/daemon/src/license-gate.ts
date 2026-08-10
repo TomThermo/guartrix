@@ -8,8 +8,8 @@ import {
   resolveLicenseVerifyPublicKeyPem,
   verifyLicenseClaims,
   type LicenseSignedClaims,
-} from "@msm/shared/license-signing";
-import { freeTierCaps, type DaemonLicenseTicket, type EffectiveLicenseCaps } from "@msm/shared";
+} from "@guartrix/shared/license-signing";
+import { freeTierCaps, type DaemonLicenseTicket, type EffectiveLicenseCaps } from "@guartrix/shared";
 import { daemonConfig } from "./config.js";
 
 type StoredTicket = {

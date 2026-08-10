@@ -3,7 +3,7 @@ import fsSync from "node:fs";
 import path from "node:path";
 import { pipeline } from "node:stream/promises";
 import type { Readable } from "node:stream";
-import type { FileEntry } from "@msm/shared";
+import type { FileEntry } from "@guartrix/shared";
 import { serverDir } from "./config.js";
 import { fixDataOwnership } from "./process-manager.js";
 import { assertDiskSpace, invalidateServerDataCache } from "./disk-quota.js";
@@ -11,7 +11,7 @@ import { assertDiskSpace, invalidateServerDataCache } from "./disk-quota.js";
 export type { FileEntry };
 
 const TEXT_MAX_BYTES = 2 * 1024 * 1024;
-/** Keep in sync with @msm/shared FILE_UPLOAD_MAX_BYTES (2 GiB). */
+/** Keep in sync with @guartrix/shared FILE_UPLOAD_MAX_BYTES (2 GiB). */
 const UPLOAD_MAX_BYTES = 2 * 1024 * 1024 * 1024;
 
 const TEXT_EXTENSIONS = new Set([

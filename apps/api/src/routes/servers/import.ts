@@ -4,8 +4,8 @@ import path from "node:path";
 import type { FastifyInstance } from "fastify";
 import { nanoid } from "nanoid";
 import { z } from "zod";
-import type { ServerType } from "@msm/shared";
-import { primaryAllocationProtocol } from "@msm/shared";
+import type { ServerType } from "@guartrix/shared";
+import { primaryAllocationProtocol } from "@guartrix/shared";
 import { logActivity } from "../../activity-log.js";
 import {
   assertAdminFullApiKey,
@@ -18,7 +18,7 @@ import { closeFirewallPort, openFirewallPort } from "../../nodes/firewall.js";
 import { processManager } from "../../servers/process-manager.js";
 import { prepareServerFiles } from "../../providers/jars.js";
 import { updateServerProperties } from "../../servers/properties.js";
-import { safeExtractArchive } from "@msm/node-agent";
+import { safeExtractArchive } from "@guartrix/node-agent";
 import { syncLocalDirToNode, wipeServerEverywhere } from "../../servers/server-files.js";
 import { serverListInclude, toMcServer } from "../../servers/serialize.js";
 

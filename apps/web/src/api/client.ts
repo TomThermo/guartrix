@@ -1,4 +1,4 @@
-import type { ActivityQuery } from "@msm/shared";
+import type { ActivityQuery } from "@guartrix/shared";
 
 type UnauthorizedListener = () => void;
 const unauthorizedListeners = new Set<UnauthorizedListener>();

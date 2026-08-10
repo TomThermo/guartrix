@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { nanoid } from "nanoid";
 import { z } from "zod";
-import type { AuthUser, UserRole } from "@msm/shared";
+import type { AuthUser, UserRole } from "@guartrix/shared";
 import { config } from "../../config.js";
 import { prisma } from "../../db.js";
 import { hashPassword } from "../password-hash.js";

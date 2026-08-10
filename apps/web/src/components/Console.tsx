@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent, type UIEvent } from "react";
-import type { ConsoleMessage, ServerStats, ServerStatus } from "@msm/shared";
+import type { ConsoleMessage, ServerStats, ServerStatus } from "@guartrix/shared";
 import { Button, Form, InputGroup, Stack } from "react-bootstrap";
 import { api } from "../api";
 import { useI18n } from "../i18n/react";

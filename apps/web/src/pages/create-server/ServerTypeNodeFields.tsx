@@ -3,7 +3,7 @@ import {
   JAVA_SERVER_TYPES,
   type DaemonNode,
   type ServerType,
-} from "@msm/shared";
+} from "@guartrix/shared";
 import { Form } from "react-bootstrap";
 import { AdminPanelCard } from "../../components/admin/AdminPageShell";
 import { useI18n } from "../../i18n/react";

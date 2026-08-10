@@ -3,7 +3,7 @@
  * stop / attach / console / status work to the focused `process-*.ts` modules.
  */
 import { EventEmitter } from "node:events";
-import type { ServerStatus } from "@msm/shared";
+import type { ServerStatus } from "@guartrix/shared";
 import {
   stopProcess,
   killProcess,

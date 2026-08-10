@@ -1,4 +1,4 @@
-import type { FileContentResponse, FileListResponse } from "@msm/shared";
+import type { FileContentResponse, FileListResponse } from "@guartrix/shared";
 import { request } from "./client";
 
 export const filesApi = {

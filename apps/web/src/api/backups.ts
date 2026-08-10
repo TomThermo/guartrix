@@ -2,14 +2,14 @@ import {
   BACKUP_TRANSFER_CHUNK_BYTES,
   BACKUP_UPLOAD_CONCURRENCY,
   BACKUP_UPLOAD_MAX_BYTES,
-} from "@msm/shared";
+} from "@guartrix/shared";
 import type {
   BackupListResponse,
   BackupSchedule,
   BackupUploadInitResponse,
   McServer,
   ServerBackup,
-} from "@msm/shared";
+} from "@guartrix/shared";
 import { request, notifyUnauthorized, transferUrl, withCsrfHeaders, getCsrfToken } from "./client";
 
 export const backupsApi = {

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import type { DiskUsageBreakdown } from "@msm/shared";
+import type { DiskUsageBreakdown } from "@guartrix/shared";
 import { Card, Col, Row } from "react-bootstrap";
 import { useI18n } from "../i18n/react";
 import { formatBytes, formatGb } from "../utils";

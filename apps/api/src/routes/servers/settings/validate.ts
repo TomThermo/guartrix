@@ -1,6 +1,6 @@
 import type { FastifyReply } from "fastify";
-import type { ServerType } from "@msm/shared";
-import { primaryAllocationProtocol } from "@msm/shared";
+import type { ServerType } from "@guartrix/shared";
+import { primaryAllocationProtocol } from "@guartrix/shared";
 import {
   assertSafeBrowserUrl,
   assertSafeOutboundUrl,
@@ -31,7 +31,7 @@ export type NormalizedSettingsFields = {
   ownerAlertWebhookUrl: string | null | undefined;
   discordStatusWebhookUrl: string | null | undefined;
   bluemapUrl: string | null | undefined;
-  nextExtraMounts: import("@msm/shared").ServerExtraMount[] | null | undefined;
+  nextExtraMounts: import("@guartrix/shared").ServerExtraMount[] | null | undefined;
 };
 
 /** Validate port/startup/jar/URLs and apply property file updates. Returns null if reply sent. */
@@ -81,7 +81,7 @@ export async function validateAndNormalizeSettingsPatch(
           startupCommandToArgs,
           normalizeServerExecutable,
           assertSafeStartupCommandForType,
-        } = await import("@msm/shared");
+        } = await import("@guartrix/shared");
         const jar = normalizeServerExecutable(
           data.serverJar !== undefined ? data.serverJar : server.serverJar,
           server.type as ServerType,
@@ -102,7 +102,7 @@ export async function validateAndNormalizeSettingsPatch(
     // Memory lowered/changed — existing hard-coded -Xmx must still fit.
     try {
       const { assertSafeStartupCommandForType, normalizeServerExecutable } = await import(
-        "@msm/shared"
+        "@guartrix/shared"
       );
       assertSafeStartupCommandForType(
         server.type as ServerType,
@@ -127,7 +127,7 @@ export async function validateAndNormalizeSettingsPatch(
       nextServerJar = null;
     } else {
       try {
-        const { normalizeServerExecutable } = await import("@msm/shared");
+        const { normalizeServerExecutable } = await import("@guartrix/shared");
         nextServerJar = normalizeServerExecutable(data.serverJar, server.type as ServerType);
       } catch (err) {
         await reply.status(400).send({ error: errorMessage(err) });
@@ -155,7 +155,7 @@ export async function validateAndNormalizeSettingsPatch(
         ? null
         : data.bluemapUrl.trim();
 
-  let nextExtraMounts: import("@msm/shared").ServerExtraMount[] | null | undefined;
+  let nextExtraMounts: import("@guartrix/shared").ServerExtraMount[] | null | undefined;
   if (data.extraMounts !== undefined) {
     try {
       const { parseExtraMounts } = await import("../../../servers/extra-mounts.js");

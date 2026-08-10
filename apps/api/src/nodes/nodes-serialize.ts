@@ -1,4 +1,4 @@
-import type { DaemonNode, NodeStatus } from "@msm/shared";
+import type { DaemonNode, NodeStatus } from "@guartrix/shared";
 import { hostPublicIp } from "./host-resources.js";
 import {
   nodeAllocationBudget,

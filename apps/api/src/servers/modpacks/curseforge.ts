@@ -1,8 +1,8 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import type { ServerType } from "@msm/shared";
-import { safeExtractArchive } from "@msm/node-agent";
+import type { ServerType } from "@guartrix/shared";
+import { safeExtractArchive } from "@guartrix/node-agent";
 import { createBackup } from "../backups.js";
 import { serverDir } from "../../config.js";
 import { prisma } from "../../db.js";

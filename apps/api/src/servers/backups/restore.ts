@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { safeExtractArchive } from "@msm/node-agent";
+import { safeExtractArchive } from "@guartrix/node-agent";
 import { decryptBackupArchive, isEncryptedBackupPath } from "../backup-crypto.js";
 import { serverBackupsDir, serverDir } from "../../config.js";
 import { processManager } from "../process-manager.js";

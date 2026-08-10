@@ -5,7 +5,7 @@ import {
   resolveNode,
   resolveNodeForServer,
 } from "./daemon-client-core.js";
-import { panelToDaemonAuthorization } from "@msm/shared/daemon-jwt";
+import { panelToDaemonAuthorization } from "@guartrix/shared/daemon-jwt";
 import { nodePublicUrl } from "./nodes.js";
 
 /** Dest node pulls archive from source node and deploys (no panel disk staging). */

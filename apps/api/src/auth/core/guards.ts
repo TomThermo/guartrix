@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { Server } from "@prisma/client";
-import type { AuthUser, ServerPermission } from "@msm/shared";
-import { adminPanelHasScope, hasPermission, type AdminPanelScope } from "@msm/shared";
+import type { AuthUser, ServerPermission } from "@guartrix/shared";
+import { adminPanelHasScope, hasPermission, type AdminPanelScope } from "@guartrix/shared";
 import { apiKeyAllowsServer, apiKeyRateLimitedMessage, intersectPermissions } from "../api-keys.js";
 import { prisma } from "../../db.js";
 import {

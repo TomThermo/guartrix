@@ -10,7 +10,7 @@ import {
   daemonRename,
   daemonWriteFile,
 } from "../nodes/daemon-client.js";
-import { FILE_UPLOAD_MAX_BYTES } from "@msm/shared";
+import { FILE_UPLOAD_MAX_BYTES } from "@guartrix/shared";
 import fs from "node:fs/promises";
 import { createWriteStream } from "node:fs";
 import os from "node:os";

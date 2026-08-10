@@ -1,5 +1,5 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
-import { hasPermission } from "@msm/shared";
+import { hasPermission } from "@guartrix/shared";
 import { assertAdminFullApiKey } from "../../../auth/auth.js";
 import { prisma } from "../../../db.js";
 import { errorMessage } from "../../../http-error.js";

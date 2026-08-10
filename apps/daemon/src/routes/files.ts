@@ -19,7 +19,7 @@ import {
   streamZipPaths,
   wipeServerData,
   writeFileContent,
-} from "@msm/node-agent";
+} from "@guartrix/node-agent";
 
 /** File management routes mirroring the panel's file browser (per-server). */
 export function registerFileRoutes(app: FastifyInstance): void {

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import type { PortAllocation } from "@msm/shared";
+import type { PortAllocation } from "@guartrix/shared";
 import { Badge, Button, Form, Spinner, Stack, Table } from "react-bootstrap";
 import { api } from "../api";
 import { useI18n } from "../i18n/react";

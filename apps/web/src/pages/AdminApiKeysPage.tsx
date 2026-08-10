@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Navigate } from "react-router-dom";
-import type { ApplicationApiKeyRecord } from "@msm/shared";
+import type { ApplicationApiKeyRecord } from "@guartrix/shared";
 import { Alert } from "react-bootstrap";
 import { api } from "../api";
 import { useAuth } from "../auth";

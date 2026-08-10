@@ -1,8 +1,8 @@
 import type { Dirent } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { LogContentResponse, LogFileInfo } from "@msm/shared";
-import { formatBytes } from "@msm/shared";
+import type { LogContentResponse, LogFileInfo } from "@guartrix/shared";
+import { formatBytes } from "@guartrix/shared";
 import { serverDir } from "../config.js";
 
 async function collectFromDir(

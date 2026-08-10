@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
-import type { ConsoleCommand, ConsoleMessage, ServerStatus } from "@msm/shared";
-import { processManager, resourceMonitor } from "@msm/node-agent";
+import type { ConsoleCommand, ConsoleMessage, ServerStatus } from "@guartrix/shared";
+import { processManager, resourceMonitor } from "@guartrix/node-agent";
 import { daemonConfig } from "../config.js";
 import { isDaemonAuthorized } from "../auth.js";
 import { sendJson } from "../ws-utils.js";

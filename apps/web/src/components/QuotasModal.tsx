@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import type { AuthUser } from "@msm/shared";
+import type { AuthUser } from "@guartrix/shared";
 import { Alert, Button, Form, Modal, Spinner } from "react-bootstrap";
 import { api } from "../api";
 import { useI18n } from "../i18n/react";

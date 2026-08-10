@@ -4,7 +4,7 @@ import {
   looksLikeJwt,
   safeEqualString,
   verifyDaemonJwt,
-} from "@msm/shared/daemon-jwt";
+} from "@guartrix/shared/daemon-jwt";
 import { daemonConfig } from "./config.js";
 import { isMetricsTokenOrLocalhost } from "./metrics.js";
 

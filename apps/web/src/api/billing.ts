@@ -4,7 +4,7 @@ import type {
   PlanTemplateRecord,
   MollieStatusResponse,
   CreateCheckoutResponse,
-} from "@msm/shared";
+} from "@guartrix/shared";
 import { request } from "./client";
 
 export const billingApi = {

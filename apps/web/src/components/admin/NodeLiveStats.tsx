@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { AdminNodeStatusResponse } from "@msm/shared";
+import type { AdminNodeStatusResponse } from "@guartrix/shared";
 import { Alert, Spinner } from "react-bootstrap";
 import { api } from "../../api";
 import { useI18n } from "../../i18n/react";

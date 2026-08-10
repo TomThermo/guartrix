@@ -1,4 +1,4 @@
-import type { McServer, ServerDetail } from "@msm/shared";
+import type { McServer, ServerDetail } from "@guartrix/shared";
 import { TransferOwnerModal } from "../../components/TransferOwnerModal";
 import { WhitelistStartModal } from "../../components/WhitelistStartModal";
 import { WhitelistToggleModal } from "../../components/WhitelistToggleModal";

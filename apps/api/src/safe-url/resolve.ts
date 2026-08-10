@@ -1,6 +1,11 @@
 import dns from "node:dns/promises";
 import net from "node:net";
-import { hostLooksLocal, isBlockedIp, normalizeHostname } from "./ip.js";
+import {
+  hostLooksLocal,
+  isBlockedIp,
+  normalizeHostname,
+  parseSafeHttpUrl,
+} from "@guartrix/shared";
 
 export type SafeUrlOptions = {
   /** Default true — only https: */
@@ -203,9 +208,9 @@ export function assertSafeBrowserUrl(raw: string): string {
   if (parsed.username || parsed.password) {
     throw new Error("URLs with credentials are not allowed");
   }
-  const host = normalizeHostname(parsed.hostname);
-  if (!host || hostLooksLocal(host)) {
+  const href = parseSafeHttpUrl(trimmed);
+  if (!href) {
     throw new Error("URL host is not allowed");
   }
-  return parsed.href;
+  return href;
 }

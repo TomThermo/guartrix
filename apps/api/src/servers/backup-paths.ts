@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { formatBytes } from "@msm/shared";
+import { formatBytes } from "@guartrix/shared";
 import { serverBackupsDir } from "../config.js";
 
 export const TAR_EXCLUDES = [

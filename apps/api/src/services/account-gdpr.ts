@@ -1,5 +1,5 @@
 import type { FastifyRequest } from "fastify";
-import type { AuthUser, UserRole } from "@msm/shared";
+import type { AuthUser, UserRole } from "@guartrix/shared";
 import { logActivity } from "../activity-log.js";
 import { verifyAccountPassword } from "../auth/auth.js";
 import { destroySessionsForUser } from "../auth/session-store.js";

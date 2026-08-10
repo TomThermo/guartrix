@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import type { ServerType } from "@msm/shared";
+import type { ServerType } from "@guartrix/shared";
 import { requireServerAccess } from "../../../auth/auth.js";
 import { logActivity } from "../../../activity-log.js";
 

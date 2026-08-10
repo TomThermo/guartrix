@@ -9,8 +9,8 @@
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import type { ServerStatus } from "@msm/shared";
-import { consoleLineIndicatesBootFailure, consoleLineIndicatesReady } from "@msm/shared";
+import type { ServerStatus } from "@guartrix/shared";
+import { consoleLineIndicatesBootFailure, consoleLineIndicatesReady } from "@guartrix/shared";
 import {
   containerName,
   isContainerRunning,

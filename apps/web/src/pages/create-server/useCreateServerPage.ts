@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { canCreateServer, type DaemonNode, type ServerType } from "@msm/shared";
+import { canCreateServer, type DaemonNode, type ServerType } from "@guartrix/shared";
 import { api } from "../../api";
 import { useAuth } from "../../auth";
 import { useI18n } from "../../i18n/react";

@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { AddonCategory, ServerType } from "@msm/shared";
+import type { AddonCategory, ServerType } from "@guartrix/shared";
 import { LOADER_CATEGORY_NAMES, categoryLabel, fetchJson } from "../addons-modrinth.js";
 import { kindFor, readManifest, writeManifest } from "./manifest.js";
 import type { InstalledAddon } from "./types.js";

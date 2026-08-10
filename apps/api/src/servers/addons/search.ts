@@ -1,4 +1,4 @@
-import type { AddonSortIndex, AddonSearchHit, InstalledAddonUpdate, ServerType } from "@msm/shared";
+import type { AddonSortIndex, AddonSearchHit, InstalledAddonUpdate, ServerType } from "@guartrix/shared";
 import type { AddonVersionInfo, ModrinthVersion } from "../addons-modrinth.js";
 import {
   LOADER_CATEGORY_NAMES,

@@ -1,5 +1,5 @@
 import type { Server } from "@prisma/client";
-import type { ServerType } from "@msm/shared";
+import type { ServerType } from "@guartrix/shared";
 import { createBackup } from "../backups.js";
 import { prisma } from "../../db.js";
 import { listVersions } from "../../providers/jars.js";

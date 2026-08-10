@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { BEDROCK_SERVER_TYPES, JAVA_SERVER_TYPES } from "@msm/shared";
+import { BEDROCK_SERVER_TYPES, JAVA_SERVER_TYPES } from "@guartrix/shared";
 
 export const locationSchema = z
   .union([z.string().max(64), z.null()])
@@ -53,8 +53,8 @@ export const updateSchema = z.object({
 });
 
 const SERVER_TYPES = [...JAVA_SERVER_TYPES, ...BEDROCK_SERVER_TYPES] as [
-  import("@msm/shared").ServerType,
-  ...import("@msm/shared").ServerType[],
+  import("@guartrix/shared").ServerType,
+  ...import("@guartrix/shared").ServerType[],
 ];
 
 export const serverTypeSchema = z.enum(SERVER_TYPES);

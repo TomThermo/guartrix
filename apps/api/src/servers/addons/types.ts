@@ -1,4 +1,4 @@
-import type { AddonKind } from "@msm/shared";
+import type { AddonKind } from "@guartrix/shared";
 
 export type { AddonKind };
 

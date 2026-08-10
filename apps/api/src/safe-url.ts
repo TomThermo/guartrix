@@ -4,7 +4,7 @@
  * optionally requires an allowlisted hostname.
  * Fetches pin DNS to the pre-validated address (anti rebinding TOCTOU).
  */
-export { isBlockedIp } from "./safe-url/ip.js";
+export { isBlockedIp, normalizeHostname, hostLooksLocal } from "./safe-url/ip.js";
 export type { SafeUrlOptions, ResolvedSafeUrl } from "./safe-url/resolve.js";
 export {
   assertSafeOutboundUrl,

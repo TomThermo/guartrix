@@ -1,4 +1,4 @@
-import type { McServer, ServerType, ServerUpdateInfo } from "@msm/shared";
+import type { McServer, ServerType, ServerUpdateInfo } from "@guartrix/shared";
 import { request } from "./client";
 
 export const serverManagementApi = {

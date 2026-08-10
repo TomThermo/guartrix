@@ -1,10 +1,10 @@
-import type { ServerDetail, StartupPreset, StartupHeapCheck, ServerExtraMount } from "@msm/shared";
+import type { ServerDetail, StartupPreset, StartupHeapCheck, ServerExtraMount } from "@guartrix/shared";
 import {
   DEFAULT_SERVER_JAR,
   JAVA_VERSIONS,
   normalizeJavaVersion,
   type JavaVersion,
-} from "@msm/shared";
+} from "@guartrix/shared";
 import { Alert, Button, Col, Form, Row } from "react-bootstrap";
 import { useI18n } from "../../i18n/react";
 import { Field } from "./settings-fields";

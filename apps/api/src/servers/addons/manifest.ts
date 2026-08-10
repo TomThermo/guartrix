@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { ServerType } from "@msm/shared";
-import { addonKindFor } from "@msm/shared";
+import type { ServerType } from "@guartrix/shared";
+import { addonKindFor } from "@guartrix/shared";
 import type { AddonKind, Manifest } from "./types.js";
 
 export function kindFor(type: ServerType): AddonKind | null {

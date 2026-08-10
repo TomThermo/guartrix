@@ -1,4 +1,4 @@
-import type { DaemonNode } from "@msm/shared";
+import type { DaemonNode } from "@guartrix/shared";
 
 export function statusVariant(status: DaemonNode["status"]): "success" | "danger" | "secondary" {
   if (status === "ONLINE") return "success";

@@ -18,7 +18,7 @@ import {
   POCKETMINE_PHAR,
   runtimeKindFor,
   runtimeLabelForServerType,
-} from "@msm/shared";
+} from "@guartrix/shared";
 import { serverDir } from "./config.js";
 import {
   containerName,

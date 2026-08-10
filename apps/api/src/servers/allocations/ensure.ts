@@ -1,5 +1,5 @@
 import { nanoid } from "nanoid";
-import type { PortAllocation } from "@msm/shared";
+import type { PortAllocation } from "@guartrix/shared";
 import { prisma } from "../../db.js";
 import { openFirewallPort } from "../../nodes/firewall.js";
 

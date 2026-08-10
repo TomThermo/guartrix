@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { DaemonNode, McServer, TransferJobStatus } from "@msm/shared";
+import type { DaemonNode, McServer, TransferJobStatus } from "@guartrix/shared";
 import { Alert, Button, Form, Modal, ProgressBar, Spinner } from "react-bootstrap";
 import { api } from "../api";
 import { useI18n } from "../i18n/react";

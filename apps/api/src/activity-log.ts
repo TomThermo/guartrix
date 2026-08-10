@@ -1,6 +1,6 @@
 import type { FastifyRequest } from "fastify";
 import { nanoid } from "nanoid";
-import { activityActionMeta, type ActivityEventRecord, type ActivityCategory } from "@msm/shared";
+import { activityActionMeta, type ActivityEventRecord, type ActivityCategory } from "@guartrix/shared";
 import { config } from "./config.js";
 import { prisma } from "./db.js";
 import { notifyCriticalActivity } from "./notifications.js";

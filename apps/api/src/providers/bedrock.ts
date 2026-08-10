@@ -4,9 +4,9 @@ import { createHash } from "node:crypto";
 import { createWriteStream } from "node:fs";
 import { pipeline } from "node:stream/promises";
 import { Readable } from "node:stream";
-import type { ServerType } from "@msm/shared";
-import { BEDROCK_BINARY, POCKETMINE_PHAR } from "@msm/shared";
-import { safeExtractArchive } from "@msm/node-agent";
+import type { ServerType } from "@guartrix/shared";
+import { BEDROCK_BINARY, POCKETMINE_PHAR } from "@guartrix/shared";
+import { safeExtractArchive } from "@guartrix/node-agent";
 import { compareMcVersions } from "./jars.js";
 
 const USER_AGENT = "Guartrix/1.0 (MinecraftServerManager; contact@localhost)";

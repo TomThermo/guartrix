@@ -1,4 +1,4 @@
-import type { AuthMeResponse, AuthUser } from "@msm/shared";
+import type { AuthMeResponse, AuthUser } from "@guartrix/shared";
 import { request } from "./client";
 
 export type AuthPublicConfig = {

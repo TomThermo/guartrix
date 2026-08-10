@@ -19,3 +19,4 @@ export * from "./license-verify-public-key.js";
 export * from "./world-seed-urls.js";
 export * from "./bedrock-players.js";
 export * from "./countries.js";
+export * from "./safe-url.js";

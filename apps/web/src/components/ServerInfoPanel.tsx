@@ -5,7 +5,7 @@ import type {
   McServer,
   ServerStats,
   SystemInfo,
-} from "@msm/shared";
+} from "@guartrix/shared";
 import { Spinner } from "react-bootstrap";
 import { api } from "../api";
 import { useSharedOnlinePlayers } from "../hooks/OnlinePlayersProvider";

@@ -1,4 +1,4 @@
-import type { McServer } from "@msm/shared";
+import type { McServer } from "@guartrix/shared";
 import type { StatusFilter } from "./types";
 
 export function statusLabelFor(status: McServer["status"], t: (key: string) => string): string {

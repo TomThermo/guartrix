@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import client from "prom-client";
-import { getDockerVersion } from "@msm/node-agent";
+import { getDockerVersion } from "@guartrix/node-agent";
 
 const register = new client.Registry();
 client.collectDefaultMetrics({ register, prefix: "guartrix_daemon_" });

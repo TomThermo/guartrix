@@ -16,7 +16,7 @@ Used for:
 
 Main anchors:
 
-- `apps/api/src/mail.ts`
+- `apps/api/src/infra/mail.ts`
 - `apps/api/src/routes/auth.ts`
 - `apps/api/src/routes/invites.ts`
 - `apps/api/src/routes/admin-settings.ts`

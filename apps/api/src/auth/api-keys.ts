@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import type { FastifyRequest } from "fastify";
-import { API_KEY_RATE_DEFAULT, API_KEY_RATE_WINDOW_MS, type ApiKeyRecord } from "@msm/shared";
+import { API_KEY_RATE_DEFAULT, API_KEY_RATE_WINDOW_MS, type ApiKeyRecord } from "@guartrix/shared";
 import { prisma } from "../db.js";
 import { getRateLimitStore } from "../rate-limit-store.js";
 

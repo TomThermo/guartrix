@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { ALL_SERVER_TYPES, addonKindFor, type McServer, type ServerType } from "@msm/shared";
+import { ALL_SERVER_TYPES, addonKindFor, type McServer, type ServerType } from "@guartrix/shared";
 import { Alert, Button, Form, Modal, Spinner } from "react-bootstrap";
 import { api } from "../api";
 import { useI18n } from "../i18n/react";

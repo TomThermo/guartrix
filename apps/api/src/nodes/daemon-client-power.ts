@@ -1,5 +1,5 @@
-import type { DaemonServerConfig } from "@msm/node-agent";
-import type { ServerStatus } from "@msm/shared";
+import type { DaemonServerConfig } from "@guartrix/node-agent";
+import type { ServerStatus } from "@guartrix/shared";
 import { prisma } from "../db.js";
 import {
   DAEMON_DEFAULT_TIMEOUT_MS,

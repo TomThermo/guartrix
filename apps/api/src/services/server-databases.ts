@@ -2,7 +2,7 @@ import type { FastifyRequest } from "fastify";
 import type { Server } from "@prisma/client";
 import { nanoid } from "nanoid";
 import { z } from "zod";
-import { databaseNamePrefix, DEFAULT_MAX_DATABASES, type AuthUser, type ServerDatabase } from "@msm/shared";
+import { databaseNamePrefix, DEFAULT_MAX_DATABASES, type AuthUser, type ServerDatabase } from "@guartrix/shared";
 import { logActivity } from "../activity-log.js";
 import { assertCanCreateDatabase } from "../billing/quotas.js";
 import {

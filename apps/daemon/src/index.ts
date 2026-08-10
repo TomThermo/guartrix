@@ -15,7 +15,7 @@ import {
   bedrockRuntimeImageExists,
   ensureDaemonPortPanelOnly,
   type SftpServerHandle,
-} from "@msm/node-agent";
+} from "@guartrix/node-agent";
 import { daemonConfig } from "./config.js";
 import { requireDaemonAuth } from "./auth.js";
 import { registerDaemonRateLimit } from "./rate-limit.js";
@@ -111,7 +111,7 @@ async function main() {
   });
 
   app.get<{ Params: { id: string } }>("/servers/:id/stats/history", async (request) => {
-    const { getDaemonStatsHistory } = await import("@msm/node-agent");
+    const { getDaemonStatsHistory } = await import("@guartrix/node-agent");
     return { samples: getDaemonStatsHistory(request.params.id) };
   });
 

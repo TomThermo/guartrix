@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type UIEvent } from "react";
-import type { ConsoleMessage, StatusNode } from "@msm/shared";
+import type { ConsoleMessage, StatusNode } from "@guartrix/shared";
 import { Badge, Button } from "react-bootstrap";
 import { useI18n } from "../i18n/react";
 import { Console } from "./Console";

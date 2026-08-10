@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import type { OnlinePlayersResponse, PlayersWsMessage } from "@msm/shared";
+import type { OnlinePlayersResponse, PlayersWsMessage } from "@guartrix/shared";
 import { getSessionUser, isAuthenticated } from "../auth/auth.js";
 import { getOnlinePlayers } from "../servers/online-players.js";
 import { processManager } from "../servers/process-manager.js";

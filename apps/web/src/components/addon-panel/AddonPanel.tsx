@@ -1,4 +1,4 @@
-import type { ServerType } from "@msm/shared";
+import type { ServerType } from "@guartrix/shared";
 import { Alert } from "react-bootstrap";
 import { useI18n } from "../../i18n/react";
 import { AddonDetailModal } from "./AddonDetailModal";

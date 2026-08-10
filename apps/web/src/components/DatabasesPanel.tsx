@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import type { ServerDatabase } from "@msm/shared";
-import { databaseNamePrefix, DEFAULT_MAX_DATABASES } from "@msm/shared";
+import type { ServerDatabase } from "@guartrix/shared";
+import { databaseNamePrefix, DEFAULT_MAX_DATABASES } from "@guartrix/shared";
 import { Alert, Button, Col, Form, InputGroup, Row, Spinner, Stack, Table } from "react-bootstrap";
 import { api } from "../api";
 import { useI18n } from "../i18n/react";

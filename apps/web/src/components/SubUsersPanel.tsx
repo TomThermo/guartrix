@@ -4,7 +4,7 @@ import {
   hasPermission,
   type ServerPermission,
   type ServerSubUser,
-} from "@msm/shared";
+} from "@guartrix/shared";
 import { Alert, Button, Col, Form, ListGroup, Row, Spinner, Stack } from "react-bootstrap";
 import { api } from "../api";
 import { useI18n } from "../i18n/react";

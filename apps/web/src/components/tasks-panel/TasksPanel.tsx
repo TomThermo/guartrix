@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import type { ScheduledTask } from "@msm/shared";
+import type { ScheduledTask } from "@guartrix/shared";
 import { Col, Row, Spinner } from "react-bootstrap";
 import { api } from "../../api";
 import { useI18n } from "../../i18n/react";

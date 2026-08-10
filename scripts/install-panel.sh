@@ -892,7 +892,7 @@ echo "[guartrix] npm install + build…"
 npm install
 # Prisma client must exist before `tsc` — otherwise @prisma/client exports are empty
 # and the API build fails with dozens of TS7006 / TS2305 errors.
-npm run db:generate -w @msm/api
+npm run db:generate -w @guartrix/api
 if [[ -f apps/api/src/index.ts ]]; then
   npm run build
   # Single-file daemon + data/downloads/guartrix-daemon-*.zip for Add-node

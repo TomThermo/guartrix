@@ -4,7 +4,7 @@ import {
   APPLICATION_API_RATE_DEFAULT,
   APPLICATION_API_RATE_WINDOW_MS,
   type ApplicationApiKeyRecord,
-} from "@msm/shared";
+} from "@guartrix/shared";
 import { prisma } from "../db.js";
 import { getRateLimitStore } from "../rate-limit-store.js";
 

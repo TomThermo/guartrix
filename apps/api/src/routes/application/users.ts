@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { nanoid } from "nanoid";
 import { z } from "zod";
-import type { UserRole } from "@msm/shared";
+import type { UserRole } from "@guartrix/shared";
 import { requireApplication } from "../../auth/application-auth.js";
 import { findUserByUsernameInsensitive, hashPassword, passwordSchema } from "../../auth/auth.js";
 import { destroySessionsForUser } from "../../auth/session-store.js";

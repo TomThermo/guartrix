@@ -3,6 +3,11 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.22] — 2026-08-10
+
+### Changed
+- Enterprise-split P1: NodesPage rename (W3); thin AdminServers/Dashboard/AccountBilling (W4); shared safe-url (C3); auth crypto import gate + dependency-cruiser (A4/Q1); OpenAPI schemas synced from `schemas/servers.ts` (C2); API `infra/` + `lib/` tidy (A3); workspaces `@msm/*` → `@guartrix/*` (N1).
+
 ## [1.4.21] — 2026-08-10
 
 ### Changed

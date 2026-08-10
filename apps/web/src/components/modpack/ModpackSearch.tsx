@@ -1,5 +1,5 @@
 import type { FormEvent } from "react";
-import type { AddonSortIndex } from "@msm/shared";
+import type { AddonSortIndex } from "@guartrix/shared";
 import { Alert, Badge, Button, Col, Form, ListGroup, Row, Spinner, Stack } from "react-bootstrap";
 import { useI18n } from "../../i18n/react";
 import { formatCount } from "../../utils";

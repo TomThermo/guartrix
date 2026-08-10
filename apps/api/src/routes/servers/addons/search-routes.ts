@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
-import type { AddonSortIndex } from "@msm/shared";
-import { addonKindFor } from "@msm/shared";
+import type { AddonSortIndex } from "@guartrix/shared";
+import { addonKindFor } from "@guartrix/shared";
 import { requireServerAccess } from "../../../auth/auth.js";
 import {
   checkInstalledAddonUpdates,

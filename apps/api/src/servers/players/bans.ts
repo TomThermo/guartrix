@@ -1,4 +1,4 @@
-import type { BanEntry, BansResponse, IpBanEntry } from "@msm/shared";
+import type { BanEntry, BansResponse, IpBanEntry } from "@guartrix/shared";
 import { processManager } from "../process-manager.js";
 import { banTimestamp, readJsonArray, resolvePlayer, runLive, writeJsonArray } from "./helpers.js";
 

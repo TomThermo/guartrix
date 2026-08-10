@@ -1,4 +1,4 @@
-import type { AdminServerRow } from "@msm/shared";
+import type { AdminServerRow } from "@guartrix/shared";
 import { request } from "./client";
 
 export type AdminServersView = {

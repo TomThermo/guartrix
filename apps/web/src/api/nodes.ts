@@ -1,17 +1,17 @@
-import type { PortAllocation } from "@msm/shared";
+import type { PortAllocation } from "@guartrix/shared";
 import { request, notifyUnauthorized, withCsrfHeaders, refreshCsrfToken } from "./client";
 
 export const nodesApi = {
-  listNodes: () => request<{ nodes: import("@msm/shared").DaemonNode[] }>("/api/nodes"),
-  suggestedPort: (nodeId: string, type: import("@msm/shared").ServerType) =>
+  listNodes: () => request<{ nodes: import("@guartrix/shared").DaemonNode[] }>("/api/nodes"),
+  suggestedPort: (nodeId: string, type: import("@guartrix/shared").ServerType) =>
     request<{ port: number; protocol: "tcp" | "udp" }>(
       `/api/nodes/${encodeURIComponent(nodeId)}/suggested-port?type=${encodeURIComponent(type)}`,
     ),
-  checkNodePort: (nodeId: string, port: number, type: import("@msm/shared").ServerType) =>
+  checkNodePort: (nodeId: string, port: number, type: import("@guartrix/shared").ServerType) =>
     request<{ free: boolean; port: number; protocol: "tcp" | "udp" }>(
       `/api/nodes/${encodeURIComponent(nodeId)}/port-check?port=${port}&type=${encodeURIComponent(type)}`,
     ),
-  listAdminNodes: () => request<{ nodes: import("@msm/shared").DaemonNode[] }>("/api/admin/nodes"),
+  listAdminNodes: () => request<{ nodes: import("@guartrix/shared").DaemonNode[] }>("/api/admin/nodes"),
   lookupDns: (host: string) =>
     request<{
       host: string;
@@ -21,29 +21,29 @@ export const nodesApi = {
       panelSecure: boolean;
       error?: string;
     }>(`/api/admin/dns-lookup?host=${encodeURIComponent(host)}`),
-  createNode: (body: import("@msm/shared").CreateNodeRequest) =>
-    request<import("@msm/shared").CreateNodeResponse>("/api/admin/nodes", {
+  createNode: (body: import("@guartrix/shared").CreateNodeRequest) =>
+    request<import("@guartrix/shared").CreateNodeResponse>("/api/admin/nodes", {
       method: "POST",
       body: JSON.stringify(body),
     }),
-  updateNode: (id: string, body: import("@msm/shared").UpdateNodeRequest) =>
-    request<{ node: import("@msm/shared").DaemonNode }>(`/api/admin/nodes/${id}`, {
+  updateNode: (id: string, body: import("@guartrix/shared").UpdateNodeRequest) =>
+    request<{ node: import("@guartrix/shared").DaemonNode }>(`/api/admin/nodes/${id}`, {
       method: "PATCH",
       body: JSON.stringify(body),
     }),
   deleteNode: (id: string) =>
     request<{ ok: boolean }>(`/api/admin/nodes/${id}`, { method: "DELETE" }),
   getAdminNodeStatus: (id: string) =>
-    request<import("@msm/shared").AdminNodeStatusResponse>(
+    request<import("@guartrix/shared").AdminNodeStatusResponse>(
       `/api/admin/nodes/${encodeURIComponent(id)}/status`,
     ),
   testNode: (id: string) =>
-    request<import("@msm/shared").NodeTestResult & { node: import("@msm/shared").DaemonNode }>(
+    request<import("@guartrix/shared").NodeTestResult & { node: import("@guartrix/shared").DaemonNode }>(
       `/api/admin/nodes/${id}/test`,
       { method: "POST", body: "{}" },
     ),
   regenerateNodeToken: (id: string) =>
-    request<import("@msm/shared").CreateNodeResponse>(`/api/admin/nodes/${id}/regenerate-token`, {
+    request<import("@guartrix/shared").CreateNodeResponse>(`/api/admin/nodes/${id}/regenerate-token`, {
       method: "POST",
       body: "{}",
     }),
@@ -60,7 +60,7 @@ export const nodesApi = {
       repoUrl?: string;
       steps: string[];
       sshHostKeyFingerprint?: string | null;
-      node: import("@msm/shared").DaemonNode;
+      node: import("@guartrix/shared").DaemonNode;
     }>(`/api/admin/nodes/${id}/install`),
   remoteInstallNode: async (
     id: string,
@@ -86,7 +86,7 @@ export const nodesApi = {
         stdout?: string;
         stderr?: string;
         test?: unknown;
-        node?: import("@msm/shared").DaemonNode;
+        node?: import("@guartrix/shared").DaemonNode;
         hostKeyFingerprint?: string;
         hostKeyMismatch?: boolean;
         hostKeyNeedsTrust?: boolean;
@@ -157,7 +157,7 @@ export const nodesApi = {
       stdout?: string;
       stderr?: string;
       test?: unknown;
-      node?: import("@msm/shared").DaemonNode;
+      node?: import("@guartrix/shared").DaemonNode;
       hostKeyFingerprint?: string;
       hostKeyMismatch?: boolean;
       hostKeyNeedsTrust?: boolean;
@@ -182,7 +182,7 @@ export const nodesApi = {
           stdout?: string;
           stderr?: string;
           test?: unknown;
-          node?: import("@msm/shared").DaemonNode;
+          node?: import("@guartrix/shared").DaemonNode;
           hostKeyFingerprint?: string;
           hostKeyMismatch?: boolean;
           hostKeyNeedsTrust?: boolean;

@@ -1,4 +1,4 @@
-import type { AddonVersionInfo } from "@msm/shared";
+import type { AddonVersionInfo } from "@guartrix/shared";
 import { Badge, Spinner } from "react-bootstrap";
 import { useI18n } from "../../i18n/react";
 import { formatWhen } from "../../utils";

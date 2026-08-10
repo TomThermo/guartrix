@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import type { ServerType } from "@msm/shared";
+import type { ServerType } from "@guartrix/shared";
 import { assertAdminFullApiKey, requireWrite } from "../../../auth/auth.js";
 import { listVersions } from "../../../providers/jars.js";
 import { toMcServer } from "../../../servers/serialize.js";
@@ -23,7 +23,7 @@ export function registerServerCreateRoutes(app: FastifyInstance): void {
     }
     const data = parsed.data;
 
-    let validatedExtraMounts: import("@msm/shared").ServerExtraMount[] | null | undefined;
+    let validatedExtraMounts: import("@guartrix/shared").ServerExtraMount[] | null | undefined;
     if (data.extraMounts !== undefined) {
       try {
         const { parseExtraMounts } = await import("../../../servers/extra-mounts.js");
@@ -65,7 +65,7 @@ export function registerServerCreateRoutes(app: FastifyInstance): void {
 
     const { isGamePortAvailable } = await import("../../../servers/game-port.js");
     if (!(await isGamePortAvailable(nodeId, data.port, data.type))) {
-      const { primaryAllocationProtocol } = await import("@msm/shared");
+      const { primaryAllocationProtocol } = await import("@guartrix/shared");
       const protocol = primaryAllocationProtocol(data.type);
       return reply.status(409).send({
         error: `Port ${data.port}/${protocol} is already in use`,

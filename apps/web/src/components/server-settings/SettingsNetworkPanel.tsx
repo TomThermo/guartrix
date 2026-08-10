@@ -1,4 +1,4 @@
-import type { ConnectInfo, ServerDetail, ServerProperties } from "@msm/shared";
+import type { ConnectInfo, ServerDetail, ServerProperties } from "@guartrix/shared";
 import { Alert, Button, Col, Form, Row, Stack } from "react-bootstrap";
 import { api } from "../../api";
 import { ProxySetupCard } from "../ProxySetupCard";

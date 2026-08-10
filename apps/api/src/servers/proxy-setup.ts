@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import type { ServerType } from "@msm/shared";
+import type { ServerType } from "@guartrix/shared";
 import { updateServerProperties, readServerProperties } from "./properties.js";
 import { engineSupported, getEngineSettings, updateEngineSettings } from "./engine-config.js";
 

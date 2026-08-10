@@ -17,7 +17,7 @@ import {
   startupCommandToArgs,
   defaultStartupTemplateForType,
   type ServerRuntimeKind,
-} from "@msm/shared";
+} from "@guartrix/shared";
 import { getDiskUsageCached } from "./disk-usage.js";
 import type { DaemonServerConfig } from "./process-types.js";
 

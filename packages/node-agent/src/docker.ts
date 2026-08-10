@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { formatBytes as sharedFormatBytes } from "@msm/shared";
+import { formatBytes as sharedFormatBytes } from "@guartrix/shared";
 import { config } from "./config.js";
 
 const execFileAsync = promisify(execFile);

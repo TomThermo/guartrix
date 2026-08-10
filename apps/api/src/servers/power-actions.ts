@@ -1,12 +1,12 @@
 import type { Server } from "@prisma/client";
-import type { AuthUser } from "@msm/shared";
+import type { AuthUser } from "@guartrix/shared";
 import type { FastifyRequest } from "fastify";
 import { logActivity } from "../activity-log.js";
 import { prisma } from "../db.js";
 import { processManager } from "./process-manager.js";
 import { serverListInclude, toMcServer } from "./serialize.js";
 
-import type { ServerPermission } from "@msm/shared";
+import type { ServerPermission } from "@guartrix/shared";
 
 export type PowerResult =
   | { ok: true; server: ReturnType<typeof toMcServer> }

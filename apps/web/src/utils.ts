@@ -1,5 +1,5 @@
-import type { ServerStatus } from "@msm/shared";
-import { formatBytes as sharedFormatBytes } from "@msm/shared";
+import type { ServerStatus } from "@guartrix/shared";
+import { formatBytes as sharedFormatBytes } from "@guartrix/shared";
 
 export function statusVariant(
   status: ServerStatus,

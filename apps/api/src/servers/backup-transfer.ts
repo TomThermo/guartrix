@@ -5,8 +5,8 @@ import type {
   BackupUploadInitResponse,
   BackupUploadStatusResponse,
   ServerBackup,
-} from "@msm/shared";
-import { BACKUP_TRANSFER_CHUNK_BYTES, BACKUP_UPLOAD_MAX_BYTES } from "@msm/shared";
+} from "@guartrix/shared";
+import { BACKUP_TRANSFER_CHUNK_BYTES, BACKUP_UPLOAD_MAX_BYTES } from "@guartrix/shared";
 import { serverBackupsDir } from "../config.js";
 import { finalizeUploadedBackup, formatBackupSize } from "./backups.js";
 

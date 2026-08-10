@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { hasPermission } from "@msm/shared";
+import { hasPermission } from "@guartrix/shared";
 import { logActivity } from "../../activity-log.js";
 import { TIMING_DUMMY_HASH, verifyPassword } from "../../auth/auth.js";
 import { prisma } from "../../db.js";
@@ -10,7 +10,7 @@ import {
   daemonJwtLegacyBearerEnabled,
   looksLikeJwt,
   verifyDaemonJwt,
-} from "@msm/shared/daemon-jwt";
+} from "@guartrix/shared/daemon-jwt";
 import { verifyUserAppPassword } from "../account/app-passwords.js";
 import { getServerPermissions } from "../../servers/server-access.js";
 import { getRateLimitStore } from "../../rate-limit-store.js";

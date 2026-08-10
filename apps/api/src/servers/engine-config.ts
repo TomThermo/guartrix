@@ -1,5 +1,5 @@
 import YAML from "yaml";
-import type { ServerType } from "@msm/shared";
+import type { ServerType } from "@guartrix/shared";
 import { daemonReadFile, daemonWriteFile } from "../nodes/daemon-client.js";
 
 export type EngineFieldType = "boolean" | "number" | "string";

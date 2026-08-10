@@ -5,7 +5,7 @@ import {
   buildSeedMapUrl,
   mcseedmapVersion,
   seedMapPlatform,
-} from "@msm/shared";
+} from "@guartrix/shared";
 
 export type WorldSeedSource = "console" | "properties" | "none";
 

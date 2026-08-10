@@ -13,7 +13,7 @@ export async function listServerAllocationPorts(
   if (!rows.length) {
     const server = await prisma.server.findUnique({ where: { id: serverId } });
     if (!server) return [];
-    const { primaryAllocationProtocol } = await import("@msm/shared");
+    const { primaryAllocationProtocol } = await import("@guartrix/shared");
     return [
       {
         port: server.port,
@@ -53,8 +53,8 @@ export async function syncServerPortPermissionsBeforeStart(server: {
 }): Promise<{ notices: string[] }> {
   const notices: string[] = [];
 
-  const { primaryAllocationProtocol } = await import("@msm/shared");
-  const protocol = primaryAllocationProtocol(server.type as import("@msm/shared").ServerType);
+  const { primaryAllocationProtocol } = await import("@guartrix/shared");
+  const protocol = primaryAllocationProtocol(server.type as import("@guartrix/shared").ServerType);
 
   // Java / PocketMine / Nukkit read the bind port from server.properties.
   // Bedrock BDS is also patched on the daemon; keep the file in sync here too.

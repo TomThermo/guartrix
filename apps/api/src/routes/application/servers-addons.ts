@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { addonKindFor } from "@msm/shared";
+import { addonKindFor } from "@guartrix/shared";
 import { logActivity } from "../../activity-log.js";
 import { serverDir } from "../../config.js";
 import { installAddon, listInstalledAddons, uninstallAddon } from "../../servers/addons.js";

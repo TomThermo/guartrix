@@ -32,7 +32,7 @@ export async function createNodeAllocationRange(input: {
       select: { id: true, type: true },
     });
     if (serverOnPort) {
-      const { primaryAllocationProtocol } = await import("@msm/shared");
+      const { primaryAllocationProtocol } = await import("@guartrix/shared");
       if (primaryAllocationProtocol(serverOnPort.type) === input.protocol) {
         await ensurePrimaryAllocation({
           serverId: serverOnPort.id,

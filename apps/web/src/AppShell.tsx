@@ -1,6 +1,6 @@
 import { type ReactNode, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { canCreateServer, roleLabel } from "@msm/shared";
+import { canCreateServer, roleLabel } from "@guartrix/shared";
 import { Alert, Badge, Container, Dropdown, Navbar, Spinner } from "react-bootstrap";
 import { api } from "./api";
 import { getAppVersionLabel } from "./app-version";

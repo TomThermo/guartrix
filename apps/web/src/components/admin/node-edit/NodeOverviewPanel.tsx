@@ -1,4 +1,4 @@
-import type { DaemonNode } from "@msm/shared";
+import type { DaemonNode } from "@guartrix/shared";
 import { Button, Spinner } from "react-bootstrap";
 import { useI18n } from "../../../i18n/react";
 import { formatGb } from "../../../utils";

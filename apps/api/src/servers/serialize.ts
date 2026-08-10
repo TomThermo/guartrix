@@ -7,8 +7,8 @@ import type {
   ServerDetail,
   ServerProperties,
   ServerType,
-} from "@msm/shared";
-import { defaultServerExecutable, isBdsServerType, normalizeJavaVersion } from "@msm/shared";
+} from "@guartrix/shared";
+import { defaultServerExecutable, isBdsServerType, normalizeJavaVersion } from "@guartrix/shared";
 import { serverDir } from "../config.js";
 import { coerceExtraMounts } from "./extra-mounts.js";
 import { hasServerIcon } from "./server-icon.js";

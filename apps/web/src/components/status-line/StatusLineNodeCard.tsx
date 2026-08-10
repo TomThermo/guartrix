@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { StatusContainer, StatusNode } from "@msm/shared";
+import type { StatusContainer, StatusNode } from "@guartrix/shared";
 import { Alert, Badge, Table } from "react-bootstrap";
 import { t as translate } from "../../i18n";
 import { formatGb, statusVariant } from "../../utils";

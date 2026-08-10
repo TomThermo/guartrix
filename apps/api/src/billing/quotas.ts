@@ -1,4 +1,4 @@
-import type { AuthUser, UserRole } from "@msm/shared";
+import type { AuthUser, UserRole } from "@guartrix/shared";
 import { prisma } from "../db.js";
 
 export type QuotaUser = {

@@ -1,10 +1,10 @@
-import { BACKUP_KEEP_COUNT_PRESETS } from "@msm/shared";
+import { BACKUP_KEEP_COUNT_PRESETS } from "@guartrix/shared";
 import { useState } from "react";
 import { Button, Collapse, Form } from "react-bootstrap";
 import { MemorySelect } from "../../components/MemorySelect";
 import { AdminPanelCard } from "../../components/admin/AdminPageShell";
 import { useI18n } from "../../i18n/react";
-import type { DaemonNode } from "@msm/shared";
+import type { DaemonNode } from "@guartrix/shared";
 
 export function CreateServerResourcesCard({
   port,

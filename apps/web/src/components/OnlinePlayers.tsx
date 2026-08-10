@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { OnlinePlayer, PlayerHistoryEntry } from "@msm/shared";
+import type { OnlinePlayer, PlayerHistoryEntry } from "@guartrix/shared";
 import { Badge, Card, ListGroup, Spinner } from "react-bootstrap";
 import { useSharedOnlinePlayers } from "../hooks/OnlinePlayersProvider";
 import { useI18n } from "../i18n/react";

@@ -1,5 +1,5 @@
 {
-  "name": "@msm/node-agent",
+  "name": "@guartrix/node-agent",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -17,7 +17,7 @@
     "dev": "tsc --watch"
   },
   "dependencies": {
-    "@msm/shared": "*",
+    "@guartrix/shared": "*",
     "dotenv": "^16.4.7",
     "ssh2": "^1.16.0"
   },

@@ -1,4 +1,4 @@
-import type { UserRole } from "@msm/shared";
+import type { UserRole } from "@guartrix/shared";
 import { z } from "zod";
 import { config } from "../config.js";
 import { prisma } from "../db.js";

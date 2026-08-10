@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { BackupSchedule, BackupScheduleMode } from "@msm/shared";
-import { clampBackupKeepCount } from "@msm/shared";
+import type { BackupSchedule, BackupScheduleMode } from "@guartrix/shared";
+import { clampBackupKeepCount } from "@guartrix/shared";
 import { serverBackupsDir } from "../config.js";
 import { prisma } from "../db.js";
 import {

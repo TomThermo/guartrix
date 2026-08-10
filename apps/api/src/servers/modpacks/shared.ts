@@ -1,4 +1,4 @@
-import type { ServerType } from "@msm/shared";
+import type { ServerType } from "@guartrix/shared";
 import { processManager } from "../process-manager.js";
 import { categoryLabel, LOADER_CATEGORY_NAMES } from "../addons-modrinth.js";
 

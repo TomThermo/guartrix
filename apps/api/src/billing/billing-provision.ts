@@ -1,5 +1,5 @@
 import { nanoid } from "nanoid";
-import type { PaymentRecord, ServerType } from "@msm/shared";
+import type { PaymentRecord, ServerType } from "@guartrix/shared";
 import { logActivity } from "../activity-log.js";
 import { prisma } from "../db.js";
 import { toPaymentRecord, toPlanRecord } from "./billing-records.js";

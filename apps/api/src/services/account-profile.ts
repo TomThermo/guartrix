@@ -8,7 +8,7 @@ import {
   type AccountProfile,
   type AddressSuggestItem,
   type AuthUser,
-} from "@msm/shared";
+} from "@guartrix/shared";
 import { logActivity } from "../activity-log.js";
 import {
   findUserByEmailInsensitive,

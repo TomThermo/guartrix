@@ -8,7 +8,7 @@ import {
   isServerPermission,
   type AuthUser,
   type ServerPermission,
-} from "@msm/shared";
+} from "@guartrix/shared";
 import { prisma } from "../db.js";
 import { getCachedLicenseState, validateLicense } from "../license/license.js";
 

@@ -6,7 +6,7 @@ import {
   ACTIVITY_PAGE_DEFAULT,
   ACTIVITY_PAGE_MAX,
   type ActivityListResponse,
-} from "@msm/shared";
+} from "@guartrix/shared";
 import { requireAdmin, requireServerAccess } from "../../auth/auth.js";
 import { activityRetentionDays, toActivityRecord } from "../../activity-log.js";
 import { prisma } from "../../db.js";

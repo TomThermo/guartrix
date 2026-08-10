@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { primaryAllocationProtocol } from "@msm/shared";
+import { primaryAllocationProtocol } from "@guartrix/shared";
 import { logActivity } from "../../../activity-log.js";
 import { requireServerAccess } from "../../../auth/auth.js";
 import { ensureUdpCompanion, serializeAllocation } from "../../../servers/allocations.js";

@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { createHash } from "node:crypto";
 import { createReadStream } from "node:fs";
-import type { AddonSyncResult, ServerType } from "@msm/shared";
+import type { AddonSyncResult, ServerType } from "@guartrix/shared";
 import type { ModrinthVersion } from "./addons-modrinth.js";
 import { fetchJson, mapVersion } from "./addons-modrinth.js";
 import type { InstalledAddon } from "./addons/types.js";

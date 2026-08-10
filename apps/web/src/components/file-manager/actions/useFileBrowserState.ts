@@ -5,7 +5,7 @@ import {
   useState,
   type MouseEvent as ReactMouseEvent,
 } from "react";
-import type { FileEntry } from "@msm/shared";
+import type { FileEntry } from "@guartrix/shared";
 import { api } from "../../../api";
 import { useI18n } from "../../../i18n/react";
 import type { ContextMenuState } from "../FileContextMenu";

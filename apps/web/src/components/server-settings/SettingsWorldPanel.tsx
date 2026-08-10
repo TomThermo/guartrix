@@ -1,4 +1,4 @@
-import type { ServerDetail, ServerProperties } from "@msm/shared";
+import type { ServerDetail, ServerProperties } from "@guartrix/shared";
 import { Alert, Col, Form, Row } from "react-bootstrap";
 import { WorldToolsCard } from "../WorldToolsCard";
 import { BoolSelect, Field, bool } from "./settings-fields";

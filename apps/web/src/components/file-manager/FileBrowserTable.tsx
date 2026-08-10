@@ -1,5 +1,5 @@
 import { useMemo, useState, type DragEvent } from "react";
-import type { FileEntry } from "@msm/shared";
+import type { FileEntry } from "@guartrix/shared";
 import { Button, Form } from "react-bootstrap";
 import { useI18n } from "../../i18n/react";
 import { formatBytes } from "../../utils";

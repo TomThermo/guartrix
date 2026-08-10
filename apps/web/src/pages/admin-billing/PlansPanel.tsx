@@ -1,6 +1,6 @@
 import type { FormEvent } from "react";
-import type { PlanTemplateRecord } from "@msm/shared";
-import { ALL_SERVER_TYPES } from "@msm/shared";
+import type { PlanTemplateRecord } from "@guartrix/shared";
+import { ALL_SERVER_TYPES } from "@guartrix/shared";
 import { Badge, Button, Col, Form, ListGroup, Row, Stack } from "react-bootstrap";
 import { AdminInsetCard, AdminPanelCard } from "../../components/admin/AdminPageShell";
 import { useI18n } from "../../i18n/react";

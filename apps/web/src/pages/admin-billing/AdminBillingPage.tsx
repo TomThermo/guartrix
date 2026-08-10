@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Link, Navigate } from "react-router-dom";
-import type { PaymentRecord, PlanTemplateRecord } from "@msm/shared";
+import type { PaymentRecord, PlanTemplateRecord } from "@guartrix/shared";
 import { Col, Row } from "react-bootstrap";
 import { api } from "../../api";
 import { useAuth } from "../../auth";

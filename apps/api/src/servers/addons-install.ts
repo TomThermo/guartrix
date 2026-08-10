@@ -6,7 +6,7 @@ import { pipeline } from "node:stream/promises";
 import { Readable } from "node:stream";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import type { ServerType } from "@msm/shared";
+import type { ServerType } from "@guartrix/shared";
 import type { AddonVersionInfo, ModrinthVersion } from "./addons-modrinth.js";
 import {
   MODRINTH_TIMEOUT_MS,

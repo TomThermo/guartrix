@@ -1,4 +1,4 @@
-import { clampBackupKeepCount } from "@msm/shared";
+import { clampBackupKeepCount } from "@guartrix/shared";
 import { config } from "../config.js";
 import { readStoredSync } from "./io.js";
 import type { PanelSettingsStored } from "./types.js";

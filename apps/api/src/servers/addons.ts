@@ -1,4 +1,4 @@
-import type { AddonSyncResult, InstalledAddonUpdate } from "@msm/shared";
+import type { AddonSyncResult, InstalledAddonUpdate } from "@guartrix/shared";
 import type { AddonVersionInfo } from "./addons-modrinth.js";
 import type { AddonInstallResult } from "./addons-install.js";
 import type { AddonKind, InstalledAddon } from "./addons/types.js";

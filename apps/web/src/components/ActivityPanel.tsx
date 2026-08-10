@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { ActivityEventRecord, ActivityQuery } from "@msm/shared";
+import type { ActivityEventRecord, ActivityQuery } from "@guartrix/shared";
 import {
   ACTIVITY_ACTIONS,
   ACTIVITY_CATEGORY_META,
   ACTIVITY_PAGE_DEFAULT,
   activityCategoryIcon,
   activityDetail,
-} from "@msm/shared";
+} from "@guartrix/shared";
 import { Badge, Button, Col, Form, Row, Spinner, Table } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import { api } from "../api";

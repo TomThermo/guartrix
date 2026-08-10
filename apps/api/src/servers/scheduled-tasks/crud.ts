@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import type { Prisma } from "@prisma/client";
-import type { ScheduledTask } from "@msm/shared";
+import type { ScheduledTask } from "@guartrix/shared";
 import { serverDir } from "../../config.js";
 import { prisma } from "../../db.js";
 import {

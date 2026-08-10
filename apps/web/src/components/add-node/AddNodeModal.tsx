@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import type { DaemonNode } from "@msm/shared";
+import type { DaemonNode } from "@guartrix/shared";
 import { Alert, Button, Modal, Spinner } from "react-bootstrap";
 import { api } from "../../api";
 import { useI18n } from "../../i18n/react";

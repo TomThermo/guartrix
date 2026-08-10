@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { isBdsServerType, serializeBdsAllowlist, type ServerType } from "@msm/shared";
+import { isBdsServerType, serializeBdsAllowlist, type ServerType } from "@guartrix/shared";
 import { readDefaultServerIcon } from "../servers/default-icon.js";
 import {
   downloadFabric,

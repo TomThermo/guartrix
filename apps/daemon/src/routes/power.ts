@@ -1,13 +1,13 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import type { ServerType } from "@msm/shared";
-import { ALL_SERVER_TYPES } from "@msm/shared";
+import type { ServerType } from "@guartrix/shared";
+import { ALL_SERVER_TYPES } from "@guartrix/shared";
 import {
   listGuartrixContainers,
   processManager,
   writeServerLimits,
   type DaemonServerConfig,
-} from "@msm/node-agent";
+} from "@guartrix/node-agent";
 import { assertDaemonAllowsStart, DaemonLicenseError } from "../license-gate.js";
 
 const serverTypeSchema = z.enum(ALL_SERVER_TYPES as [ServerType, ...ServerType[]]);

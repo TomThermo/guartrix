@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { nanoid } from "nanoid";
 import { z } from "zod";
-import { APPLICATION_API_KEY_MAX, normalizeApplicationScopes } from "@msm/shared";
+import { APPLICATION_API_KEY_MAX, normalizeApplicationScopes } from "@guartrix/shared";
 import { generateApplicationToken, toApplicationKeyRecord } from "../../auth/application-keys.js";
 import { requireAdmin } from "../../auth/auth.js";
 import { assertSameOrigin } from "../../auth/csrf.js";

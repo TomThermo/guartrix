@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import type { UserRole } from "@msm/shared";
+import type { UserRole } from "@guartrix/shared";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import { logActivity } from "../../activity-log.js";

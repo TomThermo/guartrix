@@ -3,7 +3,7 @@ import {
   UNLICENSED_MAX_MEMORY_MB,
   UNLICENSED_MAX_NODES,
   UNLICENSED_MAX_SERVERS,
-} from "@msm/shared/license-ticket";
+} from "@guartrix/shared/license-ticket";
 import { prisma } from "../db.js";
 import { processManager } from "../servers/process-manager.js";
 import { validateLicense } from "./license-validate.js";

@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import type { OnlinePlayer, PlayerModerationEvent } from "@msm/shared";
+import type { OnlinePlayer, PlayerModerationEvent } from "@guartrix/shared";
 import {
   Badge,
   Button,

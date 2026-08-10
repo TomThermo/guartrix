@@ -2,7 +2,7 @@
  * In-memory 1h stats ring per server on the daemon host.
  * Keeps history off the panel API heap (scale: memory grows with servers on this node only).
  */
-import type { ServerStats } from "@msm/shared";
+import type { ServerStats } from "@guartrix/shared";
 
 export interface StatsHistorySample {
   at: number;

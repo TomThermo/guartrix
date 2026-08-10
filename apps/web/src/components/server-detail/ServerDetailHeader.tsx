@@ -4,7 +4,7 @@ import type {
   OnlinePlayersResponse,
   ServerDetail,
   ServerPermission,
-} from "@msm/shared";
+} from "@guartrix/shared";
 import { Button, Dropdown } from "react-bootstrap";
 import { useI18n } from "../../i18n/react";
 import { statusBadgeClass, typeIcon, typeLabel } from "../../utils";

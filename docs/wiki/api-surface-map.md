@@ -17,7 +17,7 @@ Use this page when you need to answer "where is this feature implemented?" befor
 | `AdminBillingPage` | Plans, Application API keys, recent payments |
 | `AdminSettingsPage` | Panel-wide settings overrides, branding, Backup tab, SMTP, alerts, security flags, Redis status, Go-live |
 | `AdminServersPage` | Fleet server editor (`/admin/servers`) — resources, suspend, backup retention |
-| `SystemSettingsPage` | Nodes, daemon connectivity, capacity, install/reinstall actions |
+| `NodesPage` | Nodes, daemon connectivity, capacity, install/reinstall actions |
 | `StatusLinePage` | Panel and node health overview |
 | `UsersPage` | Admin user management, quotas, roles, 2FA reset |
 | `AdminLicensePage` | License key, caps, features, revalidation, free-tier status |
@@ -46,6 +46,8 @@ These code folders hold most of the behavior behind the route layer:
 
 | Path | Focus |
 |------|-------|
+| `apps/api/src/infra/` | Config, Prisma, Redis, logger, metrics, rate-limit store, mail (root shims re-export) |
+| `apps/api/src/lib/` | HTTP errors, product version, app build, SaaS flags, `/api/v1` rewrite, MC ping |
 | `apps/api/src/auth/` | Sessions, CSRF, TOTP, password policy, application auth |
 | `apps/api/src/servers/` | Provisioning, lifecycle, files, backups, schedules, players, moderation, stats, addons, modpacks |
 | `apps/api/src/nodes/` | Daemon client barrel (`daemon-client.ts` → `daemon-client-{core,power,files,mysql,deploy}.ts`), event bridge, remote install, token vault, Cloudflare DNS, firewall helpers |

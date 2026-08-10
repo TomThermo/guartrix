@@ -7,7 +7,7 @@ import {
   APPLICATION_SCOPES,
   PERMISSION_GROUPS,
   SERVER_PERMISSIONS,
-} from "@msm/shared";
+} from "@guartrix/shared";
 import { getSessionUser, requireAuth } from "../../auth/auth.js";
 
 export function registerAccountApiRoutes(app: FastifyInstance): void {

@@ -6,4 +6,4 @@ export {
   readDefaultServerIcon,
   serverIconFilePath,
   isCustomServerIcon,
-} from "@msm/node-agent";
+} from "@guartrix/node-agent";

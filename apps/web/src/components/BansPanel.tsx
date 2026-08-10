@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import type { BanEntry, BansResponse, IpBanEntry } from "@msm/shared";
+import type { BanEntry, BansResponse, IpBanEntry } from "@guartrix/shared";
 import { Alert, Button, Col, Form, ListGroup, Modal, Row, Spinner, Stack } from "react-bootstrap";
 import { api } from "../api";
 import { useI18n } from "../i18n/react";

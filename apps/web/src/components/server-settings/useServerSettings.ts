@@ -5,7 +5,7 @@ import type {
   ServerDetail,
   ServerExtraMount,
   ServerProperties,
-} from "@msm/shared";
+} from "@guartrix/shared";
 import {
   DEFAULT_SERVER_JAR,
   DEFAULT_STARTUP_COMMAND,
@@ -16,7 +16,7 @@ import {
   startupPresetsFor,
   checkStartupHeapLimit,
   type JavaVersion,
-} from "@msm/shared";
+} from "@guartrix/shared";
 import { api } from "../../api";
 import { useI18n } from "../../i18n/react";
 import { useAuth } from "../../auth";

@@ -1,5 +1,5 @@
-import type { ActivityEventRecord } from "@msm/shared";
-import { activityDetail } from "@msm/shared";
+import type { ActivityEventRecord } from "@guartrix/shared";
+import { activityDetail } from "@guartrix/shared";
 import { config } from "./config.js";
 import { prisma } from "./db.js";
 import { sendMail } from "./mail.js";

@@ -1,4 +1,4 @@
-import type { TransferJobStatus } from "@msm/shared";
+import type { TransferJobStatus } from "@guartrix/shared";
 import { isBackupBusy } from "../backups.js";
 import { prisma } from "../../db.js";
 import { assertNodeCapacity } from "../../nodes/nodes.js";
@@ -90,7 +90,7 @@ export async function startServerTransfer(input: StartTransferInput): Promise<Tr
     cpuLimit: server.cpuLimit,
   });
 
-  const { primaryAllocationProtocol } = await import("@msm/shared");
+  const { primaryAllocationProtocol } = await import("@guartrix/shared");
   const primaryProto = primaryAllocationProtocol(server.type);
 
   const newPort = input.port ?? server.port;

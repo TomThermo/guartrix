@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import type { DaemonNode, UpdateNodeRequest } from "@msm/shared";
+import type { DaemonNode, UpdateNodeRequest } from "@guartrix/shared";
 import { Button, ButtonGroup, Form, Spinner } from "react-bootstrap";
 import { api } from "../../api";
 import { useI18n } from "../../i18n/react";

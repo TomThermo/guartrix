@@ -1,4 +1,4 @@
-import type { ServerDetail } from "@msm/shared";
+import type { ServerDetail } from "@guartrix/shared";
 import { CloneServerModal } from "../CloneServerModal";
 import { ChangeTypeModal } from "../ChangeTypeModal";
 import { ReinstallServerModal } from "../ReinstallServerModal";

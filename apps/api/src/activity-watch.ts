@@ -1,4 +1,4 @@
-import type { ServerStatus } from "@msm/shared";
+import type { ServerStatus } from "@guartrix/shared";
 import { recordActivity } from "./activity-log.js";
 import { processManager } from "./servers/process-manager.js";
 

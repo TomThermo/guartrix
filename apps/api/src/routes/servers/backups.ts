@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { BACKUP_TRANSFER_CHUNK_BYTES } from "@msm/shared";
+import { BACKUP_TRANSFER_CHUNK_BYTES } from "@guartrix/shared";
 import { isAuthenticated } from "../../auth/auth.js";
 import { registerBackupCrudRoutes } from "./backups-crud.js";
 import { isChunkUpload } from "./backups-helpers.js";

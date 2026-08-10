@@ -1,4 +1,4 @@
-import type { AddonProjectDetails } from "@msm/shared";
+import type { AddonProjectDetails } from "@guartrix/shared";
 import { Stack } from "react-bootstrap";
 import { useI18n } from "../../i18n/react";
 import { SimpleMarkdown } from "./simpleMarkdown";

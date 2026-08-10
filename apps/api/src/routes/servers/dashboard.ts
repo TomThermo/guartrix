@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
-import type { ServerType } from "@msm/shared";
-import { addonKindFor, hasPermission } from "@msm/shared";
+import type { ServerType } from "@guartrix/shared";
+import { addonKindFor, hasPermission } from "@guartrix/shared";
 import { getSessionUser } from "../../auth/auth.js";
 import {
   getServerPermissionsBatch,

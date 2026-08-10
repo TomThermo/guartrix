@@ -1,6 +1,6 @@
 {
-  "name": "@msm/api",
-  "version": "1.4.21",
+  "name": "@guartrix/api",
+  "version": "1.4.22",
   "private": true,
   "type": "module",
   "scripts": {
@@ -21,8 +21,8 @@
     "@fastify/multipart": "^10.1.0",
     "@fastify/session": "^11.1.0",
     "@fastify/websocket": "^11.0.2",
-    "@msm/node-agent": "*",
-    "@msm/shared": "*",
+    "@guartrix/node-agent": "*",
+    "@guartrix/shared": "*",
     "@prisma/client": "^6.5.0",
     "@sentry/node": "^10.69.0",
     "bullmq": "^5.81.3",

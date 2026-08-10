@@ -2,7 +2,7 @@ import { createRequire } from "node:module";
 import { generateKeyPairSync } from "node:crypto";
 import fsp from "node:fs/promises";
 import path from "node:path";
-import { daemonToPanelAuthorization } from "@msm/shared/daemon-jwt";
+import { daemonToPanelAuthorization } from "@guartrix/shared/daemon-jwt";
 import { config, serverDir } from "./config.js";
 import { openFirewallPort } from "./firewall.js";
 import { acceptSftpSession, type SftpCaps } from "./sftp-handlers.js";

@@ -1,4 +1,4 @@
-import type { ServerDetail } from "@msm/shared";
+import type { ServerDetail } from "@guartrix/shared";
 import { Button, Col, Form, Row } from "react-bootstrap";
 import { CATEGORIES } from "./settings-fields";
 import { SettingsCategoryNav } from "./SettingsCategoryNav";

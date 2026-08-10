@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import type { DaemonNode, ServerType } from "@msm/shared";
+import type { DaemonNode, ServerType } from "@guartrix/shared";
 import { api } from "../../api";
 
 /** Port suggestion / validation + version list side-effects for create/import. */

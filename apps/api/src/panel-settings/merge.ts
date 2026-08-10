@@ -1,4 +1,4 @@
-import { clampBackupKeepCount } from "@msm/shared";
+import { clampBackupKeepCount } from "@guartrix/shared";
 import { SECRET_UNCHANGED, type PanelSettingsPatch, type PanelSettingsStored } from "./types.js";
 
 function asNonNegInt(value: unknown, label: string): number {

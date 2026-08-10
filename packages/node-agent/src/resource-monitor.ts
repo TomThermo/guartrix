@@ -4,7 +4,7 @@
  */
 import { EventEmitter } from "node:events";
 import os from "node:os";
-import type { ServerStats } from "@msm/shared";
+import type { ServerStats } from "@guartrix/shared";
 import { formatBytes, resolveContainerName } from "./docker.js";
 import {
   dockerPing,

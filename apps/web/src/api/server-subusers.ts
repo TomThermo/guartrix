@@ -3,7 +3,7 @@ import type {
   CreateSubUserResponse,
   ServerSubUser,
   UpdateSubUserRequest,
-} from "@msm/shared";
+} from "@guartrix/shared";
 import { request } from "./client";
 
 export const serverSubusersApi = {

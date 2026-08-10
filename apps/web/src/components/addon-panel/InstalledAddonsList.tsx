@@ -1,4 +1,4 @@
-import type { InstalledAddon, InstalledAddonUpdate } from "@msm/shared";
+import type { InstalledAddon, InstalledAddonUpdate } from "@guartrix/shared";
 import { Badge, Button, Col, Row, Spinner } from "react-bootstrap";
 import { useI18n } from "../../i18n/react";
 import { EmptyState } from "../EmptyState";

@@ -8,7 +8,7 @@
  * concrete class, so ProcessManager can stay the single source of truth for
  * that state while delegating the actual stop/kill/command logic here.
  */
-import type { ServerStatus } from "@msm/shared";
+import type { ServerStatus } from "@guartrix/shared";
 import { containerName, docker, removeContainer } from "./docker.js";
 import type { ManagedProcess } from "./process-types.js";
 

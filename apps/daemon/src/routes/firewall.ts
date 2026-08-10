@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { closeFirewallPort, openFirewallPort } from "@msm/node-agent";
+import { closeFirewallPort, openFirewallPort } from "@guartrix/node-agent";
 
 const portBodySchema = z.object({
   port: z.number().int().min(1024).max(65535),

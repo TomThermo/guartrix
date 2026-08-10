@@ -1,7 +1,7 @@
 import { memo, type KeyboardEvent, type MouseEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import type { McServer, OnlinePlayersResponse, ServerStats, ServerUpdateInfo } from "@msm/shared";
-import { addonKindFor, hasPermission } from "@msm/shared";
+import type { McServer, OnlinePlayersResponse, ServerStats, ServerUpdateInfo } from "@guartrix/shared";
+import { addonKindFor, hasPermission } from "@guartrix/shared";
 import { Button, Form } from "react-bootstrap";
 import { useI18n } from "../i18n/react";
 import { typeLabel } from "../utils";

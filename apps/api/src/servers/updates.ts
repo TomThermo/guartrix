@@ -1,5 +1,5 @@
 import type { Server } from "@prisma/client";
-import type { ServerType, ServerUpdateInfo } from "@msm/shared";
+import type { ServerType, ServerUpdateInfo } from "@guartrix/shared";
 import { serverDir } from "../config.js";
 import { prisma } from "../db.js";
 import { processManager, fixDataOwnership } from "./process-manager.js";

@@ -68,8 +68,9 @@ Defines how short-lived daemon JWTs are signed and verified, including claim exp
 `version.ts`
 `world-seed-urls.ts`
 `bytes.ts`
+`safe-url.ts`
 
-These are smaller shared policy or formatting helpers that still affect externally visible behavior.
+These are smaller shared policy or formatting helpers that still affect externally visible behavior (including markdown/UI link host allowlists shared with API SSRF checks).
 
 ## Contract boundaries
 

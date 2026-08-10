@@ -2,7 +2,7 @@ import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import type { FastifyInstance } from "fastify";
-import type { ConsoleMessage } from "@msm/shared";
+import type { ConsoleMessage } from "@guartrix/shared";
 import WebSocket from "ws";
 import { getSessionUser, isAuthenticated } from "../auth/auth.js";
 import { config } from "../config.js";

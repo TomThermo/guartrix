@@ -1,4 +1,4 @@
-import { daemonJwtWsTtlSec, panelToDaemonAuthorization } from "@msm/shared/daemon-jwt";
+import { daemonJwtWsTtlSec, panelToDaemonAuthorization } from "@guartrix/shared/daemon-jwt";
 import { nodePublicUrl } from "./nodes.js";
 import { prisma } from "../db.js";
 import { loadNodeTokenVault, saveNodeTokenVault } from "./node-token-vault.js";

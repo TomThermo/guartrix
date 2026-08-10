@@ -29,7 +29,7 @@ API :3001 (localhost) sessions, Prisma, quotas, SFTP-auth
   │  HTTP/WS Bearer JWT → daemon (HMAC with node secret; legacy bearer OK)
   │  1× WebSocket → daemon /events (status, console, **stats**)
   ▼
-Daemon :8081          @msm/node-agent
+Daemon :8081          @guartrix/node-agent
   ├── Docker Minecraft containers
   ├── Docker Engine stats stream (per RUNNING server)
   ├── Cached disk usage (non-blocking refresh)

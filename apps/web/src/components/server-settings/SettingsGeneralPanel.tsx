@@ -1,4 +1,4 @@
-import type { AuthUser, ConnectInfo, ServerDetail, ServerProperties } from "@msm/shared";
+import type { AuthUser, ConnectInfo, ServerDetail, ServerProperties } from "@guartrix/shared";
 import { useState } from "react";
 import { Button, Card, Col, Form, Row } from "react-bootstrap";
 import { useI18n } from "../../i18n/react";

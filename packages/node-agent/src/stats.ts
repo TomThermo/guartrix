@@ -1,5 +1,5 @@
 import os from "node:os";
-import type { ServerStats } from "@msm/shared";
+import type { ServerStats } from "@guartrix/shared";
 import {
   formatBytes,
   getContainerStats,

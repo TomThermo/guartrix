@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { AdminStatusResponse } from "@msm/shared";
+import type { AdminStatusResponse } from "@guartrix/shared";
 import { Link } from "react-router-dom";
 import { Badge } from "react-bootstrap";
 import { useI18n } from "../../i18n/react";

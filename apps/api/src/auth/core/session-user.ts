@@ -1,5 +1,5 @@
 import type { FastifyRequest } from "fastify";
-import type { AuthUser } from "@msm/shared";
+import type { AuthUser } from "@guartrix/shared";
 import { resolveApiKeyAuth } from "../api-keys.js";
 import { prisma } from "../../db.js";
 import { toAuthUser } from "./users.js";

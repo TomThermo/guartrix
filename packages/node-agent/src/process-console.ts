@@ -8,7 +8,7 @@
  */
 import fs from "node:fs";
 import path from "node:path";
-import { dockerImageForServerType, runtimeKindFor } from "@msm/shared";
+import { dockerImageForServerType, runtimeKindFor } from "@guartrix/shared";
 import { serverDir } from "./config.js";
 import { docker } from "./docker.js";
 import { recordPlayerJoin, recordPlayerLeave, syncOnlineSet } from "./player-history.js";

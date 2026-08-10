@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import type { ServerType } from "@msm/shared";
+import type { ServerType } from "@guartrix/shared";
 import { requireServerAccess } from "../../../auth/auth.js";
 import { logActivity } from "../../../activity-log.js";
 import { installAddon } from "../../../servers/addons.js";
@@ -16,7 +16,7 @@ export function registerAddonStacksRoutes(app: FastifyInstance): void {
       permission: "addon.update",
     });
     if (!access) return;
-    const { RECOMMENDED_PLUGIN_STACKS, addonKindFor } = await import("@msm/shared");
+    const { RECOMMENDED_PLUGIN_STACKS, addonKindFor } = await import("@guartrix/shared");
     if (addonKindFor(access.server.type as ServerType) !== "plugin") {
       return reply.status(400).send({ error: "Recommended stacks are only for Paper/Purpur" });
     }

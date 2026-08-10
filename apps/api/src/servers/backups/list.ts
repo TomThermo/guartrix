@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { ServerBackup } from "@msm/shared";
-import { formatBytes } from "@msm/shared";
+import type { ServerBackup } from "@guartrix/shared";
+import { formatBytes } from "@guartrix/shared";
 import { serverBackupsDir } from "../../config.js";
 import { archivePath, encryptedPath, metaPath } from "../backup-paths.js";
 

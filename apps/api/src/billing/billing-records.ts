@@ -1,4 +1,4 @@
-import type { BillingSubscriptionRecord, PaymentRecord, PlanTemplateRecord } from "@msm/shared";
+import type { BillingSubscriptionRecord, PaymentRecord, PlanTemplateRecord } from "@guartrix/shared";
 
 export function toPlanRecord(row: {
   id: string;

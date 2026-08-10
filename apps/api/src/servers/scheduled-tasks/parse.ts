@@ -1,6 +1,6 @@
 import { nanoid } from "nanoid";
 import type { Prisma } from "@prisma/client";
-import type { ScheduleStep, ScheduledTask } from "@msm/shared";
+import type { ScheduleStep, ScheduledTask } from "@guartrix/shared";
 import {
   computeCronNextRun,
   computeDailyNextRun,

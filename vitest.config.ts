@@ -23,6 +23,7 @@ export default defineConfig({
         "apps/api/src/auth/password-hash.ts",
         "apps/api/src/auth/password-policy.ts",
         "apps/api/src/safe-url.ts",
+        "packages/shared/src/safe-url.ts",
         "packages/shared/src/daemon-jwt.ts",
         "apps/api/src/servers/server-access.ts",
         "packages/shared/src/permissions.ts",

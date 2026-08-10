@@ -1,4 +1,4 @@
-import type { ServerProperties } from "@msm/shared";
+import type { ServerProperties } from "@guartrix/shared";
 import { Col, Form, Row } from "react-bootstrap";
 import { MemorySelect } from "../MemorySelect";
 import { BoolSelect, Field, bool } from "./settings-fields";

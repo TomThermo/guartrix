@@ -1,8 +1,8 @@
 import type { Dirent } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { DiskUsageBreakdown } from "@msm/shared";
-import { formatBytes } from "@msm/shared";
+import type { DiskUsageBreakdown } from "@guartrix/shared";
+import { formatBytes } from "@guartrix/shared";
 import { serverBackupsDir, serverDir } from "./config.js";
 
 async function dirSize(dir: string): Promise<number> {

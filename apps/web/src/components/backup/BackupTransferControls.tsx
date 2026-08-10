@@ -1,4 +1,4 @@
-import { BACKUP_UPLOAD_MAX_BYTES } from "@msm/shared";
+import { BACKUP_UPLOAD_MAX_BYTES } from "@guartrix/shared";
 import { Button, Form, ProgressBar, Spinner, Stack } from "react-bootstrap";
 import { useI18n } from "../../i18n/react";
 import { formatBytes } from "../../utils";

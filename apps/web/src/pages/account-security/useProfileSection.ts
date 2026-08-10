@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
-import type { AccountProfile, AddressSuggestItem } from "@msm/shared";
-import { findCountryDial } from "@msm/shared";
+import type { AccountProfile, AddressSuggestItem } from "@guartrix/shared";
+import { findCountryDial } from "@guartrix/shared";
 import { api } from "../../api";
 import { ApiError } from "../../api/client";
 import { useI18n } from "../../i18n/react";

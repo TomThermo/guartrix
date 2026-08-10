@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import type { Server } from "@prisma/client";
-import { ALL_SERVER_TYPES, type ServerType } from "@msm/shared";
+import { ALL_SERVER_TYPES, type ServerType } from "@guartrix/shared";
 import { createBackup } from "../backups.js";
 import { daemonExportArchiveToFile, daemonWriteFile } from "../../nodes/daemon-client.js";
 import { prisma } from "../../db.js";

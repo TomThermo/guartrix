@@ -1,5 +1,5 @@
 import type { FormEvent } from "react";
-import type { BackupSchedule, BackupScheduleMode } from "@msm/shared";
+import type { BackupSchedule, BackupScheduleMode } from "@guartrix/shared";
 import { Button, Form } from "react-bootstrap";
 import { useI18n } from "../../i18n/react";
 import { formatWhen } from "../../utils";

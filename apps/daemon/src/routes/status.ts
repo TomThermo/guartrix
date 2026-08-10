@@ -18,7 +18,7 @@ import {
   normalizeContainerStats,
   resourceMonitor,
   type SftpServerHandle,
-} from "@msm/node-agent";
+} from "@guartrix/node-agent";
 import { daemonConfig } from "../config.js";
 
 export type DaemonStatusDeps = {

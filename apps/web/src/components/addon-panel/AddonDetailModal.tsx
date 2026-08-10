@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { AddonProjectDetails, AddonVersionInfo } from "@msm/shared";
+import type { AddonProjectDetails, AddonVersionInfo } from "@guartrix/shared";
 import { Badge, Button, Modal, Nav, Spinner, Stack } from "react-bootstrap";
 import { api } from "../../api";
 import { useI18n } from "../../i18n/react";

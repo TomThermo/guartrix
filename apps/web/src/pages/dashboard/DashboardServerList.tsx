@@ -1,4 +1,4 @@
-import type { McServer, OnlinePlayersResponse, ServerStats, ServerUpdateInfo } from "@msm/shared";
+import type { McServer, OnlinePlayersResponse, ServerStats, ServerUpdateInfo } from "@guartrix/shared";
 import { Button } from "react-bootstrap";
 import { DashboardServerRow } from "../../components/DashboardServerRow";
 import { useI18n } from "../../i18n/react";

@@ -14,11 +14,11 @@ import * as esbuild from "esbuild";
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 const WORKSPACE_ALIASES = {
-  "@msm/shared/daemon-jwt": path.join(rootDir, "packages/shared/src/daemon-jwt.ts"),
-  "@msm/shared/license-signing": path.join(rootDir, "packages/shared/src/license-signing.ts"),
-  "@msm/shared/license-ticket": path.join(rootDir, "packages/shared/src/license-ticket.ts"),
-  "@msm/shared": path.join(rootDir, "packages/shared/src/index.ts"),
-  "@msm/node-agent": path.join(rootDir, "packages/node-agent/src/index.ts"),
+  "@guartrix/shared/daemon-jwt": path.join(rootDir, "packages/shared/src/daemon-jwt.ts"),
+  "@guartrix/shared/license-signing": path.join(rootDir, "packages/shared/src/license-signing.ts"),
+  "@guartrix/shared/license-ticket": path.join(rootDir, "packages/shared/src/license-ticket.ts"),
+  "@guartrix/shared": path.join(rootDir, "packages/shared/src/index.ts"),
+  "@guartrix/node-agent": path.join(rootDir, "packages/node-agent/src/index.ts"),
 };
 
 function readVersion() {

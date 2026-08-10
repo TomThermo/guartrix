@@ -1,4 +1,4 @@
-import { RECOMMENDED_PLUGIN_STACKS } from "@msm/shared";
+import { RECOMMENDED_PLUGIN_STACKS } from "@guartrix/shared";
 import { Alert, Button, Spinner, Stack } from "react-bootstrap";
 import { api } from "../../api";
 import { useI18n } from "../../i18n/react";

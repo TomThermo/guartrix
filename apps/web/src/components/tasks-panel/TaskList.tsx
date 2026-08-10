@@ -1,4 +1,4 @@
-import type { ScheduledTask } from "@msm/shared";
+import type { ScheduledTask } from "@guartrix/shared";
 import { Badge, Button, ListGroup, Stack } from "react-bootstrap";
 import { useI18n } from "../../i18n/react";
 import { formatWhen } from "../../utils";

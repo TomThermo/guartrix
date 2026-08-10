@@ -1,4 +1,4 @@
-import type { FileEntry } from "@msm/shared";
+import type { FileEntry } from "@guartrix/shared";
 import { isArchiveName } from "./paths";
 
 export interface FileActionPermissions {

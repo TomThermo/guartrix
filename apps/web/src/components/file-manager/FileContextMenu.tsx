@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import type { FileEntry } from "@msm/shared";
+import type { FileEntry } from "@guartrix/shared";
 import { useI18n } from "../../i18n/react";
 import {
   showDecompressButton,

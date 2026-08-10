@@ -1,5 +1,5 @@
 import { nanoid } from "nanoid";
-import type { BillingSubscriptionRecord } from "@msm/shared";
+import type { BillingSubscriptionRecord } from "@guartrix/shared";
 import { logActivity } from "../activity-log.js";
 import { config } from "../config.js";
 import { prisma } from "../db.js";

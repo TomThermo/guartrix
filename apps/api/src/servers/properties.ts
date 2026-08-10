@@ -1,5 +1,5 @@
-import type { ServerProperties } from "@msm/shared";
-import { EDITABLE_PROPERTY_KEYS, isBdsServerType, type ServerType } from "@msm/shared";
+import type { ServerProperties } from "@guartrix/shared";
+import { EDITABLE_PROPERTY_KEYS, isBdsServerType, type ServerType } from "@guartrix/shared";
 import { daemonReadFile, daemonWriteFile } from "../nodes/daemon-client.js";
 import { prisma } from "../db.js";
 

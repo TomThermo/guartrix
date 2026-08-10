@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { nanoid } from "nanoid";
-import { primaryAllocationProtocol } from "@msm/shared";
-import { safeExtractArchive } from "@msm/node-agent";
+import { primaryAllocationProtocol } from "@guartrix/shared";
+import { safeExtractArchive } from "@guartrix/node-agent";
 import {
   assertAdminFullApiKey,
   requireServerAccess,

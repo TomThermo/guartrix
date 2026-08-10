@@ -1,7 +1,7 @@
-import { normalizeLicenseFeatures } from "@msm/shared";
-import type { LicenseSignedClaims } from "@msm/shared/license-signing";
-import { hashLicenseKey, verifyLicenseClaims } from "@msm/shared/license-signing";
-import type { DaemonLicenseTicket } from "@msm/shared/license-ticket";
+import { normalizeLicenseFeatures } from "@guartrix/shared";
+import type { LicenseSignedClaims } from "@guartrix/shared/license-signing";
+import { hashLicenseKey, verifyLicenseClaims } from "@guartrix/shared/license-signing";
+import type { DaemonLicenseTicket } from "@guartrix/shared/license-ticket";
 import { config } from "../config.js";
 import { logActivity } from "../activity-log.js";
 import { hostPublicIp } from "../nodes/host-resources.js";

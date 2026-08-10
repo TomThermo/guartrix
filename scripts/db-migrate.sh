@@ -29,7 +29,7 @@ trap 'rm -f "$ERR_FILE"' EXIT
 
 echo "[guartrix] Applying database migrations (prisma migrate deploy)…"
 set +e
-npm run db:migrate -w @msm/api >"$ERR_FILE" 2>&1
+npm run db:migrate -w @guartrix/api >"$ERR_FILE" 2>&1
 RC=$?
 set -e
 cat "$ERR_FILE"
@@ -41,7 +41,7 @@ fi
 if grep -qiE 'already exists|P3005|P3018|Database schema is not empty' "$ERR_FILE"; then
   echo "[guartrix] Legacy db-push database detected — baselining ${INIT_MIGRATION}…"
   npx prisma migrate resolve --applied "$INIT_MIGRATION" --schema "$SCHEMA"
-  npm run db:migrate -w @msm/api
+  npm run db:migrate -w @guartrix/api
   exit 0
 fi
 

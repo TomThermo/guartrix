@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import type { DiskUsageBreakdown } from "@msm/shared";
+import type { DiskUsageBreakdown } from "@guartrix/shared";
 import { api } from "../../api";
 import { useVisibleInterval } from "../../hooks/useVisibleInterval";
 

@@ -1,6 +1,6 @@
 import { nanoid } from "nanoid";
-import type { ServerType } from "@msm/shared";
-import { primaryAllocationProtocol } from "@msm/shared";
+import type { ServerType } from "@guartrix/shared";
+import { primaryAllocationProtocol } from "@guartrix/shared";
 import { ensurePrimaryAllocation } from "./allocations.js";
 import { config } from "../config.js";
 import { daemonSetLimits } from "../nodes/daemon-client.js";
@@ -30,7 +30,7 @@ export type ProvisionServerInput = {
   /** Optional fixed id (tests / billing). */
   id?: string;
   /** Extra Docker binds (already validated). */
-  extraMounts?: import("@msm/shared").ServerExtraMount[] | null;
+  extraMounts?: import("@guartrix/shared").ServerExtraMount[] | null;
 };
 
 export type PanelCreateWorldOpts = {

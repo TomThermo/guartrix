@@ -1,6 +1,6 @@
 import type { FormEvent } from "react";
-import type { ApplicationApiKeyRecord, PaymentRecord } from "@msm/shared";
-import { APPLICATION_SCOPES } from "@msm/shared";
+import type { ApplicationApiKeyRecord, PaymentRecord } from "@guartrix/shared";
+import { APPLICATION_SCOPES } from "@guartrix/shared";
 import { Badge, Button, Form, ListGroup, Table } from "react-bootstrap";
 import { AdminInsetCard, AdminPanelCard } from "../../components/admin/AdminPageShell";
 import { useI18n } from "../../i18n/react";

@@ -1,5 +1,5 @@
 import type { Prisma } from "@prisma/client";
-import type { ScheduleStep, ScheduledTask } from "@msm/shared";
+import type { ScheduleStep, ScheduledTask } from "@guartrix/shared";
 import { logActivity } from "../../activity-log.js";
 import { prisma } from "../../db.js";
 import { processManager } from "../process-manager.js";

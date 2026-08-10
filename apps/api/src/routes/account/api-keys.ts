@@ -5,7 +5,7 @@ import {
   API_KEY_MAX_PER_USER,
   normalizeAdminPanelScopes,
   normalizeApiKeyPermissions,
-} from "@msm/shared";
+} from "@guartrix/shared";
 import { logActivity } from "../../activity-log.js";
 import { generateApiKeyToken, toApiKeyRecord } from "../../auth/api-keys.js";
 import { requireSessionAuth } from "../../auth/auth.js";

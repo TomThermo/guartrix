@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Guartrix API
-  version:  1.4.21
+  version:  1.4.22
   description: |
     Machine-readable surface for the Guartrix panel. Paths under /api also answer at /api/v1 (dual-mount).
 
@@ -58,6 +58,248 @@ components:
         error: { type: string }
         code: { type: string }
         details: {}
+    CloneServer:
+      type: object
+      required:
+        - name
+        - port
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 64
+        port:
+          type: integer
+          minimum: 1024
+          maximum: 65535
+        memoryMb:
+          type: integer
+          minimum: 512
+          maximum: 65536
+        diskMb:
+          type: integer
+          minimum: 256
+          maximum: 10485760
+        cpuLimit:
+          type: integer
+          minimum: 0
+          maximum: 10000
+        nodeId:
+          type: string
+          minLength: 1
+    CreateServerApplication:
+      allOf:
+        - $ref: "#/components/schemas/CreateServerBase"
+        - type: object
+          required:
+            - ownerId
+          properties:
+            ownerId:
+              type: string
+              minLength: 1
+            mcVersion:
+              type: string
+              minLength: 1
+              maxLength: 32
+            diskMb:
+              type: integer
+              minimum: 1024
+              maximum: 10485760
+            cpuLimit:
+              type: integer
+              minimum: 0
+              maximum: 6400
+    CreateServerBase:
+      type: object
+      required:
+        - name
+        - type
+        - mcVersion
+        - port
+        - memoryMb
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 64
+        type:
+          $ref: "#/components/schemas/ServerType"
+        mcVersion:
+          type: string
+          minLength: 1
+        port:
+          type: integer
+          minimum: 1024
+          maximum: 65535
+        memoryMb:
+          type: integer
+          minimum: 512
+          maximum: 65536
+        nodeId:
+          type: string
+          minLength: 1
+    CreateServerClient:
+      allOf:
+        - $ref: "#/components/schemas/CreateServerBase"
+        - type: object
+          properties:
+            diskMb:
+              type: integer
+              minimum: 256
+              maximum: 10485760
+            cpuLimit:
+              type: integer
+              minimum: 0
+              maximum: 10000
+            seed:
+              type: string
+              maxLength: 128
+            gamemode:
+              type: string
+              enum:
+                - survival
+                - creative
+                - adventure
+                - spectator
+            difficulty:
+              type: string
+              enum:
+                - peaceful
+                - easy
+                - normal
+                - hard
+            worldPreset:
+              type: string
+              enum:
+                - DEFAULT
+                - FLAT
+                - VOID
+            keepCount:
+              type: integer
+              minimum: 1
+              maximum: 50
+            extraMounts:
+              type: array
+              maxItems: 8
+              nullable: true
+              items:
+                type: object
+                required:
+                  - host
+                  - container
+                properties:
+                  host:
+                    type: string
+                    minLength: 1
+                    maxLength: 512
+                  container:
+                    type: string
+                    minLength: 1
+                    maxLength: 512
+                  readOnly:
+                    type: boolean
+    FileCompress:
+      type: object
+      required:
+        - paths
+        - destination
+      properties:
+        paths:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            $ref: "#/components/schemas/FilePath"
+        destination:
+          $ref: "#/components/schemas/FilePath"
+    FileDecompress:
+      type: object
+      required:
+        - path
+      properties:
+        path:
+          $ref: "#/components/schemas/FilePath"
+        destination:
+          $ref: "#/components/schemas/FilePath"
+    FileDelete:
+      type: object
+      required:
+        - path
+      properties:
+        path:
+          $ref: "#/components/schemas/FilePath"
+    FileDownloadZip:
+      type: object
+      required:
+        - paths
+      properties:
+        paths:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            $ref: "#/components/schemas/FilePath"
+    FileMkdir:
+      type: object
+      required:
+        - path
+      properties:
+        path:
+          $ref: "#/components/schemas/FilePath"
+    FilePath:
+      type: string
+      minLength: 1
+      maxLength: 512
+    FileRename:
+      type: object
+      required:
+        - from
+        - to
+      properties:
+        from:
+          $ref: "#/components/schemas/FilePath"
+        to:
+          $ref: "#/components/schemas/FilePath"
+    FileWrite:
+      type: object
+      required:
+        - path
+        - content
+      properties:
+        path:
+          $ref: "#/components/schemas/FilePath"
+        content:
+          type: string
+          maxLength: 2000000
+    PowerRequest:
+      type: object
+      required:
+        - signal
+      properties:
+        signal:
+          $ref: "#/components/schemas/PowerSignal"
+    PowerSignal:
+      type: string
+      enum:
+        - start
+        - stop
+        - restart
+        - kill
+    ServerType:
+      type: string
+      enum:
+        - VANILLA
+        - PAPER
+        - FABRIC
+        - FORGE
+        - PURPUR
+        - NEOFORGE
+        - QUILT
+        - BEDROCK
+        - BEDROCK_PREVIEW
+        - POCKETMINE
+        - NUKKIT
+
 paths:
   /api/health:
     get:
@@ -99,6 +341,12 @@ paths:
       tags: [Client]
       summary: Create server
       security: [{ ClientApiKey: [] }, { SessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateServerClient"
       responses:
         "201":
           description: Created server
@@ -227,11 +475,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required: [path, content]
-              properties:
-                path: { type: string }
-                content: { type: string }
+              $ref: "#/components/schemas/FileWrite"
       responses:
         "200":
           description: Saved
@@ -261,12 +505,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required: [paths]
-              properties:
-                paths:
-                  type: array
-                  items: { type: string }
+              $ref: "#/components/schemas/FileDownloadZip"
       responses:
         "200":
           description: application/zip stream
@@ -357,6 +596,12 @@ paths:
       tags: [Application]
       summary: Create server for an owner
       security: [{ ApplicationApiKey: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateServerApplication"
       responses:
         "201":
           description: Created
@@ -855,6 +1100,12 @@ paths:
       security: [{ ClientApiKey: [] }, { SessionCookie: [] }]
       parameters:
         - $ref: "#/components/parameters/ServerId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CloneServer"
       responses:
         "201":
           description: Cloned server
@@ -2895,6 +3146,12 @@ paths:
           in: path
           required: true
           schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PowerRequest"
       responses:
         "200":
           description: OK
@@ -2975,6 +3232,12 @@ paths:
         - SessionCookie: []
       parameters:
         - $ref: "#/components/parameters/ServerId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PowerRequest"
       responses:
         "200":
           description: OK

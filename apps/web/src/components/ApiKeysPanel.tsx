@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import type { ApiKeyRecord, McServer } from "@msm/shared";
-import { API_KEY_PRESETS, PERMISSION_GROUPS } from "@msm/shared";
+import type { ApiKeyRecord, McServer } from "@guartrix/shared";
+import { API_KEY_PRESETS, PERMISSION_GROUPS } from "@guartrix/shared";
 import { Alert, Badge, Button, Card, Form, ListGroup, Spinner } from "react-bootstrap";
 import { api } from "../api";
 import { useI18n } from "../i18n/react";

@@ -1,4 +1,4 @@
-import type { ScheduleStep, ScheduledTask } from "@msm/shared";
+import type { ScheduleStep, ScheduledTask } from "@guartrix/shared";
 import { request } from "./client";
 
 export const serverTasksApi = {

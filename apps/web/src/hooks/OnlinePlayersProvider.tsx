@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { OnlinePlayersResponse, PlayersWsMessage } from "@msm/shared";
+import type { OnlinePlayersResponse, PlayersWsMessage } from "@guartrix/shared";
 import { api } from "../api";
 import { useVisibleInterval } from "./useVisibleInterval";
 

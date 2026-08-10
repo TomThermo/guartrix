@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import dns from "node:dns/promises";
-import { primaryAllocationProtocol } from "@msm/shared";
+import { primaryAllocationProtocol } from "@guartrix/shared";
 import { requireAdmin, requireAuth } from "../../auth/auth.js";
 import { config } from "../../config.js";
 import { listNodesWithUsage } from "../../nodes/nodes.js";

@@ -6,8 +6,8 @@ import type {
   InstalledAddon,
   InstalledAddonUpdate,
   ServerType,
-} from "@msm/shared";
-import { addonKindFor } from "@msm/shared";
+} from "@guartrix/shared";
+import { addonKindFor } from "@guartrix/shared";
 import { api } from "../../api";
 import { useI18n } from "../../i18n/react";
 import { AbortableBrowse } from "./abortableBrowse";

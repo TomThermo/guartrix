@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import type { AuthUser, McServer } from "@msm/shared";
-import { roleLabel } from "@msm/shared";
+import type { AuthUser, McServer } from "@guartrix/shared";
+import { roleLabel } from "@guartrix/shared";
 import { Alert, Button, Form, Modal, Spinner } from "react-bootstrap";
 import { api } from "../api";
 import { useI18n } from "../i18n/react";

@@ -1,4 +1,4 @@
-import type { PanelVersionStatus } from "@msm/shared";
+import type { PanelVersionStatus } from "@guartrix/shared";
 import { getProductVersion, isUpdateAvailable, meetsMinVersion } from "../product-version.js";
 import { getLicenseServerUrl } from "./license-store.js";
 import { validateLicense } from "./license-validate.js";

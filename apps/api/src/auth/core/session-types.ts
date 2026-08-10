@@ -1,4 +1,4 @@
-import type { AuthUser, UserRole } from "@msm/shared";
+import type { AuthUser, UserRole } from "@guartrix/shared";
 
 declare module "fastify" {
   interface Session {

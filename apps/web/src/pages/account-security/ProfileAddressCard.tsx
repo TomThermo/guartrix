@@ -1,5 +1,5 @@
 import { Alert, Col, Form, InputGroup, Row, Spinner } from "react-bootstrap";
-import { COUNTRY_DIALS, countryFlagEmoji } from "@msm/shared";
+import { COUNTRY_DIALS, countryFlagEmoji } from "@guartrix/shared";
 import { AdminPanelCard } from "../../components/admin/AdminPageShell";
 import type { ProfileSectionState } from "./useProfileSection";
 

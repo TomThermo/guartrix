@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { PlayerHistoryEntry } from "@msm/shared";
+import type { PlayerHistoryEntry } from "@guartrix/shared";
 import { serverDir } from "./config.js";
 
 const MAX_ENTRIES = 100;

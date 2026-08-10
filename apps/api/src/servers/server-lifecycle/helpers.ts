@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import type { Server } from "@prisma/client";
-import { addonKindFor, type ServerType } from "@msm/shared";
+import { addonKindFor, type ServerType } from "@guartrix/shared";
 import { daemonDeleteFile } from "../../nodes/daemon-client.js";
 import { prisma } from "../../db.js";
 import { processManager } from "../process-manager.js";

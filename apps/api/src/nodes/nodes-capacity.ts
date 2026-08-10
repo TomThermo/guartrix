@@ -1,4 +1,4 @@
-import type { DaemonNode } from "@msm/shared";
+import type { DaemonNode } from "@guartrix/shared";
 import { prisma } from "../db.js";
 import { nodeAllocationBudget } from "./nodes-helpers.js";
 import { serializeNode } from "./nodes-serialize.js";

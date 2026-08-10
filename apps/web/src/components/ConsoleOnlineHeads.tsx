@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { OnlinePlayer } from "@msm/shared";
+import type { OnlinePlayer } from "@guartrix/shared";
 import { Spinner } from "react-bootstrap";
 import { useSharedOnlinePlayers } from "../hooks/OnlinePlayersProvider";
 import { useI18n } from "../i18n/react";

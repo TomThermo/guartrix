@@ -1,7 +1,7 @@
 import type { Prisma } from "@prisma/client";
 import type { FastifyInstance } from "fastify";
 import { nanoid } from "nanoid";
-import { hasPermission } from "@msm/shared";
+import { hasPermission } from "@guartrix/shared";
 import { logActivity } from "../../../activity-log.js";
 import { requireServerAccess } from "../../../auth/auth.js";
 import {

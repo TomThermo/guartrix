@@ -145,7 +145,7 @@ export async function daemonMysqlPeerRestoreOnNode(
   toNodeId: string,
   name: string,
 ): Promise<{ bytes: number | null }> {
-  const { panelToDaemonAuthorization } = await import("@msm/shared/daemon-jwt");
+  const { panelToDaemonAuthorization } = await import("@guartrix/shared/daemon-jwt");
   const { nodePublicUrl } = await import("./nodes.js");
   const from = await resolveNode(fromNodeId);
   const to = await resolveNode(toNodeId);

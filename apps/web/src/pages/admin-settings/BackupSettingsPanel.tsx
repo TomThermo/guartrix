@@ -1,4 +1,4 @@
-import { BACKUP_KEEP_COUNT_PRESETS } from "@msm/shared";
+import { BACKUP_KEEP_COUNT_PRESETS } from "@guartrix/shared";
 import { Col, Form, Row } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import { useI18n } from "../../i18n/react";

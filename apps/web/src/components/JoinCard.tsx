@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { ConnectInfo, McServer } from "@msm/shared";
+import type { ConnectInfo, McServer } from "@guartrix/shared";
 import { Button, Stack } from "react-bootstrap";
 import { useI18n } from "../i18n/react";
 import { TotpQr } from "./TotpQr";

@@ -1,6 +1,6 @@
 import { lazy, Suspense } from "react";
-import type { ConnectInfo, ServerDetail, ServerStatus, SystemInfo } from "@msm/shared";
-import type { hasPermission } from "@msm/shared";
+import type { ConnectInfo, ServerDetail, ServerStatus, SystemInfo } from "@guartrix/shared";
+import type { hasPermission } from "@guartrix/shared";
 import { Spinner, Tab } from "react-bootstrap";
 import { api } from "../../api";
 import { ServerConsoleLayout } from "./ServerConsoleLayout";

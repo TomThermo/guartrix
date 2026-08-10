@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import type { LogContentResponse, LogFileInfo } from "@msm/shared";
+import type { LogContentResponse, LogFileInfo } from "@guartrix/shared";
 import { Button, Col, ListGroup, Row, Spinner } from "react-bootstrap";
 import { api } from "../api";
 import { useI18n } from "../i18n/react";

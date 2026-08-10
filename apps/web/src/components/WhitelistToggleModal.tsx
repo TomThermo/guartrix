@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { ServerDetail } from "@msm/shared";
+import type { ServerDetail } from "@guartrix/shared";
 import { Button, Form, Modal, Spinner } from "react-bootstrap";
 import { api } from "../api";
 import { useI18n } from "../i18n/react";

@@ -1,6 +1,6 @@
 {
-  "name": "@msm/web",
-  "version": "1.4.21",
+  "name": "@guartrix/web",
+  "version": "1.4.22",
   "private": true,
   "type": "module",
   "scripts": {
@@ -13,7 +13,7 @@
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.3.1",
     "@monaco-editor/react": "^4.7.0",
-    "@msm/shared": "*",
+    "@guartrix/shared": "*",
     "@sentry/react": "^10.69.0",
     "bootstrap": "^5.3.8",
     "monaco-editor": "^0.56.0",

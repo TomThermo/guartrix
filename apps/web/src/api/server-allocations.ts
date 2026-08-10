@@ -1,4 +1,4 @@
-import type { PortAllocation } from "@msm/shared";
+import type { PortAllocation } from "@guartrix/shared";
 import { request } from "./client";
 
 export const serverAllocationsApi = {
