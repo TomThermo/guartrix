@@ -3,6 +3,11 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.47] — 2026-08-10
+
+### Added
+- Admin Mail templates: edit shared **Header** / **Footer** (plus full layout HTML/text) with preview for all emails.
+
 ## [1.4.46] — 2026-08-10
 
 ### Fixed

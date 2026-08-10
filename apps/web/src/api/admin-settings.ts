@@ -198,7 +198,12 @@ export const adminSettingsApi = {
     }),
   previewMailTemplate: (
     id: string,
-    draft?: Partial<Pick<MailTemplateParts, "subject" | "html" | "text">>,
+    draft?: Partial<
+      Pick<MailTemplateParts, "subject" | "html" | "text"> & {
+        layoutHtml: string;
+        layoutTxt: string;
+      }
+    >,
   ) =>
     request<{ ok: boolean; id: string; subject: string; text: string; html: string }>(
       "/api/admin/settings/mail-templates/preview",

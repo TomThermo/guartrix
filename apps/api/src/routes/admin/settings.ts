@@ -286,6 +286,8 @@ export function registerAdminSettingsRoutes(app: FastifyInstance): void {
       subject?: string;
       html?: string;
       text?: string;
+      layoutHtml?: string;
+      layoutTxt?: string;
     };
   }>("/api/admin/settings/mail-templates/preview", async (request, reply) => {
     if (!(await requireAdmin(request, reply, "settings.read"))) return;
@@ -299,6 +301,9 @@ export function registerAdminSettingsRoutes(app: FastifyInstance): void {
         subject: typeof request.body?.subject === "string" ? request.body.subject : undefined,
         html: typeof request.body?.html === "string" ? request.body.html : undefined,
         text: typeof request.body?.text === "string" ? request.body.text : undefined,
+        layoutHtml:
+          typeof request.body?.layoutHtml === "string" ? request.body.layoutHtml : undefined,
+        layoutTxt: typeof request.body?.layoutTxt === "string" ? request.body.layoutTxt : undefined,
       };
       const mail = renderMail(id, vars, draft);
       return { ok: true, id, ...mail };

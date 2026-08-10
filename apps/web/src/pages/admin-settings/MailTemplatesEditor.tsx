@@ -18,9 +18,10 @@ const TEMPLATE_LABELS: Record<MailTemplateId, string> = {
 };
 
 type EditTarget = "layout" | MailTemplateId;
-type EditorPane = "html" | "text" | "preview";
+type EditorPane = "header" | "footer" | "html" | "text" | "preview";
 type PreviewTheme = "light" | "dark";
 
+const CONTENT_MARK = "{{content}}";
 const PREVIEW_THEME_KEY = "guartrix.mailTemplatePreviewTheme";
 
 function readStoredPreviewTheme(): PreviewTheme {
@@ -34,6 +35,19 @@ function readStoredPreviewTheme(): PreviewTheme {
 
 function notifyBrandingChanged(): void {
   window.dispatchEvent(new Event("guartrix:branding-changed"));
+}
+
+function splitAroundContent(source: string): { before: string; after: string } {
+  const idx = source.indexOf(CONTENT_MARK);
+  if (idx < 0) return { before: source, after: "" };
+  return {
+    before: source.slice(0, idx),
+    after: source.slice(idx + CONTENT_MARK.length),
+  };
+}
+
+function joinAroundContent(before: string, after: string): string {
+  return `${before}${CONTENT_MARK}${after}`;
 }
 
 export function MailTemplatesEditor({
@@ -51,8 +65,8 @@ export function MailTemplatesEditor({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<MailTemplatesAdminView | null>(null);
-  const [target, setTarget] = useState<EditTarget>("test-mail");
-  const [pane, setPane] = useState<EditorPane>("html");
+  const [target, setTarget] = useState<EditTarget>("layout");
+  const [pane, setPane] = useState<EditorPane>("header");
   const [subject, setSubject] = useState("");
   const [html, setHtml] = useState("");
   const [text, setText] = useState("");
@@ -62,6 +76,9 @@ export function MailTemplatesEditor({
   const [appLogo, setAppLogo] = useState("");
   const [logoUrlDraft, setLogoUrlDraft] = useState("");
   const [brandingLogoUploaded, setBrandingLogoUploaded] = useState(false);
+
+  const isLayout = target === "layout";
+  const htmlParts = splitAroundContent(html);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -105,7 +122,7 @@ export function MailTemplatesEditor({
   useEffect(() => {
     setPreviewHtml(null);
     setPreviewSubject(null);
-    setPane("html");
+    setPane(target === "layout" ? "header" : "html");
   }, [target]);
 
   async function onSave() {
@@ -113,6 +130,12 @@ export function MailTemplatesEditor({
     onError(null);
     onNotice(null);
     try {
+      if (target === "layout" && !html.includes(CONTENT_MARK)) {
+        throw new Error(t("adminSettings.mailTemplatesNeedContent"));
+      }
+      if (target === "layout" && !text.includes(CONTENT_MARK)) {
+        throw new Error(t("adminSettings.mailTemplatesNeedContentText"));
+      }
       const next =
         target === "layout"
           ? await adminSettingsApi.updateMailTemplates({
@@ -171,15 +194,20 @@ export function MailTemplatesEditor({
   }
 
   async function onPreview() {
-    if (target === "layout") return;
     onBusy(true);
     onError(null);
     try {
-      const preview = await adminSettingsApi.previewMailTemplate(target, {
-        subject,
-        html,
-        text,
-      });
+      const preview =
+        target === "layout"
+          ? await adminSettingsApi.previewMailTemplate("test-mail", {
+              layoutHtml: html,
+              layoutTxt: text,
+            })
+          : await adminSettingsApi.previewMailTemplate(target, {
+              subject,
+              html,
+              text,
+            });
       setPreviewSubject(preview.subject);
       setPreviewHtml(preview.html);
       setPane("preview");
@@ -192,7 +220,6 @@ export function MailTemplatesEditor({
 
   async function onSelectPane(next: EditorPane) {
     if (next === "preview") {
-      if (target === "layout") return;
       await onPreview();
       return;
     }
@@ -206,6 +233,14 @@ export function MailTemplatesEditor({
     } catch {
       /* ignore */
     }
+  }
+
+  function onHeaderHtmlChange(value: string) {
+    setHtml(joinAroundContent(value, htmlParts.after));
+  }
+
+  function onFooterHtmlChange(value: string) {
+    setHtml(joinAroundContent(htmlParts.before, value));
   }
 
   async function onUploadLogo(file: File | null) {
@@ -373,7 +408,7 @@ export function MailTemplatesEditor({
             type="button"
             variant="outline-secondary"
             size="sm"
-            disabled={disabled || target === "layout"}
+            disabled={disabled}
             onClick={() => void onPreview()}
           >
             {t("adminSettings.mailTemplatesPreview")}
@@ -387,7 +422,9 @@ export function MailTemplatesEditor({
         </div>
       </div>
 
-      {target !== "layout" ? (
+      {isLayout ? (
+        <p className="mail-template-editor__help mb-2">{t("adminSettings.mailTemplatesLayoutHelp")}</p>
+      ) : (
         <label className="mail-template-editor__field">
           <span className="mail-template-editor__label">{t("adminSettings.mailTemplatesSubject")}</span>
           <input
@@ -398,27 +435,66 @@ export function MailTemplatesEditor({
             spellCheck={false}
           />
         </label>
-      ) : null}
+      )}
 
       <Nav variant="tabs" className="mail-template-editor__tabs">
-        <Nav.Item>
-          <Nav.Link active={pane === "html"} disabled={busy || loading} onClick={() => void onSelectPane("html")}>
-            {target === "layout"
-              ? t("adminSettings.mailTemplatesLayoutHtml")
-              : t("adminSettings.mailTemplatesHtml")}
-          </Nav.Link>
-        </Nav.Item>
-        <Nav.Item>
-          <Nav.Link active={pane === "text"} disabled={busy || loading} onClick={() => void onSelectPane("text")}>
-            {target === "layout"
-              ? t("adminSettings.mailTemplatesLayoutText")
-              : t("adminSettings.mailTemplatesText")}
-          </Nav.Link>
-        </Nav.Item>
+        {isLayout ? (
+          <>
+            <Nav.Item>
+              <Nav.Link
+                active={pane === "header"}
+                disabled={busy || loading}
+                onClick={() => void onSelectPane("header")}
+              >
+                {t("adminSettings.mailTemplatesHeader")}
+              </Nav.Link>
+            </Nav.Item>
+            <Nav.Item>
+              <Nav.Link
+                active={pane === "footer"}
+                disabled={busy || loading}
+                onClick={() => void onSelectPane("footer")}
+              >
+                {t("adminSettings.mailTemplatesFooter")}
+              </Nav.Link>
+            </Nav.Item>
+            <Nav.Item>
+              <Nav.Link
+                active={pane === "html"}
+                disabled={busy || loading}
+                onClick={() => void onSelectPane("html")}
+              >
+                {t("adminSettings.mailTemplatesLayoutHtml")}
+              </Nav.Link>
+            </Nav.Item>
+            <Nav.Item>
+              <Nav.Link
+                active={pane === "text"}
+                disabled={busy || loading}
+                onClick={() => void onSelectPane("text")}
+              >
+                {t("adminSettings.mailTemplatesLayoutText")}
+              </Nav.Link>
+            </Nav.Item>
+          </>
+        ) : (
+          <>
+            <Nav.Item>
+              <Nav.Link active={pane === "html"} disabled={busy || loading} onClick={() => void onSelectPane("html")}>
+                {t("adminSettings.mailTemplatesHtml")}
+              </Nav.Link>
+            </Nav.Item>
+            <Nav.Item>
+              <Nav.Link active={pane === "text"} disabled={busy || loading} onClick={() => void onSelectPane("text")}>
+                {t("adminSettings.mailTemplatesText")}
+              </Nav.Link>
+            </Nav.Item>
+          </>
+        )}
         <Nav.Item>
           <Nav.Link
             active={pane === "preview"}
-            disabled={busy || loading || target === "layout"}
+            disabled={busy || loading}
             onClick={() => void onSelectPane("preview")}
           >
             {t("adminSettings.mailTemplatesPreview")}
@@ -427,6 +503,26 @@ export function MailTemplatesEditor({
       </Nav>
 
       <div className="mail-template-editor__pane">
+        {pane === "header" ? (
+          <MailCodeEditor
+            path={`${editorPath}-header`}
+            language="html"
+            value={htmlParts.before}
+            disabled={busy || loading}
+            onChange={onHeaderHtmlChange}
+            onSave={() => void onSave()}
+          />
+        ) : null}
+        {pane === "footer" ? (
+          <MailCodeEditor
+            path={`${editorPath}-footer`}
+            language="html"
+            value={htmlParts.after}
+            disabled={busy || loading}
+            onChange={onFooterHtmlChange}
+            onSave={() => void onSave()}
+          />
+        ) : null}
         {pane === "html" ? (
           <MailCodeEditor
             path={editorPath}
@@ -487,7 +583,9 @@ export function MailTemplatesEditor({
               </div>
             </div>
             <p className="mail-template-editor__preview-hint mb-0">
-              {t("adminSettings.mailTemplatesPreviewThemeHelp")}
+              {isLayout
+                ? t("adminSettings.mailTemplatesLayoutPreviewHelp")
+                : t("adminSettings.mailTemplatesPreviewThemeHelp")}
             </p>
             {previewHtml ? (
               <div className="mail-template-editor__preview-body">
