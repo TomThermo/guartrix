@@ -34,6 +34,8 @@ export function withSecurityHeaders(handler) {
         ...(allowUnsafeInlineScript ? ["'unsafe-inline'"] : []),
         ...scriptSrcExtra,
       ].join(" "),
+      // Monaco editor spawns blob: workers (AMD); also allow same-origin worker scripts.
+      "worker-src 'self' blob:",
       "connect-src 'self' wss: https: https://cloudflareinsights.com",
       "frame-src 'self' https:",
       "form-action 'self'",

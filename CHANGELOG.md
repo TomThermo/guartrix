@@ -3,6 +3,11 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.46] — 2026-08-10
+
+### Fixed
+- CSP: allow Monaco `worker-src 'self' blob:` so the mail/file editor can create web workers.
+
 ## [1.4.45] — 2026-08-10
 
 ### Fixed
