@@ -64,17 +64,19 @@ export function MailTemplatesEditor({
       setSubject("");
       setHtml(view.layoutHtml);
       setText(view.layoutTxt);
-      setPreviewHtml(null);
-      setPreviewSubject(null);
       return;
     }
     const row = view.templates[target];
     setSubject(row.subject);
     setHtml(row.html);
     setText(row.text);
+  }, [view, target]);
+
+  // Clear preview only when switching templates — not when view reloads after save/preview.
+  useEffect(() => {
     setPreviewHtml(null);
     setPreviewSubject(null);
-  }, [view, target]);
+  }, [target]);
 
   async function onSave() {
     onBusy(true);
@@ -143,15 +145,14 @@ export function MailTemplatesEditor({
     onBusy(true);
     onError(null);
     try {
-      // Save current edits first so preview matches editor
-      await adminSettingsApi.updateMailTemplates({
-        templates: { [target]: { subject, html, text } },
+      // Preview unsaved editor contents (does not write overrides).
+      const preview = await adminSettingsApi.previewMailTemplate(target, {
+        subject,
+        html,
+        text,
       });
-      const preview = await adminSettingsApi.previewMailTemplate(target);
       setPreviewSubject(preview.subject);
       setPreviewHtml(preview.html);
-      const refreshed = await load();
-      if (refreshed) setView(refreshed);
     } catch (err) {
       onError(err instanceof Error ? err.message : t("adminSettings.mailTemplatesPreviewFailed"));
     } finally {
@@ -264,7 +265,7 @@ export function MailTemplatesEditor({
           </Form.Group>
         </Col>
 
-        {previewHtml && (
+        {previewHtml ? (
           <Col xs={12}>
             <div className="small text-secondary mb-1">
               {t("adminSettings.mailTemplatesPreviewLabel")}
@@ -277,7 +278,7 @@ export function MailTemplatesEditor({
               dangerouslySetInnerHTML={{ __html: previewHtml }}
             />
           </Col>
-        )}
+        ) : null}
       </Row>
     </div>
   );

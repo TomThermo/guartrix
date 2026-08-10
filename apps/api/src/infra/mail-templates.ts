@@ -75,18 +75,23 @@ function brandingVars(): MailTemplateVars {
 /**
  * Render a branded multipart mail (subject + text + html).
  * Admin overrides in data/mail-templates.json win over bundled defaults.
+ * Optional `draft` parts (Admin preview) override both store and bundled files.
  */
-export function renderMail(id: MailTemplateId, vars: MailTemplateVars = {}): RenderedMail {
+export function renderMail(
+  id: MailTemplateId,
+  vars: MailTemplateVars = {},
+  draft?: Partial<{ subject: string; html: string; text: string; layoutHtml: string; layoutTxt: string }>,
+): RenderedMail {
   if (!MAIL_TEMPLATE_IDS.includes(id)) {
     throw new Error(`Unknown mail template: ${id}`);
   }
 
   const merged: MailTemplateVars = { ...brandingVars(), ...vars };
-  const layoutHtml = resolveTemplateFile("layout.html");
-  const layoutTxt = resolveTemplateFile("layout.txt");
-  const bodyHtml = resolveTemplateFile(`${id}.html`);
-  const bodyTxt = resolveTemplateFile(`${id}.txt`);
-  const subjectRaw = resolveTemplateFile(`${id}.subject.txt`).trim();
+  const layoutHtml = draft?.layoutHtml ?? resolveTemplateFile("layout.html");
+  const layoutTxt = draft?.layoutTxt ?? resolveTemplateFile("layout.txt");
+  const bodyHtml = draft?.html ?? resolveTemplateFile(`${id}.html`);
+  const bodyTxt = draft?.text ?? resolveTemplateFile(`${id}.txt`);
+  const subjectRaw = (draft?.subject ?? resolveTemplateFile(`${id}.subject.txt`)).trim();
 
   const contentHtml = applyTemplate(bodyHtml, merged, { escape: true });
   const contentTxt = applyTemplate(bodyTxt, merged, { escape: false });

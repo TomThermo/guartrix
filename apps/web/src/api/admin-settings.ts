@@ -195,12 +195,15 @@ export const adminSettingsApi = {
       method: "PUT",
       body: JSON.stringify(body),
     }),
-  previewMailTemplate: (id: string) =>
+  previewMailTemplate: (
+    id: string,
+    draft?: Partial<Pick<MailTemplateParts, "subject" | "html" | "text">>,
+  ) =>
     request<{ ok: boolean; id: string; subject: string; text: string; html: string }>(
       "/api/admin/settings/mail-templates/preview",
       {
         method: "POST",
-        body: JSON.stringify({ id }),
+        body: JSON.stringify({ id, ...draft }),
       },
     ),
   testPanelRedis: () =>

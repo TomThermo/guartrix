@@ -3,6 +3,11 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.40] — 2026-08-10
+
+### Fixed
+- Admin Mail template **Preview** no longer clears itself immediately (view reload wiped the preview).
+
 ## [1.4.39] — 2026-08-10
 
 ### Added

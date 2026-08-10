@@ -186,7 +186,13 @@ export function registerAdminSettingsRoutes(app: FastifyInstance): void {
   });
 
   app.post<{
-    Body: { id?: string; vars?: Record<string, string> };
+    Body: {
+      id?: string;
+      vars?: Record<string, string>;
+      subject?: string;
+      html?: string;
+      text?: string;
+    };
   }>("/api/admin/settings/mail-templates/preview", async (request, reply) => {
     if (!(await requireAdmin(request, reply, "settings.read"))) return;
     const id = String(request.body?.id ?? "test-mail") as MailTemplateId;
@@ -195,7 +201,12 @@ export function registerAdminSettingsRoutes(app: FastifyInstance): void {
     }
     try {
       const vars = { ...previewVarsFor(id), ...(request.body?.vars ?? {}) };
-      const mail = renderMail(id, vars);
+      const draft = {
+        subject: typeof request.body?.subject === "string" ? request.body.subject : undefined,
+        html: typeof request.body?.html === "string" ? request.body.html : undefined,
+        text: typeof request.body?.text === "string" ? request.body.text : undefined,
+      };
+      const mail = renderMail(id, vars, draft);
       return { ok: true, id, ...mail };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
