@@ -3,6 +3,11 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.42] — 2026-08-10
+
+### Fixed
+- Admin Mail template editor inputs follow dark/light theme tokens (no forced white fields).
+
 ## [1.4.41] — 2026-08-10
 
 ### Changed
