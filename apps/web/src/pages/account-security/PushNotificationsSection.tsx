@@ -1,26 +1,90 @@
+import { useCallback, useEffect, useState } from "react";
 import { Alert, Button } from "react-bootstrap";
+import { api } from "../../api";
 import { useI18n } from "../../i18n/react";
 import { AdminPanelCard } from "../../components/admin/AdminPageShell";
-import { pushSupported } from "../../push";
+import {
+  getExistingPushSubscription,
+  pushSupported,
+  serializePushSubscription,
+  subscribeBrowserPush,
+  unsubscribeBrowserPush,
+} from "../../push";
 
-interface Props {
-  pushConfigured: boolean;
-  pushCount: number;
-  pushLocal: boolean;
-  pushBusy: boolean;
-  onEnable: () => void;
-  onDisable: () => void;
-}
+type Props = {
+  onNotice: (msg: string | null) => void;
+  onError: (msg: string | null) => void;
+};
 
-export function PushNotificationsSection({
-  pushConfigured,
-  pushCount,
-  pushLocal,
-  pushBusy,
-  onEnable,
-  onDisable,
-}: Props) {
+export function PushNotificationsSection({ onNotice, onError }: Props) {
   const { t } = useI18n();
+  const [pushConfigured, setPushConfigured] = useState(false);
+  const [pushCount, setPushCount] = useState(0);
+  const [pushLocal, setPushLocal] = useState(false);
+  const [pushBusy, setPushBusy] = useState(false);
+
+  const refreshPush = useCallback(async () => {
+    try {
+      const status = await api.getPushStatus();
+      setPushConfigured(status.configured);
+      setPushCount(status.subscriptionCount);
+    } catch {
+      setPushConfigured(false);
+      setPushCount(0);
+    }
+    if (pushSupported()) {
+      const sub = await getExistingPushSubscription();
+      setPushLocal(Boolean(sub));
+    } else {
+      setPushLocal(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshPush().catch((err) =>
+      onError(err instanceof Error ? err.message : t("common.requestFailed")),
+    );
+  }, [refreshPush, onError, t]);
+
+  async function enablePush() {
+    setPushBusy(true);
+    onError(null);
+    onNotice(null);
+    try {
+      const status = await api.getPushStatus();
+      if (!status.configured || !status.publicKey) {
+        throw new Error(t("account.pushNotConfigured"));
+      }
+      const sub = await subscribeBrowserPush(status.publicKey);
+      await api.subscribePush({
+        ...serializePushSubscription(sub),
+        userAgent: navigator.userAgent.slice(0, 512),
+      });
+      onNotice("Push alerts enabled for this browser.");
+      await refreshPush();
+    } catch (err) {
+      onError(err instanceof Error ? err.message : t("common.requestFailed"));
+    } finally {
+      setPushBusy(false);
+    }
+  }
+
+  async function disablePush() {
+    setPushBusy(true);
+    onError(null);
+    onNotice(null);
+    try {
+      const endpoint = await unsubscribeBrowserPush();
+      if (endpoint) await api.unsubscribePush(endpoint);
+      else await api.clearPushSubscriptions();
+      onNotice("Push alerts disabled for this browser.");
+      await refreshPush();
+    } catch (err) {
+      onError(err instanceof Error ? err.message : t("common.requestFailed"));
+    } finally {
+      setPushBusy(false);
+    }
+  }
 
   return (
     <AdminPanelCard title={t("account.pushTitle")} icon="fa-bell" className="mb-4">
@@ -56,12 +120,17 @@ export function PushNotificationsSection({
               size="sm"
               variant="outline-secondary"
               disabled={pushBusy}
-              onClick={() => void onDisable()}
+              onClick={() => void disablePush()}
             >
               {pushBusy ? t("common.waiting") : t("account.pushDisable")}
             </Button>
           ) : (
-            <Button size="sm" variant="primary" disabled={pushBusy} onClick={() => void onEnable()}>
+            <Button
+              size="sm"
+              variant="primary"
+              disabled={pushBusy}
+              onClick={() => void enablePush()}
+            >
               {pushBusy ? t("common.waiting") : t("account.pushEnable")}
             </Button>
           )}

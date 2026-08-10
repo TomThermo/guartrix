@@ -1,61 +1,162 @@
-import type { FormEvent } from "react";
-import { Alert, Button, Form, ListGroup } from "react-bootstrap";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { Alert, Button, Form, ListGroup, Spinner } from "react-bootstrap";
+import { api } from "../../api";
+import { useAuth } from "../../auth";
 import { useI18n } from "../../i18n/react";
 import { TotpQr } from "../../components/TotpQr";
 import { AdminInsetCard, AdminPanelCard } from "../../components/admin/AdminPageShell";
+import { copyText } from "../../utils";
 
 export type TwoFactorStep = "idle" | "setup" | "recovery" | "disable" | "regen";
 
-interface Props {
+export type TwoFactorStatus = {
   enabled: boolean;
   required: boolean;
-  recoveryLeft: number;
-  busy: boolean;
-  step: TwoFactorStep;
-  secretGrouped: string;
-  otpauth: string;
-  code: string;
-  password: string;
-  recoveryCodes: string[] | null;
-  onCodeChange: (value: string) => void;
-  onPasswordChange: (value: string) => void;
-  onStartSetup: () => void;
-  onConfirmEnable: (e: FormEvent) => void;
-  onCancelSetup: () => void;
-  onDisable: (e: FormEvent) => void;
-  onRegen: (e: FormEvent) => void;
-  onCopyCodes: () => void;
-  onBeginRegen: () => void;
-  onBeginDisable: () => void;
-  onCancelStep: () => void;
-  onDoneRecovery: () => void;
-}
+};
 
-export function TwoFactorSection({
-  enabled,
-  required,
-  recoveryLeft,
-  busy,
-  step,
-  secretGrouped,
-  otpauth,
-  code,
-  password,
-  recoveryCodes,
-  onCodeChange,
-  onPasswordChange,
-  onStartSetup,
-  onConfirmEnable,
-  onCancelSetup,
-  onDisable,
-  onRegen,
-  onCopyCodes,
-  onBeginRegen,
-  onBeginDisable,
-  onCancelStep,
-  onDoneRecovery,
-}: Props) {
+type Props = {
+  onNotice: (msg: string | null) => void;
+  onError: (msg: string | null) => void;
+  onStatusChange?: (status: TwoFactorStatus) => void;
+};
+
+export function TwoFactorSection({ onNotice, onError, onStatusChange }: Props) {
+  const { refreshUser } = useAuth();
   const { t } = useI18n();
+  const [enabled, setEnabled] = useState(false);
+  const [required, setRequired] = useState(false);
+  const [recoveryLeft, setRecoveryLeft] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [step, setStep] = useState<TwoFactorStep>("idle");
+  const [secretGrouped, setSecretGrouped] = useState("");
+  const [otpauth, setOtpauth] = useState("");
+  const [code, setCode] = useState("");
+  const [password, setPassword] = useState("");
+  const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null);
+
+  const refresh = useCallback(async () => {
+    const status = await api.getTwoFactor();
+    setEnabled(status.enabled);
+    setRequired(status.required);
+    setRecoveryLeft(status.recoveryCodesRemaining);
+    onStatusChange?.({ enabled: status.enabled, required: status.required });
+  }, [onStatusChange]);
+
+  useEffect(() => {
+    setLoading(true);
+    void refresh()
+      .catch((err) => onError(err instanceof Error ? err.message : t("common.requestFailed")))
+      .finally(() => setLoading(false));
+  }, [refresh, onError, t]);
+
+  async function startSetup() {
+    setBusy(true);
+    onError(null);
+    onNotice(null);
+    setRecoveryCodes(null);
+    try {
+      const setup = await api.setupTwoFactor();
+      setSecretGrouped(setup.secretGrouped);
+      setOtpauth(setup.otpauthUrl);
+      setCode("");
+      setStep("setup");
+    } catch (err) {
+      onError(err instanceof Error ? err.message : t("common.requestFailed"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function confirmEnable(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    onError(null);
+    try {
+      const result = await api.enableTwoFactor(code.trim());
+      setRecoveryCodes(result.recoveryCodes);
+      setStep("recovery");
+      setCode("");
+      await refresh();
+      await refreshUser();
+      onNotice("Two-factor authentication is now on.");
+    } catch (err) {
+      onError(err instanceof Error ? err.message : t("auth.invalidCode"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function cancelSetup() {
+    setBusy(true);
+    onError(null);
+    try {
+      await api.cancelTwoFactorSetup();
+      setStep("idle");
+      setSecretGrouped("");
+      setOtpauth("");
+      setCode("");
+    } catch (err) {
+      onError(err instanceof Error ? err.message : t("common.requestFailed"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onDisable(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    onError(null);
+    try {
+      await api.disableTwoFactor(password, code.trim());
+      setPassword("");
+      setCode("");
+      setStep("idle");
+      onNotice("Two-factor authentication disabled.");
+      await refresh();
+      await refreshUser();
+    } catch (err) {
+      onError(err instanceof Error ? err.message : t("common.requestFailed"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onRegen(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    onError(null);
+    try {
+      const result = await api.regenerateRecoveryCodes(password, code.trim());
+      setRecoveryCodes(result.recoveryCodes);
+      setPassword("");
+      setCode("");
+      setStep("recovery");
+      onNotice("New recovery codes generated — save them now.");
+      await refresh();
+    } catch (err) {
+      onError(err instanceof Error ? err.message : t("common.requestFailed"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function copyCodes() {
+    if (!recoveryCodes) return;
+    void copyText(recoveryCodes.join("\n")).then(
+      () => onNotice("Recovery codes copied."),
+      () => undefined,
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="text-secondary py-4">
+        <Spinner size="sm" className="me-2" />
+        {t("common.loading")}…
+      </div>
+    );
+  }
 
   return (
     <AdminPanelCard title={t("account.totpTitle")} icon="fa-mobile-screen" className="mb-4">
@@ -80,18 +181,36 @@ export function TwoFactorSection({
       </div>
 
       {step === "idle" && !enabled && (
-        <Button variant="primary" disabled={busy} onClick={() => void onStartSetup()}>
+        <Button variant="primary" disabled={busy} onClick={() => void startSetup()}>
           {busy ? t("account.totpStarting") : t("account.totpEnable")}
         </Button>
       )}
 
       {step === "idle" && enabled && (
         <div className="d-flex flex-wrap gap-2">
-          <Button variant="outline-secondary" size="sm" onClick={onBeginRegen}>
+          <Button
+            variant="outline-secondary"
+            size="sm"
+            onClick={() => {
+              setStep("regen");
+              setCode("");
+              setPassword("");
+              onError(null);
+            }}
+          >
             {t("account.totpNewRecovery")}
           </Button>
           {!required && (
-            <Button variant="outline-danger" size="sm" onClick={onBeginDisable}>
+            <Button
+              variant="outline-danger"
+              size="sm"
+              onClick={() => {
+                setStep("disable");
+                setCode("");
+                setPassword("");
+                onError(null);
+              }}
+            >
               {t("account.totpDisable")}
             </Button>
           )}
@@ -117,7 +236,7 @@ export function TwoFactorSection({
               </div>
             </div>
           </div>
-          <Form onSubmit={onConfirmEnable}>
+          <Form onSubmit={(e) => void confirmEnable(e)}>
             <Form.Group className="mb-3" controlId="enable-code">
               <Form.Label>{t("account.totpConfirmCode")}</Form.Label>
               <Form.Control
@@ -125,7 +244,7 @@ export function TwoFactorSection({
                 inputMode="numeric"
                 autoComplete="one-time-code"
                 value={code}
-                onChange={(e) => onCodeChange(e.target.value)}
+                onChange={(e) => setCode(e.target.value)}
                 required
                 autoFocus
               />
@@ -138,7 +257,7 @@ export function TwoFactorSection({
                 type="button"
                 variant="outline-secondary"
                 disabled={busy}
-                onClick={() => void onCancelSetup()}
+                onClick={() => void cancelSetup()}
               >
                 {t("common.cancel")}
               </Button>
@@ -149,14 +268,14 @@ export function TwoFactorSection({
 
       {step === "disable" && (
         <AdminInsetCard>
-          <Form onSubmit={onDisable}>
+          <Form onSubmit={(e) => void onDisable(e)}>
             <Form.Group className="mb-3" controlId="disable-password">
               <Form.Label>{t("common.password")}</Form.Label>
               <Form.Control
                 type="password"
                 autoComplete="current-password"
                 value={password}
-                onChange={(e) => onPasswordChange(e.target.value)}
+                onChange={(e) => setPassword(e.target.value)}
                 required
               />
             </Form.Group>
@@ -167,7 +286,7 @@ export function TwoFactorSection({
                 inputMode="numeric"
                 autoComplete="one-time-code"
                 value={code}
-                onChange={(e) => onCodeChange(e.target.value)}
+                onChange={(e) => setCode(e.target.value)}
                 required
               />
             </Form.Group>
@@ -175,7 +294,7 @@ export function TwoFactorSection({
               <Button type="submit" variant="danger" disabled={busy}>
                 {busy ? t("account.totpDisabling") : t("account.totpDisableConfirm")}
               </Button>
-              <Button type="button" variant="outline-secondary" onClick={onCancelStep}>
+              <Button type="button" variant="outline-secondary" onClick={() => setStep("idle")}>
                 {t("common.cancel")}
               </Button>
             </div>
@@ -185,7 +304,7 @@ export function TwoFactorSection({
 
       {step === "regen" && (
         <AdminInsetCard>
-          <Form onSubmit={onRegen}>
+          <Form onSubmit={(e) => void onRegen(e)}>
             <p className="small text-secondary">{t("account.totpRegenHelp")}</p>
             <Form.Group className="mb-3" controlId="regen-password">
               <Form.Label>{t("common.password")}</Form.Label>
@@ -193,7 +312,7 @@ export function TwoFactorSection({
                 type="password"
                 autoComplete="current-password"
                 value={password}
-                onChange={(e) => onPasswordChange(e.target.value)}
+                onChange={(e) => setPassword(e.target.value)}
                 required
               />
             </Form.Group>
@@ -204,7 +323,7 @@ export function TwoFactorSection({
                 inputMode="numeric"
                 autoComplete="one-time-code"
                 value={code}
-                onChange={(e) => onCodeChange(e.target.value)}
+                onChange={(e) => setCode(e.target.value)}
                 required
               />
             </Form.Group>
@@ -212,7 +331,7 @@ export function TwoFactorSection({
               <Button type="submit" variant="primary" disabled={busy}>
                 {busy ? t("account.totpGenerating") : t("account.totpGenerateCodes")}
               </Button>
-              <Button type="button" variant="outline-secondary" onClick={onCancelStep}>
+              <Button type="button" variant="outline-secondary" onClick={() => setStep("idle")}>
                 {t("common.cancel")}
               </Button>
             </div>
@@ -231,10 +350,17 @@ export function TwoFactorSection({
             ))}
           </ListGroup>
           <div className="d-flex flex-wrap gap-2">
-            <Button variant="outline-secondary" size="sm" onClick={onCopyCodes}>
+            <Button variant="outline-secondary" size="sm" onClick={copyCodes}>
               {t("account.totpCopyAll")}
             </Button>
-            <Button variant="primary" size="sm" onClick={onDoneRecovery}>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => {
+                setRecoveryCodes(null);
+                setStep("idle");
+              }}
+            >
               {t("common.done")}
             </Button>
           </div>

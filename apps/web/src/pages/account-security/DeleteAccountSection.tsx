@@ -1,43 +1,104 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button, Form } from "react-bootstrap";
+import { api } from "../../api";
+import { useAuth } from "../../auth";
 import { useI18n } from "../../i18n/react";
 import { ConfirmModal } from "../../components/ConfirmModal";
 import { AdminPanelCard } from "../../components/admin/AdminPageShell";
 
-interface SectionProps {
-  busy: boolean;
-  exportBusy: boolean;
-  onExportData: () => void;
-  onOpenDelete: () => void;
-}
+type SectionProps = {
+  onNotice: (msg: string | null) => void;
+  onError: (msg: string | null) => void;
+};
 
-export function DeleteAccountSection({
-  busy,
-  exportBusy,
-  onExportData,
-  onOpenDelete,
-}: SectionProps) {
+export function DeleteAccountSection({ onNotice, onError }: SectionProps) {
   const { t } = useI18n();
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+  const [exportBusy, setExportBusy] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteConfirm, setDeleteConfirm] = useState("");
+
+  async function onExportData() {
+    setExportBusy(true);
+    onError(null);
+    try {
+      await api.exportAccountData();
+      onNotice("Account data download started.");
+    } catch (err) {
+      onError(err instanceof Error ? err.message : t("common.requestFailed"));
+    } finally {
+      setExportBusy(false);
+    }
+  }
+
+  async function onDeleteAccount() {
+    if (deleteConfirm !== "DELETE") {
+      onError("Type DELETE to confirm account deletion.");
+      return;
+    }
+    if (!deletePassword) {
+      onError(`${t("common.required")}: ${t("common.password")}`);
+      return;
+    }
+    setDeleteBusy(true);
+    onError(null);
+    try {
+      await api.deleteAccount(deletePassword);
+      setShowDelete(false);
+      await logout();
+      navigate("/login", { replace: true });
+    } catch (err) {
+      onError(err instanceof Error ? err.message : t("common.requestFailed"));
+    } finally {
+      setDeleteBusy(false);
+    }
+  }
 
   return (
-    <AdminPanelCard
-      title={t("account.yourData")}
-      icon="fa-file-export"
-      className="account-danger-card"
-    >
-      <p className="small text-secondary mb-3">{t("account.yourDataHelp")}</p>
-      <div className="d-flex flex-wrap gap-2">
-        <Button
-          variant="outline-primary"
-          disabled={busy || exportBusy}
-          onClick={() => void onExportData()}
-        >
-          {exportBusy ? t("account.exportPreparing") : t("account.exportData")}
-        </Button>
-        <Button variant="outline-danger" disabled={busy} onClick={onOpenDelete}>
-          {t("account.deleteAccount")}
-        </Button>
-      </div>
-    </AdminPanelCard>
+    <>
+      <AdminPanelCard
+        title={t("account.yourData")}
+        icon="fa-file-export"
+        className="account-danger-card"
+      >
+        <p className="small text-secondary mb-3">{t("account.yourDataHelp")}</p>
+        <div className="d-flex flex-wrap gap-2">
+          <Button
+            variant="outline-primary"
+            disabled={exportBusy}
+            onClick={() => void onExportData()}
+          >
+            {exportBusy ? t("account.exportPreparing") : t("account.exportData")}
+          </Button>
+          <Button
+            variant="outline-danger"
+            disabled={exportBusy}
+            onClick={() => {
+              setDeletePassword("");
+              setDeleteConfirm("");
+              setShowDelete(true);
+            }}
+          >
+            {t("account.deleteAccount")}
+          </Button>
+        </div>
+      </AdminPanelCard>
+
+      <DeleteAccountModal
+        showDelete={showDelete}
+        deleteBusy={deleteBusy}
+        deletePassword={deletePassword}
+        deleteConfirm={deleteConfirm}
+        onDeletePasswordChange={setDeletePassword}
+        onDeleteConfirmChange={setDeleteConfirm}
+        onCancelDelete={() => setShowDelete(false)}
+        onConfirmDelete={() => void onDeleteAccount()}
+      />
+    </>
   );
 }
 
