@@ -4,7 +4,7 @@ Operator process + optionele test-diepte **na** afgeronde [wave 2+](enterprise-c
 
 **Enige repo-uitzondering:** load/stress test (geen realistische infra in dev/CI).
 
-Last updated: **2026-08-10** · product **v1.4.32**
+Last updated: **2026-08-10** · product **v1.4.33**
 
 ---
 
@@ -27,8 +27,8 @@ Canvas: **enterprise-code-wave3** in Cursor.
 
 **Checklist:**
 
-1. `bash scripts/sla-restore-drill.sh --backup-only` op **staging**
-2. `bash scripts/sla-secret-rotation-drill.sh` (dry-run waar mogelijk)
+1. `bash scripts/sla-restore-drill.sh --backup-only --attest` on **live** (backup + Go-live date)
+2. `bash scripts/sla-secret-rotation-drill.sh --live --attest` after manual rotation + restart
 3. Admin → Settings → Go-live — attestations invullen
 4. Log in [sla-drill-log.example.md](sla-drill-log.example.md)
 
@@ -76,6 +76,7 @@ Zie `scripts/load-test-k6-template.js` (health + login page load smoke).
 | v1.4.28 | E2c: servers-create, lifecycle, import |
 | v1.4.30 | E2c+: settings-apply, transfer, nodes-admin |
 | v1.4.31 | E5 coverage CI, E6 Playwright CI |
+| v1.4.33 | SLA drill scripts: live smoke + Go-live attest CLI |
 | v1.4.32 | W3-E5+ service tests, k6 load template, operator checklists |
 
 Detail: [enterprise-code-wave2.md](enterprise-code-wave2.md).

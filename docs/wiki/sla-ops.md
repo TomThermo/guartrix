@@ -41,7 +41,9 @@ owner rate limits — see [env-reference](env-reference.md).
 ## Backup / restore drill
 
 ```bash
-bash scripts/sla-restore-drill.sh
+bash scripts/sla-restore-drill.sh --backup-only
+# live: backup + attest Go-live date
+bash scripts/sla-restore-drill.sh --backup-only --attest
 # optional staging restore:
 # STAGING_DATABASE_URL='mysql://…' bash scripts/sla-restore-drill.sh --restore-latest
 ```
@@ -54,10 +56,20 @@ bash scripts/sla-restore-drill.sh
 ## Secret rotation drill
 
 ```bash
+# Staging / planning — checklist only
 bash scripts/sla-secret-rotation-drill.sh
+
+# Live operator — smoke checks (after you rotated secrets + restarted)
+bash scripts/sla-secret-rotation-drill.sh --live
+
+# Optional backup before rotation, then smoke + Go-live date
+bash scripts/sla-secret-rotation-drill.sh --live --backup-first --attest
+
+# Post-restart verification only
+bash scripts/sla-secret-rotation-drill.sh --smoke-only
 ```
 
-Record date under **Go-live → Last secret rotation drill**.
+The script **does not rotate secrets** — you change values in `.env`, Admin → Settings, and providers manually. `--attest` writes today's date to `data/panel-settings.json` (`slaSecretRotationAt`) when smoke checks pass; same field as **Go-live → Last secret rotation drill**.
 
 ## Capacity review
 

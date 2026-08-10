@@ -4,9 +4,21 @@
 #   bash scripts/sla-restore-drill.sh
 #   bash scripts/sla-restore-drill.sh --backup-only
 #   bash scripts/sla-restore-drill.sh --restore-latest   # needs docker MySQL root or STAGING grants
+#   bash scripts/sla-restore-drill.sh --backup-only --attest   # live: backup + Go-live date
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
+
+ATTEST=0
+BACKUP_ONLY=0
+RESTORE_LATEST=0
+for arg in "$@"; do
+  case "$arg" in
+    --attest) ATTEST=1 ;;
+    --backup-only) BACKUP_ONLY=1 ;;
+    --restore-latest) RESTORE_LATEST=1 ;;
+  esac
+done
 
 # shellcheck source=./lib.sh
 if [[ -f "$ROOT/scripts/lib.sh" ]]; then
@@ -26,8 +38,12 @@ else
   exit 1
 fi
 
-if [[ "${1:-}" == "--backup-only" ]]; then
+if [[ "$BACKUP_ONLY" -eq 1 ]]; then
   echo "[sla-restore-drill] Backup-only mode done."
+  if [[ "$ATTEST" -eq 1 ]]; then
+    ROOT="$ROOT" DATA_DIR="$ROOT/data" node "$ROOT/scripts/lib/panel-settings-attest.mjs" slaRestoreDrillAt
+    echo "[sla-restore-drill] Attestation saved — Admin → Settings → Go-live → restore drill."
+  fi
   exit 0
 fi
 
@@ -38,7 +54,7 @@ if [[ -z "${LATEST}" ]]; then
   exit 1
 fi
 
-if [[ "${1:-}" != "--restore-latest" ]]; then
+if [[ "$RESTORE_LATEST" -eq 0 ]]; then
   cat <<'EOF'
 
 [sla-restore-drill] Checklist:
@@ -84,4 +100,9 @@ else
 fi
 
 echo
-echo "[sla-restore-drill] Done. Attest the date under Admin → Go-live → restore drill."
+if [[ "$ATTEST" -eq 1 ]]; then
+  ROOT="$ROOT" DATA_DIR="$ROOT/data" node "$ROOT/scripts/lib/panel-settings-attest.mjs" slaRestoreDrillAt
+  echo "[sla-restore-drill] Attestation saved — Admin → Settings → Go-live → restore drill."
+else
+  echo "[sla-restore-drill] Done. Attest the date under Admin → Go-live → restore drill (or re-run with --attest)."
+fi

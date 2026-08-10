@@ -3,6 +3,12 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.33] — 2026-08-10
+
+### Added
+- SLA secret rotation drill: `--live` smoke checks, `--backup-first`, `--attest` → Go-live `slaSecretRotationAt`.
+- Shared `scripts/lib/panel-settings-attest.mjs`; restore drill `--backup-only --attest`.
+
 ## [1.4.32] — 2026-08-10
 
 ### Added
