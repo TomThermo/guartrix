@@ -513,20 +513,20 @@
 }
 
 .mail-template-editor__logo-preview {
-  width: 7rem;
-  height: 4.5rem;
+  width: 10rem;
+  min-height: 5rem;
+  height: auto;
+  padding: 0.55rem;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   border: 1px solid var(--bh-border);
   background: var(--bh-bg-deep);
   flex: 0 0 auto;
-  overflow: hidden;
+  overflow: auto;
 }
 
 .mail-template-editor__logo-img {
-  max-width: 100%;
-  max-height: 100%;
   object-fit: contain;
   display: block;
 }
@@ -568,6 +568,29 @@
 .mail-template-editor__logo-url-row .btn {
   border-radius: 0 !important;
   flex: 0 0 auto;
+}
+
+.mail-template-editor__logo-display {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
+  gap: 0.5rem 0.65rem;
+  align-items: end;
+  margin-top: 0.75rem;
+}
+
+.mail-template-editor__logo-display .mail-template-editor__input,
+.mail-template-editor__select--compact {
+  max-width: none;
+  width: 100%;
+}
+
+.mail-template-editor__logo-display-actions {
+  display: flex;
+  align-items: end;
+}
+
+.mail-template-editor__logo-display-actions .btn {
+  border-radius: 0 !important;
 }
 
 .mail-template-editor__code {

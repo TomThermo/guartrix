@@ -89,6 +89,17 @@ export function applyPanelSettings(stored: PanelSettingsStored): void {
   if (stored.appFavicon !== undefined) {
     config.appFavicon = String(stored.appFavicon).trim() || "/favicon.ico";
   }
+  if (stored.mailLogoHeight !== undefined) {
+    const n = Math.round(Number(stored.mailLogoHeight));
+    if (Number.isFinite(n)) config.mailLogoHeight = Math.min(128, Math.max(16, n));
+  }
+  if (stored.mailLogoMaxWidth !== undefined) {
+    const n = Math.round(Number(stored.mailLogoMaxWidth));
+    if (Number.isFinite(n)) config.mailLogoMaxWidth = Math.min(560, Math.max(40, n));
+  }
+  if (stored.mailLogoAlign !== undefined) {
+    config.mailLogoAlign = stored.mailLogoAlign === "center" ? "center" : "left";
+  }
   if (stored.debugMode !== undefined) {
     config.debugMode = Boolean(stored.debugMode);
   }

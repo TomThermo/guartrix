@@ -31,6 +31,9 @@ export type PanelSettings = {
   appName: string;
   appLogo: string;
   appFavicon: string;
+  mailLogoHeight: number;
+  mailLogoMaxWidth: number;
+  mailLogoAlign: "left" | "center";
   debugMode: boolean;
   unitPrefix: "binary" | "decimal";
   navigationType: "sidebar" | "topbar" | "mixed";
@@ -89,6 +92,9 @@ export type PanelSettingsPatch = {
   appName?: string;
   appLogo?: string;
   appFavicon?: string;
+  mailLogoHeight?: number;
+  mailLogoMaxWidth?: number;
+  mailLogoAlign?: "left" | "center";
   debugMode?: boolean;
   unitPrefix?: "binary" | "decimal";
   navigationType?: "sidebar" | "topbar" | "mixed";

@@ -11,12 +11,12 @@
       <td align="center">
         <table role="presentation" width="560" cellspacing="0" cellpadding="0" style="max-width:560px;width:100%;background:#ffffff;border:1px solid #d7dde5;">
           <tr>
-            <td style="padding:18px 24px;border-bottom:1px solid #d7dde5;">
+            <td align="{{logoAlign}}" style="padding:18px 24px;border-bottom:1px solid #d7dde5;">
               {{#logo}}
-              <img src="{{logoUrl}}" alt="{{appName}}" height="32" style="display:block;height:32px;width:auto;border:0;" />
+              <img src="{{logoUrl}}" alt="{{appName}}" height="{{logoHeight}}" style="display:block;height:{{logoHeight}}px;width:auto;max-width:{{logoMaxWidth}}px;border:0;{{#logoAlignCenter}}margin-left:auto;margin-right:auto;{{/logoAlignCenter}}" />
               {{/logo}}
               {{^logo}}
-              <div style="font-size:18px;font-weight:700;letter-spacing:-0.01em;color:#111827;">{{appName}}</div>
+              <div style="font-size:18px;font-weight:700;letter-spacing:-0.01em;color:#111827;{{#logoAlignCenter}}text-align:center;{{/logoAlignCenter}}">{{appName}}</div>
               {{/logo}}
             </td>
           </tr>

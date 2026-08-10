@@ -76,6 +76,10 @@ export function MailTemplatesEditor({
   const [appLogo, setAppLogo] = useState("");
   const [logoUrlDraft, setLogoUrlDraft] = useState("");
   const [brandingLogoUploaded, setBrandingLogoUploaded] = useState(false);
+  const [mailLogoHeight, setMailLogoHeight] = useState(32);
+  const [mailLogoMaxWidth, setMailLogoMaxWidth] = useState(200);
+  const [mailLogoAlign, setMailLogoAlign] = useState<"left" | "center">("left");
+  const [logoSettingsDirty, setLogoSettingsDirty] = useState(false);
 
   const isLayout = target === "layout";
   const htmlParts = splitAroundContent(html);
@@ -92,6 +96,10 @@ export function MailTemplatesEditor({
       setAppLogo(settings.appLogo || "");
       setLogoUrlDraft(settings.appLogo || "");
       setBrandingLogoUploaded(Boolean(settings.brandingLogoUploaded));
+      setMailLogoHeight(settings.mailLogoHeight || 32);
+      setMailLogoMaxWidth(settings.mailLogoMaxWidth || 200);
+      setMailLogoAlign(settings.mailLogoAlign === "center" ? "center" : "left");
+      setLogoSettingsDirty(false);
       return data;
     } catch (err) {
       onError(err instanceof Error ? err.message : t("adminSettings.mailTemplatesLoadFailed"));
@@ -283,6 +291,28 @@ export function MailTemplatesEditor({
     }
   }
 
+  async function onSaveLogoDisplay() {
+    onBusy(true);
+    onError(null);
+    onNotice(null);
+    try {
+      const settings = await adminSettingsApi.updatePanelSettings({
+        mailLogoHeight,
+        mailLogoMaxWidth,
+        mailLogoAlign,
+      });
+      setMailLogoHeight(settings.mailLogoHeight || 32);
+      setMailLogoMaxWidth(settings.mailLogoMaxWidth || 200);
+      setMailLogoAlign(settings.mailLogoAlign === "center" ? "center" : "left");
+      setLogoSettingsDirty(false);
+      onNotice(t("adminSettings.mailLogoDisplaySaved"));
+    } catch (err) {
+      onError(err instanceof Error ? err.message : t("adminSettings.mailLogoDisplaySaveFailed"));
+    } finally {
+      onBusy(false);
+    }
+  }
+
   async function onDeleteLogo() {
     onBusy(true);
     onError(null);
@@ -325,7 +355,18 @@ export function MailTemplatesEditor({
       <div className="mail-template-editor__logo">
         <div className="mail-template-editor__logo-preview">
           {appLogo ? (
-            <img src={appLogo} alt="" className="mail-template-editor__logo-img" />
+            <img
+              src={appLogo}
+              alt=""
+              className="mail-template-editor__logo-img"
+              style={{
+                height: `${mailLogoHeight}px`,
+                maxWidth: `${mailLogoMaxWidth}px`,
+                width: "auto",
+                marginLeft: mailLogoAlign === "center" ? "auto" : undefined,
+                marginRight: mailLogoAlign === "center" ? "auto" : undefined,
+              }}
+            />
           ) : (
             <span className="mail-template-editor__logo-empty">{t("adminSettings.mailLogoEmpty")}</span>
           )}
@@ -382,6 +423,65 @@ export function MailTemplatesEditor({
               </Button>
             </div>
           </label>
+          <div className="mail-template-editor__logo-display">
+            <label className="mail-template-editor__field mb-0">
+              <span className="mail-template-editor__label">{t("adminSettings.mailLogoHeight")}</span>
+              <input
+                className="mail-template-editor__input"
+                type="number"
+                min={16}
+                max={128}
+                value={mailLogoHeight}
+                disabled={busy || loading}
+                onChange={(e) => {
+                  setMailLogoHeight(Number(e.target.value) || 32);
+                  setLogoSettingsDirty(true);
+                }}
+              />
+            </label>
+            <label className="mail-template-editor__field mb-0">
+              <span className="mail-template-editor__label">{t("adminSettings.mailLogoMaxWidth")}</span>
+              <input
+                className="mail-template-editor__input"
+                type="number"
+                min={40}
+                max={560}
+                value={mailLogoMaxWidth}
+                disabled={busy || loading}
+                onChange={(e) => {
+                  setMailLogoMaxWidth(Number(e.target.value) || 200);
+                  setLogoSettingsDirty(true);
+                }}
+              />
+            </label>
+            <label className="mail-template-editor__field mb-0">
+              <span className="mail-template-editor__label">{t("adminSettings.mailLogoAlign")}</span>
+              <Form.Select
+                className="mail-template-editor__select mail-template-editor__select--compact"
+                value={mailLogoAlign}
+                disabled={busy || loading}
+                onChange={(e) => {
+                  setMailLogoAlign(e.target.value === "center" ? "center" : "left");
+                  setLogoSettingsDirty(true);
+                }}
+              >
+                <option value="left">{t("adminSettings.mailLogoAlignLeft")}</option>
+                <option value="center">{t("adminSettings.mailLogoAlignCenter")}</option>
+              </Form.Select>
+            </label>
+            <div className="mail-template-editor__logo-display-actions">
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                disabled={busy || loading || !logoSettingsDirty}
+                onClick={() => void onSaveLogoDisplay()}
+              >
+                {t("adminSettings.mailLogoDisplaySave")}
+              </Button>
+            </div>
+          </div>
+          <p className="mail-template-editor__help mb-0 mt-2">{t("adminSettings.mailLogoDisplayHelp")}</p>
         </div>
       </div>
 

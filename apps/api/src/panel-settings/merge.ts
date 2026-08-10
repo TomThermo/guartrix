@@ -131,6 +131,19 @@ export function mergePanelSettingsPatch(
   if (patch.appFavicon !== undefined) {
     next.appFavicon = String(patch.appFavicon).trim().slice(0, 500) || "/favicon.ico";
   }
+  if (patch.mailLogoHeight !== undefined) {
+    const n = Math.round(Number(patch.mailLogoHeight));
+    if (!Number.isFinite(n)) throw new Error("mailLogoHeight must be a number");
+    next.mailLogoHeight = Math.min(128, Math.max(16, n));
+  }
+  if (patch.mailLogoMaxWidth !== undefined) {
+    const n = Math.round(Number(patch.mailLogoMaxWidth));
+    if (!Number.isFinite(n)) throw new Error("mailLogoMaxWidth must be a number");
+    next.mailLogoMaxWidth = Math.min(560, Math.max(40, n));
+  }
+  if (patch.mailLogoAlign !== undefined) {
+    next.mailLogoAlign = patch.mailLogoAlign === "center" ? "center" : "left";
+  }
   if (patch.debugMode !== undefined) {
     next.debugMode = Boolean(patch.debugMode);
   }

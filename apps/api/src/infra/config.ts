@@ -96,6 +96,14 @@ export const config = {
   appLogo: process.env.APP_LOGO?.trim() || "",
   /** Path or URL for favicon (empty = /favicon.ico). */
   appFavicon: process.env.APP_FAVICON?.trim() || "/favicon.ico",
+  /** Mail header logo height in px (Admin → Mail templates). */
+  mailLogoHeight: Math.min(128, Math.max(16, Number(process.env.MAIL_LOGO_HEIGHT) || 32)),
+  /** Mail header logo max-width in px. */
+  mailLogoMaxWidth: Math.min(560, Math.max(40, Number(process.env.MAIL_LOGO_MAX_WIDTH) || 200)),
+  /** Mail header logo alignment. */
+  mailLogoAlign: (process.env.MAIL_LOGO_ALIGN?.trim().toLowerCase() === "center"
+    ? "center"
+    : "left") as "left" | "center",
   /** Extra verbose errors for operators (not a full Laravel-style debug dump). */
   debugMode:
     process.env.PANEL_DEBUG === "1" ||

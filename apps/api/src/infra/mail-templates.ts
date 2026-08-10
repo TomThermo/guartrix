@@ -67,11 +67,18 @@ function brandingVars(): MailTemplateVars {
   const fromAddress = fromRaw.includes("<")
     ? (fromRaw.match(/<([^>]+)>/)?.[1] ?? fromRaw)
     : fromRaw;
+  const logoHeight = config.mailLogoHeight || 32;
+  const logoMaxWidth = config.mailLogoMaxWidth || 200;
+  const logoAlign = config.mailLogoAlign === "center" ? "center" : "left";
   return {
     appName: config.appName || "Guartrix",
     panelUrl,
     logoUrl,
     logo: Boolean(logoUrl),
+    logoHeight,
+    logoMaxWidth,
+    logoAlign,
+    logoAlignCenter: logoAlign === "center",
     fromAddress,
   };
 }

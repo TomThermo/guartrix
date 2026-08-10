@@ -3,6 +3,11 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.48] — 2026-08-10
+
+### Added
+- Admin Mail templates: logo **height**, **max width**, and **alignment** settings (applied in mail layout via `{{logoHeight}}` / `{{logoMaxWidth}}` / `{{logoAlign}}`).
+
 ## [1.4.47] — 2026-08-10
 
 ### Added
