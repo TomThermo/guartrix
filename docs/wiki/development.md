@@ -102,6 +102,25 @@ The web UI uses a tiny custom i18n layer (no i18next):
 
 UI chrome across pages, server tabs/panels, and modals is keyed in both locale files. Call `t("section.key")` where needed; prefer `{name}` placeholders via `t(key, { name })`. Legal page bodies stay English; Minecraft property/permission technical labels often stay English too. When adding strings: update **both** `en.ts` and `nl.ts`, then wire `useI18n()` / `t()`.
 
+## File naming glossary
+
+Use these conventions for new UI and API files:
+
+| Pattern | Meaning | Example |
+|---------|---------|---------|
+| `kebab-case/` folders | Feature area; one folder per surface | `addon-panel/`, `admin-servers/` |
+| `PascalCase.tsx` | React components, modals, panels | `AddonPanel.tsx`, `NodesPage.tsx` |
+| `*Page.tsx` | Route entry (thin composition shell) | `DashboardPage.tsx` → wires hooks + panels |
+| `*Panel.tsx` | Server tab or settings section | `BackupList.tsx` lives under `backup/` |
+| `use*.ts` | Data/effects hooks colocated with feature | `useDashboardPage.ts` |
+| `*.test.ts` | Unit tests beside the module under test | `safe-url.test.ts` |
+| `apps/api/src/routes/**` | HTTP registration only — delegate to `services/` | `routes/account/profile.ts` |
+| `apps/api/src/services/**` | Use-cases callable without Fastify | `account-profile.ts` |
+| `apps/api/src/infra/**` | Config, DB, Redis, mail, metrics | `infra/db.ts` |
+| `apps/api/src/lib/**` | App bootstrap helpers | `lib/app-build.ts` |
+
+Pages stay under **~250 LOC** (composition only). Oversized legacy files are tracked by `npm run check:size-budgets`; opt out with `size-budget: ignore` and a one-line reason.
+
 ## Workspace tips
 
 - Shared types: `packages/shared` — rebuild when changing exports (`npm run build -w @guartrix/shared`).

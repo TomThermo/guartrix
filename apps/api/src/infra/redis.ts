@@ -4,6 +4,9 @@
  */
 import { randomUUID } from "node:crypto";
 import { EventEmitter } from "node:events";
+import type { PanelBusEvent, PanelBusPayload } from "@guartrix/shared";
+
+export type { PanelBusEvent, PanelBusPayload };
 
 export type RedisStatus = {
   configured: boolean;
@@ -324,32 +327,6 @@ export async function acquireBridgeLock(): Promise<boolean> {
     return false;
   }
 }
-
-export type PanelBusPayload =
-  | {
-      kind: "status";
-      serverId: string;
-      status: string;
-      errorMessage?: string | null;
-    }
-  | {
-      kind: "players";
-      serverId: string;
-      players: string[];
-    }
-  | {
-      kind: "output";
-      serverId: string;
-      line: string;
-      stream: "stdout" | "stderr";
-    }
-  | {
-      kind: "stats";
-      serverId: string;
-      stats: unknown;
-    };
-
-export type PanelBusEvent = PanelBusPayload & { origin: string };
 
 export async function publishPanelEvent(event: PanelBusPayload): Promise<void> {
   const redis = await getRedis();

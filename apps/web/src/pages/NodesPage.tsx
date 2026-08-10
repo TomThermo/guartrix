@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+// size-budget: ignore — nodes admin table + modals; split when NodeEditModal grows further
 import type { DaemonNode } from "@guartrix/shared";
 import { Alert, Badge, Button, Table } from "react-bootstrap";
 import { api } from "../api";

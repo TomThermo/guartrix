@@ -72,6 +72,10 @@ Defines how short-lived daemon JWTs are signed and verified, including claim exp
 
 These are smaller shared policy or formatting helpers that still affect externally visible behavior (including markdown/UI link host allowlists shared with API SSRF checks).
 
+### Daemon ↔ panel events
+
+`types/daemon-events.ts` — typed multiplexed daemon `/events` WebSocket payloads (`status`, `players`, `output`, `stats`, `hello`, `error`) plus `PanelBusPayload` for Redis fan-out between API replicas. Parse with `parseDaemonEventMessage()` on the bridge ingress.
+
 ## Contract boundaries
 
 The shared package is not a replacement for the full DB schema or route layer. Instead it expresses the reusable parts of the public/internal contract:

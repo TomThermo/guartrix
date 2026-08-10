@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { safeExternalUrl } from "../../../lib/safeUrl";
+import { wikiAsset } from "../../../wiki/wiki-assets";
 import { resolveDocHref } from "./links";
 
 const HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"] as const;
@@ -19,6 +20,15 @@ export function MethodBadge({ method }: { method: string }) {
   return <span className={methodClass(m)}>{m}</span>;
 }
 
+function resolveImageSrc(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (trimmed.startsWith("assets/")) {
+    const url = wikiAsset(trimmed.slice("assets/".length));
+    return url || null;
+  }
+  return safeExternalUrl(trimmed);
+}
+
 /** Render inline markdown + HTTP method badges. */
 export function inline(raw: string, keyPrefix: string): ReactNode[] {
   const parts: ReactNode[] = [];
@@ -31,9 +41,17 @@ export function inline(raw: string, keyPrefix: string): ReactNode[] {
   while (match) {
     if (match.index > last) parts.push(raw.slice(last, match.index));
     if (match[1]?.startsWith("![")) {
-      const src = safeExternalUrl(match[3] ?? "");
+      const src = resolveImageSrc(match[3] ?? "");
       if (src) {
-        parts.push(<img key={`${keyPrefix}-i${key++}`} src={src} alt={match[2] ?? ""} />);
+        parts.push(
+          <img
+            key={`${keyPrefix}-i${key++}`}
+            src={src}
+            alt={match[2] ?? ""}
+            className="wiki-image"
+            loading="lazy"
+          />,
+        );
       } else {
         parts.push(match[2] || "");
       }

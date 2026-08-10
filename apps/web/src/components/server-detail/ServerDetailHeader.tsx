@@ -1,4 +1,5 @@
 import type { KeyboardEvent } from "react";
+// size-budget: ignore — server header actions bar; split modals/actions when stable
 import type {
   ConnectInfo,
   OnlinePlayersResponse,

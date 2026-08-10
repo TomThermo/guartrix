@@ -1,5 +1,11 @@
 import type { FastifyInstance } from "fastify";
-import type { ConsoleCommand, ConsoleMessage, ServerStatus } from "@guartrix/shared";
+import type {
+  ConsoleCommand,
+  ConsoleMessage,
+  DaemonEventMessage,
+  ServerStats,
+  ServerStatus,
+} from "@guartrix/shared";
 import { processManager, resourceMonitor } from "@guartrix/node-agent";
 import { daemonConfig } from "../config.js";
 import { isDaemonAuthorized } from "../auth.js";
@@ -66,32 +72,35 @@ export function registerWebSocketRoutes(app: FastifyInstance): void {
 
   app.get("/events", { websocket: true }, (socket, request) => {
     if (!isDaemonAuthorized(request)) {
-      sendJson(socket, { type: "error", message: "Unauthorized" });
+      sendJson(socket, { type: "error", message: "Unauthorized" } satisfies DaemonEventMessage);
       socket.close();
       return;
     }
 
-    sendJson(socket, { type: "hello", daemonVersion: daemonConfig.version });
+    sendJson(socket, {
+      type: "hello",
+      daemonVersion: daemonConfig.version,
+    } satisfies DaemonEventMessage);
 
-    const onStatus = (serverId: string, status: string, errorMessage: string | null) => {
+    const onStatus = (serverId: string, status: ServerStatus, errorMessage: string | null) => {
       sendJson(socket, {
         type: "status",
         serverId,
         status,
         errorMessage,
-      });
+      } satisfies DaemonEventMessage);
     };
 
     const onPlayers = (serverId: string, players: string[]) => {
-      sendJson(socket, { type: "players", serverId, players });
+      sendJson(socket, { type: "players", serverId, players } satisfies DaemonEventMessage);
     };
 
     const onOutput = (serverId: string, line: string, stream: "stdout" | "stderr") => {
-      sendJson(socket, { type: "output", serverId, line, stream });
+      sendJson(socket, { type: "output", serverId, line, stream } satisfies DaemonEventMessage);
     };
 
-    const onStats = (serverId: string, stats: unknown) => {
-      sendJson(socket, { type: "stats", serverId, stats });
+    const onStats = (serverId: string, stats: ServerStats) => {
+      sendJson(socket, { type: "stats", serverId, stats } satisfies DaemonEventMessage);
     };
 
     processManager.on("status", onStatus);

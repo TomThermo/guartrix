@@ -3,6 +3,11 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.23] — 2026-08-10
+
+### Changed
+- Enterprise-split P2: wiki markdown embed from docs/wiki (W5); daemon event DTOs in shared (C4); file naming glossary (N2); file-size budgets (Q2); service-layer tests (Q3).
+
 ## [1.4.22] — 2026-08-10
 
 ### Changed

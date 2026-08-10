@@ -24,6 +24,8 @@
     "check:auth-imports": "node scripts/check-auth-crypto-imports.mjs",
     "check:boundaries": "depcruise --config .dependency-cruiser.cjs apps/web/src apps/api/src",
     "check:openapi": "node scripts/check-openapi-coverage.mjs && node scripts/sync-openapi-server-schemas.mjs --check",
+    "check:size-budgets": "node scripts/check-file-size-budgets.mjs",
+    "check:wiki-markdown": "node scripts/check-wiki-markdown.mjs",
     "sync:openapi-schemas": "node scripts/sync-openapi-server-schemas.mjs",
     "fa:subset": "node scripts/fa-subset-icons.mjs",
     "bundle:daemon": "node scripts/bundle-daemon-for-nodes.mjs"
@@ -40,5 +42,5 @@
     "typescript": "^5.8.2",
     "vitest": "^3.2.7"
   },
-  "version": "1.4.22"
+  "version": "1.4.23"
 }

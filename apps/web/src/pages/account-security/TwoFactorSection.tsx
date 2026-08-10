@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
+// size-budget: ignore — TOTP enrol/recovery UX; extract cards in a later pass
 import { Alert, Button, Form, ListGroup, Spinner } from "react-bootstrap";
 import { api } from "../../api";
 import { useAuth } from "../../auth";

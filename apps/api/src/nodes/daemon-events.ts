@@ -1,5 +1,10 @@
 import WebSocket from "ws";
-import type { NodeStatus, ServerStatus, ServerStats } from "@guartrix/shared";
+import type { NodeStatus, ServerStatus } from "@guartrix/shared";
+import {
+  isDaemonEventServerMessage,
+  parseDaemonEventMessage,
+  type PanelBusEvent,
+} from "@guartrix/shared";
 import { recordActivity } from "../activity-log.js";
 import { daemonWsAuthorization, daemonWsUrl, getNodeToken } from "./daemon-client.js";
 import { prisma } from "../db.js";
@@ -9,7 +14,6 @@ import {
   isRedisEnabled,
   onPanelBusEvent,
   startPanelEventBus,
-  type PanelBusEvent,
 } from "../redis.js";
 
 type Bridge = {
@@ -133,7 +137,7 @@ function applyBusEvent(event: PanelBusEvent): void {
       fromBus: true,
     });
   } else if (event.kind === "stats") {
-    processManager.applyStats(event.serverId, event.stats as ServerStats, { fromBus: true });
+    processManager.applyStats(event.serverId, event.stats, { fromBus: true });
   }
 }
 
@@ -317,24 +321,15 @@ async function connectBridge(bridge: Bridge): Promise<void> {
 
   socket.on("message", (raw) => {
     try {
-      const msg = JSON.parse(String(raw)) as {
-        type?: string;
-        serverId?: string;
-        status?: ServerStatus;
-        errorMessage?: string | null;
-        players?: string[];
-        line?: string;
-        stream?: "stdout" | "stderr";
-        stats?: import("@guartrix/shared").ServerStats;
-      };
-      if (!msg.type || !msg.serverId) return;
-      if (msg.type === "status" && msg.status) {
+      const msg = parseDaemonEventMessage(JSON.parse(String(raw)));
+      if (!msg || !isDaemonEventServerMessage(msg)) return;
+      if (msg.type === "status") {
         processManager.applyStatus(msg.serverId, msg.status, msg.errorMessage);
-      } else if (msg.type === "players" && Array.isArray(msg.players)) {
+      } else if (msg.type === "players") {
         processManager.applyPlayers(msg.serverId, msg.players);
-      } else if (msg.type === "output" && typeof msg.line === "string") {
-        processManager.applyOutput(msg.serverId, msg.line, msg.stream ?? "stdout");
-      } else if (msg.type === "stats" && msg.stats) {
+      } else if (msg.type === "output") {
+        processManager.applyOutput(msg.serverId, msg.line, msg.stream);
+      } else if (msg.type === "stats") {
         processManager.applyStats(msg.serverId, msg.stats);
       }
     } catch {

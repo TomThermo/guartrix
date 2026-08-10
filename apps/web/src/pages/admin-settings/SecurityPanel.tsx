@@ -1,4 +1,5 @@
 import { Button, Col, Form, Row } from "react-bootstrap";
+// size-budget: ignore — admin security form cluster; split when adding more panels
 import type { PanelSettings } from "../../api";
 import { AdminInsetCard } from "../../components/admin/AdminPageShell";
 import { useI18n } from "../../i18n/react";

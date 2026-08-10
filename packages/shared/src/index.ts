@@ -4,6 +4,7 @@ export * from "./types/nodes.js";
 export * from "./types/databases.js";
 export * from "./types/schedules.js";
 export * from "./types/files-stats.js";
+export * from "./types/daemon-events.js";
 
 export * from "./permissions.js";
 export * from "./java.js";

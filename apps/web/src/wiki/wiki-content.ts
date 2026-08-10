@@ -4,14 +4,23 @@ import { internalsArticles } from "./articles/internals";
 import { usingPanelArticles } from "./articles/using-panel";
 import { operationsArticles } from "./articles/operations";
 import { gettingStartedArticles } from "./articles/getting-started";
+import { wikiMarkdownForSource } from "./wiki-md";
 
-export const wikiArticles: WikiArticle[] = [
+function attachMarkdown(articles: WikiArticle[]): WikiArticle[] {
+  return articles.map((article) => {
+    const markdown = wikiMarkdownForSource(article.sourcePath) ?? article.markdown;
+    if (!markdown?.trim()) return article;
+    return { ...article, markdown, sections: [] };
+  });
+}
+
+export const wikiArticles: WikiArticle[] = attachMarkdown([
   ...overviewArticles,
   ...internalsArticles,
   ...usingPanelArticles,
   ...operationsArticles,
   ...gettingStartedArticles,
-];
+]);
 
 export const wikiArticlesBySlug = new Map(wikiArticles.map((article) => [article.slug, article]));
 
