@@ -24,7 +24,7 @@ import { linkPendingSubUsers } from "../../servers/server-access.js";
 import { consumeRecoveryCode, verifyTotp } from "../../auth/totp.js";
 import { registerSessionPasswordRoutes } from "./session-password.js";
 import { registerSessionRegisterRoutes } from "./session-register.js";
-import { findUser, updateUser } from "../../repositories/users.js";
+import { findUser, updateUser } from "../../services/users.js";
 
 const LOGIN_RATE_WINDOW_MS = 15 * 60_000;
 const LOGIN_RATE_MAX = 20;

@@ -5,7 +5,7 @@ Formerly called “roadmap”; same file, clearer name.
 
 **Scale (100n/1000c):** [docs/scale-100n-1000c-roadmap.md](scale-100n-1000c-roadmap.md) · **Live:** [guartrix.com](https://guartrix.com) · **Wiki:** [docs/wiki/README.md](wiki/README.md) · **History:** [CHANGELOG.md](../CHANGELOG.md)
 
-Last updated: **2026-08-10** · product **v1.4.24**
+Last updated: **2026-08-10** · product **v1.4.28**
 
 ---
 
@@ -19,7 +19,8 @@ Last updated: **2026-08-10** · product **v1.4.24**
 | Sprint 10 — SaaS / SLA track | ✅ **1.1.2** (Go-live UI, BullMQ, `/api/v1`, peer MySQL, CI) |
 | Sprint 11 — SaaS harden | ✅ **1.2.0** (HA flag, peer-only transfer, owner limits, ops drills, CI) |
 | Customer go-live (webhook/SMTP/Mollie) | Their install — Admin → Settings → Go-live |
-| P2 — eggs/nests, Redis Cluster/Sentinel | Optional / later |
+| Enterprise code wave 2+ (structure, CI, services) | ✅ **1.4.28** ([wave 2 wiki](wiki/enterprise-code-wave2.md)) |
+| Enterprise code wave 3 (tests, e2e, SLA, pentest) | 🔄 Active backlog ([wave 3 wiki](wiki/enterprise-code-wave3.md)) |
 
 ---
 
@@ -41,7 +42,9 @@ Last updated: **2026-08-10** · product **v1.4.24**
 
 Optional **P2** (eggs/nests, Redis Cluster/Sentinel). Webhook, SMTP, and Mollie are **customer setup** after install.
 
-**Not a product backlog item for agents:** external pentest execution and counsel-signed SLAs are **operator/customer process only** (templates + Go-live attestations exist; see [sla-ops.md](wiki/sla-ops.md) · [pentest-scope.md](wiki/pentest-scope.md)). Do not treat them as unfinished Guartrix engineering work.
+**Enterprise wave 3** (active): Vitest coverage in CI, Playwright e2e, operator SLA drills, external pentest prep — see [enterprise-code-wave3.md](wiki/enterprise-code-wave3.md). Load/stress testing remains operator-only (blocked in cloud).
+
+**Operator process (not agent backlog):** external pentest execution and counsel-signed SLAs use wiki templates + Go-live attestations ([sla-ops.md](wiki/sla-ops.md) · [pentest-scope.md](wiki/pentest-scope.md)).
 
 ---
 

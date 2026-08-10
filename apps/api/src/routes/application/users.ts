@@ -17,7 +17,7 @@ import {
 import { logActivity } from "../../activity-log.js";
 import { sendZodError } from "../../http-error.js";
 import { toAppUser } from "./helpers.js";
-import { countUsers, createUser, deleteUser, findManyUsers, findUser, updateUser } from "../../repositories/users.js";
+import { countUsers, createUser, deleteUser, findManyUsers, findUser, updateUser } from "../../services/users.js";
 
 /** Minting/promoting ADMIN needs a full Application key (`*`), not users.write alone. */
 function canAssignAdminRole(scopes: readonly string[]): boolean {

@@ -1,7 +1,8 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { requireApplication } from "../../auth/application-auth.js";
-import { countActivityEvents, findManyActivityEvents } from "../../repositories/activity-events.js";
+import { listActivityPage } from "../../services/admin-activity.js";
+import type { ActivityEventWhereInput } from "../../services/activity-events.js";
 
 export function registerApplicationActivityRoutes(app: FastifyInstance): void {
   app.get("/api/application/activity", async (request, reply) => {
@@ -19,32 +20,13 @@ export function registerApplicationActivityRoutes(app: FastifyInstance): void {
       return reply.status(400).send({ error: parsed.error.flatten() });
     }
     const { offset, limit, q, serverId, userId } = parsed.data;
-    const where: {
-      serverId?: string;
-      userId?: string;
-      OR?: Array<{ action?: { contains: string }; actorName?: { contains: string } }>;
-    } = {};
+    const where: ActivityEventWhereInput = {};
     if (serverId) where.serverId = serverId;
     if (userId) where.userId = userId;
     if (q?.trim()) {
       const term = q.trim();
       where.OR = [{ action: { contains: term } }, { actorName: { contains: term } }];
     }
-    const [total, rows] = await Promise.all([
-      countActivityEvents({ where }),
-      findManyActivityEvents({
-        where,
-        orderBy: { createdAt: "desc" },
-        skip: offset,
-        take: limit,
-      }),
-    ]);
-    const { toActivityRecord } = await import("../../activity-log.js");
-    return {
-      total,
-      offset,
-      limit,
-      events: rows.map(toActivityRecord),
-    };
+    return listActivityPage(where, { offset, limit });
   });
 }

@@ -2,13 +2,17 @@ import { createHash, randomBytes, scryptSync } from "node:crypto";
 import type { FastifyRequest } from "fastify";
 import type { Server } from "@prisma/client";
 import { nanoid } from "nanoid";
-import { z } from "zod";
 import {
-  SERVER_PERMISSIONS,
   type AuthUser,
   type CreateSubUserResponse,
   type ServerSubUser,
 } from "@guartrix/shared";
+import {
+  createSubUserSchema,
+  updateSubUserSchema,
+  type CreateSubUserInput,
+  type UpdateSubUserInput,
+} from "@guartrix/shared/schemas/account";
 import { logActivity } from "../activity-log.js";
 import { config } from "../config.js";
 import { prisma } from "../db.js";
@@ -82,26 +86,12 @@ export function serializeSubUser(row: {
   };
 }
 
-const permsSchema = z
-  .array(z.string())
-  .max(SERVER_PERMISSIONS.length)
-  .transform((arr) =>
-    arr.filter((p): p is (typeof SERVER_PERMISSIONS)[number] =>
-      (SERVER_PERMISSIONS as readonly string[]).includes(p),
-    ),
-  );
-
-export const createSubUserSchema = z.object({
-  email: z.string().email().max(255),
-  permissions: permsSchema,
-});
-
-export const updateSubUserSchema = z.object({
-  permissions: permsSchema,
-});
-
-export type CreateSubUserInput = z.infer<typeof createSubUserSchema>;
-export type UpdateSubUserInput = z.infer<typeof updateSubUserSchema>;
+export {
+  createSubUserSchema,
+  updateSubUserSchema,
+  type CreateSubUserInput,
+  type UpdateSubUserInput,
+};
 
 type AccessCtx = {
   user: AuthUser;

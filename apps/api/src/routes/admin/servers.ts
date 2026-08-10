@@ -9,8 +9,8 @@ import { listBackups } from "../../servers/backups.js";
 import { readBackupSchedule, writeBackupSchedule } from "../../servers/backup-schedule.js";
 import { processManager } from "../../servers/process-manager.js";
 import { daemonSetLimits } from "../../nodes/daemon-client.js";
-import { findManyServers, findServer, updateServer } from "../../repositories/servers.js";
-import { findUser } from "../../repositories/users.js";
+import { findManyServers, findServer, updateServer } from "../../services/servers.js";
+import { findUser } from "../../services/users.js";
 
 const patchSchema = z.object({
   name: z.string().trim().min(1).max(64).optional(),

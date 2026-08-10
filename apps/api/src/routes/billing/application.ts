@@ -5,7 +5,7 @@ import { logActivity } from "../../activity-log.js";
 import { toPaymentRecord, toPlanRecord } from "../../billing/billing.js";
 import { sendZodError } from "../../http-error.js";
 import { planBodySchema } from "./serialize.js";
-import { createPlanTemplate, findManyPayments, findManyPlanTemplates, findPlanTemplate } from "../../repositories/billing.js";
+import { createPlanTemplate, findManyPayments, findManyPlanTemplates, findPlanTemplate } from "../../services/billing.js";
 
 export function registerBillingApplicationRoutes(app: FastifyInstance): void {
   // --- Application API: plans + payments ---

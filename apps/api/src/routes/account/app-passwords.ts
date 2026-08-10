@@ -6,7 +6,7 @@ import type { AuthUser } from "@guartrix/shared";
 import { logActivity } from "../../activity-log.js";
 import { requireAuth, verifyAccountPassword } from "../../auth/auth.js";
 import { assertSameOrigin } from "../../auth/csrf.js";
-import { countAppPasswords, createAppPassword, findAppPassword, findFirstAppPassword, findManyAppPasswords, updateAppPassword } from "../../repositories/account.js";
+import { countAppPasswords, createAppPassword, findAppPassword, findFirstAppPassword, findManyAppPasswords, updateAppPassword } from "../../services/account.js";
 
 const APP_PASSWORD_MAX = 10;
 const TOKEN_PREFIX = "gtap_";

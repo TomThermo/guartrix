@@ -7,8 +7,7 @@ import {
   type ActivityListResponse,
 } from "@guartrix/shared";
 import { requireAdmin, requireServerAccess } from "../../auth/auth.js";
-import { activityRetentionDays, toActivityRecord } from "../../activity-log.js";
-import { type ActivityEventWhereInput, countActivityEvents, findManyActivityEvents } from "../../repositories/activity-events.js";
+import { type ActivityEventWhereInput, listActivityPage } from "../../services/admin-activity.js";
 
 const querySchema = z.object({
   offset: z.coerce.number().int().min(0).max(100_000).optional().default(0),
@@ -64,22 +63,7 @@ async function page(
   where: ActivityEventWhereInput,
   query: ActivityQueryInput,
 ): Promise<ActivityListResponse> {
-  const [rows, total] = await Promise.all([
-    findManyActivityEvents({
-      where,
-      orderBy: { createdAt: "desc" },
-      skip: query.offset,
-      take: query.limit,
-    }),
-    countActivityEvents({ where }),
-  ]);
-  return {
-    events: rows.map(toActivityRecord),
-    total,
-    offset: query.offset,
-    limit: query.limit,
-    retentionDays: activityRetentionDays(),
-  };
+  return listActivityPage(where, query);
 }
 
 export function registerActivityRoutes(app: FastifyInstance): void {

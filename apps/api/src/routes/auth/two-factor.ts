@@ -3,7 +3,7 @@ import { z } from "zod";
 import { logActivity } from "../../activity-log.js";
 import { getSessionUser, requireAuth, verifyAccountPassword } from "../../auth/auth.js";
 import { assertSameOrigin } from "../../auth/csrf.js";
-import { findUser, updateUser } from "../../repositories/users.js";
+import { findUser, updateUser } from "../../services/users.js";
 import {
   generateRecoveryCodes,
   generateTotpSecret,

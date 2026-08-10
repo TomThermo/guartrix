@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   apiOwnerRateLimitPerMin,
   requireRedisHa,
@@ -11,6 +11,10 @@ const KEYS = [
   "TRANSFER_ALLOW_PANEL_STAGING",
   "API_OWNER_RATE_LIMIT",
 ] as const;
+
+beforeEach(() => {
+  for (const k of KEYS) delete process.env[k];
+});
 
 afterEach(() => {
   for (const k of KEYS) delete process.env[k];

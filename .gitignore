@@ -7,9 +7,11 @@ build/
 .DS_Store
 *.log
 
-# Local Cursor / GitHub Actions config — keep on disk, never publish on main.
+# Local Cursor config — customer zips omit .cursor/; workflows are tracked for CI.
 .cursor/
-.github/
+.github/*
+!.github/workflows/
+!.github/workflows/**
 
 # Operator-host / docs / packaging tooling — kept on this machine, not for public clones.
 scripts/build-out.sh

@@ -20,8 +20,8 @@ import { config } from "../../config.js";
 import { isSmtpConfigured, sendMail } from "../../mail.js";
 import { linkPendingSubUsers } from "../../servers/server-access.js";
 import { checkLoginRate, clearLoginRate } from "./session.js";
-import { createEmailVerificationToken, deleteManyEmailVerificationTokens, findEmailVerificationToken } from "../../repositories/auth.js";
-import { type User, createUser, updateUser } from "../../repositories/users.js";
+import { createEmailVerificationToken, deleteManyEmailVerificationTokens, findEmailVerificationToken } from "../../services/auth-tokens.js";
+import { type User, createUser, updateUser } from "../../services/users.js";
 
 const registerSchema = z.object({
   username: usernameSchema,

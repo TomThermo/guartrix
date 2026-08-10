@@ -25,6 +25,30 @@
     "./schemas/servers": {
       "types": "./dist/schemas/servers.d.ts",
       "import": "./dist/schemas/servers.js"
+    },
+    "./schemas/auth": {
+      "types": "./dist/schemas/auth.d.ts",
+      "import": "./dist/schemas/auth.js"
+    },
+    "./schemas/account": {
+      "types": "./dist/schemas/account.d.ts",
+      "import": "./dist/schemas/account.js"
+    },
+    "./schemas/nodes": {
+      "types": "./dist/schemas/nodes.d.ts",
+      "import": "./dist/schemas/nodes.js"
+    },
+    "./schemas/billing": {
+      "types": "./dist/schemas/billing.d.ts",
+      "import": "./dist/schemas/billing.js"
+    },
+    "./schemas/allocations": {
+      "types": "./dist/schemas/allocations.d.ts",
+      "import": "./dist/schemas/allocations.js"
+    },
+    "./schemas/backups": {
+      "types": "./dist/schemas/backups.d.ts",
+      "import": "./dist/schemas/backups.js"
     }
   },
   "scripts": {

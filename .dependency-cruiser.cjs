@@ -17,6 +17,14 @@ module.exports = {
       to: { path: "(^|/)(@msm|@guartrix)/api(/|$)" },
     },
     {
+      name: "routes-no-repositories",
+      comment:
+        "Routes must call services/, not repositories/ directly.",
+      severity: "error",
+      from: { path: "^apps/api/src/routes/" },
+      to: { path: "^apps/api/src/repositories/" },
+    },
+    {
       name: "routes-no-prisma",
       comment:
         "Routes must not import Prisma or db directly — use repositories/ or services/.",

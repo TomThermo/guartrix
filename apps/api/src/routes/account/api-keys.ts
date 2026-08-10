@@ -10,7 +10,7 @@ import { logActivity } from "../../activity-log.js";
 import { generateApiKeyToken, toApiKeyRecord } from "../../auth/api-keys.js";
 import { requireSessionAuth } from "../../auth/auth.js";
 import { assertSameOrigin } from "../../auth/csrf.js";
-import { countApiKeys, createApiKey, findFirstApiKey, findManyApiKeys, updateApiKey } from "../../repositories/account.js";
+import { countApiKeys, createApiKey, findFirstApiKey, findManyApiKeys, updateApiKey } from "../../services/account.js";
 
 const createSchema = z.object({
   name: z.string().trim().min(1).max(64),

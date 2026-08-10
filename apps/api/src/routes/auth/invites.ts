@@ -3,8 +3,8 @@ import { getSessionUser, isAuthenticated } from "../../auth/auth.js";
 import { hashInviteToken } from "../../servers/server-access.js";
 import { logActivity } from "../../activity-log.js";
 import { canAcceptInvite } from "./invites-policy.js";
-import { findFirstSubUser, updateSubUser } from "../../repositories/auth.js";
-import { findUser } from "../../repositories/users.js";
+import { findFirstSubUser, updateSubUser } from "../../services/auth-tokens.js";
+import { findUser } from "../../services/users.js";
 
 /** Public invite peek: never leak the full invite email without a session. */
 function maskEmail(email: string): string {

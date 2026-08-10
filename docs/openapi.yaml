@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Guartrix API
-  version:  1.4.24
+  version:  1.4.28
   description: |
     Machine-readable surface for the Guartrix panel. Paths under /api also answer at /api/v1 (dual-mount).
 
@@ -58,6 +58,104 @@ components:
         error: { type: string }
         code: { type: string }
         details: {}
+    AllocationAssign:
+      type: object
+      properties:
+        allocationId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        port:
+          type: integer
+          minimum: 1024
+          maximum: 65535
+        protocol:
+          $ref: "#/components/schemas/AllocationProtocol"
+        notes:
+          type: string
+          maxLength: 255
+        alsoUdp:
+          type: boolean
+    AllocationCreateRange:
+      type: object
+      required:
+        - portStart
+      properties:
+        portStart:
+          type: integer
+          minimum: 1024
+          maximum: 65535
+        portEnd:
+          type: integer
+          minimum: 1024
+          maximum: 65535
+        protocol:
+          $ref: "#/components/schemas/AllocationProtocol"
+        ip:
+          type: string
+          minLength: 1
+          maxLength: 64
+        notes:
+          type: string
+          maxLength: 255
+    AllocationPatch:
+      type: object
+      properties:
+        notes:
+          type: string
+          maxLength: 255
+          nullable: true
+        isPrimary:
+          type: boolean
+        alsoUdp:
+          type: boolean
+    AllocationProtocol:
+      type: string
+      enum:
+        - tcp
+        - udp
+    BackupSchedule:
+      type: object
+      required:
+        - mode
+      properties:
+        mode:
+          type: string
+          enum:
+            - off
+            - interval
+            - daily
+            - cron
+        intervalHours:
+          type: integer
+          minimum: 1
+          maximum: 168
+        dailyAt:
+          type: string
+        cronExpression:
+          type: string
+          maxLength: 120
+        keepCount:
+          type: integer
+          minimum: 1
+          maximum: 50
+    BackupUploadInit:
+      type: object
+      required:
+        - fileName
+        - sizeBytes
+      properties:
+        fileName:
+          type: string
+          minLength: 1
+          maxLength: 255
+        sizeBytes:
+          type: integer
+          minimum: 1
+          maximum: 21474836480
+        note:
+          type: string
+          maxLength: 120
     CloneServer:
       type: object
       required:
@@ -198,6 +296,20 @@ components:
                     maxLength: 512
                   readOnly:
                     type: boolean
+    CreateSubUser:
+      type: object
+      required:
+        - email
+        - permissions
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 255
+        permissions:
+          type: array
+          items:
+            type: string
     FileCompress:
       type: object
       required:
@@ -271,6 +383,185 @@ components:
         content:
           type: string
           maxLength: 2000000
+    NodeCreate:
+      type: object
+      required:
+        - name
+        - fqdn
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 64
+        fqdn:
+          type: string
+          minLength: 1
+          maxLength: 255
+        scheme:
+          type: string
+          enum:
+            - http
+            - https
+          default: http
+        daemonPort:
+          type: integer
+          minimum: 1
+          maximum: 65535
+          default: 8081
+        behindProxy:
+          type: boolean
+          default: false
+        memoryMb:
+          type: integer
+          minimum: 0
+          default: 0
+        location:
+          type: string
+          nullable: true
+    NodeUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 64
+        fqdn:
+          type: string
+          minLength: 1
+          maxLength: 255
+        scheme:
+          type: string
+          enum:
+            - http
+            - https
+        daemonPort:
+          type: integer
+          minimum: 1
+          maximum: 65535
+        behindProxy:
+          type: boolean
+        memoryMb:
+          type: integer
+          minimum: 0
+          maximum: 100000000
+        memoryOverallocate:
+          type: integer
+          minimum: 0
+          maximum: 1000
+        diskMb:
+          type: integer
+          minimum: 0
+          maximum: 100000000
+        diskOverallocate:
+          type: integer
+          minimum: 0
+          maximum: 1000
+        cpuLimit:
+          type: integer
+          minimum: 0
+          maximum: 100000
+        cpuOverallocate:
+          type: integer
+          minimum: 0
+          maximum: 1000
+        uploadLimitMb:
+          type: integer
+          minimum: 1
+          maximum: 20480
+        daemonBaseDirectory:
+          type: string
+          minLength: 1
+          maxLength: 255
+        sftpPort:
+          type: integer
+          minimum: 1
+          maximum: 65535
+        sftpAlias:
+          type: string
+          nullable: true
+        tags:
+          type: array
+          maxItems: 32
+          items:
+            type: string
+            minLength: 1
+            maxLength: 32
+        deployable:
+          type: boolean
+        maintenanceMode:
+          type: boolean
+        location:
+          type: string
+          nullable: true
+    PlanBody:
+      type: object
+      required:
+        - slug
+        - name
+        - priceCents
+        - maxServers
+        - maxMemoryMb
+        - maxDatabases
+      properties:
+        slug:
+          type: string
+          minLength: 2
+          maxLength: 64
+          pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        description:
+          type: string
+          maxLength: 2000
+          nullable: true
+        priceCents:
+          type: integer
+          minimum: 0
+          maximum: 10000000
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          default: EUR
+        maxServers:
+          type: integer
+          minimum: 0
+          maximum: 10000
+        maxMemoryMb:
+          type: integer
+          minimum: 0
+          maximum: 10485760
+        maxDatabases:
+          type: integer
+          minimum: 0
+          maximum: 10000
+        defaultMemoryMb:
+          type: integer
+          minimum: 512
+          maximum: 65536
+        defaultDiskMb:
+          type: integer
+          minimum: 1024
+          maximum: 10485760
+        autoCreateServer:
+          type: boolean
+        defaultServerType:
+          $ref: "#/components/schemas/ServerType"
+        defaultMcVersion:
+          type: string
+          minLength: 1
+          maxLength: 32
+        recurringInterval:
+          type: string
+          nullable: true
+        enabled:
+          type: boolean
+        sortOrder:
+          type: integer
+          minimum: 0
+          maximum: 10000
     PowerRequest:
       type: object
       required:
@@ -285,6 +576,63 @@ components:
         - stop
         - restart
         - kill
+    ProfilePatch:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+          nullable: true
+        displayName:
+          type: string
+          maxLength: 120
+          nullable: true
+        phoneCountry:
+          type: string
+          minLength: 2
+          maxLength: 2
+        phoneNational:
+          type: string
+          maxLength: 32
+          nullable: true
+        addressLine1:
+          type: string
+          maxLength: 191
+          nullable: true
+        addressLine2:
+          type: string
+          maxLength: 191
+          nullable: true
+        addressCity:
+          type: string
+          maxLength: 120
+          nullable: true
+        addressPostalCode:
+          type: string
+          maxLength: 32
+          nullable: true
+        addressCountry:
+          type: string
+          minLength: 2
+          maxLength: 2
+        addressLat:
+          type: number
+          minimum: -90
+          maximum: 90
+          nullable: true
+        addressLon:
+          type: number
+          minimum: -180
+          maximum: 180
+          nullable: true
+        clearAddressVerification:
+          type: boolean
+    QuotaLimit:
+      type: integer
+      minimum: 0
+      maximum: 10000
+      nullable: true
     ServerType:
       type: string
       enum:
@@ -299,6 +647,26 @@ components:
         - BEDROCK_PREVIEW
         - POCKETMINE
         - NUKKIT
+    UpdateSubUser:
+      type: object
+      required:
+        - permissions
+      properties:
+        permissions:
+          type: array
+          items:
+            type: string
+    Username:
+      type: string
+      minLength: 3
+      maxLength: 32
+      pattern: "^[a-zA-Z0-9_-]+$"
+    UserRole:
+      type: string
+      enum:
+        - ADMIN
+        - OPERATOR
+        - VIEWER
 
 paths:
   /api/health:

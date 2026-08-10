@@ -8,8 +8,8 @@ import { daemonGetStatus } from "../../nodes/daemon-client.js";
 import { nodePublicUrl } from "../../nodes/nodes.js";
 import { getPanelVersionStatus } from "../../license/license.js";
 import { getProductVersion } from "../../product-version.js";
-import { findManyNodes, updateNode } from "../../repositories/nodes.js";
-import { findManyServers } from "../../repositories/servers.js";
+import { findManyNodes, updateNode } from "../../services/nodes.js";
+import { findManyServers } from "../../services/servers.js";
 
 function readPidFile(name: string): number | null {
   try {

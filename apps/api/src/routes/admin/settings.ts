@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { requireAdmin } from "../../auth/auth.js";
 import { logActivity } from "../../activity-log.js";
 import { sendMail, isSmtpConfigured } from "../../mail.js";
-import { findUser } from "../../repositories/users.js";
+import { findUser } from "../../services/users.js";
 import {
   applyPanelSettings,
   getPanelSettingsView,

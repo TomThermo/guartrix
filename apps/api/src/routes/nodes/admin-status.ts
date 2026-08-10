@@ -10,7 +10,7 @@ import {
   writeLocalDaemonEnvIfLocal,
 } from "../../nodes/nodes.js";
 import { serializeNodeWithUsage } from "../../services/nodes-list-serialize.js";
-import { findNode, updateNode } from "../../repositories/nodes.js";
+import { findNode, updateNode } from "../../services/nodes.js";
 
 export function registerNodeAdminStatusRoutes(app: FastifyInstance): void {
   /** Live host snapshot for one node (Overview modal polling). */

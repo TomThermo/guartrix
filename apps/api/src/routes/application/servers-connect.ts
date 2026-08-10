@@ -3,8 +3,8 @@ import { config } from "../../config.js";
 import { processManager } from "../../servers/process-manager.js";
 import { readServerProperties } from "../../servers/properties.js";
 import { requireApplicationServer } from "../../services/application-server-access.js";
-import { findFirstNode, findNode } from "../../repositories/nodes.js";
-import { findUser } from "../../repositories/users.js";
+import { findFirstNode, findNode } from "../../services/nodes.js";
+import { findUser } from "../../services/users.js";
 
 /** Application API connect / SFTP meta (`servers.read` — support tooling). */
 export function registerApplicationServerConnectRoutes(app: FastifyInstance): void {

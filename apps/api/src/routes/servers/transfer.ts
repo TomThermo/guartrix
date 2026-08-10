@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { assertAdminFullApiKey, requireServerAccess } from "../../auth/auth.js";
 import { serverListInclude, toMcServer } from "../../servers/serialize.js";
-import { findServerOrThrow } from "../../repositories/servers.js";
+import { findServerOrThrow } from "../../services/servers.js";
 
 const transferSchema = z.object({
   nodeId: z.string().min(1),

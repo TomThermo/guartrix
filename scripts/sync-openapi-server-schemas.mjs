@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * Upsert docs/openapi.yaml components.schemas from apps/api/src/schemas/servers.ts
- * (mechanical Zod → OpenAPI for the shared server contracts).
+ * Upsert docs/openapi.yaml components.schemas from packages/shared/src/schemas/*
+ * (mechanical Zod → OpenAPI for shared contracts).
  *
  * Usage: node scripts/sync-openapi-server-schemas.mjs [--check]
  */
@@ -10,7 +10,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const schemaPath = path.join(root, "packages/shared/src/schemas/servers.ts");
+const sharedSchemasDir = path.join(root, "packages/shared/src/schemas");
+const schemaPath = path.join(sharedSchemasDir, "servers.ts");
 const openapiPath = path.join(root, "docs/openapi.yaml");
 const checkOnly = process.argv.includes("--check");
 
@@ -200,7 +201,187 @@ function buildSchemas() {
   };
 }
 
-const EXPECTED_NAMES = Object.keys(buildSchemas());
+/** Account, auth, nodes, billing, allocations, backups — from shared/schemas/*. */
+function buildContractSchemas() {
+  const serverType = { $ref: "#/components/schemas/ServerType" };
+  const iso2 = { type: "string", minLength: 2, maxLength: 2 };
+  const nullableString = { type: "string", nullable: true };
+  const optionalNullableString = { type: "string", nullable: true };
+
+  return {
+    Username: {
+      type: "string",
+      minLength: 3,
+      maxLength: 32,
+      pattern: "^[a-zA-Z0-9_-]+$",
+    },
+    UserRole: {
+      type: "string",
+      enum: ["ADMIN", "OPERATOR", "VIEWER"],
+    },
+    QuotaLimit: {
+      type: "integer",
+      minimum: 0,
+      maximum: 10_000,
+      nullable: true,
+    },
+    ProfilePatch: {
+      type: "object",
+      properties: {
+        email: { type: "string", format: "email", maxLength: 254, nullable: true },
+        displayName: { type: "string", maxLength: 120, nullable: true },
+        phoneCountry: iso2,
+        phoneNational: { type: "string", maxLength: 32, nullable: true },
+        addressLine1: { type: "string", maxLength: 191, nullable: true },
+        addressLine2: { type: "string", maxLength: 191, nullable: true },
+        addressCity: { type: "string", maxLength: 120, nullable: true },
+        addressPostalCode: { type: "string", maxLength: 32, nullable: true },
+        addressCountry: iso2,
+        addressLat: { type: "number", minimum: -90, maximum: 90, nullable: true },
+        addressLon: { type: "number", minimum: -180, maximum: 180, nullable: true },
+        clearAddressVerification: { type: "boolean" },
+      },
+    },
+    CreateSubUser: {
+      type: "object",
+      required: ["email", "permissions"],
+      properties: {
+        email: { type: "string", format: "email", maxLength: 255 },
+        permissions: { type: "array", items: { type: "string" } },
+      },
+    },
+    UpdateSubUser: {
+      type: "object",
+      required: ["permissions"],
+      properties: {
+        permissions: { type: "array", items: { type: "string" } },
+      },
+    },
+    PlanBody: {
+      type: "object",
+      required: ["slug", "name", "priceCents", "maxServers", "maxMemoryMb", "maxDatabases"],
+      properties: {
+        slug: {
+          type: "string",
+          minLength: 2,
+          maxLength: 64,
+          pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+        },
+        name: { type: "string", minLength: 1, maxLength: 80 },
+        description: { type: "string", maxLength: 2000, nullable: true },
+        priceCents: { type: "integer", minimum: 0, maximum: 10_000_000 },
+        currency: { type: "string", minLength: 3, maxLength: 3, default: "EUR" },
+        maxServers: { type: "integer", minimum: 0, maximum: 10_000 },
+        maxMemoryMb: { type: "integer", minimum: 0, maximum: 10_485_760 },
+        maxDatabases: { type: "integer", minimum: 0, maximum: 10_000 },
+        defaultMemoryMb: { type: "integer", minimum: 512, maximum: 65536 },
+        defaultDiskMb: { type: "integer", minimum: 1024, maximum: 10_485_760 },
+        autoCreateServer: { type: "boolean" },
+        defaultServerType: serverType,
+        defaultMcVersion: { type: "string", minLength: 1, maxLength: 32 },
+        recurringInterval: { type: "string", nullable: true },
+        enabled: { type: "boolean" },
+        sortOrder: { type: "integer", minimum: 0, maximum: 10_000 },
+      },
+    },
+    NodeCreate: {
+      type: "object",
+      required: ["name", "fqdn"],
+      properties: {
+        name: { type: "string", minLength: 1, maxLength: 64 },
+        fqdn: { type: "string", minLength: 1, maxLength: 255 },
+        scheme: { type: "string", enum: ["http", "https"], default: "http" },
+        daemonPort: { type: "integer", minimum: 1, maximum: 65535, default: 8081 },
+        behindProxy: { type: "boolean", default: false },
+        memoryMb: { type: "integer", minimum: 0, default: 0 },
+        location: optionalNullableString,
+      },
+    },
+    NodeUpdate: {
+      type: "object",
+      properties: {
+        name: { type: "string", minLength: 1, maxLength: 64 },
+        fqdn: { type: "string", minLength: 1, maxLength: 255 },
+        scheme: { type: "string", enum: ["http", "https"] },
+        daemonPort: { type: "integer", minimum: 1, maximum: 65535 },
+        behindProxy: { type: "boolean" },
+        memoryMb: { type: "integer", minimum: 0, maximum: 100_000_000 },
+        memoryOverallocate: { type: "integer", minimum: 0, maximum: 1000 },
+        diskMb: { type: "integer", minimum: 0, maximum: 100_000_000 },
+        diskOverallocate: { type: "integer", minimum: 0, maximum: 1000 },
+        cpuLimit: { type: "integer", minimum: 0, maximum: 100_000 },
+        cpuOverallocate: { type: "integer", minimum: 0, maximum: 1000 },
+        uploadLimitMb: { type: "integer", minimum: 1, maximum: 20_480 },
+        daemonBaseDirectory: { type: "string", minLength: 1, maxLength: 255 },
+        sftpPort: { type: "integer", minimum: 1, maximum: 65535 },
+        sftpAlias: nullableString,
+        tags: { type: "array", maxItems: 32, items: { type: "string", minLength: 1, maxLength: 32 } },
+        deployable: { type: "boolean" },
+        maintenanceMode: { type: "boolean" },
+        location: optionalNullableString,
+      },
+    },
+    AllocationProtocol: {
+      type: "string",
+      enum: ["tcp", "udp"],
+    },
+    AllocationCreateRange: {
+      type: "object",
+      required: ["portStart"],
+      properties: {
+        portStart: { type: "integer", minimum: 1024, maximum: 65535 },
+        portEnd: { type: "integer", minimum: 1024, maximum: 65535 },
+        protocol: { $ref: "#/components/schemas/AllocationProtocol" },
+        ip: { type: "string", minLength: 1, maxLength: 64 },
+        notes: { type: "string", maxLength: 255 },
+      },
+    },
+    AllocationAssign: {
+      type: "object",
+      properties: {
+        allocationId: { type: "string", minLength: 1, maxLength: 64 },
+        port: { type: "integer", minimum: 1024, maximum: 65535 },
+        protocol: { $ref: "#/components/schemas/AllocationProtocol" },
+        notes: { type: "string", maxLength: 255 },
+        alsoUdp: { type: "boolean" },
+      },
+    },
+    AllocationPatch: {
+      type: "object",
+      properties: {
+        notes: { type: "string", maxLength: 255, nullable: true },
+        isPrimary: { type: "boolean" },
+        alsoUdp: { type: "boolean" },
+      },
+    },
+    BackupSchedule: {
+      type: "object",
+      required: ["mode"],
+      properties: {
+        mode: { type: "string", enum: ["off", "interval", "daily", "cron"] },
+        intervalHours: { type: "integer", minimum: 1, maximum: 168 },
+        dailyAt: { type: "string" },
+        cronExpression: { type: "string", maxLength: 120 },
+        keepCount: { type: "integer", minimum: 1, maximum: 50 },
+      },
+    },
+    BackupUploadInit: {
+      type: "object",
+      required: ["fileName", "sizeBytes"],
+      properties: {
+        fileName: { type: "string", minLength: 1, maxLength: 255 },
+        sizeBytes: { type: "integer", minimum: 1, maximum: 21_474_836_480 },
+        note: { type: "string", maxLength: 120 },
+      },
+    },
+  };
+}
+
+function buildAllSchemas() {
+  return { ...buildSchemas(), ...buildContractSchemas() };
+}
+
+const EXPECTED_NAMES = Object.keys(buildAllSchemas());
 
 function yamlScalar(v) {
   if (typeof v === "boolean" || typeof v === "number") return String(v);
@@ -288,6 +469,21 @@ function upsertSchemas(yaml, schemas) {
 }
 
 function verifySourceMatches() {
+  const requiredFiles = [
+    "servers.ts",
+    "account.ts",
+    "auth.ts",
+    "nodes.ts",
+    "billing.ts",
+    "allocations.ts",
+    "backups.ts",
+  ];
+  for (const file of requiredFiles) {
+    const p = path.join(sharedSchemasDir, file);
+    if (!fs.existsSync(p)) {
+      throw new Error(`missing packages/shared/src/schemas/${file}`);
+    }
+  }
   const src = fs.readFileSync(schemaPath, "utf8");
   for (const t of SERVER_TYPES) {
     if (!src.includes(`"${t}"`)) {
@@ -308,7 +504,7 @@ function verifySourceMatches() {
 }
 
 verifySourceMatches();
-const schemas = buildSchemas();
+const schemas = buildAllSchemas();
 const before = fs.readFileSync(openapiPath, "utf8");
 const after = upsertSchemas(before, schemas);
 

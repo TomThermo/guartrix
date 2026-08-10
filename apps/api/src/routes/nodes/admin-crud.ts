@@ -11,7 +11,7 @@ import {
 } from "../../nodes/nodes.js";
 import { createSchema, updateSchema } from "./schemas.js";
 import { serializeNodeWithUsage } from "../../services/nodes-list-serialize.js";
-import { createNode, deleteNode, findNode, updateNode } from "../../repositories/nodes.js";
+import { createNode, deleteNode, findNode, updateNode } from "../../services/nodes.js";
 
 export function registerNodeAdminCrudRoutes(app: FastifyInstance): void {
   app.post("/api/admin/nodes", async (request, reply) => {

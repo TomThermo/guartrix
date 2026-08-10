@@ -14,8 +14,8 @@ import { assertSameOrigin } from "../../auth/csrf.js";
 import { destroySessionsForUser } from "../../auth/session-store.js";
 import { sendMail } from "../../mail.js";
 import { checkLoginRate, clearLoginRate } from "./session.js";
-import { createPasswordResetToken, deleteManyPasswordResetTokens, findPasswordResetToken } from "../../repositories/auth.js";
-import { updateUser } from "../../repositories/users.js";
+import { createPasswordResetToken, deleteManyPasswordResetTokens, findPasswordResetToken } from "../../services/auth-tokens.js";
+import { updateUser } from "../../services/users.js";
 
 const forgotPasswordSchema = z.object({
   email: z.string().trim().email().max(254),

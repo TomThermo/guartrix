@@ -12,8 +12,8 @@ import {
   promotePrimaryAllocationTransaction,
   updateAllocation,
   updateManyAllocations,
-} from "../../../repositories/allocations.js";
-import { updateServer } from "../../../repositories/servers.js";
+} from "../../../services/allocations.js";
+import { updateServer } from "../../../services/servers.js";
 
 export function registerAllocationPatchDeleteRoutes(app: FastifyInstance): void {
   app.patch<{ Params: { id: string; allocId: string } }>(

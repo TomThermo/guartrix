@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { ensurePrimaryAllocation, serializeAllocation } from "../../servers/allocations.js";
 import { requireApplicationServer } from "../../services/application-server-access.js";
-import { findManyAllocations } from "../../repositories/allocations.js";
+import { findManyAllocations } from "../../services/allocations.js";
 
 /** Application API allocation mirrors (`servers.allocations`). */
 export function registerApplicationServerAllocationsRoutes(app: FastifyInstance): void {

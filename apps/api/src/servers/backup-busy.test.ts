@@ -1,4 +1,9 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("../redis.js", () => ({
+  getRedis: vi.fn().mockResolvedValue(null),
+}));
+
 import {
   isBackupBusy,
   releaseBackupBusy,
@@ -7,6 +12,10 @@ import {
 } from "./backup-busy.js";
 
 describe("backup-busy (local, no Redis)", () => {
+  beforeEach(() => {
+    resetBackupBusyLocalForTests();
+  });
+
   afterEach(() => {
     resetBackupBusyLocalForTests();
   });

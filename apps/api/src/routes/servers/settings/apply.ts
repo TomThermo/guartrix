@@ -20,7 +20,7 @@ import {
 import { patchNeedsStartup } from "../../../services/server-settings-guards.js";
 import type { ServerSettingsPatch } from "./schemas.js";
 import type { NormalizedSettingsFields } from "./validate.js";
-import { updateServer } from "../../../repositories/servers.js";
+import { updateServer } from "../../../services/servers.js";
 
 type Access = NonNullable<
   Awaited<ReturnType<typeof import("../../../auth/auth.js").requireServerAccess>>

@@ -1,0 +1,21 @@
+/** Account credentials persistence (API keys, app passwords, push). */
+export {
+  countApiKeys,
+  countAppPasswords,
+  countPushSubscriptions,
+  createApiKey,
+  createAppPassword,
+  createPushSubscription,
+  deleteManyPushSubscriptions,
+  findApiKey,
+  findAppPassword,
+  findFirstApiKey,
+  findFirstAppPassword,
+  findManyApiKeys,
+  findManyAppPasswords,
+  findManyPushSubscriptions,
+  findPushSubscription,
+  updateApiKey,
+  updateAppPassword,
+  updatePushSubscription,
+} from "../repositories/account.js";

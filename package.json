@@ -26,6 +26,7 @@
     "check:openapi": "node scripts/check-openapi-coverage.mjs && node scripts/sync-openapi-server-schemas.mjs --check",
     "check:size-budgets": "node scripts/check-file-size-budgets.mjs",
     "check:wiki-markdown": "node scripts/check-wiki-markdown.mjs",
+    "check:enterprise": "npm run build -w @guartrix/shared && npm run lint && npm run check:boundaries && npm run check:openapi && npm run check:size-budgets && npm run check:wiki-markdown && npm run typecheck -w @guartrix/shared && npm run typecheck -w @guartrix/api && npm run typecheck -w @guartrix/web && npm run typecheck -w @guartrix/daemon",
     "sync:openapi-schemas": "node scripts/sync-openapi-server-schemas.mjs",
     "fa:subset": "node scripts/fa-subset-icons.mjs",
     "bundle:daemon": "node scripts/bundle-daemon-for-nodes.mjs"
@@ -42,5 +43,5 @@
     "typescript": "^5.8.2",
     "vitest": "^3.2.7"
   },
-  "version": "1.4.24"
+  "version": "1.4.28"
 }

@@ -28,7 +28,9 @@ Operator and developer documentation for the Guartrix Minecraft hosting panel.
 |------|-------------|
 | [Architecture](architecture.md) | Tech stack, monorepo, panel ↔ daemon, stats history |
 | [Environment variables](env-reference.md) | `.env` / daemon env knobs |
-| [Development](development.md) | Local `dev:*`, Vitest, CI, i18n |
+| [Development](development.md) | Local `dev:*`, CI, i18n, enterprise code gates |
+| [Enterprise code — wave 2+](enterprise-code-wave2.md) | CI, services, contracts (shipped v1.4.28) |
+| [Enterprise code — wave 3](enterprise-code-wave3.md) | Tests, e2e, SLA, pentest (actieve backlog) |
 
 ## Panel
 

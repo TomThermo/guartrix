@@ -11,8 +11,8 @@ import {
   findServer,
   findServerOrThrow,
   updateServer,
-} from "../../repositories/servers.js";
-import { findUser } from "../../repositories/users.js";
+} from "../../services/servers.js";
+import { findUser } from "../../services/users.js";
 import {
   createServerApplicationSchema,
   powerSignalSchema,

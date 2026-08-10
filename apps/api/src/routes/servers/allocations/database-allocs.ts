@@ -3,8 +3,8 @@ import { logActivity } from "../../../activity-log.js";
 import { requireAdmin } from "../../../auth/auth.js";
 import { createNodeAllocationRange, serializeAllocation } from "../../../servers/allocations.js";
 import { createRangeSchema } from "./schemas.js";
-import { deleteAllocation, findFirstAllocation, findManyAllocations } from "../../../repositories/allocations.js";
-import { findNode } from "../../../repositories/nodes.js";
+import { deleteAllocation, findFirstAllocation, findManyAllocations } from "../../../services/allocations.js";
+import { findNode } from "../../../services/nodes.js";
 
 /** Admin node allocation pool (list / create range / delete free). */
 export function registerAllocationDatabaseRoutes(app: FastifyInstance): void {

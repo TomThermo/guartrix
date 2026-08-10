@@ -8,8 +8,8 @@ import { processManager } from "../../../servers/process-manager.js";
 import { readServerProperties } from "../../../servers/properties.js";
 import { serverListInclude, toServerDetail } from "../../../servers/serialize.js";
 import { collectServerStats } from "../../../servers/stats.js";
-import { findFirstNode, findNode } from "../../../repositories/nodes.js";
-import { findServerOrThrow, updateServer } from "../../../repositories/servers.js";
+import { findFirstNode, findNode } from "../../../services/nodes.js";
+import { findServerOrThrow, updateServer } from "../../../services/servers.js";
 
 export function registerServerReadRoutes(app: FastifyInstance): void {
   app.get<{ Params: { id: string }; Querystring: { disk?: string } }>(

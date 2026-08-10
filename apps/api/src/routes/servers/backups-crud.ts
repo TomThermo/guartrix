@@ -14,7 +14,7 @@ import {
   restoreBackup,
 } from "../../servers/backups.js";
 import { parseRange } from "./backups-helpers.js";
-import { findServerOrThrow } from "../../repositories/servers.js";
+import { findServerOrThrow } from "../../services/servers.js";
 
 /** List / create / download / delete / restore backup routes. */
 export function registerBackupCrudRoutes(app: FastifyInstance): void {

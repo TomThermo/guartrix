@@ -4,7 +4,7 @@ import { logActivity } from "../../activity-log.js";
 import { requireAdmin, verifyAccountPassword } from "../../auth/auth.js";
 import { daemonTestNode } from "../../nodes/daemon-client.js";
 import { serializeNodeWithUsage } from "../../services/nodes-list-serialize.js";
-import { findNode, updateNode } from "../../repositories/nodes.js";
+import { findNode, updateNode } from "../../services/nodes.js";
 
 export function registerNodeAdminInstallRoutes(app: FastifyInstance): void {
   /** multi-node install snippet for a remote node (token + env + commands). */

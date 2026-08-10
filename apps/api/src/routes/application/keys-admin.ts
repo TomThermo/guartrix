@@ -6,7 +6,7 @@ import { generateApplicationToken, toApplicationKeyRecord } from "../../auth/app
 import { requireAdmin } from "../../auth/auth.js";
 import { assertSameOrigin } from "../../auth/csrf.js";
 import { logActivity } from "../../activity-log.js";
-import { countApplicationApiKeys, createApplicationApiKey, findApplicationApiKey, findManyApplicationApiKeys, updateApplicationApiKey } from "../../repositories/application.js";
+import { countApplicationApiKeys, createApplicationApiKey, findApplicationApiKey, findManyApplicationApiKeys, updateApplicationApiKey } from "../../services/application-api.js";
 
 /** Admin session routes for managing Application API keys. */
 export function registerApplicationKeyAdminRoutes(app: FastifyInstance): void {

@@ -25,14 +25,14 @@ import {
 } from "../../auth/user-quotas.js";
 import { destroySessionsForUser } from "../../auth/session-store.js";
 import { sendZodError } from "../../http-error.js";
-import { updateManyServers } from "../../repositories/servers.js";
 import {
   createUser,
   deleteUser,
-  findManyUsers,
   findUser,
+  listPanelUsersWithUsage,
+  updateManyServers,
   updateUser,
-} from "../../repositories/users.js";
+} from "../../services/auth-users.js";
 import {
   hostNodeName,
   hostPublicIp,
@@ -63,24 +63,8 @@ const updateUserSchema = z.object({
 export function registerPanelUserRoutes(app: FastifyInstance): void {
   app.get("/api/users", async (request, reply) => {
     if (!(await requireAdmin(request, reply, "users.read"))) return;
-    const users = await findManyUsers({
-      orderBy: { createdAt: "asc" },
-      include: {
-        servers: {
-          select: {
-            memoryMb: true,
-            _count: { select: { databases: true } },
-          },
-        },
-      },
-    });
-    return users.map((u) =>
-      toAuthUser(u, {
-        serverCount: u.servers.length,
-        memoryUsedMb: u.servers.reduce((sum, s) => sum + s.memoryMb, 0),
-        databaseCount: u.servers.reduce((sum, s) => sum + s._count.databases, 0),
-      }),
-    );
+    const users = await listPanelUsersWithUsage();
+    return users;
   });
 
   app.get("/api/system", async (request, reply) => {

@@ -3,6 +3,39 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.28] — 2026-08-10
+
+### Added
+- E2c services: servers-create, servers-lifecycle (delete/clone), servers-import; wave 3 roadmap (tests, e2e, SLA, pentest).
+- CI: separate `npm test` job after check:enterprise.
+
+### Changed
+- Server create/clone/delete/import routes thinned to HTTP shells calling services.
+
+## [1.4.27] — 2026-08-10
+
+### Added
+- OpenAPI sync for 14 shared contract schemas (account, auth, nodes, billing, allocations, backups).
+- UI splits: NodesTable, SecurityPanel sections, TwoFactor hooks/panels, ServerDetailHeader actions/stats.
+
+### Changed
+- E3b + E4 complete: zero `size-budget: ignore` files; billing user routes split + checkout service.
+
+## [1.4.26] — 2026-08-10
+
+### Changed
+- E2 complete: all API routes import `services/` instead of `repositories/`; domain passthrough modules (servers, nodes, users, allocations, billing, account, auth-tokens, application-api, activity-events).
+- `routes-no-repositories` dependency-cruiser rule promoted to **error** (0 violations).
+
+## [1.4.25] — 2026-08-10
+
+### Added
+- Enterprise code wave 2: `npm run check:enterprise`, GitHub Actions CI (structure gates, no vitest), wave-2 roadmap wiki + canvas.
+
+### Changed
+- Zod catalog in `@guartrix/shared/schemas/` (auth, account, nodes, billing, allocations, backups); API `schemas/` re-exports.
+- Services layer started: admin-nav, admin-activity, billing-plans, auth-users; routes-no-repositories dep-cruiser warn.
+
 ## [1.4.24] — 2026-08-10
 
 ### Changed

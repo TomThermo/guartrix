@@ -13,9 +13,9 @@ import {
 import { verifyUserAppPassword } from "../account/app-passwords.js";
 import { getServerPermissions } from "../../servers/server-access.js";
 import { getRateLimitStore } from "../../rate-limit-store.js";
-import { findNode } from "../../repositories/nodes.js";
-import { findServer } from "../../repositories/servers.js";
-import { findUser, findUserByUsernameInsensitive } from "../../repositories/users.js";
+import { findNode } from "../../services/nodes.js";
+import { findServer } from "../../services/servers.js";
+import { findUser, findUserByUsernameInsensitive } from "../../services/users.js";
 
 const authBodySchema = z.object({
   username: z.string().min(1).max(64),

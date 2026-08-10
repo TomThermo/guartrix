@@ -11,8 +11,8 @@ import {
 import { openFirewallPort } from "../../../nodes/firewall.js";
 import { processManager } from "../../../servers/process-manager.js";
 import { assignSchema } from "./schemas.js";
-import { type AllocationWithServerName, createAllocation, findAllocation, findManyAllocations, updateAllocation } from "../../../repositories/allocations.js";
-import { findFirstServer } from "../../../repositories/servers.js";
+import { type AllocationWithServerName, createAllocation, findAllocation, findManyAllocations, updateAllocation } from "../../../services/allocations.js";
+import { findFirstServer } from "../../../services/servers.js";
 
 export function registerAllocationListCreateRoutes(app: FastifyInstance): void {
   app.get<{ Params: { id: string } }>("/api/servers/:id/allocations", async (request, reply) => {

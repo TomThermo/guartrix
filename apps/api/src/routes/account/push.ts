@@ -5,7 +5,7 @@ import { z } from "zod";
 import { requireAuth } from "../../auth/auth.js";
 import { assertSameOrigin } from "../../auth/csrf.js";
 import { getVapidPublicKey, isWebPushConfigured } from "../../web-push.js";
-import { countPushSubscriptions, createPushSubscription, deleteManyPushSubscriptions, findManyPushSubscriptions, findPushSubscription, updatePushSubscription } from "../../repositories/account.js";
+import { countPushSubscriptions, createPushSubscription, deleteManyPushSubscriptions, findManyPushSubscriptions, findPushSubscription, updatePushSubscription } from "../../services/account.js";
 
 function endpointHash(endpoint: string): string {
   return createHash("sha256").update(endpoint).digest("hex");

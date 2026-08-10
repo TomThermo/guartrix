@@ -122,6 +122,23 @@ Use these conventions for new UI and API files:
 
 Pages stay under **~250 LOC** (composition only). Oversized legacy files are tracked by `npm run check:size-budgets`; opt out with `size-budget: ignore` and a one-line reason.
 
+## Enterprise code gates
+
+Wave 1 (enterprise-split P0–P2, v1.4.22–24) finished feature folders, repositories layer, shared server schemas, and first boundary lint.
+
+**Wave 2+** (v1.4.25+) — volledige enterprise-backlog; enige uitzondering: load/stress test (geen infra).
+
+```bash
+npm run check:enterprise   # structuur + typecheck (CI)
+npm test                   # lokaal; CI-integratie = E5 op roadmap
+```
+
+- **CI:** `.github/workflows/ci.yml` — uitbreiden met vitest (E5) en Playwright (E6)
+- **Layers:** `routes → services → repositories → prisma` — routes↛repositories is **error**
+- **Contracts:** Zod in `packages/shared/src/schemas/`
+
+Volledige backlog (inclusief SLA, pentest): [Enterprise code — wave 2+](enterprise-code-wave2.md).
+
 ## Workspace tips
 
 - Shared types: `packages/shared` — rebuild when changing exports (`npm run build -w @guartrix/shared`).
