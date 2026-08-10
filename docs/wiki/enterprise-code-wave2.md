@@ -1,10 +1,12 @@
 # Enterprise code — wave 2+
 
-Living roadmap for enterprise hardening after the completed [enterprise-split](development.md#enterprise-split) P0–P2 track (v1.4.22–24).
+**Engineering track complete** — structuur, services, contracts, UI budgets, unit coverage CI, Playwright e2e CI (v1.4.22 → **v1.4.31**).
 
-**Enige uitzondering:** load/stress test (geen realistische infra in dev/CI om zinvol te draaien). Al het andere — unit tests, e2e, services-diepte, SLA-drills, pentest-voorbereiding — hoort op de backlog.
+Volgt op [enterprise-split](development.md#enterprise-split) P0–P2 (v1.4.22–24). Operator-only vervolg (SLA drills, pentest): [Enterprise code — wave 3](enterprise-code-wave3.md).
 
-Last updated: **2026-08-10** · product **v1.4.30**
+**Enige uitzondering (repo/CI):** load/stress test — geen realistische multi-node infra in dev/CI.
+
+Last updated: **2026-08-10** · product **v1.4.31**
 
 ---
 
@@ -13,96 +15,134 @@ Last updated: **2026-08-10** · product **v1.4.30**
 | ID | Item | Status |
 |----|------|--------|
 | E1 | CI + `check:enterprise` + routes↛repos **error** | ✅ v1.4.26 |
-| E2 | Services layer | ✅ passthrough v1.4.26 · **E2c complete v1.4.30** |
-| E3 | Zod + OpenAPI sync | ✅ v1.4.27 |
+| E2 | Services layer (passthrough + E2c orchestration) | ✅ v1.4.30 |
+| E3 | Zod + OpenAPI sync (30 schemas) | ✅ v1.4.27 |
 | E4 | UI size-budget cleanup | ✅ v1.4.27 |
-| E5 | Vitest + coverage in CI | ✅ v1.4.31 |
-| E6 | Playwright e2e in CI | ✅ v1.4.31 |
-| E7 | SLA drills + Go-live attestations (operator) | ⬜ wave 3 |
-| E8 | External pentest (operator) | ⬜ wave 3 |
+| E5 | Vitest + coverage floors in CI | ✅ v1.4.31 |
+| E6 | Playwright e2e in CI (+ staging workflow) | ✅ v1.4.31 |
+| E7 | SLA drills + Go-live attestations | → [wave 3](enterprise-code-wave3.md) (operator) |
+| E8 | External pentest | → [wave 3](enterprise-code-wave3.md) (operator) |
+| X1 | Load/stress test | **blocked** (operator staging only) |
 
-→ Detail: [Enterprise code — wave 3](enterprise-code-wave3.md)
-
-Visual backlog: canvas **enterprise-code-wave2** in Cursor (beside chat).
+Visual summary: canvas **enterprise-code-wave2** in Cursor.
 
 ---
 
-## E1 — CI & gates (shipped)
+## Quality gates (today)
 
 ```bash
-npm run check:enterprise   # vandaag: structuur + typecheck
-npm test                   # lokaal; nog toevoegen aan CI (E5)
+npm run check:enterprise   # shared build + lint + boundaries + openapi + sizes + wiki + typecheck
+npm run test:coverage      # Vitest + coverage floors (same as CI test job)
+npm run test:e2e           # Playwright (live panel or bash scripts/e2e-ci.sh)
 ```
 
-Huidige `check:enterprise`:
+**CI** ([`.github/workflows/ci.yml`](../.github/workflows/ci.yml)):
 
-- `@guartrix/shared` build
-- `lint`, `check:boundaries`, `check:openapi`, `check:size-budgets`, `check:wiki-markdown`
-- typecheck shared, api, web, daemon
+1. `check:enterprise`
+2. `npm run test:coverage`
+3. Playwright e2e — MySQL service, panel boot, login smoke (`E2E_LOGIN=1`)
 
-GitHub Actions: [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) — uitbreiden met E5/E6.
+Staging e2e (optional): [`.github/workflows/e2e-staging.yml`](../.github/workflows/e2e-staging.yml) — repo var `E2E_STAGING_ENABLED=1` + secrets.
 
 ---
 
-## E2 — Services layer
+## E1 — CI & gates ✅
+
+| Ship | What |
+|------|------|
+| v1.4.25 | `check:enterprise`, GitHub Actions workflow |
+| v1.4.26 | `routes-no-repositories` **error** in dependency-cruiser (0 violations) |
+
+`check:enterprise` runs: shared build, Biome lint, boundaries, OpenAPI sync check, file size budgets, wiki markdown, typecheck (shared, api, web, daemon).
+
+---
+
+## E2 — Services layer ✅
 
 ```text
 routes/ → services/ → repositories/ → prisma
 ```
 
-**Done (v1.4.25–30):** domain passthrough modules; alle routes importieren `services/`; dep-cruiser **error** op routes↛repositories.
+| Ship | What |
+|------|------|
+| v1.4.25–26 | Domain passthrough; all routes import `services/` |
+| v1.4.28 | E2c: `servers-create`, `servers-lifecycle`, `servers-import` |
+| v1.4.30 | E2c+: `server-settings-apply`, `servers-transfer`, `nodes-admin` |
 
-**E2c shipped:** server create/clone/delete/import (v1.4.28), settings apply, transfer, nodes admin CRUD/install/status (v1.4.30).
-
----
-
-## E3 — Contracts (done)
-
-Zod in `packages/shared/src/schemas/`; API `schemas/` re-exporteert; OpenAPI sync voor 30 schemas.
+Routes blijven dunne HTTP shells (auth, Zod parse, status codes). Orchestratie zit in `apps/api/src/services/`.
 
 ---
 
-## E4 — UI budgets (done)
+## E3 — Contracts ✅
 
-Geen `size-budget: ignore` meer; NodesTable, SecurityPanel, TwoFactor, ServerDetailHeader opgesplitst.
-
----
-
-## E5 — Unit tests in CI
-
-- `npm test` + coverage floors in GitHub Actions
-- Service-layer tests voor hot paths (billing-checkout, servers CRUD, quotas)
-- `check:enterprise` uitbreiden of parallel CI job
+- Zod in `packages/shared/src/schemas/`; API `schemas/` re-exporteert
+- `scripts/sync-openapi-server-schemas.mjs` — 30 server schemas in sync met shared Zod
+- `npm run check:openapi` in `check:enterprise`
 
 ---
 
-## E6 — Playwright e2e
+## E4 — UI budgets ✅
 
-- Staging workflow (secrets map) zoals in sprint 10/11 bedoeld
-- Smoke: login, server list, admin nav
-
----
-
-## E7 — SLA (operator)
-
-Wiki: [sla-ops.md](sla-ops.md), [sla-contract-template.md](sla-contract-template.md), drill scripts onder `scripts/sla-*`. Admin → Go-live attestations UI bestaat — operator vult drills in.
+Geen actieve `size-budget: ignore` meer. O.a. opgesplitst: NodesTable, SecurityPanel, TwoFactor, ServerDetailHeader, billing user routes.
 
 ---
 
-## E8 — Pentest (operator)
+## E5 — Unit tests in CI ✅
 
-Scope-brief: [pentest-scope.md](pentest-scope.md). Externe pentest plannen en uitvoeren op operator-host; bevindingen terugkoppelen naar code/wiki.
+| Ship | What |
+|------|------|
+| v1.4.31 | CI job `test:coverage` — floors uit `vitest.config.ts` |
+
+Coverage scope (security/pure helpers): auth csrf/rate-limit/password, `safe-url`, `server-access`, shared permissions/bytes/daemon-jwt/license-ticket, file-manager paths. **Floors:** lines/statements ≥95%, functions ≥90%.
+
+**Optioneel later (wave 3):** extra service tests (`servers-create`, `billing-checkout`, …) — geen blocker voor wave 2+ afsluiting.
 
 ---
 
-## Niet haalbaar — stress test
+## E6 — Playwright e2e ✅
 
-Geen productie-achtige load/stress test in deze repo/CI (geen multi-node swarm, geen duizenden gelijktijdige spelers). Alternatief: operator draait eigen k6/Locust tegen staging; optioneel later een **script-sjabloon** in `scripts/` (geen agent-draai in cloud).
+| Ship | What |
+|------|------|
+| v1.4.31 | `e2e/smoke.spec.ts`, `e2e/authz-smoke.spec.ts`, CI e2e job |
+| v1.4.31 | `scripts/e2e-ci.sh`, `scripts/wait-panel-health.sh`, staging workflow |
+
+Smoke: login page; authenticated login when `E2E_LOGIN=1` (fresh CI DB, geen Turnstile). Authz smokes: CSRF, server list, files tab, admin settings (met `E2E_PASSWORD` op staging).
+
+---
+
+## E7 / E8 — Operator (wave 3)
+
+Geen agent/repo deliverable — templates + Go-live UI bestaan:
+
+- **E7:** [sla-ops.md](sla-ops.md), drill scripts `scripts/sla-*`, Admin → Go-live attestations
+- **E8:** [pentest-scope.md](pentest-scope.md) — externe partij op operator staging/productie
+
+Zie [enterprise-code-wave3.md](enterprise-code-wave3.md).
+
+---
+
+## X1 — Stress test (blocked)
+
+Geen productie-achtige load/stress test in repo-CI. Operator kan k6/Locust op eigen staging draaien; optioneel later script-sjabloon onder `scripts/`.
+
+---
+
+## Version map
+
+| Version | Wave 2+ scope |
+|---------|----------------|
+| 1.4.25 | E1 start, first services, shared Zod |
+| 1.4.26 | Services passthrough, routes↛repos error |
+| 1.4.27 | OpenAPI sync, UI budgets |
+| 1.4.28–29 | E2c servers + release bundle fix |
+| 1.4.30 | E2c+ settings / transfer / nodes admin |
+| 1.4.31 | E5 coverage CI, E6 Playwright CI |
 
 ---
 
 ## Related
 
+- [Enterprise code — wave 3](enterprise-code-wave3.md) — operator SLA/pentest + optional test depth
 - Wave 1 canvas: **enterprise-split-roadmap** (complete)
 - [development.md](development.md) — gates, tests, glossary
 - [CHANGELOG.md](../CHANGELOG.md)

@@ -19,8 +19,8 @@ Last updated: **2026-08-10** · product **v1.4.31**
 | Sprint 10 — SaaS / SLA track | ✅ **1.1.2** (Go-live UI, BullMQ, `/api/v1`, peer MySQL, CI) |
 | Sprint 11 — SaaS harden | ✅ **1.2.0** (HA flag, peer-only transfer, owner limits, ops drills, CI) |
 | Customer go-live (webhook/SMTP/Mollie) | Their install — Admin → Settings → Go-live |
-| Enterprise code wave 2+ (structure, CI, services) | ✅ **1.4.28** ([wave 2 wiki](wiki/enterprise-code-wave2.md)) |
-| Enterprise code wave 3 (tests, e2e, SLA, pentest) | 🔄 Active backlog ([wave 3 wiki](wiki/enterprise-code-wave3.md)) |
+| Enterprise code wave 2+ (structure, CI, services, tests) | ✅ **1.4.31** ([wave 2 wiki](wiki/enterprise-code-wave2.md)) |
+| Enterprise code wave 3 (SLA, pentest, optional test depth) | 🔄 Operator backlog ([wave 3 wiki](wiki/enterprise-code-wave3.md)) |
 
 ---
 
@@ -42,7 +42,7 @@ Last updated: **2026-08-10** · product **v1.4.31**
 
 Optional **P2** (eggs/nests, Redis Cluster/Sentinel). Webhook, SMTP, and Mollie are **customer setup** after install.
 
-**Enterprise wave 3** (active): Vitest coverage in CI, Playwright e2e, operator SLA drills, external pentest prep — see [enterprise-code-wave3.md](wiki/enterprise-code-wave3.md). Load/stress testing remains operator-only (blocked in cloud).
+**Enterprise wave 2+** is **complete** (E1–E6, v1.4.31). **Wave 3** is operator SLA/pentest + optional service tests — see [enterprise-code-wave3.md](wiki/enterprise-code-wave3.md). Load/stress testing remains operator-only (blocked in cloud).
 
 **Operator process (not agent backlog):** external pentest execution and counsel-signed SLAs use wiki templates + Go-live attestations ([sla-ops.md](wiki/sla-ops.md) · [pentest-scope.md](wiki/pentest-scope.md)).
 

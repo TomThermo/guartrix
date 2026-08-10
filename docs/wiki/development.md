@@ -144,7 +144,7 @@ Pages stay under **~250 LOC** (composition only). Oversized legacy files are tra
 
 Wave 1 (enterprise-split P0–P2, v1.4.22–24) finished feature folders, repositories layer, shared server schemas, and first boundary lint.
 
-**Wave 2+** (v1.4.25+) — volledige enterprise-backlog; enige uitzondering: load/stress test (geen infra).
+**Wave 2+** (v1.4.31) — **engineering af** (E1–E6). Operator vervolg: [wave 3](enterprise-code-wave3.md). Enige repo-uitzondering: load/stress test.
 
 ```bash
 npm run check:enterprise   # structuur + typecheck (CI)
@@ -152,11 +152,11 @@ npm run test:coverage      # Vitest + floors (CI)
 npm run test:e2e           # Playwright (see Tests above)
 ```
 
-- **CI:** `.github/workflows/ci.yml` — enterprise gates, coverage, Playwright e2e
+- **CI:** `.github/workflows/ci.yml` — enterprise + coverage + Playwright e2e
 - **Layers:** `routes → services → repositories → prisma` — routes↛repositories is **error**
 - **Contracts:** Zod in `packages/shared/src/schemas/`
 
-Volledige backlog (inclusief SLA, pentest): [Enterprise code — wave 2+](enterprise-code-wave2.md).
+Volledige wave 2+ map: [Enterprise code — wave 2+](enterprise-code-wave2.md) · operator: [wave 3](enterprise-code-wave3.md).
 
 ## Workspace tips
 
