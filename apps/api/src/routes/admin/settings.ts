@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { requireAdmin } from "../../auth/auth.js";
 import { logActivity } from "../../activity-log.js";
+import { config } from "../../config.js";
 import { sendMail, isSmtpConfigured } from "../../mail.js";
 import { findUser } from "../../services/users.js";
 import {
@@ -111,18 +112,27 @@ export function registerAdminSettingsRoutes(app: FastifyInstance): void {
       const result = await sendMail({
         to,
         subject: "Guartrix test mail",
-        text: `This is a test message from your Guartrix panel.\n\nSent at ${new Date().toISOString()}\n`,
+        text: `This is a test message from your Guartrix panel.\n\nSent at ${new Date().toISOString()}\nSMTP: ${config.mail.smtpHost}:${config.mail.smtpPort}\n`,
       });
       logActivity({
         action: "admin.settings.test-mail",
         request,
         user,
         success: result.delivered,
-        metadata: { to, delivered: result.delivered },
+        metadata: { to, delivered: result.delivered, error: result.error ?? null },
       });
+      if (!result.delivered) {
+        return reply.status(502).send({
+          ok: false,
+          delivered: false,
+          to,
+          outboxPath: result.outboxPath,
+          error: result.error ?? "SMTP delivery failed",
+        });
+      }
       return {
         ok: true,
-        delivered: result.delivered,
+        delivered: true,
         to,
         outboxPath: result.outboxPath,
       };

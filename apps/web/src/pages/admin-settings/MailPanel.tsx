@@ -58,7 +58,7 @@ export function MailPanel({
           <Form.Control
             value={smtpHost}
             onChange={(e) => onSmtpHostChange(e.target.value)}
-            placeholder="smtp.example.com"
+            placeholder="mail.guartrix.com"
           />
         </Form.Group>
       </Col>
@@ -117,17 +117,21 @@ export function MailPanel({
         </Form.Group>
       </Col>
       <Col xs={12}>
-        <Button
-          type="button"
-          variant="outline-secondary"
-          disabled={busy || !smtpConfigured}
-          onClick={onTestMail}
-        >
-          {t("adminSettings.testMail")}
-        </Button>
-        {!smtpConfigured && (
-          <span className="small text-secondary ms-2">{t("adminSettings.smtpRequired")}</span>
-        )}
+        <div className="d-flex flex-wrap align-items-center gap-2">
+          <Button
+            type="button"
+            variant="primary"
+            disabled={busy || !smtpConfigured}
+            onClick={onTestMail}
+          >
+            <i className="fa-solid fa-paper-plane me-2" aria-hidden />
+            {t("adminSettings.testMail")}
+          </Button>
+          {!smtpConfigured && (
+            <span className="small text-secondary">{t("adminSettings.smtpRequired")}</span>
+          )}
+        </div>
+        <p className="small text-secondary mb-0 mt-2">{t("adminSettings.testMailHelp")}</p>
       </Col>
     </Row>
   );

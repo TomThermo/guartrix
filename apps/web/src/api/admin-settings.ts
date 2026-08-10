@@ -150,6 +150,7 @@ export const adminSettingsApi = {
       delivered: boolean;
       to: string;
       outboxPath: string;
+      error?: string;
     }>("/api/admin/settings/test-mail", {
       method: "POST",
       body: "{}",

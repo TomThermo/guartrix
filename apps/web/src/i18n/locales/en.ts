@@ -1814,8 +1814,10 @@ export const en = {
     smtpStartTls: "STARTTLS",
     smtpUser: "SMTP username",
     smtpPass: "SMTP password",
-    testMail: "Send test mail",
+    testMail: "Test mail server",
     smtpRequired: "Save an SMTP host first.",
+    testMailHelp:
+      "Sends a test message to your admin account email. Save settings before testing if you changed SMTP fields.",
     testMailSent: "Test mail delivered to {to}.",
     testMailOutbox: "Wrote outbox copy for {to} (SMTP may not have delivered).",
     testMailFailed: "Test mail failed",

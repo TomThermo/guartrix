@@ -6,7 +6,7 @@ Volgt op [enterprise-split](development.md#enterprise-split) P0–P2 (v1.4.22–
 
 **Enige uitzondering (repo/CI):** load/stress test — geen realistische multi-node infra in dev/CI.
 
-Last updated: **2026-08-10** · product **v1.4.34**
+Last updated: **2026-08-10** · product **v1.4.35**
 
 ---
 

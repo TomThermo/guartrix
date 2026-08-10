@@ -3,6 +3,14 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.35] — 2026-08-10
+
+### Fixed
+- SMTP **STARTTLS** (port 587) actually works in the panel mail client (was falling back to outbox).
+
+### Changed
+- Admin → Mail: primary **Test mail server** button; failed tests return the SMTP error instead of a soft outbox notice.
+
 ## [1.4.34] — 2026-08-10
 
 ### Added

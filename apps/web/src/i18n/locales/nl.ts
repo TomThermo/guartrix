@@ -1829,8 +1829,10 @@ export const nl: Messages = {
     smtpStartTls: "STARTTLS",
     smtpUser: "SMTP-gebruikersnaam",
     smtpPass: "SMTP-wachtwoord",
-    testMail: "Testmail versturen",
+    testMail: "Test mailserver",
     smtpRequired: "Sla eerst een SMTP-host op.",
+    testMailHelp:
+      "Stuurt een testbericht naar het e-mailadres van je admin-account. Sla wijzigingen eerst op als je SMTP-velden hebt aangepast.",
     testMailSent: "Testmail afgeleverd aan {to}.",
     testMailOutbox: "Outbox-kopie voor {to} (SMTP heeft mogelijk niet geleverd).",
     testMailFailed: "Testmail mislukt",

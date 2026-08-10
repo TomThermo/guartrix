@@ -4,7 +4,7 @@ Operator process + optionele test-diepte **na** afgeronde [wave 2+](enterprise-c
 
 **Enige repo-uitzondering:** load/stress test (geen realistische infra in dev/CI).
 
-Last updated: **2026-08-10** · product **v1.4.34**
+Last updated: **2026-08-10** · product **v1.4.35**
 
 ---
 

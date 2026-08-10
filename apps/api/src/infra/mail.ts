@@ -18,11 +18,11 @@ export function isSmtpConfigured(): boolean {
 
 /**
  * Deliver panel mail. Always writes a copy under data/mail-outbox/.
- * When SMTP_HOST is set (prefer port 465 / SMTPS), also tries to send via SMTP.
+ * When SMTP_HOST is set, also tries to send via SMTP (465 SMTPS or 587 STARTTLS).
  */
 export async function sendMail(
   msg: MailMessage,
-): Promise<{ delivered: boolean; outboxPath: string }> {
+): Promise<{ delivered: boolean; outboxPath: string; error?: string }> {
   const outboxDir = path.join(config.dataDir, "mail-outbox");
   await fs.mkdir(outboxDir, { recursive: true });
   const stamp = new Date().toISOString().replace(/[:.]/g, "-");
@@ -50,41 +50,74 @@ export async function sendMail(
     await smtpSend(msg);
     return { delivered: true, outboxPath };
   } catch (err) {
-    console.warn(
-      `[guartrix] SMTP send failed (outbox kept at ${outboxPath}):`,
-      err instanceof Error ? err.message : err,
-    );
-    return { delivered: false, outboxPath };
+    const error = err instanceof Error ? err.message : String(err);
+    console.warn(`[guartrix] SMTP send failed (outbox kept at ${outboxPath}):`, error);
+    return { delivered: false, outboxPath, error };
   }
+}
+
+function upgradeToTls(socket: net.Socket, host: string): Promise<tls.TLSSocket> {
+  return new Promise((resolve, reject) => {
+    const secure = tls.connect(
+      { socket, host, servername: host, rejectUnauthorized: true },
+      () => resolve(secure),
+    );
+    secure.on("error", reject);
+  });
 }
 
 async function smtpSend(msg: MailMessage): Promise<void> {
   const host = config.mail.smtpHost;
   const port = config.mail.smtpPort;
   const secure = config.mail.smtpSecure;
+  const startTls = !secure && Boolean(config.mail.smtpStartTls);
 
-  if (!secure && config.mail.smtpStartTls) {
-    throw new Error("STARTTLS not supported; use SMTP_SECURE=true (port 465) or leave SMTP unset");
-  }
-
-  const socket: net.Socket = await new Promise((resolve, reject) => {
+  let socket: net.Socket = await new Promise((resolve, reject) => {
     const s = secure
       ? tls.connect({ host, port, servername: host }, () => resolve(s))
       : net.connect({ host, port }, () => resolve(s));
     s.on("error", reject);
   });
 
-  const read = (): Promise<string> =>
+  let buffer = "";
+
+  const takeCompleteResponse = (): string | null => {
+    const lines = buffer.split(/\r?\n/);
+    let end = -1;
+    for (let i = 0; i < lines.length - 1; i++) {
+      // Final SMTP line is "NNN " (space), continued lines are "NNN-"
+      if (/^\d{3} /.test(lines[i]!)) {
+        end = i;
+        break;
+      }
+    }
+    if (end < 0) return null;
+    const chunk = lines.slice(0, end + 1).join("\n");
+    buffer = lines.slice(end + 1).join("\n");
+    return chunk;
+  };
+
+  const readResponse = (): Promise<string> =>
     new Promise((resolve, reject) => {
+      const early = takeCompleteResponse();
+      if (early !== null) {
+        resolve(early);
+        return;
+      }
       const onData = (buf: Buffer) => {
-        socket.off("error", onErr);
-        resolve(buf.toString("utf8"));
+        buffer += buf.toString("utf8");
+        const done = takeCompleteResponse();
+        if (done !== null) {
+          socket.off("data", onData);
+          socket.off("error", onErr);
+          resolve(done);
+        }
       };
       const onErr = (err: Error) => {
         socket.off("data", onData);
         reject(err);
       };
-      socket.once("data", onData);
+      socket.on("data", onData);
       socket.once("error", onErr);
     });
 
@@ -93,7 +126,7 @@ async function smtpSend(msg: MailMessage): Promise<void> {
   };
 
   const expect = async (code: string) => {
-    const resp = await read();
+    const resp = await readResponse();
     if (!resp.startsWith(code)) {
       throw new Error(`SMTP unexpected: ${resp.trim().slice(0, 200)}`);
     }
@@ -102,8 +135,19 @@ async function smtpSend(msg: MailMessage): Promise<void> {
 
   try {
     await expect("220");
-    write("EHLO guartrix");
+    write(`EHLO guartrix`);
     await expect("250");
+
+    if (startTls) {
+      write("STARTTLS");
+      await expect("220");
+      socket.removeAllListeners("data");
+      socket.removeAllListeners("error");
+      socket = await upgradeToTls(socket, host);
+      buffer = "";
+      write("EHLO guartrix");
+      await expect("250");
+    }
 
     const user = config.mail.smtpUser;
     const pass = config.mail.smtpPass;
