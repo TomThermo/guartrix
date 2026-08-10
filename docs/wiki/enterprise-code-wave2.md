@@ -6,7 +6,7 @@ Volgt op [enterprise-split](development.md#enterprise-split) P0–P2 (v1.4.22–
 
 **Enige uitzondering (repo/CI):** load/stress test — geen realistische multi-node infra in dev/CI.
 
-Last updated: **2026-08-10** · product **v1.4.31**
+Last updated: **2026-08-10** · product **v1.4.34**
 
 ---
 
@@ -20,8 +20,8 @@ Last updated: **2026-08-10** · product **v1.4.31**
 | E4 | UI size-budget cleanup | ✅ v1.4.27 |
 | E5 | Vitest + coverage floors in CI | ✅ v1.4.31 |
 | E6 | Playwright e2e in CI (+ staging workflow) | ✅ v1.4.31 |
-| E7 | SLA drills + Go-live attestations | → [wave 3](enterprise-code-wave3.md) (operator) |
-| E8 | External pentest | → [wave 3](enterprise-code-wave3.md) (operator) |
+| E7 | SLA drills + Go-live attestations | ✅ v1.4.34 (live 2026-08-10) |
+| E8 | External pentest (assessor report) | ⬜ operator — Go-live ack ≠ rapport |
 | X1 | Load/stress test | **blocked** (operator staging only) |
 
 Visual summary: canvas **enterprise-code-wave2** in Cursor.
@@ -110,12 +110,19 @@ Smoke: login page; authenticated login when `E2E_LOGIN=1` (fresh CI DB, geen Tur
 
 ---
 
-## E7 / E8 — Operator (wave 3)
+## E7 — SLA drills ✅ (live)
 
-Geen agent/repo deliverable — templates + Go-live UI bestaan:
+Operator one-shot:
 
-- **E7:** [sla-ops.md](sla-ops.md), drill scripts `scripts/sla-*`, Admin → Go-live attestations
-- **E8:** [pentest-scope.md](pentest-scope.md) — externe partij op operator staging/productie
+```bash
+bash scripts/sla-go-live-drill.sh --live --attest-all
+```
+
+Shipped v1.4.33–34: `sla-*-drill.sh`, `panel-settings-attest.mjs`. Live attestations **2026-08-10** on guartrix.com.
+
+## E8 — External pentest ⬜
+
+Go-live `slaPentestAck` = scheduled/done **attestation** only. Assessor report + remediations: [pentest-scope.md](pentest-scope.md) — **not** agent/repo work.
 
 Zie [enterprise-code-wave3.md](enterprise-code-wave3.md).
 

@@ -4,7 +4,7 @@ Operator process + optionele test-diepte **na** afgeronde [wave 2+](enterprise-c
 
 **Enige repo-uitzondering:** load/stress test (geen realistische infra in dev/CI).
 
-Last updated: **2026-08-10** · product **v1.4.33**
+Last updated: **2026-08-10** · product **v1.4.34**
 
 ---
 
@@ -12,8 +12,8 @@ Last updated: **2026-08-10** · product **v1.4.33**
 
 | ID | Item | Status |
 |----|------|--------|
-| W3-E7 | SLA drills + Go-live attestations | ⬜ operator |
-| W3-E8 | External pentest | ⬜ operator |
+| W3-E7 | SLA drills + Go-live attestations | ✅ live 2026-08-10 |
+| W3-E8 | External pentest (assessor report) | ⬜ operator |
 | W3-E5+ | Extra service-layer unit tests | ✅ v1.4.32 |
 | W3-X1 | Load/stress test template | ✅ k6 template (operator runs) |
 
@@ -23,16 +23,23 @@ Canvas: **enterprise-code-wave3** in Cursor.
 
 ---
 
-## W3-E7 — SLA (operator)
+## W3-E7 — SLA (operator) ✅ live 2026-08-10
 
-**Checklist:**
+**One-shot on operator host:**
 
-1. `bash scripts/sla-restore-drill.sh --backup-only --attest` on **live** (backup + Go-live date)
-2. `bash scripts/sla-secret-rotation-drill.sh --live --attest` after manual rotation + restart
-3. Admin → Settings → Go-live — attestations invullen
-4. Log in [sla-drill-log.example.md](sla-drill-log.example.md)
+```bash
+bash scripts/sla-go-live-drill.sh --live --attest-all
+```
 
-Wiki: [sla-ops.md](sla-ops.md) · scripts onder `scripts/sla-*.sh`
+Or individually:
+
+```bash
+bash scripts/sla-restore-drill.sh --backup-only --attest
+bash scripts/sla-secret-rotation-drill.sh --live --attest
+bash scripts/sla-capacity-review-drill.sh --attest
+```
+
+**Done when:** Go-live readiness shows pass/warn on SLA rows (restore, capacity, secret rotation, incident ack). Pentest ack = scheduled/done attestation only.
 
 ---
 
@@ -76,6 +83,7 @@ Zie `scripts/load-test-k6-template.js` (health + login page load smoke).
 | v1.4.28 | E2c: servers-create, lifecycle, import |
 | v1.4.30 | E2c+: settings-apply, transfer, nodes-admin |
 | v1.4.31 | E5 coverage CI, E6 Playwright CI |
+| v1.4.34 | sla-go-live-drill.sh + capacity drill · live E7 complete |
 | v1.4.33 | SLA drill scripts: live smoke + Go-live attest CLI |
 | v1.4.32 | W3-E5+ service tests, k6 load template, operator checklists |
 

@@ -116,7 +116,9 @@ Operator and developer documentation for the Guartrix Minecraft hosting panel.
 | `scripts/prod-web.mjs` (+ `prod-web/`) | Web edge / reverse proxy |
 | `scripts/backup-panel-db.sh` / `install-panel-backup-cron.sh` | Panel DB backups |
 | `scripts/sla-restore-drill.sh` | Panel DB backup / staging restore drill |
-| `scripts/sla-secret-rotation-drill.sh` | Secret rotation checklist |
+| `scripts/sla-secret-rotation-drill.sh` | Secret rotation checklist + live smoke |
+| `scripts/sla-capacity-review-drill.sh` | Capacity snapshot + Go-live date |
+| `scripts/sla-go-live-drill.sh` | One-shot live SLA drills + attest-all |
 | `scripts/lib.sh` | Shared helpers |
 
 Release packaging, screenshot capture, and download-gate scripts stay on the **operator host only** (not in the public git tree).

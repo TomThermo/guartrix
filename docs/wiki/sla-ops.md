@@ -73,10 +73,21 @@ The script **does not rotate secrets** — you change values in `.env`, Admin �
 
 ## Capacity review
 
+```bash
+bash scripts/sla-capacity-review-drill.sh --attest
+```
+
 1. Node count, server count, MySQL size, Redis memory.
 2. Scale smoke on the operator host when changing hardware.
 3. See [scaling.md](scaling.md) and [scale roadmap](../scale-100n-1000c-roadmap.md).
-4. Record date under **Go-live → Last capacity review**.
+
+## Go-live one-shot (live operator)
+
+```bash
+bash scripts/sla-go-live-drill.sh --live --attest-all
+```
+
+Runs backup + restore attestation, secret rotation smoke, capacity review, and boolean acks. Does **not** rotate secrets or run external pentest.
 
 ## HA posture
 

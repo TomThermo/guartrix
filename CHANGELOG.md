@@ -3,6 +3,12 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.34] — 2026-08-10
+
+### Added
+- `sla-go-live-drill.sh --live --attest-all` — one-shot live SLA drills + Go-live dates.
+- `sla-capacity-review-drill.sh`; panel-settings attest supports boolean ack fields.
+
 ## [1.4.33] — 2026-08-10
 
 ### Added
