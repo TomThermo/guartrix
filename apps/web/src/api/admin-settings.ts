@@ -135,6 +135,40 @@ export type ReadinessReport = {
   };
 };
 
+export type MailTemplateId =
+  | "verify-email"
+  | "password-reset"
+  | "invite-set-password"
+  | "invite-server"
+  | "alert"
+  | "test-mail";
+
+export type MailTemplateParts = {
+  subject: string;
+  html: string;
+  text: string;
+};
+
+export type MailTemplatesAdminView = {
+  ids: MailTemplateId[];
+  layoutHtml: string;
+  layoutTxt: string;
+  layoutHtmlCustom: boolean;
+  layoutTxtCustom: boolean;
+  templates: Record<
+    MailTemplateId,
+    MailTemplateParts & { custom: { subject: boolean; html: boolean; text: boolean } }
+  >;
+};
+
+export type MailTemplatesPatch = {
+  layoutHtml?: string | null;
+  layoutTxt?: string | null;
+  templates?: Partial<Record<MailTemplateId, Partial<MailTemplateParts> | null>>;
+  resetAll?: boolean;
+  resetId?: MailTemplateId;
+};
+
 export const adminSettingsApi = {
   getPanelSettings: () => request<PanelSettings>("/api/admin/settings"),
   updatePanelSettings: (body: PanelSettingsPatch) =>
@@ -155,6 +189,20 @@ export const adminSettingsApi = {
       method: "POST",
       body: "{}",
     }),
+  getMailTemplates: () => request<MailTemplatesAdminView>("/api/admin/settings/mail-templates"),
+  updateMailTemplates: (body: MailTemplatesPatch) =>
+    request<MailTemplatesAdminView>("/api/admin/settings/mail-templates", {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
+  previewMailTemplate: (id: string) =>
+    request<{ ok: boolean; id: string; subject: string; text: string; html: string }>(
+      "/api/admin/settings/mail-templates/preview",
+      {
+        method: "POST",
+        body: JSON.stringify({ id }),
+      },
+    ),
   testPanelRedis: () =>
     request<{
       ok: boolean;

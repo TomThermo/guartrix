@@ -1,13 +1,12 @@
 import { config } from "./config.js";
-import { MAIL_TEMPLATE_FILES } from "./mail-template-content.js";
+import {
+  MAIL_TEMPLATE_IDS,
+  resolveTemplateFile,
+  type MailTemplateId,
+} from "./mail-template-store.js";
 
-export type MailTemplateId =
-  | "verify-email"
-  | "password-reset"
-  | "invite-set-password"
-  | "invite-server"
-  | "alert"
-  | "test-mail";
+export type { MailTemplateId };
+export { MAIL_TEMPLATE_IDS };
 
 export type MailTemplateVars = Record<string, string | boolean | number | undefined | null>;
 
@@ -15,23 +14,6 @@ export interface RenderedMail {
   subject: string;
   text: string;
   html: string;
-}
-
-const TEMPLATE_IDS: MailTemplateId[] = [
-  "verify-email",
-  "password-reset",
-  "invite-set-password",
-  "invite-server",
-  "alert",
-  "test-mail",
-];
-
-function readTemplate(file: string): string {
-  const body = MAIL_TEMPLATE_FILES[file];
-  if (body === undefined) {
-    throw new Error(`Missing mail template file: ${file}`);
-  }
-  return body;
 }
 
 function escapeHtml(value: string): string {
@@ -92,19 +74,19 @@ function brandingVars(): MailTemplateVars {
 
 /**
  * Render a branded multipart mail (subject + text + html).
- * HTML substitution escapes user/branding vars; content is inserted after escape.
+ * Admin overrides in data/mail-templates.json win over bundled defaults.
  */
 export function renderMail(id: MailTemplateId, vars: MailTemplateVars = {}): RenderedMail {
-  if (!TEMPLATE_IDS.includes(id)) {
+  if (!MAIL_TEMPLATE_IDS.includes(id)) {
     throw new Error(`Unknown mail template: ${id}`);
   }
 
   const merged: MailTemplateVars = { ...brandingVars(), ...vars };
-  const layoutHtml = readTemplate("layout.html");
-  const layoutTxt = readTemplate("layout.txt");
-  const bodyHtml = readTemplate(`${id}.html`);
-  const bodyTxt = readTemplate(`${id}.txt`);
-  const subjectRaw = readTemplate(`${id}.subject.txt`).trim();
+  const layoutHtml = resolveTemplateFile("layout.html");
+  const layoutTxt = resolveTemplateFile("layout.txt");
+  const bodyHtml = resolveTemplateFile(`${id}.html`);
+  const bodyTxt = resolveTemplateFile(`${id}.txt`);
+  const subjectRaw = resolveTemplateFile(`${id}.subject.txt`).trim();
 
   const contentHtml = applyTemplate(bodyHtml, merged, { escape: true });
   const contentTxt = applyTemplate(bodyTxt, merged, { escape: false });

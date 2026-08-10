@@ -268,6 +268,7 @@ export function useAdminSettings() {
     setTab,
     loading,
     busy,
+    setBusy,
     error,
     setError,
     notice,

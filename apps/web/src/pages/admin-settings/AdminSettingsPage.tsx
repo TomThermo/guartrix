@@ -104,6 +104,9 @@ export function AdminSettingsPage() {
                 smtpPassSet={s.smtpPassSet}
                 smtpConfigured={s.smtpConfigured}
                 busy={s.busy}
+                onBusy={s.setBusy}
+                onNotice={s.setNotice}
+                onError={s.setError}
                 onTestMail={() => void s.onTestMail()}
               />
             )}

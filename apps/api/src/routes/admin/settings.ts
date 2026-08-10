@@ -3,6 +3,14 @@ import { requireAdmin } from "../../auth/auth.js";
 import { logActivity } from "../../activity-log.js";
 import { config } from "../../config.js";
 import { sendMail, isSmtpConfigured, renderMail } from "../../mail.js";
+import {
+  applyMailTemplatesPatch,
+  getMailTemplatesAdminView,
+  previewVarsFor,
+  MAIL_TEMPLATE_IDS,
+  type MailTemplateId,
+  type MailTemplatesPatch,
+} from "../../mail.js";
 import { findUser } from "../../services/users.js";
 import {
   applyPanelSettings,
@@ -145,6 +153,53 @@ export function registerAdminSettingsRoutes(app: FastifyInstance): void {
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       return reply.status(502).send({ error: message });
+    }
+  });
+
+  app.get("/api/admin/settings/mail-templates", async (request, reply) => {
+    if (!(await requireAdmin(request, reply, "settings.read"))) return;
+    return getMailTemplatesAdminView();
+  });
+
+  app.put<{ Body: MailTemplatesPatch }>("/api/admin/settings/mail-templates", async (request, reply) => {
+    const user = await requireAdmin(request, reply, "settings.write");
+    if (!user) return;
+    try {
+      const patch = (request.body ?? {}) as MailTemplatesPatch;
+      await applyMailTemplatesPatch(patch);
+      logActivity({
+        action: "admin.settings.mail-templates",
+        request,
+        user,
+        success: true,
+        metadata: {
+          resetAll: Boolean(patch.resetAll),
+          resetId: patch.resetId ?? null,
+          keys: Object.keys(patch),
+        },
+      });
+      return getMailTemplatesAdminView();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return reply.status(400).send({ error: message });
+    }
+  });
+
+  app.post<{
+    Body: { id?: string; vars?: Record<string, string> };
+  }>("/api/admin/settings/mail-templates/preview", async (request, reply) => {
+    if (!(await requireAdmin(request, reply, "settings.read"))) return;
+    const id = String(request.body?.id ?? "test-mail") as MailTemplateId;
+    if (!MAIL_TEMPLATE_IDS.includes(id)) {
+      return reply.status(400).send({ error: `Unknown template id: ${id}` });
+    }
+    try {
+      const vars = { ...previewVarsFor(id), ...(request.body?.vars ?? {}) };
+      const mail = renderMail(id, vars);
+      return { ok: true, id, ...mail };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return reply.status(400).send({ error: message });
     }
   });
 }
