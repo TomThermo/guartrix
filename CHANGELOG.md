@@ -3,6 +3,11 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.45] — 2026-08-10
+
+### Fixed
+- Monaco editor assets: keep `toggleHighContrast` + HTML language packs so `/monaco/vs/*` is not SPA-fallback HTML (MIME error in Admin mail templates / file editor).
+
 ## [1.4.44] — 2026-08-10
 
 ### Added

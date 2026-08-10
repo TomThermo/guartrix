@@ -79,7 +79,7 @@ function faSubsetPlugin(): Plugin {
 /**
  * Copy Monaco AMD build into public/ so the editor loads without Vite bundling
  * the ESM graph (~4.5 MiB chunk + multi‑MiB workers). Drop unused language
- * services (TS / CSS / HTML) — panel file manager mostly edits json/yaml/props.
+ * services (TS / CSS) — keep HTML for mail templates; file manager uses json/yaml/props.
  */
 function monacoAssetsPlugin(): Plugin {
   const src = path.join(rootDir, "node_modules/monaco-editor/min/vs");
@@ -93,26 +93,23 @@ function monacoAssetsPlugin(): Plugin {
     fs.rmSync(dest, { recursive: true, force: true });
     fs.mkdirSync(path.dirname(dest), { recursive: true });
     fs.cpSync(src, dest, { recursive: true });
-    for (const lang of ["typescript", "css", "html"]) {
+    for (const lang of ["typescript", "css"]) {
       fs.rmSync(path.join(dest, "language", lang), { recursive: true, force: true });
     }
     // Worker bundles live under assets/ — drop unused language services.
     const assetsDir = path.join(dest, "assets");
     if (fs.existsSync(assetsDir)) {
       for (const name of fs.readdirSync(assetsDir)) {
-        if (/^(ts|css|html)\.worker/i.test(name)) {
+        if (/^(ts|css)\.worker/i.test(name)) {
           fs.rmSync(path.join(assetsDir, name), { force: true });
         }
       }
     }
     // Drop translated NLS packs (English defaults remain in core).
     fs.rmSync(path.join(dest, "nls"), { recursive: true, force: true });
-    // Optional high-contrast helper (~1.3 MiB) unused by the panel editor.
+    // Drop unused language modes (keep HTML for Admin mail templates + file manager).
     for (const name of fs.readdirSync(dest)) {
-      if (name.startsWith("toggleHighContrast")) {
-        fs.rmSync(path.join(dest, name), { force: true });
-      }
-      if (/^(tsMode|typescript-|cssMode|css-|htmlMode|html-)/i.test(name)) {
+      if (/^(tsMode|typescript-|cssMode|css-)/i.test(name)) {
         fs.rmSync(path.join(dest, name), { force: true });
       }
     }
