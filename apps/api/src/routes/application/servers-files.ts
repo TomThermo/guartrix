@@ -1,5 +1,4 @@
 import type { FastifyInstance } from "fastify";
-import { z } from "zod";
 import { logActivity } from "../../activity-log.js";
 import {
   compressFiles,
@@ -10,6 +9,13 @@ import {
   renamePath,
   writeFileContent,
 } from "../../servers/files.js";
+import {
+  fileCompressSchema,
+  fileDeleteSchema,
+  fileMkdirSchema,
+  fileRenameSchema,
+  fileWriteSchema,
+} from "../../schemas/servers.js";
 import { requireApplicationServer } from "./server-access.js";
 
 /** Application API file manager mirrors (`servers.files`). */
@@ -62,12 +68,7 @@ export function registerApplicationServerFilesRoutes(app: FastifyInstance): void
         request.params.id,
       );
       if (!access) return;
-      const parsed = z
-        .object({
-          path: z.string().min(1).max(512),
-          content: z.string().max(2_000_000),
-        })
-        .safeParse(request.body);
+      const parsed = fileWriteSchema.safeParse(request.body);
       if (!parsed.success) {
         return reply.status(400).send({ error: parsed.error.flatten() });
       }
@@ -97,7 +98,7 @@ export function registerApplicationServerFilesRoutes(app: FastifyInstance): void
         request.params.id,
       );
       if (!access) return;
-      const parsed = z.object({ path: z.string().min(1).max(512) }).safeParse(request.body);
+      const parsed = fileMkdirSchema.safeParse(request.body);
       if (!parsed.success) {
         return reply.status(400).send({ error: parsed.error.flatten() });
       }
@@ -121,12 +122,7 @@ export function registerApplicationServerFilesRoutes(app: FastifyInstance): void
         request.params.id,
       );
       if (!access) return;
-      const parsed = z
-        .object({
-          from: z.string().min(1).max(512),
-          to: z.string().min(1).max(512),
-        })
-        .safeParse(request.body);
+      const parsed = fileRenameSchema.safeParse(request.body);
       if (!parsed.success) {
         return reply.status(400).send({ error: parsed.error.flatten() });
       }
@@ -150,7 +146,7 @@ export function registerApplicationServerFilesRoutes(app: FastifyInstance): void
         request.params.id,
       );
       if (!access) return;
-      const parsed = z.object({ path: z.string().min(1).max(512) }).safeParse(request.body);
+      const parsed = fileDeleteSchema.safeParse(request.body);
       if (!parsed.success) {
         return reply.status(400).send({ error: parsed.error.flatten() });
       }
@@ -180,12 +176,7 @@ export function registerApplicationServerFilesRoutes(app: FastifyInstance): void
         request.params.id,
       );
       if (!access) return;
-      const parsed = z
-        .object({
-          paths: z.array(z.string().min(1).max(512)).min(1).max(100),
-          destination: z.string().min(1).max(512),
-        })
-        .safeParse(request.body);
+      const parsed = fileCompressSchema.safeParse(request.body);
       if (!parsed.success) {
         return reply.status(400).send({ error: parsed.error.flatten() });
       }

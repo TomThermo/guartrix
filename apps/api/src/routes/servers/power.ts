@@ -10,6 +10,7 @@ import {
   POWER_PERMISSION,
   type PowerSignal,
 } from "../../servers/power-actions.js";
+import { powerSignalSchema } from "../../schemas/servers.js";
 
 function sendPowerResult(
   reply: import("fastify").FastifyReply,
@@ -61,7 +62,7 @@ export function registerServerPowerRoutes(app: FastifyInstance): void {
   app.post<{ Params: { id: string } }>("/api/servers/:id/power", async (request, reply) => {
     const parsed = z
       .object({
-        signal: z.enum(["start", "stop", "restart", "kill"]),
+        signal: powerSignalSchema,
       })
       .safeParse(request.body);
     if (!parsed.success) {

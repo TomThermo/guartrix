@@ -5,30 +5,12 @@ import { logActivity } from "../../activity-log.js";
 import { prisma } from "../../db.js";
 import { serverListInclude, toMcServer } from "../../servers/serialize.js";
 import { performServerPower } from "../../servers/power-actions.js";
+import {
+  createServerApplicationSchema,
+  powerSignalSchema,
+} from "../../schemas/servers.js";
 
-const createServerSchema = z.object({
-  ownerId: z.string().min(1),
-  name: z.string().trim().min(1).max(64),
-  type: z.enum([
-    "VANILLA",
-    "PAPER",
-    "FABRIC",
-    "FORGE",
-    "PURPUR",
-    "NEOFORGE",
-    "QUILT",
-    "BEDROCK",
-    "BEDROCK_PREVIEW",
-    "POCKETMINE",
-    "NUKKIT",
-  ]),
-  mcVersion: z.string().min(1).max(32),
-  port: z.number().int().min(1024).max(65535),
-  memoryMb: z.number().int().min(512).max(65536),
-  diskMb: z.number().int().min(1024).max(10_485_760).optional(),
-  cpuLimit: z.number().int().min(0).max(6400).optional(),
-  nodeId: z.string().min(1).optional(),
-});
+const createServerSchema = createServerApplicationSchema;
 
 export function registerApplicationServerCoreRoutes(app: FastifyInstance): void {
   app.get("/api/application/servers", async (request, reply) => {
@@ -215,7 +197,7 @@ export function registerApplicationServerCoreRoutes(app: FastifyInstance): void 
       if (!ctx) return;
       const parsed = z
         .object({
-          signal: z.enum(["start", "stop", "restart", "kill"]),
+          signal: powerSignalSchema,
         })
         .safeParse(request.body);
       if (!parsed.success) {

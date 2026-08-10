@@ -3,7 +3,7 @@ import type { ConnectInfo, ServerDetail, ServerStatus, SystemInfo } from "@msm/s
 import type { hasPermission } from "@msm/shared";
 import { Spinner, Tab } from "react-bootstrap";
 import { api } from "../../api";
-import { ServerConsoleLayout } from "../ServerConsoleLayout";
+import { ServerConsoleLayout } from "./ServerConsoleLayout";
 import type { TabId } from "./server-tabs";
 
 const ActivityPanel = lazy(() =>

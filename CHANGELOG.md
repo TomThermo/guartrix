@@ -3,6 +3,16 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.21] — 2026-08-10
+
+### Changed
+- Enterprise-split P0: finish web feature-folder duals (W1), API `services/` for profile/subusers/databases/gdpr (A1/A2), shared Client+Application Zod in `schemas/servers.ts` (C1).
+
+## [1.4.20] — 2026-08-10
+
+### Changed
+- Enterprise-split P0 W2: split ProfileSection, UsersPage, AccountSecurityPage, AdminSettingsPage into thin composition shells.
+
 ## [1.4.19] — 2026-08-08
 
 ### Fixed

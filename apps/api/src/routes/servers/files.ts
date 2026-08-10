@@ -1,5 +1,4 @@
 import type { FastifyInstance } from "fastify";
-import { z } from "zod";
 import { logActivity } from "../../activity-log.js";
 import { requireServerAccess } from "../../auth/auth.js";
 import {
@@ -15,20 +14,15 @@ import {
   saveUpload,
   writeFileContent,
 } from "../../servers/files.js";
+import {
+  fileCompressSchema,
+  fileDecompressSchema,
+  fileDownloadZipSchema,
+} from "../../schemas/servers.js";
 
-const compressSchema = z.object({
-  paths: z.array(z.string().min(1).max(512)).min(1).max(100),
-  destination: z.string().min(1).max(512),
-});
-
-const downloadZipSchema = z.object({
-  paths: z.array(z.string().min(1).max(512)).min(1).max(100),
-});
-
-const decompressSchema = z.object({
-  path: z.string().min(1).max(512),
-  destination: z.string().min(1).max(512).optional(),
-});
+const compressSchema = fileCompressSchema;
+const downloadZipSchema = fileDownloadZipSchema;
+const decompressSchema = fileDecompressSchema;
 
 export function registerFileRoutes(app: FastifyInstance): void {
   app.get<{ Params: { id: string }; Querystring: { path?: string } }>(
