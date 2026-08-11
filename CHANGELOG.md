@@ -3,6 +3,11 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.51] — 2026-08-11
+
+- Daemon storage mount: create mount-point dirs with `sudo mkdir -p` fallback on `EACCES`/`EPERM` (fixes Mount when `/var/lib/guartrix` is missing or root-owned).
+- Docs: install-nodes — create/chown `/var/lib/guartrix/mounts` before first Mount; sudoers example includes `mkdir`.
+
 ## [1.4.50] — 2026-08-11
 
 - Docs/README: node **storage pools** screenshots (`40`/`41`) + wiki/panel guide updates.

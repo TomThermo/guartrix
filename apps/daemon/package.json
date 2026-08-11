@@ -1,6 +1,6 @@
 {
   "name": "@guartrix/daemon",
-  "version": "1.4.50",
+  "version": "1.4.51",
   "private": true,
   "type": "module",
   "scripts": {

@@ -169,6 +169,26 @@ async function sudoMount(args: string[]): Promise<void> {
   }
 }
 
+async function sudoMkdir(dir: string): Promise<void> {
+  try {
+    await fsp.mkdir(dir, { recursive: true });
+    return;
+  } catch (err) {
+    const code = err && typeof err === "object" && "code" in err ? String((err as { code?: string }).code) : "";
+    if (code !== "EACCES" && code !== "EPERM") throw err;
+  }
+  try {
+    await execFileAsync("sudo", ["-n", "mkdir", "-p", dir], { timeout: 10_000 });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    const stderr =
+      err && typeof err === "object" && "stderr" in err
+        ? String((err as { stderr?: Buffer | string }).stderr ?? "")
+        : "";
+    throw new Error(`mkdir failed for ${dir}: ${stderr.trim() || msg}`);
+  }
+}
+
 async function sudoUmount(mountPoint: string, lazy: boolean): Promise<void> {
   const args = lazy ? ["-l", mountPoint] : [mountPoint];
   try {
@@ -186,9 +206,9 @@ async function sudoUmount(mountPoint: string, lazy: boolean): Promise<void> {
 /** Mount local (bind) or NFS storage at mountPoint. */
 export async function mountStorage(input: MountStorageInput): Promise<StoragePathStatus> {
   const mountPoint = assertAllowedMountPoint(input.mountPoint);
-  await fsp.mkdir(mountPoint, { recursive: true });
-  await fsp.mkdir(path.join(mountPoint, "servers"), { recursive: true });
-  await fsp.mkdir(path.join(mountPoint, "backups"), { recursive: true });
+  await sudoMkdir(mountPoint);
+  await sudoMkdir(path.join(mountPoint, "servers"));
+  await sudoMkdir(path.join(mountPoint, "backups"));
 
   const current = await isMountPoint(mountPoint);
   if (current) {
@@ -205,7 +225,7 @@ export async function mountStorage(input: MountStorageInput): Promise<StoragePat
     if (!path.isAbsolute(hostPath)) {
       throw new Error("Local host path must be absolute");
     }
-    await fsp.mkdir(hostPath, { recursive: true });
+    await sudoMkdir(hostPath);
     if (hostPath !== mountPoint) {
       await sudoMount(["--bind", hostPath, mountPoint]);
     }

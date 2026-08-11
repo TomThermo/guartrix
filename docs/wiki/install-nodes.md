@@ -49,10 +49,19 @@ For an existing remote node, open the node (table row / edit). **Basic Settings*
 
 ![Add storage form](assets/41-node-storage-add.png)
 
-**NFS sudo:** the daemon user needs passwordless `mount` / `umount` (same pattern as Docker). Example:
+**Mount-point ownership:** create the daemon base and mounts parent **before** the first Mount, owned by the daemon user (otherwise you get `EACCES … mkdir '/var/lib/guartrix'`):
+
+```bash
+sudo mkdir -p /var/lib/guartrix/mounts
+sudo chown -R guartrix:guartrix /var/lib/guartrix
+```
+
+(Use your real daemon user if it is not `guartrix`. Prefer mount points under `$DATA_DIR/mounts` when `DATA_DIR` is already writable.)
+
+**NFS sudo:** the daemon user needs passwordless `mount` / `umount` (same pattern as Docker). The daemon also falls back to `sudo mkdir -p` when creating mount points under a root-owned tree. Example:
 
 ```text
-guartrix ALL=(root) NOPASSWD: /bin/mount, /bin/umount, /usr/bin/mount, /usr/bin/umount
+guartrix ALL=(root) NOPASSWD: /bin/mount, /bin/umount, /usr/bin/mount, /usr/bin/umount, /bin/mkdir, /usr/bin/mkdir
 ```
 
 Panel mounts are **runtime** only — after a node reboot, Mount again from the panel or add the same NFS/bind to `/etc/fstab` yourself. Panel does not write fstab.
