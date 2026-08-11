@@ -45,6 +45,10 @@ For an existing remote node, open the node (table row / edit). **Basic Settings*
 3. When creating a server as admin, pick the pool under **Storage pool** (or leave the node default `DATA_DIR`).
 4. **Unmount** refuses while servers are assigned or running on that pool.
 
+![Node storage tab](assets/40-node-storage.png)
+
+![Add storage form](assets/41-node-storage-add.png)
+
 **NFS sudo:** the daemon user needs passwordless `mount` / `umount` (same pattern as Docker). Example:
 
 ```text

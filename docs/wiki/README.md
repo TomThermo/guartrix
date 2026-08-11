@@ -135,6 +135,10 @@ See also [Operations](operations.md) · [Release builds](release-builds.md) · [
 |------|--------------------|--------|
 | ![SFTP](assets/10-server-sftp.png) | ![Plugin Management](assets/12-server-addons.png) | ![System](assets/05-system-nodes.png) |
 
+| Node storage | Add storage |
+|--------------|-------------|
+| ![Node storage](assets/40-node-storage.png) | ![Add storage](assets/41-node-storage-add.png) |
+
 All screenshots live under [`assets/`](assets/) and are embedded in the [Panel guide](panel-guide.md).
 
 ### Screenshot refresh (after UI changes)
@@ -159,6 +163,8 @@ All assets are captured at a fixed **1440×900** viewport with the **Crimson Gra
 | `01`–`37` | Full panel tour (refreshed together) |
 | `38-admin-servers.png` | Admin → Servers |
 | `39-admin-settings.png` | Admin → Settings |
+| `40-node-storage.png` | Admin → Nodes → Edit → Storage |
+| `41-node-storage-add.png` | Add storage form on the Storage tab |
 
 ## Version
 

@@ -16,9 +16,9 @@ export const gettingStartedArticles: WikiArticle[] = [
     slug: "install-nodes",
     title: "Install nodes",
     summary:
-      "Add remote daemon nodes with the admin wizard or a manual install command, then connect them to the panel securely.",
+      "Add remote daemon nodes with the admin wizard or a manual install command, then connect them to the panel securely. Per-node storage pools (local or NFS) can be mounted from the panel.",
     category: "Getting started",
-    keywords: ["nodes", "daemon", "remote install", "ssh", "sftp", "firewall"],
+    keywords: ["nodes", "daemon", "remote install", "ssh", "sftp", "firewall", "storage", "nfs", "mount"],
     sourcePath: "docs/wiki/install-nodes.md",
     relatedSlugs: ["install-panel", "networking-allocations", "daemon-api"],
     sections: [],

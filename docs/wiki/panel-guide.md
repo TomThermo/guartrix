@@ -76,7 +76,7 @@ Each row shows clickable chips for **disk used / limit**, **online players** (`0
 
 ## Create a server
 
-**+ New server** — pick software under **Java Edition** (Vanilla, Paper, Purpur, Fabric, Quilt, Forge, NeoForge) or **Bedrock Edition** (official Mojang BDS stable/preview, PocketMine-MP, Nukkit), version, RAM, port, **backup retention** (max archives to keep for this server; defaults from panel settings), and (admins) which node. Bedrock servers use **UDP** as the primary game port. Optional **world preset** (Default / Flat / Void) and **seed** are applied before the first boot. After create you go straight to the server **Console** while files install; the panel **starts the server automatically** when ready (and sets **Start on boot** so it comes back after a panel restart unless you stopped it manually).
+**+ New server** — pick software under **Java Edition** (Vanilla, Paper, Purpur, Fabric, Quilt, Forge, NeoForge) or **Bedrock Edition** (official Mojang BDS stable/preview, PocketMine-MP, Nukkit), version, RAM, port, **backup retention** (max archives to keep for this server; defaults from panel settings), and (admins) which node and optional **storage pool** (mounted local/NFS pool, or node `DATA_DIR`). Bedrock servers use **UDP** as the primary game port. Optional **world preset** (Default / Flat / Void) and **seed** are applied before the first boot. After create you go straight to the server **Console** while files install; the panel **starts the server automatically** when ready (and sets **Start on boot** so it comes back after a panel restart unless you stopped it manually).
 
 ![Create server](assets/03-create-server.png)
 
@@ -121,6 +121,14 @@ Basic / Advanced / **Storage** (local or NFS pools, mount/unmount) / Configurati
 rename, **edit daemon URL** (pencil next to `http://…:8081`), Test connection, Install daemon.
 
 ![System / nodes](assets/05-system-nodes.png)
+
+### Storage pools
+
+Open a node → **Storage**. Add a **local path** or **NFS** export, then **Mount** / **Unmount** from the panel. When creating a server as admin, pick the pool under **Storage pool** (default = node `DATA_DIR`). Details and sudo notes: [Install nodes](install-nodes.md#node-storage-pools).
+
+![Node storage](assets/40-node-storage.png)
+
+![Add storage](assets/41-node-storage-add.png)
 
 ### Add node wizard
 
