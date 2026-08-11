@@ -36,7 +36,22 @@ sudo systemctl restart guartrix-web
 
 ![Add node wizard](assets/06-add-node-modal.png)
 
-For an existing remote node, open the node (table row / edit). **Basic Settings** covers display name, domain, connect port, and SSL mode. **Advanced Settings** covers UUID/tags, upload limit, daemon base directory (`DATA_DIR`), SFTP port/alias, deployable + maintenance mode, and memory/disk/CPU allocation limits with overallocate. **Configuration File** shows `daemon.env` to copy onto the node (`/var/lib/guartrix/daemon.env`), an auto-deploy command, and token reset. **Overview** has live host stats and **Install daemon** (SSH wizard).
+For an existing remote node, open the node (table row / edit). **Basic Settings** covers display name, domain, connect port, and SSL mode. **Advanced Settings** covers UUID/tags, upload limit, daemon base directory (`DATA_DIR`), SFTP port/alias, deployable + maintenance mode, and memory/disk/CPU allocation limits with overallocate. **Storage** lets you register **local paths** or **NFS** pools, **Mount / Unmount** them from the panel, and place new servers on a mounted pool (otherwise servers use `DATA_DIR`). **Configuration File** shows `daemon.env` to copy onto the node (`/var/lib/guartrix/daemon.env`), an auto-deploy command, and token reset. **Overview** has live host stats and **Install daemon** (SSH wizard).
+
+### Node storage pools
+
+1. Add storage on the node (**Storage** tab): Local (host directory / bind) or NFS (server + export + options).
+2. Click **Mount**. The daemon runs `sudo mount` (NFS or bind) under an allowlisted prefix (default `$DATA_DIR/mounts` and `/var/lib/guartrix/mounts` — see `STORAGE_MOUNTS_ALLOW_PREFIX`).
+3. When creating a server as admin, pick the pool under **Storage pool** (or leave the node default `DATA_DIR`).
+4. **Unmount** refuses while servers are assigned or running on that pool.
+
+**NFS sudo:** the daemon user needs passwordless `mount` / `umount` (same pattern as Docker). Example:
+
+```text
+guartrix ALL=(root) NOPASSWD: /bin/mount, /bin/umount, /usr/bin/mount, /usr/bin/umount
+```
+
+Panel mounts are **runtime** only — after a node reboot, Mount again from the panel or add the same NFS/bind to `/etc/fstab` yourself. Panel does not write fstab.
 
 See also the [Panel guide](panel-guide.md) for the rest of the admin UI.
 

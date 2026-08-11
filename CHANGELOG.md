@@ -3,6 +3,10 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.49] — 2026-08-11
+
+- Admin Nodes: **Storage** tab — add local or NFS pools, mount/unmount from the panel, place servers on a pool (`NodeStorage` / `Server.storageId`).
+
 ## [1.4.48] — 2026-08-10
 
 ### Added

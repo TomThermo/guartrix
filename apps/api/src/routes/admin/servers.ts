@@ -20,6 +20,7 @@ const patchSchema = z.object({
   ownerId: z.string().nullable().optional(),
   suspended: z.boolean().optional(),
   keepCount: z.number().int().min(1).max(50).optional(),
+  storageId: z.string().min(1).max(64).nullable().optional(),
 });
 
 async function loadAdminServerRow(row: {
@@ -37,6 +38,7 @@ async function loadAdminServerRow(row: {
   diskMb: number;
   cpuLimit: number;
   suspended: boolean;
+  storageId?: string | null;
   backupSchedule: { keepCount: number; mode: string } | null;
 }): Promise<import("@guartrix/shared").AdminServerRow> {
   const schedule = row.backupSchedule
@@ -66,6 +68,7 @@ async function loadAdminServerRow(row: {
     diskMb: row.diskMb,
     cpuLimit: row.cpuLimit,
     suspended: row.suspended ?? false,
+    storageId: row.storageId ?? null,
     keepCount: schedule.keepCount,
     backupCount,
     scheduleMode: schedule.mode,
@@ -87,6 +90,7 @@ const serverSelect = {
   diskMb: true,
   cpuLimit: true,
   suspended: true,
+  storageId: true,
   backupSchedule: {
     select: { keepCount: true, mode: true },
   },
@@ -196,6 +200,32 @@ export function registerAdminServerRoutes(app: FastifyInstance): void {
         }
       }
 
+      if (data.storageId !== undefined && data.storageId !== existing.storageId) {
+        if (!existing.nodeId) {
+          return reply.status(400).send({ error: "Server has no node" });
+        }
+        if (processManager.isRunning(existing.id) || existing.status === "STARTING") {
+          return reply
+            .status(400)
+            .send({ error: "Stop the server before changing storage" });
+        }
+        try {
+          const { assertServerStorageAssignable, syncServerStorageLocation } = await import(
+            "../../services/node-storage.js"
+          );
+          await assertServerStorageAssignable(existing.nodeId, data.storageId);
+          const { assertNodeCapacity } = await import("../../nodes/nodes.js");
+          await assertNodeCapacity(existing.nodeId, existing.memoryMb, {
+            excludeServerId: existing.id,
+            diskMb: data.diskMb ?? existing.diskMb,
+            storageId: data.storageId,
+          });
+          await syncServerStorageLocation(existing.nodeId, existing.id, data.storageId);
+        } catch (err) {
+          return reply.status(400).send({ error: errorMessage(err) });
+        }
+      }
+
       if (data.suspended === true && processManager.isRunning(existing.id)) {
         await processManager.stop(existing.id);
       }
@@ -209,6 +239,7 @@ export function registerAdminServerRoutes(app: FastifyInstance): void {
           ...(data.cpuLimit != null ? { cpuLimit: data.cpuLimit } : {}),
           ...(data.ownerId !== undefined ? { ownerId: data.ownerId } : {}),
           ...(data.suspended != null ? { suspended: data.suspended } : {}),
+          ...(data.storageId !== undefined ? { storageId: data.storageId } : {}),
         },
         select: serverSelect,
       });

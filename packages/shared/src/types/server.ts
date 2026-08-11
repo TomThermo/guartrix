@@ -153,6 +153,8 @@ export interface CreateServerRequest {
   cpuLimit?: number;
   /** Daemon node to place the server on (defaults to local). */
   nodeId?: string;
+  /** Admin: node storage pool (null/omit = DATA_DIR). */
+  storageId?: string | null;
   /** Optional world defaults applied to server.properties after provision. */
   seed?: string;
   gamemode?: "survival" | "creative" | "adventure" | "spectator";

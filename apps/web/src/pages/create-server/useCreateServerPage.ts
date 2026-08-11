@@ -48,6 +48,7 @@ export function useCreateServerPage() {
   const [error, setError] = useState<string | null>(null);
   const [nodes, setNodes] = useState<DaemonNode[]>([]);
   const [nodeId, setNodeId] = useState("");
+  const [storageId, setStorageId] = useState("");
   const [seed, setSeed] = useState("");
   const [gamemode, setGamemode] = useState("survival");
   const [difficulty, setDifficulty] = useState("easy");
@@ -64,6 +65,10 @@ export function useCreateServerPage() {
       : Math.max(0, user.maxServers - (user.serverCount ?? 0));
 
   const selectedNode = useMemo(() => nodes.find((n) => n.id === nodeId) ?? null, [nodes, nodeId]);
+
+  useEffect(() => {
+    setStorageId("");
+  }, [nodeId]);
 
   const nodeRamOk =
     !selectedNode ||
@@ -132,6 +137,7 @@ export function useCreateServerPage() {
         diskMb,
         cpuLimit,
         nodeId: nodeId || undefined,
+        ...(user?.role === "ADMIN" && storageId ? { storageId } : {}),
         seed: seed.trim() || undefined,
         gamemode: gamemode as "survival" | "creative" | "adventure" | "spectator",
         difficulty: difficulty as "peaceful" | "easy" | "normal" | "hard",
@@ -227,6 +233,8 @@ export function useCreateServerPage() {
     nodes,
     nodeId,
     setNodeId,
+    storageId,
+    setStorageId,
     seed,
     setSeed,
     gamemode,
@@ -243,5 +251,6 @@ export function useCreateServerPage() {
     submitDisabled,
     onCreate,
     onImport,
+    user,
   };
 }

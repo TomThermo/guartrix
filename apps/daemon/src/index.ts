@@ -27,6 +27,7 @@ import { registerFirewallRoutes } from "./routes/firewall.js";
 import { registerWebSocketRoutes } from "./routes/websockets.js";
 import { registerDaemonPowerRoutes } from "./routes/power.js";
 import { registerDaemonStatusRoutes } from "./routes/status.js";
+import { registerStorageRoutes } from "./routes/storage.js";
 
 async function initSentry(): Promise<void> {
   const dsn = process.env.SENTRY_DSN?.trim();
@@ -100,6 +101,8 @@ async function main() {
   registerMysqlRoutes(app);
 
   registerDaemonPowerRoutes(app);
+
+  registerStorageRoutes(app);
 
   app.get<{
     Params: { id: string };

@@ -74,3 +74,11 @@ export {
   daemonWipeServerOnNode,
   daemonWipeServer,
 } from "./daemon-client-deploy.js";
+
+export {
+  daemonStorageStatus,
+  daemonStorageMount,
+  daemonStorageUnmount,
+  daemonSetServerLocation,
+  type DaemonStoragePathStatus,
+} from "./daemon-client-storage.js";

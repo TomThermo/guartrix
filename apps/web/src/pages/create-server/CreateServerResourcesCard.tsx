@@ -1,8 +1,9 @@
 import { BACKUP_KEEP_COUNT_PRESETS } from "@guartrix/shared";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button, Collapse, Form } from "react-bootstrap";
 import { MemorySelect } from "../../components/MemorySelect";
 import { AdminPanelCard } from "../../components/admin/AdminPageShell";
+import { api } from "../../api";
 import { useI18n } from "../../i18n/react";
 import type { DaemonNode } from "@guartrix/shared";
 
@@ -24,6 +25,9 @@ export function CreateServerResourcesCard({
   remainingRamMb,
   selectedNode,
   selectedFreeMb,
+  isAdmin,
+  storageId,
+  onStorageIdChange,
 }: {
   port: number;
   onPortChange: (port: number) => void;
@@ -42,9 +46,53 @@ export function CreateServerResourcesCard({
   remainingRamMb: number | null;
   selectedNode: DaemonNode | null;
   selectedFreeMb: number;
+  isAdmin?: boolean;
+  storageId?: string;
+  onStorageIdChange?: (id: string) => void;
 }) {
   const { t } = useI18n();
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [storages, setStorages] = useState<Array<{ id: string; name: string; type: string }>>([]);
+
+  useEffect(() => {
+    if (!isAdmin || !nodeId || !onStorageIdChange) {
+      setStorages([]);
+      return;
+    }
+    let cancelled = false;
+    void api
+      .adminListNodeStorages(nodeId)
+      .then((res) => {
+        if (cancelled) return;
+        const list = (res.storages as Array<{
+          id: string;
+          name: string;
+          type: string;
+          enabled: boolean;
+          status: { exists: boolean; mounted: boolean } | null;
+          hostPath: string | null;
+          mountPoint: string;
+        }>)
+          .filter((s) => {
+            if (!s.enabled) return false;
+            if (!s.status?.exists) return false;
+            if (s.type === "NFS") return Boolean(s.status.mounted);
+            if (s.hostPath && s.hostPath !== s.mountPoint) return Boolean(s.status.mounted);
+            return true;
+          })
+          .map((s) => ({ id: s.id, name: s.name, type: s.type }));
+        setStorages(list);
+        if (storageId && !list.some((s) => s.id === storageId)) {
+          onStorageIdChange("");
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setStorages([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isAdmin, nodeId, onStorageIdChange, storageId]);
 
   return (
     <AdminPanelCard title={t("createServer.sectionResources")} icon="fa-gauge-high">
@@ -91,6 +139,24 @@ export function CreateServerResourcesCard({
         <MemorySelect valueMb={diskMb} onChangeMb={onDiskMbChange} required />
         <Form.Text className="text-secondary">{t("createServer.diskHelp")}</Form.Text>
       </Form.Group>
+
+      {isAdmin && onStorageIdChange ? (
+        <Form.Group className="mb-3" controlId="storage">
+          <Form.Label>{t("createServer.storagePool")}</Form.Label>
+          <Form.Select
+            value={storageId ?? ""}
+            onChange={(e) => onStorageIdChange(e.target.value)}
+          >
+            <option value="">{t("createServer.storagePoolDefault")}</option>
+            {storages.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name} ({s.type})
+              </option>
+            ))}
+          </Form.Select>
+          <Form.Text className="text-secondary">{t("createServer.storagePoolHelp")}</Form.Text>
+        </Form.Group>
+      ) : null}
 
       <Button
         type="button"

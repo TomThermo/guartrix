@@ -128,7 +128,7 @@ Disk walks use a **30s cache** (stale-while-revalidate) so UI polls never block 
 - **Scheduled tasks:** MySQL `ScheduledTask` (JSON columns for schedule + steps); one-time import from legacy `guartrix-scheduled-tasks.json`.
 - **Dashboard online counts:** `GET /api/servers/online` uses the daemon/console player cache only (no Minecraft query ping), scoped to servers the user can see.
 - **Daemon tokens:** long-lived shared secret per node (vault + daemon env file). **Local full-panel** node: `$INSTALL_DIR/data/daemon.env` (often `/opt/guartrix/data/daemon.env`). **Remote daemon-only** install: `/var/lib/guartrix/daemon.env` (systemd `EnvironmentFile`). On the wire the panel sends **short-lived HS256 JWTs** (`aud=daemon`, `nid`, `exp`) signed with that secret. Raw bearer is rejected unless `DAEMON_JWT_LEGACY=true`. SFTP callbacks use `aud=panel` JWTs.
-- **Server files:** on the node under `data/servers/<serverId>/` (or daemon `DATA_DIR`). File **list/read** does not run a recursive `chown`; ownership is fixed on start and on write/upload/SFTP paths.
+- **Server files:** on the node under `data/servers/<serverId>/` (or daemon `DATA_DIR`). Optional **node storage pools** (Admin → Nodes → Storage) place data at `{mountPoint}/servers/<id>` (local path or NFS). File **list/read** does not run a recursive `chown`; ownership is fixed on start and on write/upload/SFTP paths.
 - **Console:** browser connects to the **panel** WebSocket; the panel fans out daemon event streams (output, status, stats).
 
 ## Internal subsystem map

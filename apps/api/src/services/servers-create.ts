@@ -46,10 +46,18 @@ export async function createPanelServer(
   let nodeId: string;
   try {
     nodeId = await resolveCreateNodeId(user.role === "ADMIN" ? data.nodeId : undefined);
+    if (data.storageId && user.role !== "ADMIN") {
+      return { ok: false, status: 403, error: "Only admins can choose storage" };
+    }
+    if (data.storageId) {
+      const { assertServerStorageAssignable } = await import("./node-storage.js");
+      await assertServerStorageAssignable(nodeId, data.storageId);
+    }
     await assertNodeCapacity(nodeId, data.memoryMb, {
       placement: true,
       diskMb: data.diskMb,
       cpuLimit: data.cpuLimit,
+      storageId: data.storageId ?? null,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -77,6 +85,7 @@ export async function createPanelServer(
     nodeId,
     ensureSubdomain: true,
     cleanupOnFailure: false,
+    ...(data.storageId !== undefined ? { storageId: data.storageId } : {}),
     ...(validatedExtraMounts !== undefined ? { extraMounts: validatedExtraMounts } : {}),
   };
 

@@ -257,4 +257,45 @@ export const nodesApi = {
       `/api/admin/nodes/${encodeURIComponent(nodeId)}/allocations/${encodeURIComponent(allocId)}`,
       { method: "DELETE" },
     ),
+  adminListNodeStorages: (nodeId: string) =>
+    request<{ storages: unknown[] }>(
+      `/api/admin/nodes/${encodeURIComponent(nodeId)}/storages`,
+    ),
+  adminCreateNodeStorage: (
+    nodeId: string,
+    body: {
+      name: string;
+      type: "LOCAL" | "NFS";
+      mountPoint?: string;
+      hostPath?: string | null;
+      nfsServer?: string | null;
+      nfsExport?: string | null;
+      nfsOptions?: string | null;
+      diskMb?: number;
+      enabled?: boolean;
+    },
+  ) =>
+    request<{ storage: unknown }>(`/api/admin/nodes/${encodeURIComponent(nodeId)}/storages`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  adminMountNodeStorage: (nodeId: string, storageId: string) =>
+    request<{ storage: unknown }>(
+      `/api/admin/nodes/${encodeURIComponent(nodeId)}/storages/${encodeURIComponent(storageId)}/mount`,
+      { method: "POST", body: "{}" },
+    ),
+  adminUnmountNodeStorage: (
+    nodeId: string,
+    storageId: string,
+    body?: { force?: boolean; lazy?: boolean },
+  ) =>
+    request<{ storage: unknown }>(
+      `/api/admin/nodes/${encodeURIComponent(nodeId)}/storages/${encodeURIComponent(storageId)}/unmount`,
+      { method: "POST", body: JSON.stringify(body ?? {}) },
+    ),
+  adminDeleteNodeStorage: (nodeId: string, storageId: string) =>
+    request<{ ok: boolean }>(
+      `/api/admin/nodes/${encodeURIComponent(nodeId)}/storages/${encodeURIComponent(storageId)}`,
+      { method: "DELETE" },
+    ),
 };

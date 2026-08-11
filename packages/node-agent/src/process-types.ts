@@ -33,6 +33,12 @@ export interface DaemonServerConfig {
     container: string;
     readOnly?: boolean;
   }> | null;
+  /**
+   * Absolute storage mount point. When set, data lives at
+   * `{dataRoot}/servers/<id>` (and backups under `{dataRoot}/backups/<id>`).
+   * Null/omit = daemon DATA_DIR.
+   */
+  dataRoot?: string | null;
 }
 
 /** A Minecraft server whose console is attached to a live docker process. */

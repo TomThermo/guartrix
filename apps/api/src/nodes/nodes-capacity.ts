@@ -28,6 +28,8 @@ export async function assertNodeCapacity(
     excludeServerId?: string;
     diskMb?: number;
     cpuLimit?: number;
+    /** When set, disk budget is checked against this storage pool instead of the node. */
+    storageId?: string | null;
     /** Enforce deployable + not under maintenance (create / transfer). */
     placement?: boolean;
   },
@@ -36,7 +38,7 @@ export async function assertNodeCapacity(
     where: { id: nodeId },
     include: {
       servers: {
-        select: { id: true, memoryMb: true, diskMb: true, cpuLimit: true },
+        select: { id: true, memoryMb: true, diskMb: true, cpuLimit: true, storageId: true },
       },
     },
   });
@@ -66,14 +68,35 @@ export async function assertNodeCapacity(
   }
 
   const wantDisk = opts?.diskMb;
-  if (wantDisk !== undefined && (node.diskMb ?? 0) > 0) {
-    const budget = nodeAllocationBudget(node.diskMb, node.diskOverallocate ?? 0);
-    const used = others.reduce((sum, s) => sum + (s.diskMb ?? 0), 0);
-    const available = budget - used;
-    if (wantDisk > available) {
-      throw new Error(
-        `Not enough disk on node "${node.name}": need ${wantDisk} MiB, available ${Math.max(0, available)} MiB`,
-      );
+  if (wantDisk !== undefined) {
+    const storageId = opts?.storageId ?? null;
+    if (storageId) {
+      const storage = await prisma.nodeStorage.findFirst({
+        where: { id: storageId, nodeId },
+      });
+      if (!storage) throw new Error("Storage not found on this node");
+      if (!storage.enabled) throw new Error(`Storage "${storage.name}" is disabled`);
+      if (storage.diskMb > 0) {
+        const poolOthers = others.filter((s) => s.storageId === storageId);
+        const used = poolOthers.reduce((sum, s) => sum + (s.diskMb ?? 0), 0);
+        const available = storage.diskMb - used;
+        if (wantDisk > available) {
+          throw new Error(
+            `Not enough disk on storage "${storage.name}": need ${wantDisk} MiB, available ${Math.max(0, available)} MiB`,
+          );
+        }
+      }
+    } else if ((node.diskMb ?? 0) > 0) {
+      const budget = nodeAllocationBudget(node.diskMb, node.diskOverallocate ?? 0);
+      const used = others
+        .filter((s) => !s.storageId)
+        .reduce((sum, s) => sum + (s.diskMb ?? 0), 0);
+      const available = budget - used;
+      if (wantDisk > available) {
+        throw new Error(
+          `Not enough disk on node "${node.name}": need ${wantDisk} MiB, available ${Math.max(0, available)} MiB`,
+        );
+      }
     }
   }
 

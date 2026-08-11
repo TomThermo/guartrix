@@ -20,6 +20,7 @@ import {
   runtimeLabelForServerType,
 } from "@guartrix/shared";
 import { serverDir } from "./config.js";
+import { setServerDataRoot } from "./server-locations.js";
 import {
   containerName,
   docker,
@@ -76,6 +77,10 @@ export function resolvePublishPorts(server: DaemonServerConfig): DaemonPortPubli
 
 export async function startProcess(host: StartHost, server: DaemonServerConfig): Promise<void> {
   const serverId = server.id;
+
+  if (server.dataRoot !== undefined) {
+    await setServerDataRoot(serverId, server.dataRoot);
+  }
 
   const failStart = (message: string): never => {
     host.daemonSay(serverId, `ERROR: ${message}`);

@@ -192,10 +192,16 @@ class ProcessManagerProxy extends EventEmitter {
     startupCommand?: string | null;
     serverJar?: string | null;
     extraMounts?: unknown;
+    storageId?: string | null;
   }): Promise<DaemonServerConfig> {
     const { listServerAllocationPorts } = await import("./allocations.js");
     const { coerceExtraMounts } = await import("./extra-mounts.js");
     const ports = await listServerAllocationPorts(server.id);
+    let dataRoot: string | null = null;
+    if (server.storageId) {
+      const storage = await prisma.nodeStorage.findUnique({ where: { id: server.storageId } });
+      dataRoot = storage?.mountPoint ?? null;
+    }
     return {
       id: server.id,
       type: server.type,
@@ -212,6 +218,7 @@ class ProcessManagerProxy extends EventEmitter {
       extraMounts: coerceExtraMounts(
         server.extraMounts as import("@prisma/client").Prisma.JsonValue,
       ),
+      dataRoot,
     };
   }
 

@@ -8,6 +8,7 @@ import { NodeConfigPanel } from "../NodeConfigPanel";
 import { NodeAdvancedPanel } from "../NodeAdvancedPanel";
 import { NodeBasicSettingsPanel } from "./NodeBasicSettingsPanel";
 import { NodeOverviewPanel } from "./NodeOverviewPanel";
+import { NodeStoragePanel } from "./NodeStoragePanel";
 import {
   parseDaemonPublicUrl,
   schemeFromSslMode,
@@ -279,6 +280,12 @@ export function NodeEditModal({
                 {t("admin.nodeTabAllocations")}
               </Nav.Link>
             </Nav.Item>
+            <Nav.Item>
+              <Nav.Link eventKey="storage">
+                <i className="fa-solid fa-hard-drive me-1" aria-hidden />
+                {t("admin.nodeTabStorage")}
+              </Nav.Link>
+            </Nav.Item>
           </Nav>
 
           <Tab.Content>
@@ -369,6 +376,28 @@ export function NodeEditModal({
                   nodeId={node.id}
                   nodeName={node.name}
                   embedded
+                  onError={(msg) => {
+                    setLocalError(msg);
+                    onError(msg);
+                  }}
+                  onNotice={(msg) => {
+                    setLocalNotice(msg);
+                    onNotice(msg);
+                  }}
+                />
+              </section>
+            </Tab.Pane>
+
+            <Tab.Pane eventKey="storage">
+              <section className="admin-inset-card">
+                <h2 className="admin-section-title mb-3">
+                  <i className="fa-solid fa-hard-drive" aria-hidden />
+                  {t("admin.nodeTabStorage")}
+                </h2>
+                <NodeStoragePanel
+                  nodeId={node.id}
+                  busy={busy}
+                  onBusy={onBusy}
                   onError={(msg) => {
                     setLocalError(msg);
                     onError(msg);

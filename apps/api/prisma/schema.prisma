@@ -37,6 +37,11 @@ enum UserRole {
   VIEWER
 }
 
+enum NodeStorageType {
+  LOCAL
+  NFS
+}
+
 enum NodeStatus {
   ONLINE
   OFFLINE
@@ -107,6 +112,38 @@ model Node {
   servers     Server[]
   databases   Database[]
   allocations Allocation[]
+  storages    NodeStorage[]
+}
+
+/**
+ * Extra storage pool on a node (local path or NFS).
+ * Servers with storageId use `{mountPoint}/servers/<id>` on the daemon.
+ */
+model NodeStorage {
+  id          String          @id
+  nodeId      String
+  node        Node            @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  name        String
+  type        NodeStorageType
+  /** Absolute path on the node where data is served from. */
+  mountPoint  String
+  /** LOCAL: source path (may equal mountPoint). NFS: unused. */
+  hostPath    String?
+  /** NFS server hostname/IP. */
+  nfsServer   String?
+  /** NFS export path (e.g. /export/games). */
+  nfsExport   String?
+  /** Comma-separated mount options. */
+  nfsOptions  String?
+  /** Allocation budget MiB for this pool (0 = unlimited). */
+  diskMb      Int             @default(0)
+  enabled     Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  servers     Server[]
+
+  @@unique([nodeId, name])
+  @@index([nodeId])
 }
 
 model Server {
@@ -156,6 +193,9 @@ model Server {
   bluemapUrl          String?
   /** Extra Docker binds: JSON array of { host, container, readOnly? } */
   extraMounts         Json?
+  /** Optional node storage pool (null = node DATA_DIR). */
+  storageId           String?
+  storage             NodeStorage? @relation(fields: [storageId], references: [id], onDelete: SetNull)
   ownerId             String?
   owner               User?        @relation(fields: [ownerId], references: [id], onDelete: SetNull)
   nodeId              String?
@@ -175,6 +215,7 @@ model Server {
   @@unique([nodeId, port])
   @@index([ownerId])
   @@index([nodeId])
+  @@index([storageId])
   @@index([status])
   @@index([createdAt])
   @@index([ownerId, createdAt])

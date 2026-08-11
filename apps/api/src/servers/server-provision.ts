@@ -31,6 +31,8 @@ export type ProvisionServerInput = {
   id?: string;
   /** Extra Docker binds (already validated). */
   extraMounts?: import("@guartrix/shared").ServerExtraMount[] | null;
+  /** Node storage pool id (null = DATA_DIR). */
+  storageId?: string | null;
 };
 
 export type PanelCreateWorldOpts = {
@@ -144,6 +146,11 @@ export async function beginPanelServerCreate(input: ProvisionServerInput) {
 
   const { extraMountsForPrisma } = await import("./extra-mounts.js");
 
+  if (input.storageId) {
+    const { assertServerStorageAssignable } = await import("../services/node-storage.js");
+    await assertServerStorageAssignable(input.nodeId, input.storageId);
+  }
+
   await prisma.server.create({
     data: {
       id,
@@ -159,11 +166,23 @@ export async function beginPanelServerCreate(input: ProvisionServerInput) {
       startOnBoot: true,
       ownerId: input.ownerId,
       nodeId: input.nodeId,
+      ...(input.storageId !== undefined ? { storageId: input.storageId } : {}),
       ...(input.extraMounts !== undefined
         ? { extraMounts: extraMountsForPrisma(input.extraMounts) }
         : {}),
     },
   });
+
+  if (input.storageId) {
+    const { syncServerStorageLocation } = await import("../services/node-storage.js");
+    try {
+      await syncServerStorageLocation(input.nodeId, id, input.storageId);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      await cleanupFailedProvision(id, input.port, input.nodeId, protocol);
+      throw err instanceof Error ? err : new Error(message);
+    }
+  }
 
   try {
     await openFirewallPort(input.port, input.nodeId, protocol);
@@ -367,6 +386,11 @@ export async function provisionPreparedServer(input: ProvisionServerInput) {
 
   const { extraMountsForPrisma } = await import("./extra-mounts.js");
 
+  if (input.storageId) {
+    const { assertServerStorageAssignable } = await import("../services/node-storage.js");
+    await assertServerStorageAssignable(input.nodeId, input.storageId);
+  }
+
   await prisma.server.create({
     data: {
       id,
@@ -381,6 +405,7 @@ export async function provisionPreparedServer(input: ProvisionServerInput) {
       startOnBoot: true,
       ownerId: input.ownerId,
       nodeId: input.nodeId,
+      ...(input.storageId !== undefined ? { storageId: input.storageId } : {}),
       ...(input.extraMounts !== undefined
         ? { extraMounts: extraMountsForPrisma(input.extraMounts) }
         : {}),
@@ -388,6 +413,10 @@ export async function provisionPreparedServer(input: ProvisionServerInput) {
   });
 
   try {
+    if (input.storageId) {
+      const { syncServerStorageLocation } = await import("../services/node-storage.js");
+      await syncServerStorageLocation(input.nodeId, id, input.storageId);
+    }
     await openFirewallPort(input.port, input.nodeId, protocol);
     await ensurePrimaryAllocation({
       serverId: id,

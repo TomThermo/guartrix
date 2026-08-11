@@ -34,6 +34,7 @@ const daemonServerConfigSchema = z.object({
     .max(64)
     .optional(),
   startupNotices: z.array(z.string().min(1).max(500)).max(8).optional(),
+  dataRoot: z.string().min(1).max(512).nullable().optional(),
 });
 
 const powerBodySchema = z.object({

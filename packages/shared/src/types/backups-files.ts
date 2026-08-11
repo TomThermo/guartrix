@@ -52,6 +52,7 @@ export interface AdminServerRow {
   diskMb: number;
   cpuLimit: number;
   suspended: boolean;
+  storageId?: string | null;
   keepCount: number;
   backupCount: number;
   scheduleMode: BackupScheduleMode;

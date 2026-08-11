@@ -117,7 +117,7 @@ More: [Files and backups](files-and-backups.md) · [Server management](server-ma
 ## Admin: Nodes
 
 **Nodes** (`/admin/nodes`; `/admin/system` redirects here) — local + remote daemon nodes, online status, optional **location/region**, memory, SFTP hostname,
-Basic / Advanced / Configuration tabs, and live host stats.
+Basic / Advanced / **Storage** (local or NFS pools, mount/unmount) / Configuration tabs, and live host stats.
 rename, **edit daemon URL** (pencil next to `http://…:8081`), Test connection, Install daemon.
 
 ![System / nodes](assets/05-system-nodes.png)

@@ -126,6 +126,9 @@ export function CreateServerPage() {
               remainingRamMb={s.remainingRamMb}
               selectedNode={s.selectedNode}
               selectedFreeMb={s.selectedFreeMb}
+              isAdmin={s.user?.role === "ADMIN"}
+              storageId={s.storageId}
+              onStorageIdChange={s.setStorageId}
             />
             <AdminInsetCard className="create-server-submit">
               <CreateServerSubmitButton

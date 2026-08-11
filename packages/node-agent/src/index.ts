@@ -6,6 +6,24 @@ export {
 } from "./config.js";
 
 export {
+  getServerDataRoot,
+  setServerDataRoot,
+  serverIdsUnderMount,
+} from "./server-locations.js";
+
+export {
+  assertAllowedMountPoint,
+  getStoragePathStatus,
+  getStorageStatuses,
+  mountStorage,
+  unmountStorage,
+  type StorageMountType,
+  type StoragePathStatus,
+  type MountStorageInput,
+  type UnmountStorageInput,
+} from "./storage-mounts.js";
+
+export {
   ensureBedrockRuntimeImage,
   bedrockRuntimeImageExists,
   BEDROCK_RUNTIME_IMAGE,

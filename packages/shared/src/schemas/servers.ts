@@ -84,6 +84,8 @@ export const createServerClientSchema = createServerBaseSchema.extend({
     .max(8)
     .nullable()
     .optional(),
+  /** Admin: place server data on a node storage pool (null/omit = node DATA_DIR). */
+  storageId: z.string().min(1).max(64).nullable().optional(),
 });
 
 /** Application API create — requires ownerId; keeps stricter disk/cpu bounds. */

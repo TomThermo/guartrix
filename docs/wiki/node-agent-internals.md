@@ -16,6 +16,8 @@ This layer resolves data paths, defaults, runtime directories, and host-level se
 Important operator consequence:
 
 - node state lives under the daemon `DATA_DIR`
+- optional per-server data roots via `server-locations.json` (node storage pools → `{mountPoint}/servers/<id>`)
+- storage mount/unmount HTTP: `POST /storage/mount`, `/storage/unmount`, `/storage/status` (`storage-mounts.ts`)
 - servers, backups, MySQL data, host keys, and logs are node-local assets
 
 ### Process and container lifecycle
