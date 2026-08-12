@@ -57,6 +57,36 @@ type RunState =
 
 const MAX_BODY = 200_000;
 
+function pathIdLabel(path: string): string {
+  if (path.includes("{storageId}") && !path.includes("{serverId}")) return "Storage ID";
+  if (path.includes("{nodeId}") && !path.includes("{serverId}")) return "Node ID";
+  return "Server ID";
+}
+
+function pathIdPlaceholder(path: string): string {
+  if (path.includes("{storageId}") && !path.includes("{serverId}")) {
+    return "from GET /api/admin/storages or /api/application/storages";
+  }
+  if (path.includes("{nodeId}") && !path.includes("{serverId}")) {
+    return "from GET /api/application/nodes";
+  }
+  return "from GET /api/servers";
+}
+
+function pathIdRequiredMessage(path: string): string {
+  if (path.includes("{storageId}") && !path.includes("{serverId}")) {
+    return "Enter a storage ID first.";
+  }
+  if (path.includes("{nodeId}") && !path.includes("{serverId}")) {
+    return "Enter a node ID first.";
+  }
+  return "Enter a server ID first.";
+}
+
+function needsPathId(path: string): boolean {
+  return path.includes("{serverId}") || path.includes("{nodeId}") || path.includes("{storageId}");
+}
+
 export function ApiExplorer() {
   const prefs = useMemo(() => loadPrefs(), []);
   const [panel, setPanel] = useState(
@@ -126,12 +156,8 @@ export function ApiExplorer() {
       });
       return;
     }
-    if (endpoint.path.includes("{serverId}") && !serverId.trim()) {
-      setRun({ status: "error", message: "Enter a server ID first." });
-      return;
-    }
-    if (endpoint.path.includes("{nodeId}") && !serverId.trim()) {
-      setRun({ status: "error", message: "Enter a node ID first." });
+    if (needsPathId(endpoint.path) && !serverId.trim()) {
+      setRun({ status: "error", message: pathIdRequiredMessage(endpoint.path) });
       return;
     }
     if (
@@ -146,7 +172,8 @@ export function ApiExplorer() {
 
     const path = endpoint.path
       .replaceAll("{serverId}", serverId.trim())
-      .replaceAll("{nodeId}", serverId.trim());
+      .replaceAll("{nodeId}", serverId.trim())
+      .replaceAll("{storageId}", serverId.trim());
     const q = endpoint.query ? `?${endpoint.query}` : "";
     const url = `${panel.replace(/\/$/, "")}${path}${q}`;
     let headers = new Headers();
@@ -245,20 +272,12 @@ export function ApiExplorer() {
           />
         </label>
         <label className="api-ex-field">
-          <span>
-            {endpoint.path.includes("{nodeId}") && !endpoint.path.includes("{serverId}")
-              ? "Node ID"
-              : "Server ID"}
-          </span>
+          <span>{pathIdLabel(endpoint.path)}</span>
           <input
             className="form-control"
             value={serverId}
             onChange={(e) => setServerId(e.target.value)}
-            placeholder={
-              endpoint.path.includes("{nodeId}") && !endpoint.path.includes("{serverId}")
-                ? "from GET /api/application/nodes"
-                : "from GET /api/servers"
-            }
+            placeholder={pathIdPlaceholder(endpoint.path)}
             spellCheck={false}
           />
         </label>

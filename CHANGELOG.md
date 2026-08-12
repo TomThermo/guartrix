@@ -3,6 +3,10 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.62] — 2026-08-12
+
+- Storage pools API: `GET /api/application/storages/:id`; Admin API explorer (`gt_` + nodes.read) for `/api/admin/storages` with full pool/disk sample responses.
+
 ## [1.4.61] — 2026-08-12
 
 - Application API `POST /api/application/servers`: optional `storageId` (auto/local pool/NFS) + `GET /api/application/storages` and `…/nodes/:id/storages`.

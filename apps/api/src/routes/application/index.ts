@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { registerApplicationUserRoutes } from "./users.js";
 import { registerApplicationServerCoreRoutes } from "./servers-core.js";
 import { registerApplicationNodeRoutes } from "./nodes.js";
+import { registerApplicationStorageRoutes } from "./storages.js";
 import { registerApplicationActivityRoutes } from "./activity.js";
 import { registerApplicationSettingsRoutes } from "./settings.js";
 import { registerApplicationServerFilesRoutes } from "./servers-files.js";
@@ -27,6 +28,7 @@ export function registerApplicationRoutes(app: FastifyInstance): void {
   registerApplicationServerAllocationsRoutes(app);
   registerApplicationServerDatabasesRoutes(app);
   registerApplicationNodeRoutes(app);
+  registerApplicationStorageRoutes(app);
   registerApplicationActivityRoutes(app);
   registerApplicationSettingsRoutes(app);
 }

@@ -161,10 +161,11 @@ Use preset **server-ops** or **billing** when minting a `gta_` key for WHMCS-sty
 ```http
 GET /api/application/nodes
 GET /api/application/storages
+GET /api/application/storages/:id
 GET /api/application/nodes/:id/storages
 ```
 
-Requires `nodes.read`. Nodes list matches the panel picker (memory usage, online status). Storage endpoints list global pools (local/NFS) and per-node links — use pool `id` as `storageId` on `POST /api/application/servers`.
+Requires `nodes.read`. **Storages** responses include pool metadata (local/NFS), per-node links, mount status, and live `disk` totals when the node is online. Use pool `id` as `storageId` on create. Same list/detail as session `GET /api/admin/storages` (Client `gt_` key needs `nodes.read` in `adminScopes`).
 
 ### Activity
 

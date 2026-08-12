@@ -959,11 +959,23 @@ curl -sS -X POST -H "Authorization: Bearer $GTA_KEY" \
 
 ### GET `/api/application/storages`
 
-Requires `nodes.read`. Lists global storage pools (local/NFS) with node links — use `id` as `storageId` on create.
+Requires `nodes.read`. Lists all pools with links, mount status, and disk stats.
+
+### GET `/api/application/storages/:id`
+
+Single pool (same fields as list entries).
 
 ### GET `/api/application/nodes/:id/storages`
 
-Pools linked to one node (same shape as admin `GET /api/admin/nodes/:id/storages`).
+Pools linked to one node (create picker).
+
+### GET `/api/admin/storages` (Client API + admin scopes)
+
+Same response as above when using a `gt_` key on an **ADMIN** account with `adminScopes` including `nodes.read` (or `admin.full`):
+
+```bash
+curl -sS -H "Authorization: Bearer $GT_KEY" "$PANEL/api/admin/storages"
+```
 
 ### POST `/api/application/servers` — create server for user
 

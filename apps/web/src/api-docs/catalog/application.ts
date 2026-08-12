@@ -1,4 +1,5 @@
 import type { ApiEndpointDemo } from "./types";
+import { SAMPLE_STORAGE_GET, SAMPLE_STORAGES_LIST } from "./samples";
 
 /** Application API (machine key / admin provisioning). */
 export const APPLICATION_DEMOS: ApiEndpointDemo[] = [
@@ -41,6 +42,18 @@ export const APPLICATION_DEMOS: ApiEndpointDemo[] = [
     path: "/api/application/storages",
     auth: "gta",
     safe: true,
+    sampleResponse: SAMPLE_STORAGES_LIST,
+  },
+  {
+    id: "app-storage-get",
+    group: "Application API",
+    title: "Get storage pool",
+    description: "Single pool by id — links, mount status, disk usage (nodes.read).",
+    method: "GET",
+    path: "/api/application/storages/{storageId}",
+    auth: "gta",
+    safe: true,
+    sampleResponse: SAMPLE_STORAGE_GET,
   },
   {
     id: "app-node-storages",
@@ -51,6 +64,7 @@ export const APPLICATION_DEMOS: ApiEndpointDemo[] = [
     path: "/api/application/nodes/{nodeId}/storages",
     auth: "gta",
     safe: true,
+    sampleResponse: SAMPLE_STORAGES_LIST,
   },
   {
     id: "app-create-server",

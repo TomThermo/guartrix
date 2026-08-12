@@ -342,7 +342,7 @@ Or full panel admin:
 | `users.read` | `GET /api/users` |
 | `users.write` | `POST` / `PATCH /api/users` (non-ADMIN roles; cannot demote/delete the last admin). Creating or promoting **ADMIN** requires `admin.full` / `*` on Client keys |
 | `users.delete` | `DELETE /api/users/:id` |
-| `nodes.read` / `nodes.write` | Node list & admin node CRUD / install / token rotate |
+| `nodes.read` / `nodes.write` | Node list & admin node CRUD / install / token rotate; **`GET /api/admin/storages`** (all pools + disk stats) |
 | `settings.read` / `settings.write` | Admin → Settings (+ test mail/redis) |
 | `activity.read` | `GET /api/admin/activity` |
 | `status.read` | Admin → Status / version |

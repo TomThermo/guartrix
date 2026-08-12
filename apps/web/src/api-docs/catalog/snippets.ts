@@ -18,6 +18,7 @@ function resolvePath(path: string, serverId: string): string {
   return path
     .replaceAll("{serverId}", id)
     .replaceAll("{nodeId}", serverId || "NODE_ID")
+    .replaceAll("{storageId}", serverId || "STORAGE_ID")
     .replaceAll("{projectId}", "PROJECT_ID")
     .replaceAll("{dbId}", "DATABASE_ID")
     .replaceAll("{backupId}", "BACKUP_ID");

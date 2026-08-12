@@ -1,6 +1,7 @@
 /** Assemble and re-export the API explorer catalog. */
 
 import { ACCOUNT_PASSWORD_DEMOS, ACCOUNT_PROFILE_DEMOS } from "./account";
+import { ADMIN_DEMOS } from "./admin";
 import { APPLICATION_DEMOS } from "./application";
 import { MISC_DEMOS } from "./misc";
 import { SERVERS_DEMOS } from "./servers";
@@ -23,6 +24,7 @@ export const API_ENDPOINT_DEMOS: ApiEndpointDemo[] = [
   ...ACCOUNT_PROFILE_DEMOS,
   ...SERVERS_DEMOS,
   ...ACCOUNT_PASSWORD_DEMOS,
+  ...ADMIN_DEMOS,
   ...APPLICATION_DEMOS,
 ];
 

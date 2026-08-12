@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Guartrix API
-  version:  1.4.61
+  version:  1.4.62
   description: |
     Machine-readable surface for the Guartrix panel. Paths under /api also answer at /api/v1 (dual-mount).
 
@@ -3418,6 +3418,21 @@ paths:
       security:
         - ClientApiKey: []
         - SessionCookie: []
+      responses:
+        "200":
+          description: OK
+  /api/application/storages/{id}:
+    get:
+      tags: [Client]
+      summary: "GET /api/application/storages/{id}"
+      security:
+        - ClientApiKey: []
+        - SessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
       responses:
         "200":
           description: OK
