@@ -7,7 +7,7 @@ import type { StoragePool, StoragePoolLink } from "../api/storage-types";
 import { AdminPageShell, AdminPanelCard } from "../components/admin/AdminPageShell";
 import { DiskUsagePie } from "../components/admin/DiskUsagePie";
 import { useI18n } from "../i18n/react";
-import { formatBytes } from "../utils";
+import { copyText, formatBytes } from "../utils";
 
 function asPools(raw: unknown[]): StoragePool[] {
   return raw as StoragePool[];
@@ -58,6 +58,14 @@ export function AdminStoragePage() {
   const [linkNodeId, setLinkNodeId] = useState("");
   const [linkMount, setLinkMount] = useState("");
   const [linkHost, setLinkHost] = useState("");
+
+  const [copiedPoolId, setCopiedPoolId] = useState<string | null>(null);
+
+  async function copyPoolId(id: string) {
+    await copyText(id);
+    setCopiedPoolId(id);
+    window.setTimeout(() => setCopiedPoolId(null), 1500);
+  }
 
   const selected = useMemo(
     () => pools.find((p) => p.id === selectedId) ?? null,
@@ -182,6 +190,9 @@ export function AdminStoragePage() {
                       })}
                       {!p.enabled ? ` · ${t("admin.storageDisabled")}` : ""}
                     </div>
+                    <div className="small font-monospace opacity-75 mt-1 text-truncate" title={p.id}>
+                      {p.id}
+                    </div>
                     {(() => {
                       const disk = primaryDisk(p);
                       if (!disk) return null;
@@ -251,6 +262,32 @@ export function AdminStoragePage() {
                     {t("common.delete")}
                   </Button>
                 </div>
+              </div>
+
+              <div className="small text-secondary d-flex align-items-center gap-2 flex-wrap mb-3">
+                <span>{t("admin.storagePoolId")}:</span>
+                <code className="user-select-all">{selected.id}</code>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline-secondary"
+                  className="py-0 px-2"
+                  disabled={busy}
+                  onClick={() => void copyPoolId(selected.id)}
+                  aria-label={t("admin.copyStoragePoolId")}
+                >
+                  {copiedPoolId === selected.id ? (
+                    <>
+                      <i className="fa-solid fa-check me-1" aria-hidden />
+                      {t("common.done")}
+                    </>
+                  ) : (
+                    <>
+                      <i className="fa-solid fa-copy me-1" aria-hidden />
+                      {t("common.copy")}
+                    </>
+                  )}
+                </Button>
               </div>
 
               <p className="small text-secondary">{t("admin.storageManageHint")}</p>

@@ -1417,6 +1417,8 @@ export const nl: Messages = {
     storagePageTitle: "Opslag",
     storagePageSubtitle: "Globale pools gekoppeld aan een of meer nodes (lokaal pad of NFS).",
     storagePools: "Pools",
+    storagePoolId: "Storage ID",
+    copyStoragePoolId: "Storage ID kopiëren",
     storageEmpty: "Nog geen opslagpools.",
     storageDetail: "Poolgegevens",
     storagePick: "Selecteer een pool of maak er een aan.",

@@ -1401,6 +1401,8 @@ export const en = {
     storagePageTitle: "Storage",
     storagePageSubtitle: "Global pools linked to one or more nodes (local path or NFS).",
     storagePools: "Pools",
+    storagePoolId: "Storage ID",
+    copyStoragePoolId: "Copy storage ID",
     storageEmpty: "No storage pools yet.",
     storageDetail: "Pool details",
     storagePick: "Select a pool or create one.",
