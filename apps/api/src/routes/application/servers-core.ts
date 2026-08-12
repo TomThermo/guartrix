@@ -1,4 +1,5 @@
 import type { FastifyInstance } from "fastify";
+import { primaryAllocationProtocol } from "@guartrix/shared";
 import { z } from "zod";
 import { requireApplication } from "../../auth/application-auth.js";
 import { logActivity } from "../../activity-log.js";
@@ -75,17 +76,38 @@ export function registerApplicationServerCoreRoutes(app: FastifyInstance): void 
     }
 
     let nodeId: string;
+    let resolvedStorageId: string | null = null;
     try {
-      const { assertNodeCapacity, resolveCreateNodeId } = await import("../../nodes/nodes.js");
-      nodeId = await resolveCreateNodeId(data.nodeId, {
+      const { assertNodeCapacity, resolveCreatePlacement } = await import("../../nodes/nodes.js");
+      const placement = await resolveCreatePlacement({
+        requestedNodeId: data.nodeId,
+        requestedStorageId: data.storageId !== undefined ? data.storageId : undefined,
         memoryMb: data.memoryMb,
         diskMb: data.diskMb,
         cpuLimit: data.cpuLimit,
       });
-      await assertNodeCapacity(nodeId, data.memoryMb, { placement: true });
+      nodeId = placement.nodeId;
+      resolvedStorageId = placement.storageId;
+
+      if (resolvedStorageId) {
+        const { assertServerStorageAssignable } = await import("../../services/node-storage.js");
+        await assertServerStorageAssignable(nodeId, resolvedStorageId);
+      }
+      await assertNodeCapacity(nodeId, data.memoryMb, {
+        placement: true,
+        diskMb: data.diskMb,
+        cpuLimit: data.cpuLimit,
+        storageId: resolvedStorageId,
+      });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       return reply.status(400).send({ error: message });
+    }
+
+    const { isGamePortAvailable } = await import("../../servers/game-port.js");
+    if (!(await isGamePortAvailable(nodeId, data.port, data.type))) {
+      const protocol = primaryAllocationProtocol(data.type);
+      return reply.status(409).send({ error: `Port ${data.port}/${protocol} is already in use` });
     }
 
     try {
@@ -103,6 +125,7 @@ export function registerApplicationServerCoreRoutes(app: FastifyInstance): void 
         ownerId: owner.id,
         nodeId,
         cleanupOnFailure: false,
+        ...(resolvedStorageId ? { storageId: resolvedStorageId } : {}),
         ...(data.paperBuild !== undefined ? { paperBuild: data.paperBuild } : {}),
         ...(data.fabricLoaderVersion !== undefined
           ? { fabricLoaderVersion: data.fabricLoaderVersion }

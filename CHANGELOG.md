@@ -3,6 +3,10 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.61] — 2026-08-12
+
+- Application API `POST /api/application/servers`: optional `storageId` (auto/local pool/NFS) + `GET /api/application/storages` and `…/nodes/:id/storages`.
+
 ## [1.4.60] — 2026-08-12
 
 - Admin → Users: show **Owner ID** per account with copy button (for Application API `ownerId`).

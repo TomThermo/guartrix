@@ -112,7 +112,7 @@ Create body:
 }
 ```
 
-Omit `nodeId` to **auto-pick** the deployable node with the most free RAM (then CPU). Data is stored on that node’s default `DATA_DIR` — this endpoint has no `storageId`. For storage pool placement use panel `POST /api/servers` (admin) with optional `storageId`; see [API examples](api-examples.md#post-apiservers--create-server).
+Omit `nodeId` and `storageId` to **auto-pick** deployable node and storage (most free **RAM**, then **CPU**, then disk). Set `nodeId` and/or `storageId` to force placement; `"storageId": null` = node `DATA_DIR` only. List pools: `GET /api/application/storages` or `GET /api/application/nodes/:id/storages` (`nodes.read`). See [API examples](api-examples.md#post-apiservers--create-server).
 
 Patch body (any field optional):
 
@@ -156,13 +156,15 @@ Same shapes as the Client API, under `/api/application/servers/:id/…`:
 
 Use preset **server-ops** or **billing** when minting a `gta_` key for WHMCS-style panels that manage live servers without per-user `gt_` keys.
 
-### Nodes
+### Nodes & storage
 
 ```http
 GET /api/application/nodes
+GET /api/application/storages
+GET /api/application/nodes/:id/storages
 ```
 
-Requires `nodes.read`. Returns the same node list as the create-server picker (memory usage, online status).
+Requires `nodes.read`. Nodes list matches the panel picker (memory usage, online status). Storage endpoints list global pools (local/NFS) and per-node links — use pool `id` as `storageId` on `POST /api/application/servers`.
 
 ### Activity
 

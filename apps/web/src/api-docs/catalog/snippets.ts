@@ -14,8 +14,10 @@ export type SnippetContext = {
 };
 
 function resolvePath(path: string, serverId: string): string {
+  const id = serverId || "SERVER_ID";
   return path
-    .replaceAll("{serverId}", serverId || "SERVER_ID")
+    .replaceAll("{serverId}", id)
+    .replaceAll("{nodeId}", serverId || "NODE_ID")
     .replaceAll("{projectId}", "PROJECT_ID")
     .replaceAll("{dbId}", "DATABASE_ID")
     .replaceAll("{backupId}", "BACKUP_ID");

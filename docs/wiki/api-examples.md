@@ -957,9 +957,17 @@ curl -sS -X POST -H "Authorization: Bearer $GTA_KEY" \
 }
 ```
 
+### GET `/api/application/storages`
+
+Requires `nodes.read`. Lists global storage pools (local/NFS) with node links — use `id` as `storageId` on create.
+
+### GET `/api/application/nodes/:id/storages`
+
+Pools linked to one node (same shape as admin `GET /api/admin/nodes/:id/storages`).
+
 ### POST `/api/application/servers` — create server for user
 
-**Node placement:** omit `nodeId` to auto-pick a deployable node (most free **RAM**, then **CPU**). Set `nodeId` to force a specific node. This endpoint does **not** accept `storageId` — data goes to the node default `DATA_DIR`. For storage pool placement use panel `POST /api/servers` (admin session or Client API) with optional `storageId`.
+**Placement:** omit `nodeId` and `storageId` for auto (most free **RAM** → **CPU** → disk). Set `nodeId` and/or `storageId` manually; `"storageId": null` forces node `DATA_DIR`.
 
 ```json
 {
@@ -973,7 +981,7 @@ curl -sS -X POST -H "Authorization: Bearer $GTA_KEY" \
 }
 ```
 
-Manual node override:
+With storage pool:
 
 ```json
 {
@@ -984,7 +992,8 @@ Manual node override:
   "port": 25565,
   "memoryMb": 4096,
   "diskMb": 10240,
-  "nodeId": "NODE_ID"
+  "nodeId": "NODE_ID",
+  "storageId": "STORAGE_POOL_ID"
 }
 ```
 

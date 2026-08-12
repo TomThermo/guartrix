@@ -100,6 +100,8 @@ export const createServerApplicationSchema = createServerBaseSchema.extend({
   mcVersion: z.string().min(1).max(32),
   diskMb: z.number().int().min(1024).max(10_485_760).optional(),
   cpuLimit: z.number().int().min(0).max(6400).optional(),
+  /** Storage pool on the chosen node (null/omit = auto or node DATA_DIR). */
+  storageId: z.string().min(1).max(64).nullable().optional(),
   /** PAPER/PURPUR: pin a specific build; omit = latest/STABLE. */
   paperBuild: z.number().int().positive().optional(),
   /** FABRIC/QUILT: pin loader version; omit = stable/latest. */

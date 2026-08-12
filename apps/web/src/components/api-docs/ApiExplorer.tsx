@@ -130,6 +130,10 @@ export function ApiExplorer() {
       setRun({ status: "error", message: "Enter a server ID first." });
       return;
     }
+    if (endpoint.path.includes("{nodeId}") && !serverId.trim()) {
+      setRun({ status: "error", message: "Enter a node ID first." });
+      return;
+    }
     if (
       endpoint.method !== "GET" &&
       endpoint.method !== "DELETE" &&
@@ -140,7 +144,9 @@ export function ApiExplorer() {
       return;
     }
 
-    const path = endpoint.path.replaceAll("{serverId}", serverId.trim());
+    const path = endpoint.path
+      .replaceAll("{serverId}", serverId.trim())
+      .replaceAll("{nodeId}", serverId.trim());
     const q = endpoint.query ? `?${endpoint.query}` : "";
     const url = `${panel.replace(/\/$/, "")}${path}${q}`;
     let headers = new Headers();
@@ -239,12 +245,20 @@ export function ApiExplorer() {
           />
         </label>
         <label className="api-ex-field">
-          <span>Server ID</span>
+          <span>
+            {endpoint.path.includes("{nodeId}") && !endpoint.path.includes("{serverId}")
+              ? "Node ID"
+              : "Server ID"}
+          </span>
           <input
             className="form-control"
             value={serverId}
             onChange={(e) => setServerId(e.target.value)}
-            placeholder="from GET /api/servers"
+            placeholder={
+              endpoint.path.includes("{nodeId}") && !endpoint.path.includes("{serverId}")
+                ? "from GET /api/application/nodes"
+                : "from GET /api/servers"
+            }
             spellCheck={false}
           />
         </label>
