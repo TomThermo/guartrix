@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Guartrix API
-  version:  1.4.55
+  version:  1.4.57
   description: |
     Machine-readable surface for the Guartrix panel. Paths under /api also answer at /api/v1 (dual-mount).
 
@@ -211,6 +211,14 @@ components:
               type: integer
               minimum: 1
               description: PAPER/PURPUR build id; omit for latest/STABLE
+            fabricLoaderVersion:
+              type: string
+              maxLength: 64
+              description: FABRIC/QUILT loader version; omit for stable/latest
+            forgeVersion:
+              type: string
+              maxLength: 64
+              description: FORGE/NEOFORGE full version; omit for recommended/latest
     CreateServerBase:
       type: object
       required:
@@ -244,6 +252,14 @@ components:
           type: integer
           minimum: 1
           description: PAPER/PURPUR build id; omit for latest/STABLE
+        fabricLoaderVersion:
+          type: string
+          maxLength: 64
+          description: FABRIC/QUILT loader version; omit for stable/latest
+        forgeVersion:
+          type: string
+          maxLength: 64
+          description: FORGE/NEOFORGE full version; omit for recommended/latest
     CreateServerClient:
       allOf:
         - $ref: "#/components/schemas/CreateServerBase"
@@ -1512,20 +1528,24 @@ paths:
   /api/versions/builds:
     get:
       tags: [Client]
-      summary: List Paper/Purpur builds for a Minecraft version
+      summary: List builds/loaders for a Minecraft version
       security: [{ ClientApiKey: [] }, { SessionCookie: [] }]
       parameters:
         - name: type
           in: query
           required: true
-          schema: { type: string, enum: [PAPER, PURPUR] }
+          schema:
+            {
+              type: string,
+              enum: [PAPER, PURPUR, FABRIC, QUILT, FORGE, NEOFORGE],
+            }
         - name: mcVersion
           in: query
           required: true
           schema: { type: string }
       responses:
         "200":
-          description: "{ type, mcVersion, builds: [{ id, channel }] }"
+          description: "{ type, mcVersion, builds: [{ id, channel, version? }] }"
         "400":
           description: Invalid type or missing mcVersion
   /api/account:
@@ -3163,12 +3183,23 @@ paths:
   /api/servers/{id}/update:
     post:
       tags: [Client]
-      summary: "POST /api/servers/{id}/update"
+      summary: Apply Minecraft and/or channel (build/loader) update
       security:
         - ClientApiKey: []
         - SessionCookie: []
       parameters:
         - $ref: "#/components/parameters/ServerId"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mcVersion: { type: string }
+                paperBuild: { type: integer, minimum: 1 }
+                fabricLoaderVersion: { type: string }
+                forgeVersion: { type: string }
       responses:
         "200":
           description: OK

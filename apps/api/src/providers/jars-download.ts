@@ -102,15 +102,23 @@ export async function downloadPurpur(
 export async function downloadFabric(
   mcVersion: string,
   destDir: string,
+  loaderVersion?: string,
 ): Promise<{ jarName: string; fabricLoaderVersion: string }> {
   const loaders = await fetchJson<FabricLoaderVersions>(
     `https://meta.fabricmc.net/v2/versions/loader/${mcVersion}`,
   );
-  const stable = loaders.find((l) => l.loader.stable) ?? loaders[0];
-  if (!stable) {
-    throw new Error(`No Fabric loader for Minecraft ${mcVersion}`);
+  const chosen =
+    loaderVersion != null
+      ? loaders.find((l) => l.loader.version === loaderVersion)
+      : (loaders.find((l) => l.loader.stable) ?? loaders[0]);
+  if (!chosen) {
+    throw new Error(
+      loaderVersion != null
+        ? `No Fabric loader ${loaderVersion} for Minecraft ${mcVersion}`
+        : `No Fabric loader for Minecraft ${mcVersion}`,
+    );
   }
-  const loaderVersion = stable.loader.version;
+  const resolvedLoader = chosen.loader.version;
 
   const installerVersions = await fetchJson<{ version: string; stable: boolean }[]>(
     "https://meta.fabricmc.net/v2/versions/installer",
@@ -119,23 +127,31 @@ export async function downloadFabric(
   if (!installer) throw new Error("No Fabric installer found");
 
   const jarName = "server.jar";
-  const url = `https://meta.fabricmc.net/v2/versions/loader/${mcVersion}/${loaderVersion}/${installer.version}/server/jar`;
+  const url = `https://meta.fabricmc.net/v2/versions/loader/${mcVersion}/${resolvedLoader}/${installer.version}/server/jar`;
   await downloadFile(url, path.join(destDir, jarName));
-  return { jarName, fabricLoaderVersion: loaderVersion };
+  return { jarName, fabricLoaderVersion: resolvedLoader };
 }
 
 export async function downloadQuilt(
   mcVersion: string,
   destDir: string,
+  loaderVersion?: string,
 ): Promise<{ jarName: string; fabricLoaderVersion: string }> {
   const loaders = await fetchJson<QuiltLoaderVersions>(
     `https://meta.quiltmc.org/v3/versions/loader/${mcVersion}`,
   );
-  const chosen = pickQuiltLoader(loaders);
+  const chosen =
+    loaderVersion != null
+      ? loaders.find((l) => l.loader.version === loaderVersion)
+      : pickQuiltLoader(loaders);
   if (!chosen) {
-    throw new Error(`No Quilt loader for Minecraft ${mcVersion}`);
+    throw new Error(
+      loaderVersion != null
+        ? `No Quilt loader ${loaderVersion} for Minecraft ${mcVersion}`
+        : `No Quilt loader for Minecraft ${mcVersion}`,
+    );
   }
-  const loaderVersion = chosen.loader.version;
+  const resolvedLoader = chosen.loader.version;
 
   const installerVersions = await fetchJson<{ version: string; stable: boolean }[]>(
     "https://meta.quiltmc.org/v3/versions/installer",
@@ -144,9 +160,9 @@ export async function downloadQuilt(
   if (!installer) throw new Error("No Quilt installer found");
 
   const jarName = "server.jar";
-  const url = `https://meta.quiltmc.org/v3/versions/loader/${mcVersion}/${loaderVersion}/${installer.version}/server/jar`;
+  const url = `https://meta.quiltmc.org/v3/versions/loader/${mcVersion}/${resolvedLoader}/${installer.version}/server/jar`;
   await downloadFile(url, path.join(destDir, jarName));
-  return { jarName, fabricLoaderVersion: loaderVersion };
+  return { jarName, fabricLoaderVersion: resolvedLoader };
 }
 
 function runForgeInstaller(installerJar: string, destDir: string, label = "Forge"): Promise<void> {
@@ -211,17 +227,23 @@ async function finishInstallerRuntime(
 export async function downloadForge(
   mcVersion: string,
   destDir: string,
+  forgeVersion?: string,
 ): Promise<{ jarName: string; forgeVersion: string }> {
-  const promo = await fetchJson<ForgePromotions>(
-    "https://files.minecraftforge.net/net/minecraftforge/forge/promotions_slim.json",
-  );
-  const forgeBuild =
-    promo.promos[`${mcVersion}-recommended`] ?? promo.promos[`${mcVersion}-latest`];
-  if (!forgeBuild) {
-    throw new Error(`No Forge build for Minecraft ${mcVersion}`);
+  let fullVersion = forgeVersion?.trim();
+  if (!fullVersion) {
+    const promo = await fetchJson<ForgePromotions>(
+      "https://files.minecraftforge.net/net/minecraftforge/forge/promotions_slim.json",
+    );
+    const forgeBuild =
+      promo.promos[`${mcVersion}-recommended`] ?? promo.promos[`${mcVersion}-latest`];
+    if (!forgeBuild) {
+      throw new Error(`No Forge build for Minecraft ${mcVersion}`);
+    }
+    fullVersion = `${mcVersion}-${forgeBuild}`;
+  } else if (!fullVersion.includes("-")) {
+    fullVersion = `${mcVersion}-${fullVersion}`;
   }
 
-  const fullVersion = `${mcVersion}-${forgeBuild}`;
   const installerName = `forge-${fullVersion}-installer.jar`;
   const installerUrl = `https://maven.minecraftforge.net/net/minecraftforge/forge/${fullVersion}/${installerName}`;
   const installerPath = path.join(destDir, installerName);
@@ -240,16 +262,27 @@ export async function downloadForge(
 export async function downloadNeoForge(
   mcVersion: string,
   destDir: string,
+  forgeVersion?: string,
 ): Promise<{ jarName: string; forgeVersion: string }> {
-  const data = await fetchJson<NeoForgeVersions>(
-    "https://maven.neoforged.net/api/maven/versions/releases/net/neoforged/neoforge",
-  );
-  const matching = data.versions
-    .filter((v) => !/(beta|rc|snapshot|alpha)/i.test(v) && neoMatchesMc(v, mcVersion))
-    .sort(compareMcVersions);
-  const neoVer = matching[0];
+  let neoVer = forgeVersion?.trim();
   if (!neoVer) {
-    throw new Error(`No NeoForge build for Minecraft ${mcVersion}`);
+    const data = await fetchJson<NeoForgeVersions>(
+      "https://maven.neoforged.net/api/maven/versions/releases/net/neoforged/neoforge",
+    );
+    const matching = data.versions
+      .filter((v) => !/(beta|rc|snapshot|alpha)/i.test(v) && neoMatchesMc(v, mcVersion))
+      .sort(compareMcVersions);
+    neoVer = matching[0];
+  }
+  if (!neoVer) {
+    throw new Error(
+      forgeVersion
+        ? `No NeoForge build ${forgeVersion} for Minecraft ${mcVersion}`
+        : `No NeoForge build for Minecraft ${mcVersion}`,
+    );
+  }
+  if (forgeVersion && !neoMatchesMc(neoVer, mcVersion)) {
+    throw new Error(`NeoForge ${neoVer} does not match Minecraft ${mcVersion}`);
   }
 
   const installerName = `neoforge-${neoVer}-installer.jar`;

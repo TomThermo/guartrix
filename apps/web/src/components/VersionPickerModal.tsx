@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
-import type { McServer } from "@guartrix/shared";
+import {
+  channelPinValue,
+  supportsChannelBuilds,
+  type McServer,
+  type SoftwareBuildInfo,
+} from "@guartrix/shared";
 import { Alert, Button, Form, Modal, Spinner } from "react-bootstrap";
 import { api } from "../api";
 import { useI18n } from "../i18n/react";
@@ -13,11 +18,29 @@ interface Props {
   onNotice: (message: string | null) => void;
 }
 
+function channelBody(
+  type: McServer["type"],
+  pin: string,
+): { paperBuild?: number; fabricLoaderVersion?: string; forgeVersion?: string } {
+  if (!pin || !supportsChannelBuilds(type)) return {};
+  if (type === "PAPER" || type === "PURPUR") {
+    const n = Number(pin);
+    return Number.isFinite(n) && n > 0 ? { paperBuild: n } : {};
+  }
+  if (type === "FABRIC" || type === "QUILT") return { fabricLoaderVersion: pin };
+  if (type === "FORGE" || type === "NEOFORGE") return { forgeVersion: pin };
+  return {};
+}
+
 export function VersionPickerModal({ show, server, onHide, onUpdated, onError, onNotice }: Props) {
   const { t } = useI18n();
   const [busy, setBusy] = useState(false);
   const [versions, setVersions] = useState<string[]>([]);
   const [pickVersion, setPickVersion] = useState(server.mcVersion);
+  const [builds, setBuilds] = useState<SoftwareBuildInfo[]>([]);
+  const [channelPin, setChannelPin] = useState("");
+  const [loadingBuilds, setLoadingBuilds] = useState(false);
+  const showChannel = supportsChannelBuilds(server.type);
 
   const running =
     server.status === "RUNNING" || server.status === "STARTING" || server.status === "STOPPING";
@@ -45,16 +68,50 @@ export function VersionPickerModal({ show, server, onHide, onUpdated, onError, o
     };
   }, [show, server.type, server.mcVersion]);
 
+  useEffect(() => {
+    if (!show || !showChannel || !pickVersion) {
+      setBuilds([]);
+      setChannelPin("");
+      return;
+    }
+    let cancelled = false;
+    setLoadingBuilds(true);
+    void api
+      .versionBuilds(server.type, pickVersion)
+      .then((res) => {
+        if (cancelled) return;
+        setBuilds(res.builds);
+        setChannelPin(res.builds[0] ? channelPinValue(res.builds[0]) : "");
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setBuilds([]);
+          setChannelPin("");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingBuilds(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [show, showChannel, server.type, pickVersion]);
+
   async function apply() {
     if (running) {
       onError(t("modals.versionStopBeforeUpdate"));
       return;
     }
-    if (!pickVersion || pickVersion === server.mcVersion) return;
+    if (!pickVersion || pickVersion === server.mcVersion) {
+      // Allow same MC with different channel pin
+      if (!showChannel || !channelPin) return;
+    }
     const isDowngrade = versions.indexOf(pickVersion) > versions.indexOf(server.mcVersion);
     if (
       !confirm(
         `Update ${server.name}?\n\nMinecraft ${server.mcVersion} → ${pickVersion}.${
+          channelPin ? `\nChannel: ${channelPin}.` : ""
+        }${
           isDowngrade
             ? "\n\nDowngrading may corrupt the world or break plugins/mods."
             : "\n\nPlugins/mods may need matching versions."
@@ -68,9 +125,16 @@ export function VersionPickerModal({ show, server, onHide, onUpdated, onError, o
     onError(null);
     onNotice(null);
     try {
-      const result = await api.applyServerUpdate(server.id, pickVersion);
+      const result = await api.applyServerUpdate(server.id, {
+        mcVersion: pickVersion,
+        ...channelBody(server.type, channelPin),
+      });
       onUpdated(result.server);
-      onNotice(`Updated successfully: Minecraft ${server.mcVersion} → ${pickVersion}`);
+      onNotice(
+        `Updated successfully: Minecraft ${server.mcVersion} → ${pickVersion}${
+          channelPin ? ` (${channelPin})` : ""
+        }`,
+      );
       onHide();
     } catch (err) {
       onError(err instanceof Error ? err.message : t("modals.versionUpdateFailed"));
@@ -78,6 +142,9 @@ export function VersionPickerModal({ show, server, onHide, onUpdated, onError, o
       setBusy(false);
     }
   }
+
+  const sameMcOnlyChannel =
+    pickVersion === server.mcVersion && showChannel && Boolean(channelPin);
 
   return (
     <Modal show={show} onHide={busy ? undefined : onHide} centered>
@@ -93,7 +160,7 @@ export function VersionPickerModal({ show, server, onHide, onUpdated, onError, o
             {t("modals.versionStopFirst")}
           </Alert>
         )}
-        <Form.Group controlId="modal-pick-mc-version">
+        <Form.Group controlId="modal-pick-mc-version" className={showChannel ? "mb-3" : ""}>
           <Form.Label>{t("common.version")}</Form.Label>
           <Form.Select
             value={pickVersion}
@@ -108,6 +175,28 @@ export function VersionPickerModal({ show, server, onHide, onUpdated, onError, o
           </Form.Select>
           <Form.Text muted>{t("modals.versionCurrent", { version: server.mcVersion })}</Form.Text>
         </Form.Group>
+        {showChannel && (
+          <Form.Group controlId="modal-pick-channel">
+            <Form.Label>{t("modals.updateChannelPick")}</Form.Label>
+            <Form.Select
+              value={channelPin}
+              disabled={busy || running || loadingBuilds || builds.length === 0}
+              onChange={(e) => setChannelPin(e.target.value)}
+            >
+              {loadingBuilds && <option>{t("common.loading")}…</option>}
+              {builds.map((b) => {
+                const value = channelPinValue(b);
+                return (
+                  <option key={value} value={value}>
+                    {b.version
+                      ? `${b.version} (${b.channel})`
+                      : `Build ${b.id} (${b.channel})`}
+                  </option>
+                );
+              })}
+            </Form.Select>
+          </Form.Group>
+        )}
       </Modal.Body>
       <Modal.Footer>
         <Button variant="outline-secondary" disabled={busy} onClick={onHide}>
@@ -119,8 +208,9 @@ export function VersionPickerModal({ show, server, onHide, onUpdated, onError, o
             busy ||
             running ||
             !pickVersion ||
-            pickVersion === server.mcVersion ||
-            versions.length === 0
+            versions.length === 0 ||
+            (pickVersion === server.mcVersion && !sameMcOnlyChannel) ||
+            (showChannel && !channelPin)
           }
           onClick={() => void apply()}
         >

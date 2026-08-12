@@ -16,6 +16,16 @@ export async function fetchJson<T>(url: string): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+export async function fetchText(url: string): Promise<string> {
+  const res = await fetch(url, {
+    headers: { "User-Agent": USER_AGENT, Accept: "application/xml,text/xml,*/*" },
+  });
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status} fetching ${url}`);
+  }
+  return res.text();
+}
+
 export async function downloadFile(url: string, dest: string): Promise<void> {
   const { fetchSafeDownload } = await import("../safe-url.js");
   const res = await fetchSafeDownload(url, {

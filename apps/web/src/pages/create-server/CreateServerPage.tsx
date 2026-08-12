@@ -90,8 +90,8 @@ export function CreateServerPage() {
               versions={s.versions}
               loadingVersions={s.loadingVersions}
               builds={s.builds}
-              paperBuild={s.paperBuild}
-              onPaperBuildChange={s.setPaperBuild}
+              channelPin={s.channelPin}
+              onChannelPinChange={s.setChannelPin}
               loadingBuilds={s.loadingBuilds}
             />
             {s.mode === "create" && (

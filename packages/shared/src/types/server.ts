@@ -157,6 +157,10 @@ export interface CreateServerRequest {
   storageId?: string | null;
   /** PAPER/PURPUR: pin a specific build; omit = latest/STABLE. */
   paperBuild?: number;
+  /** FABRIC/QUILT: pin loader version; omit = stable/latest. */
+  fabricLoaderVersion?: string;
+  /** FORGE/NEOFORGE: pin full version (e.g. 1.20.1-47.2.0); omit = recommended/latest. */
+  forgeVersion?: string;
   /** Optional world defaults applied to server.properties after provision. */
   seed?: string;
   gamemode?: "survival" | "creative" | "adventure" | "spectator";
@@ -243,14 +247,34 @@ export interface VersionsResponse {
 }
 
 export interface SoftwareBuildInfo {
+  /** Paper/Purpur numeric build; 0 when pin is `version` only. */
   id: number;
   channel: string;
+  /** Fabric/Quilt loader or Forge/NeoForge full version. */
+  version?: string;
 }
 
 export interface VersionBuildsResponse {
   type: ServerType;
   mcVersion: string;
   builds: SoftwareBuildInfo[];
+}
+
+/** Types that expose a build/loader/Forge channel picker. */
+export function supportsChannelBuilds(type: ServerType): boolean {
+  return (
+    type === "PAPER" ||
+    type === "PURPUR" ||
+    type === "FABRIC" ||
+    type === "QUILT" ||
+    type === "FORGE" ||
+    type === "NEOFORGE"
+  );
+}
+
+/** Select value for a channel option (version string or numeric build id). */
+export function channelPinValue(b: SoftwareBuildInfo): string {
+  return b.version ?? String(b.id);
 }
 
 /** Keys allowed to be edited via the panel (grouped categories). */

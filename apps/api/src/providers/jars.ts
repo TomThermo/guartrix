@@ -20,6 +20,11 @@ export {
 export {
   listPaperBuilds,
   listPurpurBuilds,
+  listFabricLoaders,
+  listQuiltLoaders,
+  listForgeVersions,
+  listNeoForgeVersions,
+  listChannelBuilds,
   getLatestPaperBuild,
   getLatestPurpurBuild,
   getLatestFabricLoader,

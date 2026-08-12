@@ -1,6 +1,8 @@
 import {
   BEDROCK_SERVER_TYPES,
   JAVA_SERVER_TYPES,
+  channelPinValue,
+  supportsChannelBuilds,
   type DaemonNode,
   type ServerType,
   type SoftwareBuildInfo,
@@ -59,8 +61,8 @@ export type ServerTypeNodeFieldsProps = {
   versions: string[];
   loadingVersions: boolean;
   builds: SoftwareBuildInfo[];
-  paperBuild: number | "";
-  onPaperBuildChange: (value: number | "") => void;
+  channelPin: string;
+  onChannelPinChange: (value: string) => void;
   loadingBuilds: boolean;
 };
 
@@ -81,12 +83,24 @@ export function ServerTypeNodeFields({
   versions,
   loadingVersions,
   builds,
-  paperBuild,
-  onPaperBuildChange,
+  channelPin,
+  onChannelPinChange,
   loadingBuilds,
 }: ServerTypeNodeFieldsProps) {
   const { t } = useI18n();
-  const showBuild = type === "PAPER" || type === "PURPUR";
+  const showChannel = supportsChannelBuilds(type);
+  const channelLabel =
+    type === "FABRIC" || type === "QUILT"
+      ? t("createServer.loader")
+      : type === "FORGE" || type === "NEOFORGE"
+        ? t("createServer.modLoaderVersion")
+        : t("createServer.build");
+  const channelHelp =
+    type === "FABRIC" || type === "QUILT"
+      ? t("createServer.loaderHelp")
+      : type === "FORGE" || type === "NEOFORGE"
+        ? t("createServer.modLoaderHelp")
+        : t("createServer.buildHelp");
 
   return (
     <>
@@ -165,7 +179,7 @@ export function ServerTypeNodeFields({
           selected={type}
           onSelect={onTypeChange}
         />
-        <Form.Group className={`mt-3 ${showBuild ? "mb-3" : "mb-0"}`} controlId="version">
+        <Form.Group className={`mt-3 ${showChannel ? "mb-3" : "mb-0"}`} controlId="version">
           <Form.Label>{t("createServer.version")}</Form.Label>
           <Form.Select
             value={mcVersion}
@@ -181,15 +195,12 @@ export function ServerTypeNodeFields({
             ))}
           </Form.Select>
         </Form.Group>
-        {showBuild && (
-          <Form.Group className="mb-0" controlId="paper-build">
-            <Form.Label>{t("createServer.build")}</Form.Label>
+        {showChannel && (
+          <Form.Group className="mb-0" controlId="channel-pin">
+            <Form.Label>{channelLabel}</Form.Label>
             <Form.Select
-              value={paperBuild === "" ? "" : String(paperBuild)}
-              onChange={(e) => {
-                const v = e.target.value;
-                onPaperBuildChange(v === "" ? "" : Number(v));
-              }}
+              value={channelPin}
+              onChange={(e) => onChannelPinChange(e.target.value)}
               disabled={loadingBuilds || builds.length === 0 || !mcVersion}
               required={builds.length > 0}
             >
@@ -197,13 +208,21 @@ export function ServerTypeNodeFields({
               {!loadingBuilds && builds.length === 0 && (
                 <option value="">{t("createServer.buildNone")}</option>
               )}
-              {builds.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {t("createServer.buildOption", { id: b.id, channel: b.channel })}
-                </option>
-              ))}
+              {builds.map((b) => {
+                const value = channelPinValue(b);
+                return (
+                  <option key={value} value={value}>
+                    {b.version
+                      ? t("createServer.channelOption", {
+                          version: b.version,
+                          channel: b.channel,
+                        })
+                      : t("createServer.buildOption", { id: b.id, channel: b.channel })}
+                  </option>
+                );
+              })}
             </Form.Select>
-            <Form.Text className="text-secondary">{t("createServer.buildHelp")}</Form.Text>
+            <Form.Text className="text-secondary">{channelHelp}</Form.Text>
           </Form.Group>
         )}
       </AdminPanelCard>

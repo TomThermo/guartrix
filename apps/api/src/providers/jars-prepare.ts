@@ -17,7 +17,11 @@ export async function prepareServerFiles(
   mcVersion: string,
   destDir: string,
   port: number,
-  opts?: { paperBuild?: number },
+  opts?: {
+    paperBuild?: number;
+    fabricLoaderVersion?: string;
+    forgeVersion?: string;
+  },
 ): Promise<{
   jarName: string;
   paperBuild?: number;
@@ -72,13 +76,13 @@ export async function prepareServerFiles(
     case "PURPUR":
       return downloadPurpur(mcVersion, destDir, opts?.paperBuild);
     case "FABRIC":
-      return downloadFabric(mcVersion, destDir);
+      return downloadFabric(mcVersion, destDir, opts?.fabricLoaderVersion);
     case "QUILT":
-      return downloadQuilt(mcVersion, destDir);
+      return downloadQuilt(mcVersion, destDir, opts?.fabricLoaderVersion);
     case "FORGE":
-      return downloadForge(mcVersion, destDir);
+      return downloadForge(mcVersion, destDir, opts?.forgeVersion);
     case "NEOFORGE":
-      return downloadNeoForge(mcVersion, destDir);
+      return downloadNeoForge(mcVersion, destDir, opts?.forgeVersion);
     case "BEDROCK":
       return (await import("./bedrock.js")).downloadBedrock(mcVersion, destDir, false);
     case "BEDROCK_PREVIEW":
@@ -101,6 +105,11 @@ export async function replaceServerRuntime(
   type: ServerType,
   mcVersion: string,
   destDir: string,
+  opts?: {
+    paperBuild?: number;
+    fabricLoaderVersion?: string;
+    forgeVersion?: string;
+  },
 ): Promise<{
   jarName: string;
   paperBuild?: number;
@@ -115,17 +124,17 @@ export async function replaceServerRuntime(
     case "VANILLA":
       return downloadVanilla(mcVersion, destDir);
     case "PAPER":
-      return downloadPaper(mcVersion, destDir);
+      return downloadPaper(mcVersion, destDir, opts?.paperBuild);
     case "PURPUR":
-      return downloadPurpur(mcVersion, destDir);
+      return downloadPurpur(mcVersion, destDir, opts?.paperBuild);
     case "FABRIC":
-      return downloadFabric(mcVersion, destDir);
+      return downloadFabric(mcVersion, destDir, opts?.fabricLoaderVersion);
     case "QUILT":
-      return downloadQuilt(mcVersion, destDir);
+      return downloadQuilt(mcVersion, destDir, opts?.fabricLoaderVersion);
     case "FORGE":
-      return downloadForge(mcVersion, destDir);
+      return downloadForge(mcVersion, destDir, opts?.forgeVersion);
     case "NEOFORGE":
-      return downloadNeoForge(mcVersion, destDir);
+      return downloadNeoForge(mcVersion, destDir, opts?.forgeVersion);
     case "BEDROCK":
       return (await import("./bedrock.js")).downloadBedrock(mcVersion, destDir, false);
     case "BEDROCK_PREVIEW":

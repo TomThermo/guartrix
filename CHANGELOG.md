@@ -3,6 +3,12 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.57] — 2026-08-12
+
+- Create: pick **Fabric/Quilt loader** and **Forge/NeoForge** version (same channel picker as Paper/Purpur builds).
+- Apply update / version modal: choose build or loader before installing (not always latest).
+- Admin Storage: live capacity pie (total / used / free) per pool and linked node.
+
 ## [1.4.55] — 2026-08-12
 
 - Admin **Storage** page: global pools (local/NFS) with multi-node links; per-node mount/unmount. Removed Storage tab from node edit.

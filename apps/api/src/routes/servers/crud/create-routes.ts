@@ -55,16 +55,21 @@ export function registerServerCreateRoutes(app: FastifyInstance): void {
     async (request, reply) => {
       const type = (request.query.type ?? "").toUpperCase();
       const mcVersion = (request.query.mcVersion ?? "").trim();
-      if (type !== "PAPER" && type !== "PURPUR") {
-        return reply.status(400).send({ error: "Builds listing is only available for PAPER and PURPUR" });
+      const allowed = ["PAPER", "PURPUR", "FABRIC", "QUILT", "FORGE", "NEOFORGE"] as const;
+      if (!(allowed as readonly string[]).includes(type)) {
+        return reply.status(400).send({
+          error: "Builds listing is available for PAPER, PURPUR, FABRIC, QUILT, FORGE, and NEOFORGE",
+        });
       }
       if (!mcVersion) {
         return reply.status(400).send({ error: "mcVersion is required" });
       }
       try {
-        const { listPaperBuilds, listPurpurBuilds } = await import("../../../providers/jars.js");
-        const builds =
-          type === "PAPER" ? await listPaperBuilds(mcVersion) : await listPurpurBuilds(mcVersion);
+        const { listChannelBuilds } = await import("../../../providers/jars.js");
+        const builds = await listChannelBuilds(
+          type as (typeof allowed)[number],
+          mcVersion,
+        );
         return { type, mcVersion, builds };
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);

@@ -26,8 +26,14 @@ export interface PurpurVersion {
   builds: { latest: string; all?: string[] };
 }
 
-/** Build id + channel label for Paper/Purpur create UI. */
-export type SoftwareBuildInfo = { id: number; channel: string };
+/** Build / loader / Forge pin for create UI and updates. */
+export type SoftwareBuildInfo = {
+  /** Paper/Purpur numeric build; 0 when pin is `version` only. */
+  id: number;
+  channel: string;
+  /** Fabric/Quilt loader or Forge/NeoForge full version. */
+  version?: string;
+};
 
 export interface NeoForgeVersions {
   versions: string[];

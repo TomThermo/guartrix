@@ -261,6 +261,11 @@ export async function checkAllServerUpdates(
 export async function applyServerUpdate(
   serverId: string,
   targetMcVersion?: string,
+  channel?: {
+    paperBuild?: number;
+    fabricLoaderVersion?: string;
+    forgeVersion?: string;
+  },
 ): Promise<{ server: Server; update: ServerUpdateInfo }> {
   const server = await prisma.server.findUniqueOrThrow({ where: { id: serverId } });
 
@@ -302,6 +307,9 @@ export async function applyServerUpdate(
       nodeId: server.nodeId,
       type: server.type,
       mcVersion,
+      paperBuild: channel?.paperBuild,
+      fabricLoaderVersion: channel?.fabricLoaderVersion,
+      forgeVersion: channel?.forgeVersion,
     });
     const updated = await prisma.server.update({
       where: { id: server.id },

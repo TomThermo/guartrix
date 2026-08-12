@@ -34,6 +34,11 @@ export async function applyCreateWorldDefaults(
 export async function applyVersionChangeViaRuntime(
   serverId: string,
   targetMcVersion: string,
+  channel?: {
+    paperBuild?: number;
+    fabricLoaderVersion?: string;
+    forgeVersion?: string;
+  },
 ): Promise<{ server: Server; update: Awaited<ReturnType<typeof checkServerUpdate>> }> {
   const server = await prisma.server.findUniqueOrThrow({ where: { id: serverId } });
   assertStopped(server);
@@ -60,6 +65,9 @@ export async function applyVersionChangeViaRuntime(
       nodeId: requireNodeId(server),
       type: server.type as ServerType,
       mcVersion,
+      paperBuild: channel?.paperBuild,
+      fabricLoaderVersion: channel?.fabricLoaderVersion,
+      forgeVersion: channel?.forgeVersion,
     });
     const updated = await markMeta(server.id, prepared, { mcVersion });
     return { server: updated, update: await checkServerUpdate(updated) };

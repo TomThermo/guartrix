@@ -22,6 +22,8 @@ export async function prepareServerOnNode(opts: {
   mcVersion: string;
   port: number;
   paperBuild?: number;
+  fabricLoaderVersion?: string;
+  forgeVersion?: string;
   onProgress?: PrepareProgress;
 }): Promise<{
   jarName: string;
@@ -32,7 +34,12 @@ export async function prepareServerOnNode(opts: {
   const node = await prisma.node.findUnique({ where: { id: opts.nodeId } });
   if (!node) throw new Error("Node not found");
 
-  const prepareOpts = opts.paperBuild != null ? { paperBuild: opts.paperBuild } : undefined;
+  const prepareOpts = {
+    ...(opts.paperBuild != null ? { paperBuild: opts.paperBuild } : {}),
+    ...(opts.fabricLoaderVersion ? { fabricLoaderVersion: opts.fabricLoaderVersion } : {}),
+    ...(opts.forgeVersion ? { forgeVersion: opts.forgeVersion } : {}),
+  };
+  const hasOpts = Object.keys(prepareOpts).length > 0;
 
   if (!mustDeployViaDaemon(node.isLocal)) {
     await opts.onProgress?.("Creating: downloading server files…");
@@ -43,7 +50,7 @@ export async function prepareServerOnNode(opts: {
       opts.mcVersion,
       dest,
       opts.port,
-      prepareOpts,
+      hasOpts ? prepareOpts : undefined,
     );
     await fixDataOwnership(opts.serverId);
     return prepared;
@@ -57,7 +64,7 @@ export async function prepareServerOnNode(opts: {
       opts.mcVersion,
       tmp,
       opts.port,
-      prepareOpts,
+      hasOpts ? prepareOpts : undefined,
     );
     await opts.onProgress?.("Creating: deploying files to node…");
     await daemonDeployFromDir(opts.serverId, tmp);
@@ -76,6 +83,9 @@ export async function replaceRuntimeOnNode(opts: {
   nodeId: string;
   type: ServerType;
   mcVersion: string;
+  paperBuild?: number;
+  fabricLoaderVersion?: string;
+  forgeVersion?: string;
 }): Promise<{
   jarName: string;
   paperBuild?: number;
@@ -85,17 +95,34 @@ export async function replaceRuntimeOnNode(opts: {
   const node = await prisma.node.findUnique({ where: { id: opts.nodeId } });
   if (!node) throw new Error("Node not found");
 
+  const replaceOpts = {
+    ...(opts.paperBuild != null ? { paperBuild: opts.paperBuild } : {}),
+    ...(opts.fabricLoaderVersion ? { fabricLoaderVersion: opts.fabricLoaderVersion } : {}),
+    ...(opts.forgeVersion ? { forgeVersion: opts.forgeVersion } : {}),
+  };
+  const hasOpts = Object.keys(replaceOpts).length > 0;
+
   if (!mustDeployViaDaemon(node.isLocal)) {
     const dest = await resolveLocalServerDataDir(opts.serverId);
     await fs.mkdir(dest, { recursive: true });
-    const prepared = await replaceServerRuntime(opts.type, opts.mcVersion, dest);
+    const prepared = await replaceServerRuntime(
+      opts.type,
+      opts.mcVersion,
+      dest,
+      hasOpts ? replaceOpts : undefined,
+    );
     await fixDataOwnership(opts.serverId);
     return prepared;
   }
 
   const tmp = await fs.mkdtemp(path.join(os.tmpdir(), `guartrix-runtime-${opts.serverId}-`));
   try {
-    const prepared = await replaceServerRuntime(opts.type, opts.mcVersion, tmp);
+    const prepared = await replaceServerRuntime(
+      opts.type,
+      opts.mcVersion,
+      tmp,
+      hasOpts ? replaceOpts : undefined,
+    );
     await daemonDeployFromDir(opts.serverId, tmp);
     return prepared;
   } finally {

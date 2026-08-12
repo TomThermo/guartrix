@@ -88,6 +88,10 @@ export const createServerClientSchema = createServerBaseSchema.extend({
   storageId: z.string().min(1).max(64).nullable().optional(),
   /** PAPER/PURPUR: pin a specific build; omit = latest/STABLE. */
   paperBuild: z.number().int().positive().optional(),
+  /** FABRIC/QUILT: pin loader version; omit = stable/latest. */
+  fabricLoaderVersion: z.string().min(1).max(64).optional(),
+  /** FORGE/NEOFORGE: pin full version; omit = recommended/latest. */
+  forgeVersion: z.string().min(1).max(64).optional(),
 });
 
 /** Application API create — requires ownerId; keeps stricter disk/cpu bounds. */
@@ -98,6 +102,10 @@ export const createServerApplicationSchema = createServerBaseSchema.extend({
   cpuLimit: z.number().int().min(0).max(6400).optional(),
   /** PAPER/PURPUR: pin a specific build; omit = latest/STABLE. */
   paperBuild: z.number().int().positive().optional(),
+  /** FABRIC/QUILT: pin loader version; omit = stable/latest. */
+  fabricLoaderVersion: z.string().min(1).max(64).optional(),
+  /** FORGE/NEOFORGE: pin full version; omit = recommended/latest. */
+  forgeVersion: z.string().min(1).max(64).optional(),
 });
 
 export const cloneServerSchema = z.object({

@@ -100,6 +100,10 @@ export function registerApplicationServerCoreRoutes(app: FastifyInstance): void 
         nodeId,
         cleanupOnFailure: false,
         ...(data.paperBuild !== undefined ? { paperBuild: data.paperBuild } : {}),
+        ...(data.fabricLoaderVersion !== undefined
+          ? { fabricLoaderVersion: data.fabricLoaderVersion }
+          : {}),
+        ...(data.forgeVersion !== undefined ? { forgeVersion: data.forgeVersion } : {}),
       });
 
       await autoStartProvisionedServer(id);

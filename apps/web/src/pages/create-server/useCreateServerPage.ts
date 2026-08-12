@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   canCreateServer,
+  channelPinValue,
+  supportsChannelBuilds,
   type DaemonNode,
   type ServerType,
   type SoftwareBuildInfo,
@@ -18,8 +20,22 @@ function parseCreateMode(value: string | null): CreateServerMode {
   return value === "import" ? "import" : "create";
 }
 
-function supportsBuildPicker(type: ServerType): boolean {
-  return type === "PAPER" || type === "PURPUR";
+function channelCreateFields(
+  type: ServerType,
+  channelPin: string,
+): { paperBuild?: number; fabricLoaderVersion?: string; forgeVersion?: string } {
+  if (!channelPin || !supportsChannelBuilds(type)) return {};
+  if (type === "PAPER" || type === "PURPUR") {
+    const n = Number(channelPin);
+    return Number.isFinite(n) && n > 0 ? { paperBuild: n } : {};
+  }
+  if (type === "FABRIC" || type === "QUILT") {
+    return { fabricLoaderVersion: channelPin };
+  }
+  if (type === "FORGE" || type === "NEOFORGE") {
+    return { forgeVersion: channelPin };
+  }
+  return {};
 }
 
 export function useCreateServerPage() {
@@ -44,7 +60,7 @@ export function useCreateServerPage() {
   const [mcVersion, setMcVersion] = useState("");
   const [versions, setVersions] = useState<string[]>([]);
   const [builds, setBuilds] = useState<SoftwareBuildInfo[]>([]);
-  const [paperBuild, setPaperBuild] = useState<number | "">("");
+  const [channelPin, setChannelPin] = useState("");
   const [loadingBuilds, setLoadingBuilds] = useState(false);
   const [port, setPort] = useState(25565);
   const [portManuallyEdited, setPortManuallyEdited] = useState(false);
@@ -83,9 +99,9 @@ export function useCreateServerPage() {
   }, [nodeId]);
 
   useEffect(() => {
-    if (!supportsBuildPicker(type) || !mcVersion) {
+    if (!supportsChannelBuilds(type) || !mcVersion) {
       setBuilds([]);
-      setPaperBuild("");
+      setChannelPin("");
       setLoadingBuilds(false);
       return;
     }
@@ -96,12 +112,12 @@ export function useCreateServerPage() {
       .then((res) => {
         if (cancelled) return;
         setBuilds(res.builds);
-        setPaperBuild(res.builds[0]?.id ?? "");
+        setChannelPin(res.builds[0] ? channelPinValue(res.builds[0]) : "");
       })
       .catch((err) => {
         if (cancelled) return;
         setBuilds([]);
-        setPaperBuild("");
+        setChannelPin("");
         setError(err instanceof Error ? err.message : t("createServer.buildsFailed"));
       })
       .finally(() => {
@@ -127,7 +143,7 @@ export function useCreateServerPage() {
     !nodeId ||
     !!portError ||
     (mode === "import" && !archive) ||
-    (supportsBuildPicker(type) && mode === "create" && (loadingBuilds || paperBuild === ""));
+    (supportsChannelBuilds(type) && mode === "create" && (loadingBuilds || !channelPin));
 
   useCreateServerEffects({
     type,
@@ -186,7 +202,7 @@ export function useCreateServerPage() {
         cpuLimit,
         nodeId: nodeId || undefined,
         ...(user?.role === "ADMIN" && storageId ? { storageId } : {}),
-        ...(supportsBuildPicker(type) && typeof paperBuild === "number" ? { paperBuild } : {}),
+        ...channelCreateFields(type, channelPin),
         seed: seed.trim() || undefined,
         gamemode: gamemode as "survival" | "creative" | "adventure" | "spectator",
         difficulty: difficulty as "peaceful" | "easy" | "normal" | "hard",
@@ -260,8 +276,8 @@ export function useCreateServerPage() {
     setMcVersion,
     versions,
     builds,
-    paperBuild,
-    setPaperBuild,
+    channelPin,
+    setChannelPin,
     loadingBuilds,
     port,
     setPort,

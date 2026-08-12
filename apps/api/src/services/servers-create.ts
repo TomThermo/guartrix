@@ -87,6 +87,10 @@ export async function createPanelServer(
     cleanupOnFailure: false,
     ...(data.storageId !== undefined ? { storageId: data.storageId } : {}),
     ...(data.paperBuild !== undefined ? { paperBuild: data.paperBuild } : {}),
+    ...(data.fabricLoaderVersion !== undefined
+      ? { fabricLoaderVersion: data.fabricLoaderVersion }
+      : {}),
+    ...(data.forgeVersion !== undefined ? { forgeVersion: data.forgeVersion } : {}),
     ...(validatedExtraMounts !== undefined ? { extraMounts: validatedExtraMounts } : {}),
   };
 

@@ -43,16 +43,41 @@ export function registerServerLifecycleRoutes(app: FastifyInstance): void {
 
   app.post<{
     Params: { id: string };
-    Body: { mcVersion?: string };
+    Body: {
+      mcVersion?: string;
+      paperBuild?: number;
+      fabricLoaderVersion?: string;
+      forgeVersion?: string;
+    };
   }>("/api/servers/:id/update", async (request, reply) => {
     const access = await requireServerAccess(request, reply, request.params.id, {
       permission: "settings.update",
     });
     if (!access) return;
     try {
+      const channel = {
+        ...(typeof request.body?.paperBuild === "number"
+          ? { paperBuild: request.body.paperBuild }
+          : {}),
+        ...(request.body?.fabricLoaderVersion
+          ? { fabricLoaderVersion: String(request.body.fabricLoaderVersion).trim() }
+          : {}),
+        ...(request.body?.forgeVersion
+          ? { forgeVersion: String(request.body.forgeVersion).trim() }
+          : {}),
+      };
+      const hasChannel = Object.keys(channel).length > 0;
       const result = request.body?.mcVersion
-        ? await applyVersionChangeViaRuntime(access.server.id, request.body.mcVersion)
-        : await applyServerUpdate(access.server.id, request.body?.mcVersion);
+        ? await applyVersionChangeViaRuntime(
+            access.server.id,
+            request.body.mcVersion,
+            hasChannel ? channel : undefined,
+          )
+        : await applyServerUpdate(
+            access.server.id,
+            request.body?.mcVersion,
+            hasChannel ? channel : undefined,
+          );
       logActivity({
         action: "server.version-change",
         request,
@@ -62,6 +87,7 @@ export function registerServerLifecycleRoutes(app: FastifyInstance): void {
           from: access.server.mcVersion,
           to: result.server.mcVersion,
           type: result.server.type,
+          ...(hasChannel ? channel : {}),
         },
       });
       return {

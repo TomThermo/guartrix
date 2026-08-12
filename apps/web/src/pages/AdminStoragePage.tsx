@@ -3,12 +3,36 @@ import type { DaemonNode } from "@guartrix/shared";
 import { Alert, Badge, Button, Form, Modal, Table } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import { api } from "../api";
-import type { StoragePool } from "../api/storage-types";
+import type { StoragePool, StoragePoolLink } from "../api/storage-types";
 import { AdminPageShell, AdminPanelCard } from "../components/admin/AdminPageShell";
+import { DiskUsagePie } from "../components/admin/DiskUsagePie";
 import { useI18n } from "../i18n/react";
+import { formatBytes } from "../utils";
 
 function asPools(raw: unknown[]): StoragePool[] {
   return raw as StoragePool[];
+}
+
+function linkDisk(link: StoragePoolLink) {
+  return link.status?.disk ?? null;
+}
+
+/** Prefer a mounted link with live disk stats for the pool hero pie. */
+function primaryDisk(pool: StoragePool) {
+  const withDisk = pool.links.filter((l) => l.status?.disk);
+  if (!withDisk.length) return null;
+  return (
+    withDisk.find((l) => l.status?.mounted)?.status?.disk ?? withDisk[0]!.status!.disk!
+  );
+}
+
+function diskSummary(disk: NonNullable<ReturnType<typeof linkDisk>>) {
+  return {
+    used: formatBytes(disk.usedBytes),
+    free: formatBytes(disk.freeBytes),
+    total: formatBytes(disk.totalBytes),
+    pct: disk.usedPercent,
+  };
 }
 
 export function AdminStoragePage() {
@@ -38,6 +62,11 @@ export function AdminStoragePage() {
   const selected = useMemo(
     () => pools.find((p) => p.id === selectedId) ?? null,
     [pools, selectedId],
+  );
+
+  const selectedDisk = useMemo(
+    () => (selected ? primaryDisk(selected) : null),
+    [selected],
   );
 
   const refresh = useCallback(async () => {
@@ -153,6 +182,21 @@ export function AdminStoragePage() {
                       })}
                       {!p.enabled ? ` · ${t("admin.storageDisabled")}` : ""}
                     </div>
+                    {(() => {
+                      const disk = primaryDisk(p);
+                      if (!disk) return null;
+                      const s = diskSummary(disk);
+                      return (
+                        <div className="small mt-1 opacity-90">
+                          {t("admin.storageFreeOf", {
+                            free: s.free,
+                            total: s.total,
+                          })}
+                          {" · "}
+                          {s.pct.toFixed(0)}% {t("admin.nodeDiskUsed").toLowerCase()}
+                        </div>
+                      );
+                    })()}
                   </button>
                 ))}
               </div>
@@ -214,6 +258,61 @@ export function AdminStoragePage() {
                 <Link to="/admin/nodes">{t("admin.storageGoNodes")}</Link>
               </p>
 
+              <div className="admin-storage-capacity mb-4">
+                <div className="admin-storage-capacity__pie">
+                  {selectedDisk ? (
+                    <DiskUsagePie
+                      size={168}
+                      usedPercent={selectedDisk.usedPercent}
+                      usedLabel={formatBytes(selectedDisk.usedBytes)}
+                      freeLabel={formatBytes(selectedDisk.freeBytes)}
+                      totalLabel={formatBytes(selectedDisk.totalBytes)}
+                      centerLabel={t("admin.storageCapacity")}
+                    />
+                  ) : (
+                    <p className="small text-secondary mb-0 text-center px-3">
+                      {t("admin.storageCapacityUnknown")}
+                    </p>
+                  )}
+                </div>
+                <div className="admin-storage-capacity__tiles">
+                  {selectedDisk ? (
+                    <>
+                      <div className="node-stat-card">
+                        <div className="node-stat-card__label">{t("admin.nodeDiskTotal")}</div>
+                        <div className="node-stat-card__value">
+                          {formatBytes(selectedDisk.totalBytes)}
+                        </div>
+                      </div>
+                      <div className="node-stat-card">
+                        <div className="node-stat-card__label">{t("admin.nodeDiskUsed")}</div>
+                        <div className="node-stat-card__value">
+                          {formatBytes(selectedDisk.usedBytes)}
+                          <span className="node-stat-card__sub">
+                            {" "}
+                            ({selectedDisk.usedPercent.toFixed(1)}%)
+                          </span>
+                        </div>
+                      </div>
+                      <div className="node-stat-card">
+                        <div className="node-stat-card__label">{t("admin.nodeDiskFree")}</div>
+                        <div className="node-stat-card__value text-success">
+                          {formatBytes(selectedDisk.freeBytes)}
+                        </div>
+                      </div>
+                    </>
+                  ) : null}
+                  <div className="node-stat-card">
+                    <div className="node-stat-card__label">{t("admin.storageDiskBudget")}</div>
+                    <div className="node-stat-card__value">
+                      {selected.diskMb > 0
+                        ? formatBytes(selected.diskMb * 1024 * 1024)
+                        : t("admin.storageBudgetUnlimited")}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <h3 className="h6">{t("admin.storageLinkedNodes")}</h3>
               {selected.links.length === 0 ? (
                 <p className="text-secondary">{t("admin.storageNoLinks")}</p>
@@ -223,6 +322,7 @@ export function AdminStoragePage() {
                     <tr>
                       <th>{t("admin.storageNode")}</th>
                       <th>{t("admin.storageMountPoint")}</th>
+                      <th>{t("admin.storageCapacity")}</th>
                       <th>{t("admin.storageStatus")}</th>
                       <th />
                     </tr>
@@ -230,6 +330,7 @@ export function AdminStoragePage() {
                   <tbody>
                     {selected.links.map((link) => {
                       const mounted = Boolean(link.status?.mounted);
+                      const disk = linkDisk(link);
                       const ready =
                         link.status?.exists &&
                         (selected.type === "LOCAL" &&
@@ -245,6 +346,22 @@ export function AdminStoragePage() {
                             </div>
                           </td>
                           <td className="font-monospace small">{link.mountPoint}</td>
+                          <td className="small">
+                            {disk ? (
+                              <>
+                                <div>
+                                  <strong>{formatBytes(disk.freeBytes)}</strong>{" "}
+                                  {t("admin.storageFreeShort")}
+                                </div>
+                                <div className="text-secondary">
+                                  {formatBytes(disk.usedBytes)} / {formatBytes(disk.totalBytes)}{" "}
+                                  ({disk.usedPercent.toFixed(0)}%)
+                                </div>
+                              </>
+                            ) : (
+                              <span className="text-secondary">—</span>
+                            )}
+                          </td>
                           <td>
                             <Badge bg={ready ? "success" : "warning"}>
                               {mounted

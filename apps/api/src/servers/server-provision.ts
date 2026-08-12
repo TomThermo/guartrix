@@ -35,6 +35,10 @@ export type ProvisionServerInput = {
   storageId?: string | null;
   /** PAPER/PURPUR build pin (omit = latest). */
   paperBuild?: number;
+  /** FABRIC/QUILT loader pin (omit = stable/latest). */
+  fabricLoaderVersion?: string;
+  /** FORGE/NEOFORGE version pin (omit = recommended/latest). */
+  forgeVersion?: string;
 };
 
 export type PanelCreateWorldOpts = {
@@ -233,6 +237,8 @@ export async function finishPanelCreateInBackground(opts: FinishPanelCreateOpts)
       mcVersion: input.mcVersion,
       port: input.port,
       paperBuild: input.paperBuild,
+      fabricLoaderVersion: input.fabricLoaderVersion,
+      forgeVersion: input.forgeVersion,
       onProgress: (message) => setCreatingProgress(id, message),
     });
 
@@ -435,6 +441,8 @@ export async function provisionPreparedServer(input: ProvisionServerInput) {
       mcVersion: input.mcVersion,
       port: input.port,
       paperBuild: input.paperBuild,
+      fabricLoaderVersion: input.fabricLoaderVersion,
+      forgeVersion: input.forgeVersion,
     });
 
     const subdomain = input.ensureSubdomain
