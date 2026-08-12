@@ -7,6 +7,7 @@ import { serverDir } from "./config.js";
 import { fixDataOwnership } from "./process-manager.js";
 import { assertDiskSpace, invalidateServerDataCache } from "./disk-quota.js";
 import { assertNotSensitive, isSensitiveFileName, resolveSafePath } from "./files-crud.js";
+import { setServerDataRoot } from "./server-locations.js";
 
 const ARCHIVE_NAME_RE = /^[\w.\- ()[\]]+$/;
 const MAX_COMPRESS_PATHS = 100;
@@ -244,4 +245,6 @@ export async function exportServerArchive(serverId: string, archivePath: string)
 export async function wipeServerData(serverId: string): Promise<void> {
   const dir = serverDir(serverId);
   await fs.rm(dir, { recursive: true, force: true });
+  // Drop storage-pool override so a recreated server id does not inherit a stale mount.
+  await setServerDataRoot(serverId, null).catch(() => undefined);
 }

@@ -1,8 +1,8 @@
 import type { Server } from "@prisma/client";
 import type { ServerType, ServerUpdateInfo } from "@guartrix/shared";
-import { serverDir } from "../config.js";
 import { prisma } from "../db.js";
-import { processManager, fixDataOwnership } from "./process-manager.js";
+import { processManager } from "./process-manager.js";
+import { replaceRuntimeOnNode } from "./server-files.js";
 import {
   compareVersionsAsc,
   getLatestFabricLoader,
@@ -12,7 +12,6 @@ import {
   getLatestPurpurBuild,
   getLatestQuiltLoader,
   listVersions,
-  replaceServerRuntime,
 } from "../providers/jars.js";
 
 const versionCache = new Map<string, { at: number; versions: string[] }>();
@@ -284,9 +283,6 @@ export async function applyServerUpdate(
   // Changing MC version when not needed / not available as update is still allowed
   // if explicitly requested and in the version list.
 
-  const dir = serverDir(server.id);
-  await fixDataOwnership(dir);
-
   await prisma.server.update({
     where: { id: server.id },
     data: { status: "CREATING", errorMessage: null },
@@ -300,7 +296,13 @@ export async function applyServerUpdate(
       note: `Pre-update ${server.mcVersion} → ${mcVersion}`,
     });
 
-    const prepared = await replaceServerRuntime(server.type, mcVersion, dir);
+    if (!server.nodeId) throw new Error("Server has no node");
+    const prepared = await replaceRuntimeOnNode({
+      serverId: server.id,
+      nodeId: server.nodeId,
+      type: server.type,
+      mcVersion,
+    });
     const updated = await prisma.server.update({
       where: { id: server.id },
       data: {

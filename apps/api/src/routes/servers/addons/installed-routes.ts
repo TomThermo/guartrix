@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { requireServerAccess } from "../../../auth/auth.js";
 import { logActivity } from "../../../activity-log.js";
 import { installAddon, syncInstalledAddons, uninstallAddon } from "../../../servers/addons.js";
-import { serverDir } from "../../../config.js";
+import { resolveLocalServerDataDir } from "../../../servers/server-data-path.js";
 import { fixDataOwnership } from "../../../servers/process-manager.js";
 import { invalidateAddonUpdateCache } from "../dashboard.js";
 
@@ -15,8 +15,8 @@ export function registerAddonInstalledRoutes(app: FastifyInstance): void {
     if (!access) return;
     const server = access.server;
     try {
-      await fixDataOwnership(serverDir(server.id));
-      const result = await syncInstalledAddons(serverDir(server.id), server.type);
+      await fixDataOwnership(await resolveLocalServerDataDir(server.id));
+      const result = await syncInstalledAddons(await resolveLocalServerDataDir(server.id), server.type);
       invalidateAddonUpdateCache(server.id);
       logActivity({
         action: "addon.sync",
@@ -50,10 +50,10 @@ export function registerAddonInstalledRoutes(app: FastifyInstance): void {
     const projectId = request.body?.projectId?.trim();
     if (!projectId) return reply.status(400).send({ error: "projectId is required" });
     try {
-      await fixDataOwnership(serverDir(server.id));
+      await fixDataOwnership(await resolveLocalServerDataDir(server.id));
 
       const result = await installAddon({
-        serverDir: serverDir(server.id),
+        serverDir: await resolveLocalServerDataDir(server.id),
         type: server.type,
         mcVersion: server.mcVersion,
         projectId,
@@ -88,7 +88,7 @@ export function registerAddonInstalledRoutes(app: FastifyInstance): void {
       if (!access) return;
       const server = access.server;
       try {
-        await uninstallAddon(serverDir(server.id), server.type, request.params.projectId);
+        await uninstallAddon(await resolveLocalServerDataDir(server.id), server.type, request.params.projectId);
         invalidateAddonUpdateCache(server.id);
         logActivity({
           action: "addon.delete",

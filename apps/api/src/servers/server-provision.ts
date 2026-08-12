@@ -227,7 +227,7 @@ export async function finishPanelCreateInBackground(opts: FinishPanelCreateOpts)
     const node = await prisma.node.findUnique({ where: { id: input.nodeId } });
     await setCreatingProgress(
       id,
-      node && !node.isLocal
+      node && (!node.isLocal || input.storageId)
         ? "Creating: downloading server files & deploying to node…"
         : "Creating: downloading server files…",
     );

@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { addonKindFor } from "@guartrix/shared";
 import { logActivity } from "../../activity-log.js";
-import { serverDir } from "../../config.js";
+import { resolveLocalServerDataDir } from "../../servers/server-data-path.js";
 import { installAddon, listInstalledAddons, uninstallAddon } from "../../servers/addons.js";
 import { fixDataOwnership } from "../../servers/process-manager.js";
 import { requireApplicationServer } from "../../services/application-server-access.js";
@@ -20,7 +20,7 @@ export function registerApplicationServerAddonsRoutes(app: FastifyInstance): voi
       );
       if (!access) return;
       const server = access.server;
-      const installed = await listInstalledAddons(serverDir(server.id));
+      const installed = await listInstalledAddons(await resolveLocalServerDataDir(server.id));
       return {
         type: server.type,
         mcVersion: server.mcVersion,
@@ -51,9 +51,9 @@ export function registerApplicationServerAddonsRoutes(app: FastifyInstance): voi
       }
       const server = access.server;
       try {
-        await fixDataOwnership(serverDir(server.id));
+        await fixDataOwnership(await resolveLocalServerDataDir(server.id));
         const result = await installAddon({
-          serverDir: serverDir(server.id),
+          serverDir: await resolveLocalServerDataDir(server.id),
           type: server.type,
           mcVersion: server.mcVersion,
           projectId: parsed.data.projectId,
@@ -89,7 +89,7 @@ export function registerApplicationServerAddonsRoutes(app: FastifyInstance): voi
       if (!access) return;
       try {
         await uninstallAddon(
-          serverDir(access.server.id),
+          await resolveLocalServerDataDir(access.server.id),
           access.server.type,
           request.params.projectId,
         );

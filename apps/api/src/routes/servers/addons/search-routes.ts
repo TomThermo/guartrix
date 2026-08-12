@@ -10,7 +10,7 @@ import {
   listInstalledAddons,
   searchAddons,
 } from "../../../servers/addons.js";
-import { serverDir } from "../../../config.js";
+import { resolveLocalServerDataDir } from "../../../servers/server-data-path.js";
 
 /** Browse / search / list addon routes. */
 export function registerAddonSearchRoutes(app: FastifyInstance): void {
@@ -129,7 +129,7 @@ export function registerAddonSearchRoutes(app: FastifyInstance): void {
     });
     if (!access) return;
     const server = access.server;
-    const installed = await listInstalledAddons(serverDir(server.id));
+    const installed = await listInstalledAddons(await resolveLocalServerDataDir(server.id));
     return {
       type: server.type,
       mcVersion: server.mcVersion,
@@ -146,7 +146,7 @@ export function registerAddonSearchRoutes(app: FastifyInstance): void {
     const server = access.server;
     try {
       const updates = await checkInstalledAddonUpdates({
-        serverDir: serverDir(server.id),
+        serverDir: await resolveLocalServerDataDir(server.id),
         type: server.type,
         mcVersion: server.mcVersion,
       });

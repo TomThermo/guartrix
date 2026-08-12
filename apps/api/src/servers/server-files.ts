@@ -7,10 +7,12 @@ import { serverDir } from "../config.js";
 import { prisma } from "../db.js";
 import { fixDataOwnership } from "./process-manager.js";
 import { prepareServerFiles, replaceServerRuntime } from "../providers/jars.js";
+import { mustDeployViaDaemon, resolveLocalServerDataDir } from "./server-data-path.js";
 
 /**
  * Prepare Minecraft server files on the correct node.
- * Local node shares DATA_DIR with the panel; remote nodes get a tar deploy.
+ * Default local DATA_DIR is written in place; remote nodes and local storage pools
+ * get a tar deploy so files land under the daemon's resolved server directory.
  */
 export async function prepareServerOnNode(opts: {
   serverId: string;
@@ -27,7 +29,8 @@ export async function prepareServerOnNode(opts: {
   const node = await prisma.node.findUnique({ where: { id: opts.nodeId } });
   if (!node) throw new Error("Node not found");
 
-  if (node.isLocal) {
+  const viaDaemon = await mustDeployViaDaemon(opts.serverId, node.isLocal);
+  if (!viaDaemon) {
     const prepared = await prepareServerFiles(
       opts.type,
       opts.mcVersion,
@@ -50,7 +53,7 @@ export async function prepareServerOnNode(opts: {
 
 /**
  * Replace jar / loader runtime on the owning node without wiping world data.
- * Remote: build in tmp + merge-deploy (extract over existing files).
+ * Remote / storage-pool: build in tmp + merge-deploy (extract over existing files).
  */
 export async function replaceRuntimeOnNode(opts: {
   serverId: string;
@@ -66,7 +69,8 @@ export async function replaceRuntimeOnNode(opts: {
   const node = await prisma.node.findUnique({ where: { id: opts.nodeId } });
   if (!node) throw new Error("Node not found");
 
-  if (node.isLocal) {
+  const viaDaemon = await mustDeployViaDaemon(opts.serverId, node.isLocal);
+  if (!viaDaemon) {
     const prepared = await replaceServerRuntime(
       opts.type,
       opts.mcVersion,
@@ -98,8 +102,21 @@ export async function syncLocalDirToNode(
   const node = await prisma.node.findUnique({ where: { id: nodeId } });
   if (!node) throw new Error("Node not found");
 
-  const dest = serverDir(serverId);
+  const viaDaemon = await mustDeployViaDaemon(serverId, node.isLocal);
+  if (!viaDaemon) {
+    const dest = serverDir(serverId);
+    if (path.resolve(localDir) !== path.resolve(dest)) {
+      await fs.mkdir(path.dirname(dest), { recursive: true });
+      await fs.cp(localDir, dest, { recursive: true });
+    }
+    await fixDataOwnership(serverId);
+    return;
+  }
+
+  // Local storage pool: prefer copying onto the mount when the panel can see it
+  // (avoids re-tarring large worlds). Fall back to daemon deploy.
   if (node.isLocal) {
+    const dest = await resolveLocalServerDataDir(serverId);
     if (path.resolve(localDir) !== path.resolve(dest)) {
       await fs.mkdir(path.dirname(dest), { recursive: true });
       await fs.cp(localDir, dest, { recursive: true });
@@ -115,4 +132,13 @@ export async function syncLocalDirToNode(
 export async function wipeServerEverywhere(serverId: string): Promise<void> {
   await daemonWipeServer(serverId).catch(() => undefined);
   await fs.rm(serverDir(serverId), { recursive: true, force: true }).catch(() => undefined);
+  // Storage-pool path on a local node (panel DATA_DIR may not hold the files).
+  try {
+    const alt = await resolveLocalServerDataDir(serverId);
+    if (path.resolve(alt) !== path.resolve(serverDir(serverId))) {
+      await fs.rm(alt, { recursive: true, force: true }).catch(() => undefined);
+    }
+  } catch {
+    /* server row may already be gone */
+  }
 }

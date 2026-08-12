@@ -3,6 +3,11 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.52] — 2026-08-11
+
+- Fix create on **storage pools**: deploy jars via daemon so `server.jar` lands on the NFS/local mount (was written only under panel `DATA_DIR` → start failed with jar not found).
+- Addon/update paths resolve the pool mount on local nodes; wipe clears stale `server-locations` entries.
+
 ## [1.4.51] — 2026-08-11
 
 - Daemon storage mount: create mount-point dirs with `sudo mkdir -p` fallback on `EACCES`/`EPERM` (fixes Mount when `/var/lib/guartrix` is missing or root-owned).

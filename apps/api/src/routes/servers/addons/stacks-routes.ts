@@ -3,7 +3,7 @@ import type { ServerType } from "@guartrix/shared";
 import { requireServerAccess } from "../../../auth/auth.js";
 import { logActivity } from "../../../activity-log.js";
 import { installAddon } from "../../../servers/addons.js";
-import { serverDir } from "../../../config.js";
+import { resolveLocalServerDataDir } from "../../../servers/server-data-path.js";
 import { fixDataOwnership } from "../../../servers/process-manager.js";
 
 /** Recommended plugin-stack install route. */
@@ -25,7 +25,7 @@ export function registerAddonStacksRoutes(app: FastifyInstance): void {
 
     const installed: string[] = [];
     const errors: Array<{ name: string; error: string }> = [];
-    const dir = serverDir(access.server.id);
+    const dir = await resolveLocalServerDataDir(access.server.id);
     await fixDataOwnership(dir);
     for (const item of stack.items) {
       try {
