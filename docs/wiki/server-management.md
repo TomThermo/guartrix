@@ -24,7 +24,7 @@ The main UI entrypoints are:
 `CreateServerPage` supports two modes:
 
 1. **Create**
-   Choose name, server software family, Minecraft version, memory, disk, port, and **backup retention** (max archives kept; defaults from Admin settings). Admins can also choose the node and an optional **storage pool** (see [Install nodes — storage pools](install-nodes.md#node-storage-pools)).
+   Choose name, server software family, Minecraft version (and for Paper/Purpur a **build**), memory, disk, port, and **backup retention** (max archives kept; defaults from Admin settings). Admins can also choose the node and an optional **storage pool** (see [Install nodes — storage pools](install-nodes.md#node-storage-pools)).
    After you click create, the panel returns immediately and opens the **Console** tab while status is `CREATING`. Progress lines (`Creating: downloading…`, deploy, start) show in the banner and console until the server boots.
 2. **Import archive**
    Create a server from an uploaded `.zip` or `.tar.gz` archive (same retention field). Same immediate console navigation and progress as create.

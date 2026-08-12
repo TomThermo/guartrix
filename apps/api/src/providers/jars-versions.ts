@@ -23,8 +23,11 @@ export interface PurpurProject {
 }
 
 export interface PurpurVersion {
-  builds: { latest: string };
+  builds: { latest: string; all?: string[] };
 }
+
+/** Build id + channel label for Paper/Purpur create UI. */
+export type SoftwareBuildInfo = { id: number; channel: string };
 
 export interface NeoForgeVersions {
   versions: string[];

@@ -3,6 +3,10 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.54] — 2026-08-12
+
+- Create server: choose **Paper/Purpur build** (defaults to newest); `GET /api/versions/builds` + optional `paperBuild` on create.
+
 ## [1.4.53] — 2026-08-12
 
 - Create UX: clear stuck **Creating:** console/banner when the server leaves `CREATING` (e.g. already `STARTING`).

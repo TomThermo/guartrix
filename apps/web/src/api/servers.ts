@@ -10,6 +10,7 @@ import type {
   TransferServerRequest,
   UpdateServerRequest,
   VersionsResponse,
+  VersionBuildsResponse,
 } from "@guartrix/shared";
 import { request, withCsrfHeaders } from "./client";
 import { serverAllocationsApi } from "./server-allocations";
@@ -111,6 +112,10 @@ const serverCoreApi = {
   getConnectInfo: (id: string) => request<ConnectInfo>(`/api/servers/${id}/connect`),
   getDiskUsage: (id: string) => request<DiskUsageBreakdown>(`/api/servers/${id}/disk`),
   versions: (type: ServerType) => request<VersionsResponse>(`/api/versions?type=${type}`),
+  versionBuilds: (type: ServerType, mcVersion: string) =>
+    request<VersionBuildsResponse>(
+      `/api/versions/builds?type=${encodeURIComponent(type)}&mcVersion=${encodeURIComponent(mcVersion)}`,
+    ),
 };
 
 export const serversApi = {

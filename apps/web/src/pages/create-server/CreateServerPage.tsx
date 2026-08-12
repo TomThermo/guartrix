@@ -89,6 +89,10 @@ export function CreateServerPage() {
               onMcVersionChange={s.setMcVersion}
               versions={s.versions}
               loadingVersions={s.loadingVersions}
+              builds={s.builds}
+              paperBuild={s.paperBuild}
+              onPaperBuildChange={s.setPaperBuild}
+              loadingBuilds={s.loadingBuilds}
             />
             {s.mode === "create" && (
               <CreateServerForm

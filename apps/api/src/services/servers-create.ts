@@ -86,6 +86,7 @@ export async function createPanelServer(
     ensureSubdomain: true,
     cleanupOnFailure: false,
     ...(data.storageId !== undefined ? { storageId: data.storageId } : {}),
+    ...(data.paperBuild !== undefined ? { paperBuild: data.paperBuild } : {}),
     ...(validatedExtraMounts !== undefined ? { extraMounts: validatedExtraMounts } : {}),
   };
 

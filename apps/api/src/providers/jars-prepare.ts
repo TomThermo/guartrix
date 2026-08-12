@@ -17,6 +17,7 @@ export async function prepareServerFiles(
   mcVersion: string,
   destDir: string,
   port: number,
+  opts?: { paperBuild?: number },
 ): Promise<{
   jarName: string;
   paperBuild?: number;
@@ -67,9 +68,9 @@ export async function prepareServerFiles(
     case "VANILLA":
       return downloadVanilla(mcVersion, destDir);
     case "PAPER":
-      return downloadPaper(mcVersion, destDir);
+      return downloadPaper(mcVersion, destDir, opts?.paperBuild);
     case "PURPUR":
-      return downloadPurpur(mcVersion, destDir);
+      return downloadPurpur(mcVersion, destDir, opts?.paperBuild);
     case "FABRIC":
       return downloadFabric(mcVersion, destDir);
     case "QUILT":

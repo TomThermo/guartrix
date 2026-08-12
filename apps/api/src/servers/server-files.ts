@@ -21,6 +21,7 @@ export async function prepareServerOnNode(opts: {
   type: ServerType;
   mcVersion: string;
   port: number;
+  paperBuild?: number;
   onProgress?: PrepareProgress;
 }): Promise<{
   jarName: string;
@@ -31,11 +32,19 @@ export async function prepareServerOnNode(opts: {
   const node = await prisma.node.findUnique({ where: { id: opts.nodeId } });
   if (!node) throw new Error("Node not found");
 
+  const prepareOpts = opts.paperBuild != null ? { paperBuild: opts.paperBuild } : undefined;
+
   if (!mustDeployViaDaemon(node.isLocal)) {
     await opts.onProgress?.("Creating: downloading server files…");
     const dest = await resolveLocalServerDataDir(opts.serverId);
     await fs.mkdir(dest, { recursive: true });
-    const prepared = await prepareServerFiles(opts.type, opts.mcVersion, dest, opts.port);
+    const prepared = await prepareServerFiles(
+      opts.type,
+      opts.mcVersion,
+      dest,
+      opts.port,
+      prepareOpts,
+    );
     await fixDataOwnership(opts.serverId);
     return prepared;
   }
@@ -43,7 +52,13 @@ export async function prepareServerOnNode(opts: {
   await opts.onProgress?.("Creating: downloading server files…");
   const tmp = await fs.mkdtemp(path.join(os.tmpdir(), `guartrix-prepare-${opts.serverId}-`));
   try {
-    const prepared = await prepareServerFiles(opts.type, opts.mcVersion, tmp, opts.port);
+    const prepared = await prepareServerFiles(
+      opts.type,
+      opts.mcVersion,
+      tmp,
+      opts.port,
+      prepareOpts,
+    );
     await opts.onProgress?.("Creating: deploying files to node…");
     await daemonDeployFromDir(opts.serverId, tmp);
     return prepared;

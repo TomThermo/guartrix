@@ -3,6 +3,7 @@ import {
   JAVA_SERVER_TYPES,
   type DaemonNode,
   type ServerType,
+  type SoftwareBuildInfo,
 } from "@guartrix/shared";
 import { Form } from "react-bootstrap";
 import { AdminPanelCard } from "../../components/admin/AdminPageShell";
@@ -57,6 +58,10 @@ export type ServerTypeNodeFieldsProps = {
   onMcVersionChange: (value: string) => void;
   versions: string[];
   loadingVersions: boolean;
+  builds: SoftwareBuildInfo[];
+  paperBuild: number | "";
+  onPaperBuildChange: (value: number | "") => void;
+  loadingBuilds: boolean;
 };
 
 export function ServerTypeNodeFields({
@@ -75,8 +80,13 @@ export function ServerTypeNodeFields({
   onMcVersionChange,
   versions,
   loadingVersions,
+  builds,
+  paperBuild,
+  onPaperBuildChange,
+  loadingBuilds,
 }: ServerTypeNodeFieldsProps) {
   const { t } = useI18n();
+  const showBuild = type === "PAPER" || type === "PURPUR";
 
   return (
     <>
@@ -155,7 +165,7 @@ export function ServerTypeNodeFields({
           selected={type}
           onSelect={onTypeChange}
         />
-        <Form.Group className="mb-0 mt-3" controlId="version">
+        <Form.Group className={`mt-3 ${showBuild ? "mb-3" : "mb-0"}`} controlId="version">
           <Form.Label>{t("createServer.version")}</Form.Label>
           <Form.Select
             value={mcVersion}
@@ -171,6 +181,31 @@ export function ServerTypeNodeFields({
             ))}
           </Form.Select>
         </Form.Group>
+        {showBuild && (
+          <Form.Group className="mb-0" controlId="paper-build">
+            <Form.Label>{t("createServer.build")}</Form.Label>
+            <Form.Select
+              value={paperBuild === "" ? "" : String(paperBuild)}
+              onChange={(e) => {
+                const v = e.target.value;
+                onPaperBuildChange(v === "" ? "" : Number(v));
+              }}
+              disabled={loadingBuilds || builds.length === 0 || !mcVersion}
+              required={builds.length > 0}
+            >
+              {loadingBuilds && <option>{t("common.loading")}…</option>}
+              {!loadingBuilds && builds.length === 0 && (
+                <option value="">{t("createServer.buildNone")}</option>
+              )}
+              {builds.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {t("createServer.buildOption", { id: b.id, channel: b.channel })}
+                </option>
+              ))}
+            </Form.Select>
+            <Form.Text className="text-secondary">{t("createServer.buildHelp")}</Form.Text>
+          </Form.Group>
+        )}
       </AdminPanelCard>
     </>
   );

@@ -99,6 +99,7 @@ export function registerApplicationServerCoreRoutes(app: FastifyInstance): void 
         ownerId: owner.id,
         nodeId,
         cleanupOnFailure: false,
+        ...(data.paperBuild !== undefined ? { paperBuild: data.paperBuild } : {}),
       });
 
       await autoStartProvisionedServer(id);

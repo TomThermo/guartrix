@@ -18,6 +18,8 @@ export {
   ensureModLoaderRuntime,
 } from "./jars-prepare.js";
 export {
+  listPaperBuilds,
+  listPurpurBuilds,
   getLatestPaperBuild,
   getLatestPurpurBuild,
   getLatestFabricLoader,

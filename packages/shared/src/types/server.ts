@@ -155,6 +155,8 @@ export interface CreateServerRequest {
   nodeId?: string;
   /** Admin: node storage pool (null/omit = DATA_DIR). */
   storageId?: string | null;
+  /** PAPER/PURPUR: pin a specific build; omit = latest/STABLE. */
+  paperBuild?: number;
   /** Optional world defaults applied to server.properties after provision. */
   seed?: string;
   gamemode?: "survival" | "creative" | "adventure" | "spectator";
@@ -238,6 +240,17 @@ export interface ImportServerRequest {
 export interface VersionsResponse {
   type: ServerType;
   versions: string[];
+}
+
+export interface SoftwareBuildInfo {
+  id: number;
+  channel: string;
+}
+
+export interface VersionBuildsResponse {
+  type: ServerType;
+  mcVersion: string;
+  builds: SoftwareBuildInfo[];
 }
 
 /** Keys allowed to be edited via the panel (grouped categories). */

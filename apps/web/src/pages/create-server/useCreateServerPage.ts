@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { canCreateServer, type DaemonNode, type ServerType } from "@guartrix/shared";
+import {
+  canCreateServer,
+  type DaemonNode,
+  type ServerType,
+  type SoftwareBuildInfo,
+} from "@guartrix/shared";
 import { api } from "../../api";
 import { useAuth } from "../../auth";
 import { useI18n } from "../../i18n/react";
@@ -11,6 +16,10 @@ export type CreateServerMode = "create" | "import";
 
 function parseCreateMode(value: string | null): CreateServerMode {
   return value === "import" ? "import" : "create";
+}
+
+function supportsBuildPicker(type: ServerType): boolean {
+  return type === "PAPER" || type === "PURPUR";
 }
 
 export function useCreateServerPage() {
@@ -34,6 +43,9 @@ export function useCreateServerPage() {
   const [type, setType] = useState<ServerType>("PAPER");
   const [mcVersion, setMcVersion] = useState("");
   const [versions, setVersions] = useState<string[]>([]);
+  const [builds, setBuilds] = useState<SoftwareBuildInfo[]>([]);
+  const [paperBuild, setPaperBuild] = useState<number | "">("");
+  const [loadingBuilds, setLoadingBuilds] = useState(false);
   const [port, setPort] = useState(25565);
   const [portManuallyEdited, setPortManuallyEdited] = useState(false);
   const [portError, setPortError] = useState<string | null>(null);
@@ -70,6 +82,36 @@ export function useCreateServerPage() {
     setStorageId("");
   }, [nodeId]);
 
+  useEffect(() => {
+    if (!supportsBuildPicker(type) || !mcVersion) {
+      setBuilds([]);
+      setPaperBuild("");
+      setLoadingBuilds(false);
+      return;
+    }
+    let cancelled = false;
+    setLoadingBuilds(true);
+    void api
+      .versionBuilds(type, mcVersion)
+      .then((res) => {
+        if (cancelled) return;
+        setBuilds(res.builds);
+        setPaperBuild(res.builds[0]?.id ?? "");
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setBuilds([]);
+        setPaperBuild("");
+        setError(err instanceof Error ? err.message : t("createServer.buildsFailed"));
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingBuilds(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [type, mcVersion, t]);
+
   const nodeRamOk =
     !selectedNode ||
     selectedNode.memoryMb <= 0 ||
@@ -79,7 +121,13 @@ export function useCreateServerPage() {
     selectedNode == null ? 0 : (selectedNode.memoryUsableMb ?? selectedNode.memoryAvailableMb);
 
   const submitDisabled =
-    busy || !mcVersion || !nodeRamOk || !nodeId || !!portError || (mode === "import" && !archive);
+    busy ||
+    !mcVersion ||
+    !nodeRamOk ||
+    !nodeId ||
+    !!portError ||
+    (mode === "import" && !archive) ||
+    (supportsBuildPicker(type) && mode === "create" && (loadingBuilds || paperBuild === ""));
 
   useCreateServerEffects({
     type,
@@ -138,6 +186,7 @@ export function useCreateServerPage() {
         cpuLimit,
         nodeId: nodeId || undefined,
         ...(user?.role === "ADMIN" && storageId ? { storageId } : {}),
+        ...(supportsBuildPicker(type) && typeof paperBuild === "number" ? { paperBuild } : {}),
         seed: seed.trim() || undefined,
         gamemode: gamemode as "survival" | "creative" | "adventure" | "spectator",
         difficulty: difficulty as "peaceful" | "easy" | "normal" | "hard",
@@ -210,6 +259,10 @@ export function useCreateServerPage() {
     mcVersion,
     setMcVersion,
     versions,
+    builds,
+    paperBuild,
+    setPaperBuild,
+    loadingBuilds,
     port,
     setPort,
     portManuallyEdited,

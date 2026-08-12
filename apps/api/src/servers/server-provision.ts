@@ -33,6 +33,8 @@ export type ProvisionServerInput = {
   extraMounts?: import("@guartrix/shared").ServerExtraMount[] | null;
   /** Node storage pool id (null = DATA_DIR). */
   storageId?: string | null;
+  /** PAPER/PURPUR build pin (omit = latest). */
+  paperBuild?: number;
 };
 
 export type PanelCreateWorldOpts = {
@@ -230,6 +232,7 @@ export async function finishPanelCreateInBackground(opts: FinishPanelCreateOpts)
       type: input.type,
       mcVersion: input.mcVersion,
       port: input.port,
+      paperBuild: input.paperBuild,
       onProgress: (message) => setCreatingProgress(id, message),
     });
 
@@ -431,6 +434,7 @@ export async function provisionPreparedServer(input: ProvisionServerInput) {
       type: input.type,
       mcVersion: input.mcVersion,
       port: input.port,
+      paperBuild: input.paperBuild,
     });
 
     const subdomain = input.ensureSubdomain

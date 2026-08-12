@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Guartrix API
-  version:  1.4.53
+  version:  1.4.54
   description: |
     Machine-readable surface for the Guartrix panel. Paths under /api also answer at /api/v1 (dual-mount).
 
@@ -207,6 +207,10 @@ components:
               type: integer
               minimum: 0
               maximum: 6400
+            paperBuild:
+              type: integer
+              minimum: 1
+              description: PAPER/PURPUR build id; omit for latest/STABLE
     CreateServerBase:
       type: object
       required:
@@ -236,6 +240,10 @@ components:
         nodeId:
           type: string
           minLength: 1
+        paperBuild:
+          type: integer
+          minimum: 1
+          description: PAPER/PURPUR build id; omit for latest/STABLE
     CreateServerClient:
       allOf:
         - $ref: "#/components/schemas/CreateServerBase"
@@ -1501,6 +1509,25 @@ paths:
       responses:
         "200":
           description: "{ type, versions }"
+  /api/versions/builds:
+    get:
+      tags: [Client]
+      summary: List Paper/Purpur builds for a Minecraft version
+      security: [{ ClientApiKey: [] }, { SessionCookie: [] }]
+      parameters:
+        - name: type
+          in: query
+          required: true
+          schema: { type: string, enum: [PAPER, PURPUR] }
+        - name: mcVersion
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: "{ type, mcVersion, builds: [{ id, channel }] }"
+        "400":
+          description: Invalid type or missing mcVersion
   /api/account:
     delete:
       tags: [Account]

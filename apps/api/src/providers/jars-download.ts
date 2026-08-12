@@ -38,6 +38,7 @@ export async function downloadVanilla(
 export async function downloadPaper(
   mcVersion: string,
   destDir: string,
+  build?: number,
 ): Promise<{ jarName: string; paperBuild: number }> {
   const builds = await fetchJson<PaperBuildV3[]>(
     `https://fill.papermc.io/v3/projects/paper/versions/${mcVersion}/builds`,
@@ -47,11 +48,17 @@ export async function downloadPaper(
   }
 
   const preferred =
-    builds.find((b) => b.channel === "STABLE" && b.downloads["server:default"]) ??
-    builds.find((b) => b.downloads["server:default"]);
+    build != null
+      ? builds.find((b) => b.id === build && b.downloads["server:default"])
+      : (builds.find((b) => b.channel === "STABLE" && b.downloads["server:default"]) ??
+        builds.find((b) => b.downloads["server:default"]));
 
   if (!preferred?.downloads["server:default"]) {
-    throw new Error(`No downloadable Paper build for ${mcVersion}`);
+    throw new Error(
+      build != null
+        ? `No downloadable Paper build ${build} for ${mcVersion}`
+        : `No downloadable Paper build for ${mcVersion}`,
+    );
   }
 
   const download = preferred.downloads["server:default"];
@@ -63,22 +70,31 @@ export async function downloadPaper(
 export async function downloadPurpur(
   mcVersion: string,
   destDir: string,
+  build?: number,
 ): Promise<{ jarName: string; paperBuild: number }> {
   const versionInfo = await fetchJson<PurpurVersion>(
     `https://api.purpurmc.org/v2/purpur/${mcVersion}`,
   );
-  const build = versionInfo.builds?.latest;
-  if (!build) {
+  const latest = versionInfo.builds?.latest;
+  if (!latest && build == null) {
     throw new Error(`No Purpur builds for ${mcVersion}`);
   }
 
-  const buildNum = Number.parseInt(String(build), 10);
+  const buildStr = build != null ? String(build) : latest!;
+  const buildNum = Number.parseInt(buildStr, 10);
   if (Number.isNaN(buildNum)) {
-    throw new Error(`Invalid Purpur build for ${mcVersion}: ${build}`);
+    throw new Error(`Invalid Purpur build for ${mcVersion}: ${buildStr}`);
+  }
+
+  if (build != null) {
+    const all = versionInfo.builds?.all ?? [];
+    if (all.length && !all.includes(buildStr) && String(latest) !== buildStr) {
+      throw new Error(`No Purpur build ${build} for ${mcVersion}`);
+    }
   }
 
   const jarName = "server.jar";
-  const url = `https://api.purpurmc.org/v2/purpur/${mcVersion}/${build}/download`;
+  const url = `https://api.purpurmc.org/v2/purpur/${mcVersion}/${buildStr}/download`;
   await downloadFile(url, path.join(destDir, jarName));
   return { jarName, paperBuild: buildNum };
 }

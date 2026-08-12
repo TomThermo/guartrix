@@ -7,16 +7,47 @@ import type {
   PaperBuildV3,
   PurpurVersion,
   QuiltLoaderVersions,
+  SoftwareBuildInfo,
 } from "./jars-versions.js";
+
+export async function listPaperBuilds(mcVersion: string): Promise<SoftwareBuildInfo[]> {
+  const builds = await fetchJson<PaperBuildV3[]>(
+    `https://fill.papermc.io/v3/projects/paper/versions/${mcVersion}/builds`,
+  );
+  return builds
+    .filter((b) => b.downloads["server:default"])
+    .map((b) => ({ id: b.id, channel: (b.channel || "DEFAULT").toUpperCase() }))
+    .sort((a, b) => b.id - a.id);
+}
+
+export async function listPurpurBuilds(mcVersion: string): Promise<SoftwareBuildInfo[]> {
+  const versionInfo = await fetchJson<PurpurVersion>(
+    `https://api.purpurmc.org/v2/purpur/${mcVersion}`,
+  );
+  const latest = versionInfo.builds?.latest;
+  const all = versionInfo.builds?.all;
+  const ids =
+    all && all.length
+      ? all
+      : latest != null
+        ? [String(latest)]
+        : [];
+  const latestNum = latest != null ? Number.parseInt(String(latest), 10) : NaN;
+  return ids
+    .map((raw) => Number.parseInt(String(raw), 10))
+    .filter((id) => !Number.isNaN(id))
+    .sort((a, b) => b - a)
+    .map((id) => ({
+      id,
+      channel: id === latestNum ? "LATEST" : "RELEASE",
+    }));
+}
 
 export async function getLatestPaperBuild(mcVersion: string): Promise<number | null> {
   try {
-    const builds = await fetchJson<PaperBuildV3[]>(
-      `https://fill.papermc.io/v3/projects/paper/versions/${mcVersion}/builds`,
-    );
+    const builds = await listPaperBuilds(mcVersion);
     const preferred =
-      builds.find((b) => b.channel === "STABLE" && b.downloads["server:default"]) ??
-      builds.find((b) => b.downloads["server:default"]);
+      builds.find((b) => b.channel === "STABLE") ?? builds[0];
     return preferred?.id ?? null;
   } catch {
     return null;
@@ -25,13 +56,8 @@ export async function getLatestPaperBuild(mcVersion: string): Promise<number | n
 
 export async function getLatestPurpurBuild(mcVersion: string): Promise<number | null> {
   try {
-    const versionInfo = await fetchJson<PurpurVersion>(
-      `https://api.purpurmc.org/v2/purpur/${mcVersion}`,
-    );
-    const build = versionInfo.builds?.latest;
-    if (build == null) return null;
-    const buildNum = Number.parseInt(String(build), 10);
-    return Number.isNaN(buildNum) ? null : buildNum;
+    const builds = await listPurpurBuilds(mcVersion);
+    return builds[0]?.id ?? null;
   } catch {
     return null;
   }

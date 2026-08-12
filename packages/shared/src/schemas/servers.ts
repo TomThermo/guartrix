@@ -86,6 +86,8 @@ export const createServerClientSchema = createServerBaseSchema.extend({
     .optional(),
   /** Admin: place server data on a node storage pool (null/omit = node DATA_DIR). */
   storageId: z.string().min(1).max(64).nullable().optional(),
+  /** PAPER/PURPUR: pin a specific build; omit = latest/STABLE. */
+  paperBuild: z.number().int().positive().optional(),
 });
 
 /** Application API create — requires ownerId; keeps stricter disk/cpu bounds. */
@@ -94,6 +96,8 @@ export const createServerApplicationSchema = createServerBaseSchema.extend({
   mcVersion: z.string().min(1).max(32),
   diskMb: z.number().int().min(1024).max(10_485_760).optional(),
   cpuLimit: z.number().int().min(0).max(6400).optional(),
+  /** PAPER/PURPUR: pin a specific build; omit = latest/STABLE. */
+  paperBuild: z.number().int().positive().optional(),
 });
 
 export const cloneServerSchema = z.object({
