@@ -3,6 +3,10 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.60] — 2026-08-12
+
+- Admin → Users: show **Owner ID** per account with copy button (for Application API `ownerId`).
+
 ## [1.4.59] — 2026-08-12
 
 - API explorer **Try it** with `gt_`/`gta_` keys: omit session cookie so CSRF no longer blocks mutating requests while logged in.

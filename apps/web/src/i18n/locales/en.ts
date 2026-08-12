@@ -647,7 +647,7 @@ export const en = {
     roleHintAdmin: "Unlimited servers & RAM. Manages users and ownership.",
     roleHintOperator: "Can create and manage their own servers within quotas.",
     roleHintViewer: "Read-only access to servers assigned to them.",
-    searchPlaceholder: "Search by name or role…",
+    searchPlaceholder: "Search by name, owner ID, or role…",
     passwordHelp: "Min. 12 chars with upper, lower, number, and symbol.",
     you: "you",
     twoFactorOn: "2FA on",
@@ -675,6 +675,8 @@ export const en = {
     reset2fa: "Reset 2FA",
     delete: "Delete",
     loadFailed: "Failed to load users",
+    ownerId: "Owner ID",
+    copyOwnerId: "Copy owner ID",
     activityTitle: "Activity — {username}",
   },
   files: {

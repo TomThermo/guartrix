@@ -171,6 +171,7 @@ export function useUsersPage() {
     if (!q) return true;
     return (
       u.username.toLowerCase().includes(q) ||
+      u.id.toLowerCase().includes(q) ||
       u.role.toLowerCase().includes(q) ||
       roleLabel(u.role).toLowerCase().includes(q)
     );

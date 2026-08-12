@@ -90,7 +90,7 @@ More: [Server management](server-management.md) · [Files and backups](files-and
 
 ## Admin: Users
 
-**Users** — create accounts (modal), change roles (`ADMIN` / `OPERATOR` / `VIEWER`), and raise **max servers / memory / databases** when a plan is sold. Row actions (quotas, activity, reset 2FA, delete) sit behind the ⋮ menu.
+**Users** — create accounts (modal), change roles (`ADMIN` / `OPERATOR` / `VIEWER`), and raise **max servers / memory / databases** when a plan is sold. Each row shows **Owner ID** (copy) for Application API `ownerId`. Row actions (quotas, activity, reset 2FA, delete) sit behind the ⋮ menu.
 
 ![Users](assets/04-users.png)
 

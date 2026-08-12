@@ -1,8 +1,10 @@
 import type { AuthUser, UserRole } from "@guartrix/shared";
 import { roleLabel } from "@guartrix/shared";
-import { Badge, Dropdown, Form, ListGroup } from "react-bootstrap";
+import { useState } from "react";
+import { Badge, Button, Dropdown, Form, ListGroup } from "react-bootstrap";
 import { useI18n } from "../../i18n/react";
 import { AdminPanelCard } from "../../components/admin/AdminPageShell";
+import { copyText } from "../../utils";
 import { quotaText, roleBadge, USER_ROLES } from "./useUsersPage";
 
 type Props = {
@@ -31,6 +33,13 @@ export function UsersTable({
   onDelete,
 }: Props) {
   const { t } = useI18n();
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  async function copyOwnerId(id: string) {
+    await copyText(id);
+    setCopiedId(id);
+    window.setTimeout(() => setCopiedId(null), 1500);
+  }
 
   return (
     <AdminPanelCard title={t("users.accounts", { count: users.length })} icon="fa-users">
@@ -54,6 +63,30 @@ export function UsersTable({
                 {meId === u.id && (
                   <span className="text-secondary small ms-2">({t("users.you")})</span>
                 )}
+              </div>
+              <div className="small text-secondary d-flex align-items-center gap-2 flex-wrap mt-1">
+                <span className="text-body-secondary">{t("users.ownerId")}:</span>
+                <code className="users-owner-id">{u.id}</code>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline-secondary"
+                  className="py-0 px-2"
+                  onClick={() => void copyOwnerId(u.id)}
+                  aria-label={t("users.copyOwnerId")}
+                >
+                  {copiedId === u.id ? (
+                    <>
+                      <i className="fa-solid fa-check me-1" aria-hidden />
+                      {t("common.done")}
+                    </>
+                  ) : (
+                    <>
+                      <i className="fa-solid fa-copy me-1" aria-hidden />
+                      {t("common.copy")}
+                    </>
+                  )}
+                </Button>
               </div>
               <div className="small text-secondary">{quotaText(u, t("common.unlimited"))}</div>
               {u.twoFactorEnabled && (

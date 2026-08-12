@@ -655,7 +655,7 @@ export const nl: Messages = {
     roleHintAdmin: "Onbeperkte servers & RAM. Beheert gebruikers en eigendom.",
     roleHintOperator: "Kan eigen servers maken en beheren binnen quota's.",
     roleHintViewer: "Alleen-lezen toegang tot toegewezen servers.",
-    searchPlaceholder: "Zoek op naam of rol…",
+    searchPlaceholder: "Zoek op naam, owner ID of rol…",
     passwordHelp: "Min. 12 tekens met hoofdletter, kleine letter, cijfer en symbool.",
     you: "jij",
     twoFactorOn: "2FA aan",
@@ -683,6 +683,8 @@ export const nl: Messages = {
     reset2fa: "2FA resetten",
     delete: "Verwijderen",
     loadFailed: "Gebruikers laden mislukt",
+    ownerId: "Owner ID",
+    copyOwnerId: "Owner ID kopiëren",
     activityTitle: "Activiteit — {username}",
   },
   files: {
