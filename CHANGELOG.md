@@ -3,6 +3,11 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.53] — 2026-08-12
+
+- Create UX: clear stuck **Creating:** console/banner when the server leaves `CREATING` (e.g. already `STARTING`).
+- Local storage pools write jars in place (no slow tar “deploy to node”); remote still shows download → deploy progress.
+
 ## [1.4.52] — 2026-08-11
 
 - Fix create on **storage pools**: deploy jars via daemon so `server.jar` lands on the NFS/local mount (was written only under panel `DATA_DIR` → start failed with jar not found).

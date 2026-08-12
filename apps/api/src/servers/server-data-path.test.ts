@@ -27,10 +27,10 @@ describe("server-data-path", () => {
       node: { isLocal: true },
     } as never);
     await expect(resolveLocalServerDataDir("abc123")).resolves.toBe("/panel/data/servers/abc123");
-    await expect(mustDeployViaDaemon("abc123", true)).resolves.toBe(false);
+    expect(mustDeployViaDaemon(true)).toBe(false);
   });
 
-  it("uses mountPoint for local storage pool", async () => {
+  it("uses mountPoint for local storage pool (no tar deploy)", async () => {
     vi.mocked(prisma.server.findUnique).mockResolvedValue({
       storageId: "stor1",
       storage: { mountPoint: "/var/lib/guartrix/mounts/stor1" },
@@ -39,13 +39,10 @@ describe("server-data-path", () => {
     await expect(resolveLocalServerDataDir("abc123")).resolves.toBe(
       "/var/lib/guartrix/mounts/stor1/servers/abc123",
     );
-    await expect(mustDeployViaDaemon("abc123", true)).resolves.toBe(true);
+    expect(mustDeployViaDaemon(true)).toBe(false);
   });
 
-  it("always deploys via daemon for remote nodes", async () => {
-    vi.mocked(prisma.server.findUnique).mockResolvedValue({
-      storageId: null,
-    } as never);
-    await expect(mustDeployViaDaemon("abc123", false)).resolves.toBe(true);
+  it("always deploys via daemon for remote nodes", () => {
+    expect(mustDeployViaDaemon(false)).toBe(true);
   });
 });

@@ -88,9 +88,18 @@ export function useServerDetailData({
     Boolean(server && (server.status === "CREATING" || server.status === "STARTING")),
   );
 
-  // Mirror CREATING progress into the console panel.
+  // Mirror CREATING progress into the console panel; clear when install finishes.
   useEffect(() => {
-    if (!server || server.status !== "CREATING") return;
+    if (!server) return;
+    if (server.status !== "CREATING") {
+      setConsoleNotices((prev) => {
+        const next = prev.filter(
+          (m) => !m.startsWith("Creating:") && !m.startsWith("[Guartrix] Creating:"),
+        );
+        return next.length === prev.length ? prev : next;
+      });
+      return;
+    }
     const msg = server.errorMessage?.trim();
     if (!msg) return;
     setConsoleNotices((prev) => {

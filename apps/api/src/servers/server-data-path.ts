@@ -22,12 +22,7 @@ export async function resolveLocalServerDataDir(serverId: string): Promise<strin
   return serverDir(serverId);
 }
 
-/** True when files must be pushed through the daemon (remote node or local storage pool). */
-export async function mustDeployViaDaemon(serverId: string, isLocalNode: boolean): Promise<boolean> {
-  if (!isLocalNode) return true;
-  const row = await prisma.server.findUnique({
-    where: { id: serverId },
-    select: { storageId: true },
-  });
-  return Boolean(row?.storageId);
+/** Remote nodes need a tar deploy; local nodes (incl. storage pools) write the mount path in place. */
+export function mustDeployViaDaemon(isLocalNode: boolean): boolean {
+  return !isLocalNode;
 }

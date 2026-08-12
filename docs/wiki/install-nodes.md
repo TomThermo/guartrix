@@ -49,7 +49,7 @@ For an existing remote node, open the node (table row / edit). **Basic Settings*
 
 ![Add storage form](assets/41-node-storage-add.png)
 
-**Create on a pool:** the panel deploys server files through the daemon so they land under `{mountPoint}/servers/<id>` (not only under panel `DATA_DIR`). Mount the pool **before** creating servers on it.
+**Create on a pool:** on a **local** node the panel writes jars straight to `{mountPoint}/servers/<id>`. Remote nodes still download then **deploy** via the daemon (progress shows download → deploy). Mount the pool **before** creating servers on it.
 
 **Mount-point ownership:** create the daemon base and mounts parent **before** the first Mount, owned by the daemon user (otherwise you get `EACCES … mkdir '/var/lib/guartrix'`):
 

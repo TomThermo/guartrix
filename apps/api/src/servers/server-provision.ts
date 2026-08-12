@@ -224,20 +224,13 @@ export async function finishPanelCreateInBackground(opts: FinishPanelCreateOpts)
   const protocol = primaryAllocationProtocol(input.type);
 
   try {
-    const node = await prisma.node.findUnique({ where: { id: input.nodeId } });
-    await setCreatingProgress(
-      id,
-      node && (!node.isLocal || input.storageId)
-        ? "Creating: downloading server files & deploying to node…"
-        : "Creating: downloading server files…",
-    );
-
     const prepared = await prepareServerOnNode({
       serverId: id,
       nodeId: input.nodeId,
       type: input.type,
       mcVersion: input.mcVersion,
       port: input.port,
+      onProgress: (message) => setCreatingProgress(id, message),
     });
 
     await setCreatingProgress(id, "Creating: applying world settings…");
@@ -320,7 +313,14 @@ export async function finishPanelCreateInBackground(opts: FinishPanelCreateOpts)
       });
     }
 
-    await setCreatingProgress(id, "Creating: starting…");
+    // Clear install progress before power-on so the UI does not keep "Creating: …"
+    // after the daemon has already moved to STARTING/RUNNING.
+    await prisma.server
+      .update({
+        where: { id },
+        data: { errorMessage: null },
+      })
+      .catch(() => undefined);
     await autoStartProvisionedServer(id);
     const after = await prisma.server.findUnique({
       where: { id },
