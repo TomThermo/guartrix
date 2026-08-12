@@ -117,18 +117,14 @@ More: [Files and backups](files-and-backups.md) · [Server management](server-ma
 ## Admin: Nodes
 
 **Nodes** (`/admin/nodes`; `/admin/system` redirects here) — local + remote daemon nodes, online status, optional **location/region**, memory, SFTP hostname,
-Basic / Advanced / **Storage** (local or NFS pools, mount/unmount) / Configuration tabs, and live host stats.
+Basic / Advanced / Configuration tabs, and live host stats.
 rename, **edit daemon URL** (pencil next to `http://…:8081`), Test connection, Install daemon.
 
 ![System / nodes](assets/05-system-nodes.png)
 
-### Storage pools
+## Admin: Storage
 
-Open a node → **Storage**. Add a **local path** or **NFS** export, then **Mount** / **Unmount** from the panel. When creating a server as admin, pick the pool under **Storage pool** (default = node `DATA_DIR`). Details and sudo notes: [Install nodes](install-nodes.md#node-storage-pools).
-
-![Node storage](assets/40-node-storage.png)
-
-![Add storage](assets/41-node-storage-add.png)
+**Storage** (`/admin/storage`) — global **local** or **NFS** pools. Link one or more nodes (per-node mount point), then **Mount** / **Unmount** per link. When creating a server as admin, pick a pool linked to the chosen node under **Storage pool** (default = node `DATA_DIR`). One NFS pool can serve multiple nodes. Details and sudo notes: [Install nodes](install-nodes.md#storage-pools-admin--storage).
 
 ### Add node wizard
 

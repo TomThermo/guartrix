@@ -38,7 +38,7 @@ export function parseDaemonPublicUrl(raw: string): {
   };
 }
 
-export type TabId = "overview" | "settings" | "advanced" | "config" | "allocations" | "storage";
+export type TabId = "overview" | "settings" | "advanced" | "config" | "allocations";
 export type SslMode = "http" | "https" | "https-proxy";
 
 export function sslModeFromNode(node: DaemonNode): SslMode {

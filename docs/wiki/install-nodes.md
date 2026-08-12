@@ -36,20 +36,19 @@ sudo systemctl restart guartrix-web
 
 ![Add node wizard](assets/06-add-node-modal.png)
 
-For an existing remote node, open the node (table row / edit). **Basic Settings** covers display name, domain, connect port, and SSL mode. **Advanced Settings** covers UUID/tags, upload limit, daemon base directory (`DATA_DIR`), SFTP port/alias, deployable + maintenance mode, and memory/disk/CPU allocation limits with overallocate. **Storage** lets you register **local paths** or **NFS** pools, **Mount / Unmount** them from the panel, and place new servers on a mounted pool (otherwise servers use `DATA_DIR`). **Configuration File** shows `daemon.env` to copy onto the node (`/var/lib/guartrix/daemon.env`), an auto-deploy command, and token reset. **Overview** has live host stats and **Install daemon** (SSH wizard).
+For an existing remote node, open the node (table row / edit). **Basic Settings** covers display name, domain, connect port, and SSL mode. **Advanced Settings** covers UUID/tags, upload limit, daemon base directory (`DATA_DIR`), SFTP port/alias, deployable + maintenance mode, and memory/disk/CPU allocation limits with overallocate. **Configuration File** shows `daemon.env` to copy onto the node (`/var/lib/guartrix/daemon.env`), an auto-deploy command, and token reset. **Overview** has live host stats and **Install daemon** (SSH wizard). Storage pools are managed under **Admin → Storage** (not on the node edit tabs).
 
-### Node storage pools
+### Storage pools (Admin → Storage)
 
-1. Add storage on the node (**Storage** tab): Local (host directory / bind) or NFS (server + export + options).
-2. Click **Mount**. The daemon runs `sudo mount` (NFS or bind) under an allowlisted prefix (default `$DATA_DIR/mounts` and `/var/lib/guartrix/mounts` — see `STORAGE_MOUNTS_ALLOW_PREFIX`).
-3. When creating a server as admin, pick the pool under **Storage pool** (or leave the node default `DATA_DIR`).
-4. **Unmount** refuses while servers are assigned or running on that pool.
+1. Open **Admin → Storage** and create a pool: Local (host directory / bind) or NFS (server + export + options). Optionally link the first node while creating.
+2. **Link** one or more nodes to the pool and set a per-node **mount point** (default under `$DATA_DIR/mounts/<poolId>`).
+3. Click **Mount** on each linked node. The daemon runs `sudo mount` (NFS or bind) under an allowlisted prefix (default `$DATA_DIR/mounts` and `/var/lib/guartrix/mounts` — see `STORAGE_MOUNTS_ALLOW_PREFIX`).
+4. When creating a server as admin, pick a pool under **Storage pool** that is linked (and preferably mounted) on the chosen node — or leave the node default `DATA_DIR`.
+5. **Unmount** / **Unlink** refuse while servers on that node are assigned to the pool; **Delete** refuses while any servers use the pool.
 
-![Node storage tab](assets/40-node-storage.png)
+One NFS pool can be linked to **multiple nodes** (shared export metadata on the pool; mount point per link). Local pools are usually one node, but multi-node links are allowed when each host has its own path.
 
-![Add storage form](assets/41-node-storage-add.png)
-
-**Create on a pool:** on a **local** node the panel writes jars straight to `{mountPoint}/servers/<id>`. Remote nodes still download then **deploy** via the daemon (progress shows download → deploy). Mount the pool **before** creating servers on it.
+**Create on a pool:** pick a pool that is **linked to the chosen node** and mounted. On a local node the panel writes jars straight to `{mountPoint}/servers/<id>`. Remote nodes still download then **deploy** via the daemon (progress shows download → deploy). Mount the pool **before** creating servers on it.
 
 **Mount-point ownership:** create the daemon base and mounts parent **before** the first Mount, owned by the daemon user (otherwise you get `EACCES … mkdir '/var/lib/guartrix'`):
 

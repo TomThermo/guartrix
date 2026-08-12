@@ -90,6 +90,11 @@ const NodesPage = lazy(() =>
     default: m.NodesPage,
   })),
 );
+const AdminStoragePage = lazy(() =>
+  import("./pages/AdminStoragePage").then((m) => ({
+    default: m.AdminStoragePage,
+  })),
+);
 const AdminSettingsPage = lazy(() =>
   import("./pages/AdminSettingsPage").then((m) => ({
     default: m.AdminSettingsPage,
@@ -199,6 +204,7 @@ export function AuthenticatedRoutes({ user }: { user: AuthUser | null }) {
             <Route path="settings" element={<AdminSettingsPage />} />
             <Route path="security" element={<AdminSecurityPage />} />
             <Route path="nodes" element={<NodesPage />} />
+            <Route path="storage" element={<AdminStoragePage />} />
             <Route path="system" element={<Navigate to="/admin/nodes" replace />} />
             <Route path="license" element={<AdminLicensePage />} />
             <Route path="activity" element={<AdminActivityPage />} />

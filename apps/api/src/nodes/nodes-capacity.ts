@@ -71,10 +71,13 @@ export async function assertNodeCapacity(
   if (wantDisk !== undefined) {
     const storageId = opts?.storageId ?? null;
     if (storageId) {
-      const storage = await prisma.nodeStorage.findFirst({
-        where: { id: storageId, nodeId },
+      const storage = await prisma.storagePool.findUnique({
+        where: { id: storageId },
+        include: { links: { where: { nodeId } } },
       });
-      if (!storage) throw new Error("Storage not found on this node");
+      if (!storage || storage.links.length === 0) {
+        throw new Error("Storage not found on this node");
+      }
       if (!storage.enabled) throw new Error(`Storage "${storage.name}" is disabled`);
       if (storage.diskMb > 0) {
         const poolOthers = others.filter((s) => s.storageId === storageId);

@@ -5,7 +5,7 @@ Formerly called “roadmap”; same file, clearer name.
 
 **Scale (100n/1000c):** [docs/scale-100n-1000c-roadmap.md](scale-100n-1000c-roadmap.md) · **Live:** [guartrix.com](https://guartrix.com) · **Wiki:** [docs/wiki/README.md](wiki/README.md) · **History:** [CHANGELOG.md](../CHANGELOG.md)
 
-Last updated: **2026-08-11** · product **v1.4.54**
+Last updated: **2026-08-12** · product **v1.4.55**
 
 ---
 

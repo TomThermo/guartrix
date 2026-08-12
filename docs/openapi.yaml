@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Guartrix API
-  version:  1.4.54
+  version:  1.4.55
   description: |
     Machine-readable surface for the Guartrix panel. Paths under /api also answer at /api/v1 (dual-mount).
 
@@ -1674,6 +1674,162 @@ paths:
       summary: "POST /api/admin/nodes"
       security:
         - SessionCookie: []
+      responses:
+        "200":
+          description: OK
+  /api/admin/storages:
+    get:
+      tags: [Admin]
+      summary: "List storage pools"
+      security:
+        - SessionCookie: []
+      responses:
+        "200":
+          description: OK
+    post:
+      tags: [Admin]
+      summary: "Create storage pool"
+      security:
+        - SessionCookie: []
+      responses:
+        "200":
+          description: OK
+  /api/admin/storages/{id}:
+    get:
+      tags: [Admin]
+      summary: "Get storage pool"
+      security:
+        - SessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+    patch:
+      tags: [Admin]
+      summary: "Update storage pool"
+      security:
+        - SessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+    delete:
+      tags: [Admin]
+      summary: "Delete storage pool"
+      security:
+        - SessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+  /api/admin/storages/{id}/nodes:
+    post:
+      tags: [Admin]
+      summary: "Link a node to a storage pool"
+      security:
+        - SessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+  /api/admin/storages/{id}/nodes/{nodeId}:
+    patch:
+      tags: [Admin]
+      summary: "Update storage–node link"
+      security:
+        - SessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: nodeId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+    delete:
+      tags: [Admin]
+      summary: "Unlink a node from a storage pool"
+      security:
+        - SessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: nodeId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+  /api/admin/storages/{id}/nodes/{nodeId}/mount:
+    post:
+      tags: [Admin]
+      summary: "Mount storage pool on a node"
+      security:
+        - SessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: nodeId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+  /api/admin/storages/{id}/nodes/{nodeId}/unmount:
+    post:
+      tags: [Admin]
+      summary: "Unmount storage pool on a node"
+      security:
+        - SessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: nodeId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+  /api/admin/nodes/{id}/storages:
+    get:
+      tags: [Admin]
+      summary: "List storage pools linked to a node"
+      security:
+        - SessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
       responses:
         "200":
           description: OK

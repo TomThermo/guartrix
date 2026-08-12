@@ -6,6 +6,7 @@ import { registerStatusRoutes } from "./status.js";
 import { registerAdminReadinessRoutes } from "./readiness.js";
 import { registerAdminServerRoutes } from "./servers.js";
 import { registerAdminNavCountsRoutes } from "./nav-counts.js";
+import { registerAdminStorageRoutes } from "./storages.js";
 
 export {
   registerActivityRoutes,
@@ -16,6 +17,7 @@ export {
   registerAdminServerRoutes,
   registerAdminServerRoutes as registerAdminServerBackupRoutes,
   registerAdminNavCountsRoutes,
+  registerAdminStorageRoutes,
 };
 
 /** Admin panel: settings, license, status, global activity, readiness. */
@@ -24,6 +26,7 @@ export function registerAdminRoutes(app: FastifyInstance): void {
   registerAdminSettingsRoutes(app);
   registerAdminServerRoutes(app);
   registerAdminNavCountsRoutes(app);
+  registerAdminStorageRoutes(app);
   registerActivityRoutes(app);
   registerStatusRoutes(app);
   registerAdminReadinessRoutes(app);

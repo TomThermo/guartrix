@@ -261,13 +261,29 @@ export const nodesApi = {
     request<{ storages: unknown[] }>(
       `/api/admin/nodes/${encodeURIComponent(nodeId)}/storages`,
     ),
-  adminCreateNodeStorage: (
-    nodeId: string,
+  adminListStorages: () => request<{ storages: unknown[] }>("/api/admin/storages"),
+  adminGetStorage: (id: string) =>
+    request<{ storage: unknown }>(`/api/admin/storages/${encodeURIComponent(id)}`),
+  adminCreateStorage: (body: {
+    name: string;
+    type: "LOCAL" | "NFS";
+    nfsServer?: string | null;
+    nfsExport?: string | null;
+    nfsOptions?: string | null;
+    diskMb?: number;
+    enabled?: boolean;
+    nodeId?: string;
+    mountPoint?: string;
+    hostPath?: string | null;
+  }) =>
+    request<{ storage: unknown }>("/api/admin/storages", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  adminUpdateStorage: (
+    id: string,
     body: {
-      name: string;
-      type: "LOCAL" | "NFS";
-      mountPoint?: string;
-      hostPath?: string | null;
+      name?: string;
       nfsServer?: string | null;
       nfsExport?: string | null;
       nfsOptions?: string | null;
@@ -275,27 +291,40 @@ export const nodesApi = {
       enabled?: boolean;
     },
   ) =>
-    request<{ storage: unknown }>(`/api/admin/nodes/${encodeURIComponent(nodeId)}/storages`, {
+    request<{ storage: unknown }>(`/api/admin/storages/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
+  adminDeleteStorage: (id: string, force?: boolean) =>
+    request<{ ok: boolean }>(
+      `/api/admin/storages/${encodeURIComponent(id)}${force ? "?force=1" : ""}`,
+      { method: "DELETE" },
+    ),
+  adminLinkStorageNode: (
+    id: string,
+    body: { nodeId: string; mountPoint?: string; hostPath?: string | null },
+  ) =>
+    request<{ storage: unknown }>(`/api/admin/storages/${encodeURIComponent(id)}/nodes`, {
       method: "POST",
       body: JSON.stringify(body),
     }),
-  adminMountNodeStorage: (nodeId: string, storageId: string) =>
+  adminUnlinkStorageNode: (id: string, nodeId: string) =>
     request<{ storage: unknown }>(
-      `/api/admin/nodes/${encodeURIComponent(nodeId)}/storages/${encodeURIComponent(storageId)}/mount`,
+      `/api/admin/storages/${encodeURIComponent(id)}/nodes/${encodeURIComponent(nodeId)}`,
+      { method: "DELETE" },
+    ),
+  adminMountStorageNode: (id: string, nodeId: string) =>
+    request<{ storage: unknown }>(
+      `/api/admin/storages/${encodeURIComponent(id)}/nodes/${encodeURIComponent(nodeId)}/mount`,
       { method: "POST", body: "{}" },
     ),
-  adminUnmountNodeStorage: (
+  adminUnmountStorageNode: (
+    id: string,
     nodeId: string,
-    storageId: string,
     body?: { force?: boolean; lazy?: boolean },
   ) =>
     request<{ storage: unknown }>(
-      `/api/admin/nodes/${encodeURIComponent(nodeId)}/storages/${encodeURIComponent(storageId)}/unmount`,
+      `/api/admin/storages/${encodeURIComponent(id)}/nodes/${encodeURIComponent(nodeId)}/unmount`,
       { method: "POST", body: JSON.stringify(body ?? {}) },
-    ),
-  adminDeleteNodeStorage: (nodeId: string, storageId: string) =>
-    request<{ ok: boolean }>(
-      `/api/admin/nodes/${encodeURIComponent(nodeId)}/storages/${encodeURIComponent(storageId)}`,
-      { method: "DELETE" },
     ),
 };

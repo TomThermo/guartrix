@@ -163,8 +163,8 @@ All assets are captured at a fixed **1440×900** viewport with the **Crimson Gra
 | `01`–`37` | Full panel tour (refreshed together) |
 | `38-admin-servers.png` | Admin → Servers |
 | `39-admin-settings.png` | Admin → Settings |
-| `40-node-storage.png` | Admin → Nodes → Edit → Storage |
-| `41-node-storage-add.png` | Add storage form on the Storage tab |
+| `40-node-storage.png` | Admin → Storage (historical screenshot; UI is now a dedicated page) |
+| `41-node-storage-add.png` | Add storage form (historical; now on Admin → Storage) |
 
 ## Version
 

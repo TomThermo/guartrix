@@ -37,7 +37,7 @@ enum UserRole {
   VIEWER
 }
 
-enum NodeStorageType {
+enum StoragePoolType {
   LOCAL
   NFS
 }
@@ -112,23 +112,17 @@ model Node {
   servers     Server[]
   databases   Database[]
   allocations Allocation[]
-  storages    NodeStorage[]
+  storageLinks StorageNodeLink[]
 }
 
 /**
- * Extra storage pool on a node (local path or NFS).
- * Servers with storageId use `{mountPoint}/servers/<id>` on the daemon.
+ * Global storage pool (local path or NFS). Linked to nodes via StorageNodeLink.
+ * Servers with storageId use `{link.mountPoint}/servers/<id>` on that node.
  */
-model NodeStorage {
+model StoragePool {
   id          String          @id
-  nodeId      String
-  node        Node            @relation(fields: [nodeId], references: [id], onDelete: Cascade)
-  name        String
-  type        NodeStorageType
-  /** Absolute path on the node where data is served from. */
-  mountPoint  String
-  /** LOCAL: source path (may equal mountPoint). NFS: unused. */
-  hostPath    String?
+  name        String          @unique
+  type        StoragePoolType
   /** NFS server hostname/IP. */
   nfsServer   String?
   /** NFS export path (e.g. /export/games). */
@@ -140,10 +134,27 @@ model NodeStorage {
   enabled     Boolean         @default(true)
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
+  links       StorageNodeLink[]
   servers     Server[]
+}
 
-  @@unique([nodeId, name])
+/** Per-node attachment of a storage pool (own mount point / host path). */
+model StorageNodeLink {
+  id          String      @id
+  storageId   String
+  storage     StoragePool @relation(fields: [storageId], references: [id], onDelete: Cascade)
+  nodeId      String
+  node        Node        @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  /** Absolute path on this node where data is served from. */
+  mountPoint  String
+  /** LOCAL: source path (may equal mountPoint). NFS: unused. */
+  hostPath    String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@unique([storageId, nodeId])
   @@index([nodeId])
+  @@index([storageId])
 }
 
 model Server {
@@ -195,7 +206,7 @@ model Server {
   extraMounts         Json?
   /** Optional node storage pool (null = node DATA_DIR). */
   storageId           String?
-  storage             NodeStorage? @relation(fields: [storageId], references: [id], onDelete: SetNull)
+  storage             StoragePool? @relation(fields: [storageId], references: [id], onDelete: SetNull)
   ownerId             String?
   owner               User?        @relation(fields: [ownerId], references: [id], onDelete: SetNull)
   nodeId              String?

@@ -14,6 +14,7 @@ type AdminNavItem = {
     | "nav.settings"
     | "nav.adminSecurity"
     | "nav.nodes"
+    | "nav.storage"
     | "nav.license"
     | "nav.activity"
     | "nav.panelBilling"
@@ -51,6 +52,7 @@ const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
     items: [
       { to: "/admin/servers", labelKey: "nav.serverManagement", icon: "fa-server" },
       { to: "/admin/nodes", labelKey: "nav.nodes", icon: "fa-network-wired" },
+      { to: "/admin/storage", labelKey: "nav.storage", icon: "fa-hard-drive" },
       { to: "/admin/users", labelKey: "nav.users", icon: "fa-users-gear" },
     ],
   },

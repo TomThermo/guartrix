@@ -1,10 +1,11 @@
 import path from "node:path";
 import { serverDir } from "../config.js";
 import { prisma } from "../db.js";
+import { resolveStorageMountPoint } from "../services/storage-pools.js";
 
 /**
  * Absolute host path for a server's files when the panel can write them directly.
- * Local node + storage pool → `{mountPoint}/servers/<id>`; otherwise panel `DATA_DIR/servers/<id>`.
+ * Local node + storage pool → `{link.mountPoint}/servers/<id>`; otherwise panel `DATA_DIR/servers/<id>`.
  * Remote nodes still stage under panel `serverDir` and deploy via the daemon.
  */
 export async function resolveLocalServerDataDir(serverId: string): Promise<string> {
@@ -12,12 +13,15 @@ export async function resolveLocalServerDataDir(serverId: string): Promise<strin
     where: { id: serverId },
     select: {
       storageId: true,
-      storage: { select: { mountPoint: true } },
+      nodeId: true,
       node: { select: { isLocal: true } },
     },
   });
-  if (row?.node?.isLocal && row.storageId && row.storage?.mountPoint) {
-    return path.join(path.resolve(row.storage.mountPoint), "servers", serverId);
+  if (row?.node?.isLocal && row.storageId && row.nodeId) {
+    const mountPoint = await resolveStorageMountPoint(row.storageId, row.nodeId);
+    if (mountPoint) {
+      return path.join(path.resolve(mountPoint), "servers", serverId);
+    }
   }
   return serverDir(serverId);
 }

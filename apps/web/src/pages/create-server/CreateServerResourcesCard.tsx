@@ -69,15 +69,20 @@ export function CreateServerResourcesCard({
           name: string;
           type: string;
           enabled: boolean;
-          status: { exists: boolean; mounted: boolean } | null;
-          hostPath: string | null;
-          mountPoint: string;
+          links: Array<{
+            hostPath: string | null;
+            mountPoint: string;
+            status: { exists: boolean; mounted: boolean } | null;
+          }>;
         }>)
           .filter((s) => {
             if (!s.enabled) return false;
-            if (!s.status?.exists) return false;
-            if (s.type === "NFS") return Boolean(s.status.mounted);
-            if (s.hostPath && s.hostPath !== s.mountPoint) return Boolean(s.status.mounted);
+            const link = s.links[0];
+            if (!link?.status?.exists) return false;
+            if (s.type === "NFS") return Boolean(link.status.mounted);
+            if (link.hostPath && link.hostPath !== link.mountPoint) {
+              return Boolean(link.status.mounted);
+            }
             return true;
           })
           .map((s) => ({ id: s.id, name: s.name, type: s.type }));
