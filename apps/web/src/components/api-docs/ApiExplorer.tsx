@@ -8,6 +8,7 @@ import {
   type ApiLang,
   type HttpMethod,
 } from "../../api-docs/api-explorer-catalog";
+import { getCsrfToken, refreshCsrfToken, withCsrfHeaders } from "../../api/client";
 
 const STORE_KEY = "guartrix.wiki.apiExplorer.v1";
 
@@ -142,13 +143,25 @@ export function ApiExplorer() {
     const path = endpoint.path.replaceAll("{serverId}", serverId.trim());
     const q = endpoint.query ? `?${endpoint.query}` : "";
     const url = `${panel.replace(/\/$/, "")}${path}${q}`;
-    const headers: Record<string, string> = {};
+    let headers = new Headers();
     if (endpoint.auth === "gt" || endpoint.auth === "gta") {
-      headers.Authorization = `Bearer ${token.trim()}`;
+      headers.set("Authorization", `Bearer ${token.trim()}`);
+    } else if (
+      endpoint.auth === "session" &&
+      endpoint.method !== "GET" &&
+      endpoint.method !== "DELETE"
+    ) {
+      if (!getCsrfToken()) await refreshCsrfToken();
+      headers = withCsrfHeaders(headers);
     }
-    const init: RequestInit = { method: endpoint.method, headers };
+    const init: RequestInit = {
+      method: endpoint.method,
+      headers,
+      // API keys must not send the panel session cookie — otherwise CSRF applies.
+      credentials: endpoint.auth === "gt" || endpoint.auth === "gta" ? "omit" : "include",
+    };
     if (endpoint.method !== "GET" && endpoint.method !== "DELETE") {
-      headers["Content-Type"] = "application/json";
+      headers.set("Content-Type", "application/json");
       init.body = bodyEdit.trim() || "{}";
     }
 
@@ -197,7 +210,8 @@ export function ApiExplorer() {
         <p>
           Stripe-style explorer: pick an endpoint, switch language, copy the snippet, or{" "}
           <strong>run it live</strong> against this panel. Keys stay in <code>sessionStorage</code>{" "}
-          on this browser only — never embedded in docs.
+          on this browser only — never embedded in docs. API key <strong>Try it</strong> requests do
+          not use your logged-in session (no CSRF cookie).
         </p>
       </div>
 
