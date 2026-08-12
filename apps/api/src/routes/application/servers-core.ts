@@ -77,7 +77,11 @@ export function registerApplicationServerCoreRoutes(app: FastifyInstance): void 
     let nodeId: string;
     try {
       const { assertNodeCapacity, resolveCreateNodeId } = await import("../../nodes/nodes.js");
-      nodeId = await resolveCreateNodeId(data.nodeId);
+      nodeId = await resolveCreateNodeId(data.nodeId, {
+        memoryMb: data.memoryMb,
+        diskMb: data.diskMb,
+        cpuLimit: data.cpuLimit,
+      });
       await assertNodeCapacity(nodeId, data.memoryMb, { placement: true });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

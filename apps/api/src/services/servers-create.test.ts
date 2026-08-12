@@ -5,8 +5,8 @@ const { assertCanCreateServer } = vi.hoisted(() => ({
   assertCanCreateServer: vi.fn(),
 }));
 
-const { resolveCreateNodeId, assertNodeCapacity } = vi.hoisted(() => ({
-  resolveCreateNodeId: vi.fn(),
+const { resolveCreatePlacement, assertNodeCapacity } = vi.hoisted(() => ({
+  resolveCreatePlacement: vi.fn(),
   assertNodeCapacity: vi.fn(),
 }));
 
@@ -24,7 +24,7 @@ const { logActivity } = vi.hoisted(() => ({
 }));
 
 vi.mock("../billing/quotas.js", () => ({ assertCanCreateServer }));
-vi.mock("../nodes/nodes.js", () => ({ resolveCreateNodeId, assertNodeCapacity }));
+vi.mock("../nodes/nodes.js", () => ({ resolveCreatePlacement, assertNodeCapacity }));
 vi.mock("../servers/game-port.js", () => ({ isGamePortAvailable }));
 vi.mock("../servers/server-provision.js", () => ({
   beginPanelServerCreate,
@@ -67,7 +67,7 @@ const request = {} as import("fastify").FastifyRequest;
 beforeEach(() => {
   vi.clearAllMocks();
   assertCanCreateServer.mockResolvedValue(undefined);
-  resolveCreateNodeId.mockResolvedValue("node_a");
+  resolveCreatePlacement.mockResolvedValue({ nodeId: "node_a", storageId: null });
   assertNodeCapacity.mockResolvedValue(undefined);
   isGamePortAvailable.mockResolvedValue(true);
 });
@@ -84,7 +84,7 @@ describe("createPanelServer", () => {
       status: 403,
       error: "Only admins can choose a node",
     });
-    expect(resolveCreateNodeId).not.toHaveBeenCalled();
+    expect(resolveCreatePlacement).not.toHaveBeenCalled();
   });
 
   it("rejects invalid extraMounts", async () => {

@@ -100,7 +100,11 @@ export function registerImportRoutes(app: FastifyInstance): void {
     let nodeId: string;
     try {
       const { assertNodeCapacity, resolveCreateNodeId } = await import("../../nodes/nodes.js");
-      nodeId = await resolveCreateNodeId(user.role === "ADMIN" ? data.nodeId : undefined);
+      nodeId = await resolveCreateNodeId(user.role === "ADMIN" ? data.nodeId : undefined, {
+        memoryMb: data.memoryMb,
+        diskMb: data.diskMb,
+        cpuLimit: data.cpuLimit,
+      });
       await assertNodeCapacity(nodeId, data.memoryMb, {
         placement: true,
         diskMb: data.diskMb,

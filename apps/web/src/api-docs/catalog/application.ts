@@ -26,7 +26,8 @@ export const APPLICATION_DEMOS: ApiEndpointDemo[] = [
     id: "app-create-server",
     group: "Application API",
     title: "Create server",
-    description: "Provision a server for an owner after payment.",
+    description:
+      "Provision a server for an owner after payment. Omit nodeId to auto-pick a deployable node (most free RAM, then CPU). Data is stored on that node’s default DATA_DIR (storage pools are only on panel POST /api/servers).",
     method: "POST",
     path: "/api/application/servers",
     auth: "gta",
@@ -39,6 +40,24 @@ export const APPLICATION_DEMOS: ApiEndpointDemo[] = [
       memoryMb: 4096,
       diskMb: 10240,
     },
+    bodyFields: [
+      { name: "ownerId", required: true, description: "Panel user id (owner of the server)" },
+      { name: "name", required: true, description: "Server display name" },
+      { name: "type", required: true, description: "PAPER, PURPUR, VANILLA, FABRIC, …" },
+      { name: "mcVersion", required: true, description: "Minecraft version string" },
+      { name: "port", required: true, description: "Primary game port (1024–65535)" },
+      { name: "memoryMb", required: true, description: "RAM limit in MB" },
+      { name: "diskMb", description: "Disk quota in MB (default from panel)" },
+      { name: "cpuLimit", description: "CPU limit (0–6400)" },
+      {
+        name: "nodeId",
+        description:
+          "Manual override — force this node. Omit for automatic placement (most free RAM → CPU on deployable ONLINE nodes).",
+      },
+      { name: "paperBuild", description: "PAPER/PURPUR build id; omit for latest/STABLE" },
+      { name: "fabricLoaderVersion", description: "FABRIC/QUILT loader; omit for stable/latest" },
+      { name: "forgeVersion", description: "FORGE/NEOFORGE version; omit for recommended/latest" },
+    ],
     safe: false,
   },
   {

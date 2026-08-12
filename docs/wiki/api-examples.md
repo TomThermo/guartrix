@@ -293,6 +293,10 @@ curl -sS -H "Authorization: Bearer $GT_KEY" \
 
 Requires `OPERATOR` or `ADMIN`, quota, and write role.
 
+**Auto placement:** omit `nodeId` and `storageId` to let the panel pick a deployable node with the most free **RAM**, then **CPU**, then the storage pool (or node `DATA_DIR`) with the most free disk on that node. Prefer **ONLINE** nodes when several qualify.
+
+**Manual overrides (admin):** set `nodeId` and/or `storageId`. Set `"storageId": null` to force the node default `DATA_DIR` instead of a pool.
+
 ```bash
 curl -sS -X POST -H "Authorization: Bearer $GT_KEY" \
   -H "Content-Type: application/json" \
@@ -300,11 +304,11 @@ curl -sS -X POST -H "Authorization: Bearer $GT_KEY" \
     "name": "Creative flat",
     "type": "PAPER",
     "mcVersion": "1.21.1",
+    "paperBuild": 112,
     "port": 25566,
     "memoryMb": 2048,
     "diskMb": 10240,
     "cpuLimit": 200,
-    "nodeId": "node_local01",
     "worldPreset": "FLAT",
     "gamemode": "creative",
     "difficulty": "peaceful",
@@ -312,6 +316,27 @@ curl -sS -X POST -H "Authorization: Bearer $GT_KEY" \
   }' \
   "$PANEL/api/servers"
 ```
+
+**Admin — pick node + NFS pool manually:**
+
+```bash
+curl -sS -X POST -H "Authorization: Bearer $GT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Survival NFS",
+    "type": "PAPER",
+    "mcVersion": "1.21.1",
+    "port": 25567,
+    "memoryMb": 4096,
+    "diskMb": 20480,
+    "cpuLimit": 300,
+    "nodeId": "bZG8tvAfekk0",
+    "storageId": "7cCX2CZ3vZUM"
+  }' \
+  "$PANEL/api/servers"
+```
+
+List pools linked to a node: `GET /api/admin/nodes/:id/storages` (admin session or full admin API key).
 
 | Field | Required | Notes |
 |-------|----------|-------|
@@ -322,7 +347,11 @@ curl -sS -X POST -H "Authorization: Bearer $GT_KEY" \
 | `memoryMb` | yes | 512–65536 |
 | `diskMb` | no | Default 10240 |
 | `cpuLimit` | no | `0` = unlimited, `200` = 2 cores |
-| `nodeId` | no | Best online node picked if omitted |
+| `nodeId` | no | Admin only; auto-pick best node if omitted |
+| `storageId` | no | Admin only; auto-pick best pool on the node if omitted; `null` = `DATA_DIR` |
+| `paperBuild` | no | Paper/Purpur build id (`GET /api/versions/builds?type=PAPER&mcVersion=…`) |
+| `fabricLoaderVersion` | no | Fabric/Quilt loader pin |
+| `forgeVersion` | no | Forge/NeoForge full version pin |
 | `worldPreset` | no | `DEFAULT`, `FLAT`, `VOID` |
 | `seed`, `gamemode`, `difficulty` | no | Applied to new world |
 
@@ -930,6 +959,8 @@ curl -sS -X POST -H "Authorization: Bearer $GTA_KEY" \
 
 ### POST `/api/application/servers` — create server for user
 
+**Node placement:** omit `nodeId` to auto-pick a deployable node (most free **RAM**, then **CPU**). Set `nodeId` to force a specific node. This endpoint does **not** accept `storageId` — data goes to the node default `DATA_DIR`. For storage pool placement use panel `POST /api/servers` (admin session or Client API) with optional `storageId`.
+
 ```json
 {
   "ownerId": "k9m2pQx7nR4v",
@@ -939,6 +970,21 @@ curl -sS -X POST -H "Authorization: Bearer $GTA_KEY" \
   "port": 25565,
   "memoryMb": 4096,
   "diskMb": 10240
+}
+```
+
+Manual node override:
+
+```json
+{
+  "ownerId": "k9m2pQx7nR4v",
+  "name": "Paid server",
+  "type": "PAPER",
+  "mcVersion": "1.21.1",
+  "port": 25565,
+  "memoryMb": 4096,
+  "diskMb": 10240,
+  "nodeId": "NODE_ID"
 }
 ```
 

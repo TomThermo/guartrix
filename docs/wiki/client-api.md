@@ -159,6 +159,20 @@ Browser UI session traffic also uses separate rate budgets (`API_SESSION_RATE_LI
 
 Full list + create/import examples: [API examples — Servers](api-examples.md#servers).
 
+### Create server body (`POST /api/servers`)
+
+Omit `nodeId` and `storageId` for **automatic placement** (most free RAM → CPU → storage on deployable **ONLINE** nodes). Admins may set:
+
+| Field | Role | Notes |
+|-------|------|-------|
+| `nodeId` | Admin | Force target node |
+| `storageId` | Admin | Force storage pool id; omit = auto on node; `null` = node `DATA_DIR` |
+| `paperBuild` | All | Paper/Purpur build pin |
+| `fabricLoaderVersion` | All | Fabric/Quilt loader pin |
+| `forgeVersion` | All | Forge/NeoForge version pin |
+
+List pools for a node: `GET /api/admin/nodes/:id/storages`. See [API examples — create server](api-examples.md#post-apiservers--create-server).
+
 ## Servers — single server
 
 | Method | Path | Notes |

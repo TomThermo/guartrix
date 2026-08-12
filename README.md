@@ -21,7 +21,7 @@ Guartrix is a panel and daemon stack for commercial or private Minecraft hosting
 
 - **Panel** — web UI and API for users, servers, billing hooks, and administration  
 - **Daemon** — per-machine agent that runs Docker game containers, SFTP, and node MySQL  
-- **Multi-node** — local and remote nodes; move servers between hosts from the admin UI; **per-node storage pools** (local disk or NFS) with panel mount/unmount  
+- **Multi-node** — local and remote nodes; move servers between hosts from the admin UI; **Admin → Storage** pools (local or NFS, multi-node links) with panel mount/unmount; **auto placement** on create (most free RAM → CPU → storage) unless an admin picks node/pool  
 
 Supported server types include **Java Edition** (Vanilla, Paper, Purpur, Fabric, Quilt, Forge, NeoForge) and **Bedrock Edition** (official Mojang BDS stable/preview, PocketMine-MP, Nukkit). Paper/Purpur can also expose **Geyser** so Bedrock clients join a Java server without a separate Bedrock runtime.
 
@@ -52,7 +52,9 @@ Install targets and OS matrix: [Requirements](#requirements). Monorepo layout: [
 
 | Node storage | Add storage |
 |--------------|-------------|
-| ![Node storage](docs/wiki/assets/40-node-storage.png) | ![Add storage](docs/wiki/assets/41-node-storage-add.png) |
+| ![Admin Storage](docs/wiki/assets/40-node-storage.png) | ![Add storage](docs/wiki/assets/41-node-storage-add.png) |
+
+_Admin → Storage (screenshots pre–v1.4.55 UI; same flows.)_
 
 Full UI tour: [Panel guide](docs/wiki/panel-guide.md).
 
@@ -62,7 +64,7 @@ Full UI tour: [Panel guide](docs/wiki/panel-guide.md).
 
 **Game servers** — create, import, clone, reinstall; change type/version; world reset and upload; live console and power controls; join card (copy/QR); seed map + optional BlueMap. **Java** and **native Bedrock** server families (BDS, PocketMine-MP, Nukkit) with UDP-primary networking for Bedrock. Admin **peer node→node transfer** (panel disk staging opt-in only via `TRANSFER_ALLOW_PANEL_STAGING`).
 
-**Resources** — RAM, CPU, and disk limits; live Docker stats plus ~1h **daemon-side stats history** for charts; optional Schedules chains and Backup tab schedules; crash auto-restart; owner alerts and Discord status webhooks. Admins can attach servers to a **node storage pool** (local path or NFS) instead of the default `DATA_DIR`.
+**Resources** — RAM, CPU, and disk limits; live Docker stats plus ~1h **daemon-side stats history** for charts; optional Schedules chains and Backup tab schedules; crash auto-restart; owner alerts and Discord status webhooks. On create, the panel **auto-picks node and storage** (most free RAM, then CPU, then disk on linked pools) unless an admin sets `nodeId` / `storageId` via UI or `POST /api/servers`.
 
 **Files & access** — IDE-style file manager (folder tree, Monaco editor tabs, drag-and-drop upload); SFTP on port 2022 (`{username}.{serverId}`); subusers with invite links (accept requires `emailVerified`) and scoped permissions; optional encrypted backups and offsite hook.
 

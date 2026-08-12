@@ -23,6 +23,9 @@ export { syncNodeSftpDns, removeNodeSftpDns } from "./nodes-dns.js";
 
 export { listNodesWithUsage, assertNodeCapacity } from "./nodes-capacity.js";
 
+export { resolveCreatePlacement } from "./nodes-placement.js";
+export type { CreatePlacementInput, CreatePlacementResult } from "./nodes-placement.js";
+
 export {
   resolveCreateNodeId,
   writeLocalDaemonEnvIfLocal,

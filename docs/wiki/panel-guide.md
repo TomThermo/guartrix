@@ -76,7 +76,7 @@ Each row shows clickable chips for **disk used / limit**, **online players** (`0
 
 ## Create a server
 
-**+ New server** — pick software under **Java Edition** (Vanilla, Paper, Purpur, Fabric, Quilt, Forge, NeoForge) or **Bedrock Edition** (official Mojang BDS stable/preview, PocketMine-MP, Nukkit), Minecraft version, and for **Paper/Purpur** a **build**, for **Fabric/Quilt** a **loader**, and for **Forge/NeoForge** a **mod loader version** (defaults to newest/stable/recommended), RAM, port, **backup retention** (max archives to keep for this server; defaults from panel settings), and (admins) which node and optional **storage pool** (mounted local/NFS pool, or node `DATA_DIR`). Bedrock servers use **UDP** as the primary game port. Optional **world preset** (Default / Flat / Void) and **seed** are applied before the first boot. After create you go straight to the server **Console** while files install; the panel **starts the server automatically** when ready (and sets **Start on boot** so it comes back after a panel restart unless you stopped it manually).
+**+ New server** — pick software under **Java Edition** (Vanilla, Paper, Purpur, Fabric, Quilt, Forge, NeoForge) or **Bedrock Edition** (official Mojang BDS stable/preview, PocketMine-MP, Nukkit), Minecraft version, and for **Paper/Purpur** a **build**, for **Fabric/Quilt** a **loader**, and for **Forge/NeoForge** a **mod loader version** (defaults to newest/stable/recommended), RAM, port, **backup retention** (max archives to keep for this server; defaults from panel settings). **Node** and **storage pool** are chosen automatically (most free RAM → CPU → disk on that node) unless an admin overrides them in the form or via API (`nodeId`, `storageId`; `storageId: null` = node `DATA_DIR`). Bedrock servers use **UDP** as the primary game port. Optional **world preset** (Default / Flat / Void) and **seed** are applied before the first boot. After create you go straight to the server **Console** while files install; the panel **starts the server automatically** when ready (and sets **Start on boot** so it comes back after a panel restart unless you stopped it manually).
 
 ![Create server](assets/03-create-server.png)
 
@@ -124,7 +124,7 @@ rename, **edit daemon URL** (pencil next to `http://…:8081`), Test connection,
 
 ## Admin: Storage
 
-**Storage** (`/admin/storage`) — global **local** or **NFS** pools. Link one or more nodes (per-node mount point), then **Mount** / **Unmount** per link. When creating a server as admin, pick a pool linked to the chosen node under **Storage pool** (default = node `DATA_DIR`). One NFS pool can serve multiple nodes. Details and sudo notes: [Install nodes](install-nodes.md#storage-pools-admin--storage).
+**Storage** (`/admin/storage`) — global **local** or **NFS** pools. Link one or more nodes (per-node mount point), then **Mount** / **Unmount** per link. On create, storage is **auto-selected** on the chosen node (most free disk among linked pools and node `DATA_DIR`) unless an admin sets **Storage pool** or `storageId` in the API. One NFS pool can serve multiple nodes. Details and sudo notes: [Install nodes](install-nodes.md#storage-pools-admin--storage).
 
 ### Add node wizard
 

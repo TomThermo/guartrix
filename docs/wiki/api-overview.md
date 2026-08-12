@@ -36,8 +36,8 @@ Guartrix exposes:
 
 | Need | Client API (`gt_`) | Application API (`gta_`) |
 |------|-------------------|--------------------------|
-| Create server (user) | `POST /api/servers` | — |
-| Create server (admin/billing) | — | `POST /api/application/servers` |
+| Create server (user) | `POST /api/servers` (auto node + storage if omitted) | — |
+| Create server (admin/billing) | — | `POST /api/application/servers` (auto node if `nodeId` omitted) |
 | Start / stop / restart / kill | `POST …/power` or `/start` etc. | `POST /api/application/servers/:id/power` |
 | Console (live) | WebSocket `/ws/servers/:id/console` | — (use Client key on that server) |
 | Console (one command) | `POST …/command` | — |

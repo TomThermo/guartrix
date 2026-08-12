@@ -269,6 +269,31 @@ export function ApiExplorer() {
               </code>
             </div>
             <p className="api-ex-desc">{endpoint.description}</p>
+            {endpoint.bodyFields && endpoint.bodyFields.length > 0 && (
+              <div className="api-ex-fields">
+                <div className="api-ex-fields-title">Body fields</div>
+                <table className="api-ex-fields-table">
+                  <thead>
+                    <tr>
+                      <th>Field</th>
+                      <th>Required</th>
+                      <th>Notes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {endpoint.bodyFields.map((f) => (
+                      <tr key={f.name}>
+                        <td>
+                          <code>{f.name}</code>
+                        </td>
+                        <td>{f.required ? "yes" : "no"}</td>
+                        <td>{f.description}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
             <div className="api-ex-meta">
               <span className="api-ex-chip">
                 Auth:{" "}

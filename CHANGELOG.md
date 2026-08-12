@@ -3,6 +3,11 @@
 All notable changes to Guartrix are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.58] — 2026-08-12
+
+- **Auto placement** on create/clone/import: omit `nodeId` / `storageId` → most free RAM → CPU → storage (panel `POST /api/servers`; Application API auto-picks node only).
+- API docs: explorer **Body fields** table on create server; wiki/README placement notes.
+
 ## [1.4.57] — 2026-08-12
 
 - Create: pick **Fabric/Quilt loader** and **Forge/NeoForge** version (same channel picker as Paper/Purpur builds).

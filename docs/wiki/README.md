@@ -137,7 +137,9 @@ See also [Operations](operations.md) · [Release builds](release-builds.md) · [
 
 | Node storage | Add storage |
 |--------------|-------------|
-| ![Node storage](assets/40-node-storage.png) | ![Add storage](assets/41-node-storage-add.png) |
+| ![Admin Storage](assets/40-node-storage.png) | ![Add storage](assets/41-node-storage-add.png) |
+
+_Admin → Storage (screenshots pre–v1.4.55 UI; same flows.)_
 
 All screenshots live under [`assets/`](assets/) and are embedded in the [Panel guide](panel-guide.md).
 

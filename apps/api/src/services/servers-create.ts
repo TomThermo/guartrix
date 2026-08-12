@@ -4,7 +4,7 @@ import { primaryAllocationProtocol } from "@guartrix/shared";
 import type { z } from "zod";
 import { logActivity } from "../activity-log.js";
 import { assertCanCreateServer } from "../billing/quotas.js";
-import { assertNodeCapacity, resolveCreateNodeId } from "../nodes/nodes.js";
+import { assertNodeCapacity, resolveCreatePlacement } from "../nodes/nodes.js";
 import { parseExtraMounts } from "../servers/extra-mounts.js";
 import { isGamePortAvailable } from "../servers/game-port.js";
 import { beginPanelServerCreate, finishPanelCreateInBackground } from "../servers/server-provision.js";
@@ -44,20 +44,31 @@ export async function createPanelServer(
   }
 
   let nodeId: string;
+  let resolvedStorageId: string | null = null;
   try {
-    nodeId = await resolveCreateNodeId(user.role === "ADMIN" ? data.nodeId : undefined);
+    const placement = await resolveCreatePlacement({
+      requestedNodeId: user.role === "ADMIN" ? data.nodeId : undefined,
+      requestedStorageId:
+        user.role === "ADMIN" && data.storageId !== undefined ? data.storageId : undefined,
+      memoryMb: data.memoryMb,
+      diskMb: data.diskMb,
+      cpuLimit: data.cpuLimit,
+    });
+    nodeId = placement.nodeId;
+    resolvedStorageId = placement.storageId;
+
     if (data.storageId && user.role !== "ADMIN") {
       return { ok: false, status: 403, error: "Only admins can choose storage" };
     }
-    if (data.storageId) {
+    if (resolvedStorageId) {
       const { assertServerStorageAssignable } = await import("./node-storage.js");
-      await assertServerStorageAssignable(nodeId, data.storageId);
+      await assertServerStorageAssignable(nodeId, resolvedStorageId);
     }
     await assertNodeCapacity(nodeId, data.memoryMb, {
       placement: true,
       diskMb: data.diskMb,
       cpuLimit: data.cpuLimit,
-      storageId: data.storageId ?? null,
+      storageId: resolvedStorageId,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -85,7 +96,7 @@ export async function createPanelServer(
     nodeId,
     ensureSubdomain: true,
     cleanupOnFailure: false,
-    ...(data.storageId !== undefined ? { storageId: data.storageId } : {}),
+    ...(resolvedStorageId ? { storageId: resolvedStorageId } : {}),
     ...(data.paperBuild !== undefined ? { paperBuild: data.paperBuild } : {}),
     ...(data.fabricLoaderVersion !== undefined
       ? { fabricLoaderVersion: data.fabricLoaderVersion }

@@ -1576,6 +1576,42 @@ a.docs-card--link:hover .docs-card-arrow {
   line-height: 1.55;
 }
 
+.api-ex-fields {
+  margin: 0 0 0.85rem;
+}
+
+.api-ex-fields-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+  color: var(--bh-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.api-ex-fields-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.api-ex-fields-table th,
+.api-ex-fields-table td {
+  padding: 0.4rem 0.55rem;
+  border: 1px solid var(--bh-border, rgba(255, 255, 255, 0.08));
+  text-align: left;
+  vertical-align: top;
+}
+
+.api-ex-fields-table th {
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.api-ex-fields-table code {
+  font-size: 0.8125rem;
+}
+
 .api-ex-meta {
   display: flex;
   flex-wrap: wrap;

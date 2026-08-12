@@ -14,6 +14,13 @@ export const API_LANGS: { id: ApiLang; label: string }[] = [
   { id: "go", label: "Go" },
 ];
 
+export type ApiBodyField = {
+  name: string;
+  /** Defaults to optional */
+  required?: boolean;
+  description: string;
+};
+
 export type ApiEndpointDemo = {
   id: string;
   group: string;
@@ -25,6 +32,8 @@ export type ApiEndpointDemo = {
   auth: ApiAuthKind;
   /** Suggested JSON body (POST/PATCH/PUT) */
   body?: unknown;
+  /** Optional body field reference (shown under description) */
+  bodyFields?: ApiBodyField[];
   /** Query string examples without leading ? */
   query?: string;
   /** Safe to run against live panel without mutation */

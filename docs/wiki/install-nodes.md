@@ -43,7 +43,7 @@ For an existing remote node, open the node (table row / edit). **Basic Settings*
 1. Open **Admin → Storage** and create a pool: Local (host directory / bind) or NFS (server + export + options). Optionally link the first node while creating.
 2. **Link** one or more nodes to the pool and set a per-node **mount point** (default under `$DATA_DIR/mounts/<poolId>`).
 3. Click **Mount** on each linked node. The daemon runs `sudo mount` (NFS or bind) under an allowlisted prefix (default `$DATA_DIR/mounts` and `/var/lib/guartrix/mounts` — see `STORAGE_MOUNTS_ALLOW_PREFIX`).
-4. When creating a server as admin, pick a pool under **Storage pool** that is linked (and preferably mounted) on the chosen node — or leave the node default `DATA_DIR`.
+4. When creating a server, the panel **auto-picks** a deployable node (most free **RAM**, then **CPU**, then storage with the most free space). Admins can override **node** and **storage pool** in the create form or API (`POST /api/servers` with `nodeId` / `storageId`; omit both for auto, or `"storageId": null` for node `DATA_DIR` only).
 5. **Unmount** / **Unlink** refuse while servers on that node are assigned to the pool; **Delete** refuses while any servers use the pool.
 
 One NFS pool can be linked to **multiple nodes** (shared export metadata on the pool; mount point per link). Local pools are usually one node, but multi-node links are allowed when each host has its own path.

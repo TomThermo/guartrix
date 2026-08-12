@@ -112,6 +112,11 @@ export async function cloneServerFromSource(
   try {
     nodeId = await resolveCreateNodeId(
       user.role === "ADMIN" ? (data.nodeId ?? source.nodeId) : source.nodeId,
+      {
+        memoryMb,
+        diskMb,
+        cpuLimit: data.cpuLimit ?? source.cpuLimit,
+      },
     );
     await assertNodeCapacity(nodeId, memoryMb, {
       placement: true,

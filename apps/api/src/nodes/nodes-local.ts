@@ -6,28 +6,30 @@ import { config } from "../config.js";
 import { prisma } from "../db.js";
 import { hostPublicIp } from "./host-resources.js";
 import { syncNodeSftpDns } from "./nodes-dns.js";
+import {
+  resolveCreatePlacement,
+  type CreatePlacementInput,
+} from "./nodes-placement.js";
 import { generateDaemonToken, hashDaemonToken } from "./nodes-token.js";
 
 const DAEMON_ENV_FILE = "daemon.env";
 const DEFAULT_SFTP_PORT = 2022;
 
-export async function resolveCreateNodeId(requestedId?: string | null): Promise<string> {
-  if (requestedId) {
-    const node = await prisma.node.findUnique({ where: { id: requestedId } });
-    if (!node) throw new Error("Node not found");
-    if (node.maintenanceMode) {
-      throw new Error(`Node "${node.name}" is under maintenance`);
-    }
-    if (!node.deployable) {
-      throw new Error(`Node "${node.name}" is not enabled for deployments`);
-    }
-    return node.id;
-  }
-  const local = await prisma.node.findFirst({
-    where: { isLocal: true, deployable: true, maintenanceMode: false },
+export async function resolveCreateNodeId(
+  requestedId?: string | null,
+  opts?: Pick<
+    CreatePlacementInput,
+    "memoryMb" | "diskMb" | "cpuLimit" | "requestedStorageId"
+  >,
+): Promise<string> {
+  const { nodeId } = await resolveCreatePlacement({
+    requestedNodeId: requestedId ?? undefined,
+    requestedStorageId: opts?.requestedStorageId,
+    memoryMb: opts?.memoryMb ?? 512,
+    diskMb: opts?.diskMb,
+    cpuLimit: opts?.cpuLimit,
   });
-  if (!local) throw new Error("No local node configured");
-  return local.id;
+  return nodeId;
 }
 
 function readDaemonEnvValue(file: string, key: string): string | null {

@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Guartrix API
-  version:  1.4.57
+  version:  1.4.58
   description: |
     Machine-readable surface for the Guartrix panel. Paths under /api also answer at /api/v1 (dual-mount).
 
@@ -185,6 +185,7 @@ components:
         nodeId:
           type: string
           minLength: 1
+          description: Admin only; omit for auto placement (most free RAM, then CPU, then storage)
     CreateServerApplication:
       allOf:
         - $ref: "#/components/schemas/CreateServerBase"
@@ -248,6 +249,12 @@ components:
         nodeId:
           type: string
           minLength: 1
+          description: Admin only; omit for auto placement (most free RAM, then CPU, then storage)
+        storageId:
+          type: string
+          minLength: 1
+          nullable: true
+          description: Admin only; omit for auto on node; null = node DATA_DIR
         paperBuild:
           type: integer
           minimum: 1

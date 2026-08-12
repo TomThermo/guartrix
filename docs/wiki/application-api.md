@@ -112,6 +112,8 @@ Create body:
 }
 ```
 
+Omit `nodeId` to **auto-pick** the deployable node with the most free RAM (then CPU). Data is stored on that node’s default `DATA_DIR` — this endpoint has no `storageId`. For storage pool placement use panel `POST /api/servers` (admin) with optional `storageId`; see [API examples](api-examples.md#post-apiservers--create-server).
+
 Patch body (any field optional):
 
 ```json
