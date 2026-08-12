@@ -101,7 +101,7 @@ E2E_BASE_URL=http://127.0.0.1:8080 E2E_LOGIN=1 E2E_PASSWORD=changeme npm run tes
 
 Staging workflow: `.github/workflows/e2e-staging.yml` (set repo var `E2E_STAGING_ENABLED=1` + secrets `E2E_BASE_URL`, `E2E_PASSWORD`).
 
-**CI:** `.github/workflows/ci.yml` — `check:enterprise`, `test:coverage`, Playwright e2e job (MySQL service + panel boot).
+**CI:** `.github/workflows/ci.yml` — **manual only** (`workflow_dispatch` on GitHub Actions). Locally: `npm run check:enterprise`, `npm run test:coverage`, Playwright e2e.
 
 Coverage floors on the included set in `vitest.config.ts` (auth helpers, `safe-url`, server-access, shared permissions/bytes/seed-map/license-ticket/`safe-url`, file-manager path helpers): **lines/statements ≥95%**, **functions ≥90%**. Unit tests live under `apps/api`, `apps/web`, and `packages/*/src/**/*.test.ts`. Locale catalogs are compared by `apps/web/src/i18n/locale-parity.test.ts`.
 

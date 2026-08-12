@@ -1,11 +1,9 @@
 # Enterprise code gates + unit tests + e2e smoke
+# Automatic runs disabled — trigger manually from Actions tab if needed.
 name: CI
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+  workflow_dispatch:
 
 env:
   CI_PANEL_ENV: >-
